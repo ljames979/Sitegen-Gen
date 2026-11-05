@@ -1,0 +1,18 @@
+<%# Adapted from HyperUI (MIT) marketing/banners/2 and marketing/sections/1: text on one side, photo on the other. %>
+<section class="sg-lib" data-sg-section="hero/split">
+  <div class="bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+      <div class="sg-flip grid grid-cols-1 gap-8 md:grid-cols-2 md:items-center md:gap-12">
+        <div class="max-w-prose text-left md:max-w-none">
+          <h1 class="font-heading text-4xl font-bold text-ink sm:text-5xl" data-animate="hero"><%- d.headlineHtml %></h1>
+          <% if (d.sub) { %><p class="mt-4 text-base text-pretty text-muted sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+          <div class="mt-4 flex flex-wrap gap-4 sm:mt-6" data-animate="hero">
+            <a class="inline-block rounded-md bg-primary px-5 py-3 font-medium text-on-primary shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+            <% if (d.phone) { %><a class="inline-block rounded-md border border-line bg-page px-5 py-3 font-medium text-ink shadow-[var(--shadow-sm)] transition-colors hover:bg-surface" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+          </div>
+        </div>
+        <% if (d.image) { %><div data-animate="scene"><img class="aspect-[4/3] w-full rounded-xl object-cover shadow-[var(--shadow-md)]" src="<%= d.image %>" alt="" fetchpriority="high"></div><% } %>
+      </div>
+    </div>
+  </div>
+</section>

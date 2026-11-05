@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Publish history — <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .h-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; background: #fff; }
+    .h-row small { display: block; color: var(--muted); }
+    .h-kind { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 999px; background: #eef2ff; color: #3730a3; margin-right: 8px; }
+    .h-kind.netlify { background: #ecfdf5; color: #065f46; } .h-kind.rollback { background: #fffbeb; color: #92400e; }
+    .h-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .h-ok { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
+    .h-warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+  </style>
+</head>
+<body>
+  <nav><div class="row"><a href="/sites/<%= site.id %>/edit" class="muted">&larr; <%= site.name %></a><strong>Publish history</strong></div></nav>
+  <div class="container">
+    <% flash.forEach(k => { %><div class="h-ok <%= k === 'nlfail' ? 'h-warn' : '' %>"><%= msgs[k] %></div><% }) %>
+    <div class="card" style="margin-bottom:16px;">
+      <p style="margin:0;">Each time you publish, a copy of the site is kept here (the newest 20). You can look at an earlier version, or roll the site back to it. Your current content is saved to the editor's version history first, so a rollback can be undone.</p>
+      <p class="muted" style="margin:8px 0 0;font-size:13px;">Edits show on your live address as soon as you save them, so this is your safety net if a change goes wrong. Netlify copies are separate: a rollback also makes the matching Netlify deploy live again.</p>
+    </div>
+    <% if (!rows.length) { %><div class="card">Nothing published yet. Your first publish will appear here.</div><% } %>
+    <% rows.forEach((r, i) => { %>
+      <div class="h-row">
+        <div>
+          <span class="h-kind <%= r.kind %>"><%= r.kind === 'netlify' ? 'Netlify' : r.kind === 'rollback' ? 'Rollback' : 'Live' %></span><strong><%= r.created_at %> UTC</strong><%= i === 0 ? ' (latest)' : '' %>
+          <% if (r.label) { %><small><%= r.label %></small><% } %>
+        </div>
+        <div class="h-actions">
+          <a class="btn btn-secondary" target="_blank" href="/sites/<%= site.id %>/history/<%= r.id %>/view">Look at it</a>
+          <form method="POST" action="/sites/<%= site.id %>/history/<%= r.id %>/rollback" onsubmit="return confirm('Roll the site back to this version? Your current content is saved to history first.<%= r.kind === 'netlify' && canNetlify ? ' The matching Netlify deploy will be made live again.' : '' %>');"><button type="submit" class="btn-secondary">Roll back to this</button></form>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Client questionnaires — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .copy-row { display: flex; gap: 8px; } .copy-row input { margin: 0; flex: 1; }
+    .flashbar { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; }
+    .flashbar.bad { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+    .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #fef3c7; color: #92400e; }
+    .pill.built, .pill.open { background: #dcfce7; color: #166534; } .pill.closed { background: #f1f5f9; color: #475569; }
+    .lk { margin-bottom: 12px; } .lk form { display: inline; }
+  </style>
+</head>
+<body>
+  <nav><div class="row"><a href="/" class="muted">&larr; Your sites</a><strong>Client questionnaires</strong></div></nav>
+  <div class="container">
+    <% if (flash === 'created') { %><div class="flashbar">New link created. Copy it and send it to your client.</div><% } %>
+    <% const pdfMsg = { pdfbig: 'That file is too big. PDFs up to 15 MB can be uploaded.', pdfnone: 'Choose a PDF file first.', pdfnotpdf: 'That file is not a PDF.',
+         pdfnoform: 'That PDF has no fillable questionnaire fields. Scans, handwritten copies and other PDFs can be read once an AI key (ANTHROPIC_API_KEY) is set up. Until then, use the fillable questionnaire PDF below.',
+         pdfunreadable: 'The AI could not read answers from that PDF. Check it is the filled-out questionnaire and that the scan is clear.',
+         pdfempty: 'No business name was found in that PDF, so nothing was added. Check it is the filled-out copy (and that the client saved it after filling it in).' }[flash]; %>
+    <% if (pdfMsg) { %><div class="flashbar bad"><%= pdfMsg %></div><% } %>
+    <% if (flash === 'toomany') { %><div class="flashbar bad">You have too many links. Delete some you no longer use.</div><% } %>
+
+    <div class="card" style="margin-bottom:20px;">
+      <h3>How it works</h3>
+      <p class="muted" style="margin-top:-8px;">Make a link, send it to a client, and they answer a friendly step-by-step form (business, services, story, contact, look and feel, photos). When they finish you get an email and their answers appear below. Review them, then press <strong>Build the website</strong>. The site uses only what the client wrote.</p>
+      <form method="POST" action="/intake/links" class="row">
+        <input type="text" name="label" maxlength="80" placeholder="Who is this for? (e.g. Maria's Bakery)" style="margin:0; flex:1;">
+        <button type="submit">Create a link</button>
+      </form>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <h3>Questionnaire as a PDF</h3>
+      <p class="muted" style="margin-top:-8px;">For clients who prefer a document: send them the fillable PDF. They can fill it in on a computer (Adobe Reader, Mac Preview or a web browser) or print it and write by hand. When it comes back, upload it here and the answers appear below for you to review, the same as the online form.<%= hasAi() ? ' Scans, handwritten copies and other questionnaire PDFs are read by the AI.' : '' %></p>
+      <form method="GET" action="/intake/questionnaire.pdf" class="row" style="margin-bottom:10px;">
+        <input type="text" name="for" maxlength="80" placeholder="Client's business name (optional, printed on the form)" style="margin:0; flex:1;">
+        <button type="submit" class="btn-secondary">Download the PDF</button>
+      </form>
+      <form method="POST" action="/intake/pdf" enctype="multipart/form-data" class="row" onsubmit="var b=this.querySelector('button');b.disabled=true;b.textContent='Reading…';">
+        <input type="file" name="pdf" accept="application/pdf,.pdf" required style="margin:0; flex:1;">
+        <button type="submit">Upload a filled-out PDF</button>
+      </form>
+    </div>
+
+    <% links.forEach(l => { %>
+      <div class="card lk">
+        <strong><%= l.label || 'Untitled link' %></strong>
+        <span class="pill <%= l.closed ? 'closed' : 'open' %>"><%= l.closed ? 'closed' : 'open' %></span>
+        <span class="muted" style="font-size:13px;"> · <%= l.n %> answer<%= l.n === 1 ? '' : 's' %></span>
+        <div class="copy-row" style="margin-top:8px;"><input type="text" readonly value="<%= base + l.token %>" id="lk<%= l.id %>"><button type="button" class="btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('lk<%= l.id %>').value); this.textContent='Copied';">Copy</button></div>
+        <div style="margin-top:8px; font-size:13px;">
+          <a href="/start/<%= l.token %>" target="_blank">Preview</a> ·
+          <form method="POST" action="/intake/links/<%= l.id %>/toggle"><button type="submit" class="btn-secondary" style="padding:2px 10px;"><%= l.closed ? 'Reopen' : 'Close' %></button></form>
+          <% if (!l.n) { %><form method="POST" action="/intake/links/<%= l.id %>/delete" onsubmit="return confirm('Delete this link?');"><button type="submit" class="btn-secondary" style="padding:2px 10px;">Delete</button></form><% } %>
+        </div>
+      </div>
+    <% }) %>
+
+    <h2 style="margin-top:28px;">Answers received</h2>
+    <% if (!subs.length) { %><p class="muted">Nothing yet. Answers show up here as soon as a client submits.</p><% } %>
+    <% subs.forEach(s => { %>
+      <div class="card lk">
+        <a href="/intake/submissions/<%= s.id %>"><strong><%= s.d.bizName || 'Untitled' %></strong></a>
+        <span class="pill <%= s.status %>"><%= s.status === 'built' ? 'site built' : 'new' %></span>
+        <div class="muted" style="font-size:13px;"><%= s.d.bizType %><%= s.d.contactName ? ' · from ' + s.d.contactName : '' %> · <%= s.created_at %><%= s.label ? ' · ' + s.label : '' %></div>
+      </div>
+    <% }) %>
+  </div>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<%# Original layout (inspired by the "spotlight" hero pattern common on component marketplaces; drawn from scratch): centered headline over a soft brand-color glow, trust row under the buttons. %>
+<section class="sg-lib" data-sg-section="hero/spotlight">
+  <div class="tw:relative tw:isolate tw:overflow-hidden tw:bg-page">
+    <div class="sg-glow tw:absolute tw:top-0 tw:left-1/2 tw:-z-10 tw:h-72 tw:w-[42rem] tw:max-w-full tw:-translate-x-1/2 tw:rounded-full tw:bg-primary tw:opacity-25" aria-hidden="true"></div>
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-16 tw:text-center tw:sm:px-6 tw:sm:py-24 tw:lg:px-8 tw:lg:py-32">
+      <h1 class="tw:mx-auto tw:max-w-3xl tw:font-heading tw:text-4xl tw:font-bold tw:text-balance tw:text-ink tw:sm:text-6xl" data-animate="hero"><%- d.headlineHtml %></h1>
+      <% if (d.sub) { %><p class="tw:mx-auto tw:mt-5 tw:max-w-2xl tw:text-base tw:text-pretty tw:text-muted tw:sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+      <div class="tw:mt-8 tw:flex tw:flex-wrap tw:justify-center tw:gap-4" data-animate="hero">
+        <a class="tw:inline-block tw:rounded-md tw:bg-primary tw:px-5 tw:py-3 tw:font-medium tw:text-on-primary tw:shadow-[var(--shadow-sm)] tw:transition-opacity tw:hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+        <% if (d.phone) { %><a class="tw:inline-block tw:rounded-md tw:border tw:border-line tw:bg-page tw:px-5 tw:py-3 tw:font-medium tw:text-ink tw:shadow-[var(--shadow-sm)] tw:transition-colors tw:hover:bg-surface" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+      </div>
+      <% if (d.trust.length) { %>
+        <ul class="tw:mt-8 tw:flex tw:list-none tw:flex-wrap tw:justify-center tw:gap-x-6 tw:gap-y-2 tw:p-0 tw:text-sm tw:text-muted" data-animate="hero">
+          <% d.trust.forEach(function (t) { %><li class="tw:flex tw:items-center tw:gap-2"><svg class="tw:size-4 tw:shrink-0 tw:text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><%= t %></li><% }) %>
+        </ul>
+      <% } %>
+      <% if (d.image) { %><img class="tw:mx-auto tw:mt-12 tw:aspect-[16/7] tw:w-full tw:max-w-5xl tw:rounded-2xl tw:border tw:border-line tw:object-cover tw:shadow-[var(--shadow-md)]" src="<%= d.image %>" alt="" fetchpriority="high"><% } %>
+    </div>
+  </div>
+</section>

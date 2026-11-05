@@ -1,0 +1,11 @@
+<%# Adapted from Start Bootstrap Creative (MIT) about band: the story centered on the brand color under a short light rule, with a round light button. %>
+<section class="sg-lib" data-sg-section="about/band">
+  <div class="bg-primary">
+    <div class="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 lg:px-8 lg:py-24" data-animate="fade-up">
+      <h2 data-sg-head class="font-heading text-3xl font-bold text-on-primary sm:text-4xl"><%= d.heading %></h2>
+      <hr class="mx-auto mt-6 h-1 w-14 border-0 bg-on-primary">
+      <p class="mt-6 text-lg/relaxed text-pretty whitespace-pre-line text-on-primary/80"><%= d.body %></p>
+      <% if (d.moreHref) { %><a class="mt-8 inline-block rounded-full bg-page px-8 py-3 font-bold text-ink transition-opacity hover:opacity-90" href="<%= d.moreHref %>">More about us</a><% } %>
+    </div>
+  </div>
+</section>

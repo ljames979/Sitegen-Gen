@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Members — <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>.m-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fff}.m-row small{display:block;color:var(--muted)}.m-st{font-size:11px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:#ecfdf5;color:#065f46;margin-right:8px}.m-st.pending{background:#fffbeb;color:#92400e}.m-st.disabled{background:#fef2f2;color:#991b1b}.m-act{display:flex;gap:6px;flex-wrap:wrap}.m-act form{margin:0}</style>
+</head>
+<body>
+  <nav><div class="row"><a href="/sites/<%= site.id %>/edit" class="muted">&larr; <%= site.name %></a><strong>Members</strong></div></nav>
+  <div class="container">
+    <% const FL = { added: 'Member added.', approve: 'Member approved.', enable: 'Member turned back on.', disable: 'Member turned off. They can no longer log in.', deleted: 'Member removed.', link: 'Reset link made (below).' }; %>
+    <% if (FL[flash]) { %><div class="flashbar"><%= FL[flash] %></div><% } %>
+    <% if (err) { %><div class="flashbar bad"><%= err %></div><% } %>
+    <% if (link) { %><div class="card" style="margin-bottom:12px;"><strong>Password link for <%= link.email %></strong><p class="muted" style="margin:6px 0;">Works for one hour. Send it to them yourself. It is shown only now.</p><input type="text" readonly value="<%= link.url %>" onclick="this.select()"></div><% } %>
+    <% if (!cfg.enabled) { %><div class="card" style="margin-bottom:12px;">The members area is switched off. Turn it on in the editor under "Members area".</div><% } %>
+    <% if (!mailOn) { %><p class="muted" style="font-size:13px;">Email is not set up on this server, so "forgot password" emails are not sent. Use "Make a reset link" and pass it on.</p><% } %>
+    <div class="card" style="margin-bottom:16px;">
+      <strong>Add a member</strong>
+      <form method="POST" action="/sites/<%= site.id %>/members/add">
+        <label>Name</label><input type="text" name="name" maxlength="80">
+        <label>Email</label><input type="email" name="email" required>
+        <label>Starting password (at least 8 characters)</label><input type="text" name="password" required minlength="8" autocomplete="off">
+        <button type="submit" style="margin-top:10px;">Add member</button>
+      </form>
+    </div>
+    <% if (!rows.length) { %><div class="card">No members yet.</div><% } %>
+    <% rows.forEach(r => { %>
+      <div class="m-row">
+        <div><span class="m-st <%= r.status %>"><%= r.status === 'active' ? 'Active' : r.status === 'pending' ? 'Waiting' : 'Off' %></span><strong><%= r.name || r.email %></strong><small><%= r.email %> · joined <%= r.created_at %><%= r.last_login_at ? ' · last in ' + r.last_login_at : '' %></small></div>
+        <div class="m-act">
+          <% if (r.status === 'pending') { %><form method="POST" action="/sites/<%= site.id %>/members/<%= r.id %>/approve"><button type="submit">Approve</button></form><% } %>
+          <% if (r.status === 'active') { %><form method="POST" action="/sites/<%= site.id %>/members/<%= r.id %>/disable"><button type="submit" class="btn-secondary">Turn off</button></form><% } %>
+          <% if (r.status === 'disabled') { %><form method="POST" action="/sites/<%= site.id %>/members/<%= r.id %>/enable"><button type="submit" class="btn-secondary">Turn on</button></form><% } %>
+          <form method="POST" action="/sites/<%= site.id %>/members/<%= r.id %>/reset-link"><button type="submit" class="btn-secondary">Make a reset link</button></form>
+          <form method="POST" action="/sites/<%= site.id %>/members/<%= r.id %>/delete" onsubmit="return confirm('Remove this member?');"><button type="submit" class="btn-secondary">Remove</button></form>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</body>
+</html>

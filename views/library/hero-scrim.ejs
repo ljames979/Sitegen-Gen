@@ -1,0 +1,36 @@
+<%# Original layout ("Image + Scrim", cosmic): a full photo, or a night-sky gradient in the brand colors when there is none, with a dark scrim on the text side, a gradient headline, a glowing button and optional glass feature cards. Colors are worked out in scrimhero.js so the words stay readable on any photo. %>
+<section class="sg-lib" data-sg-section="hero/scrim">
+  <% var cards = d.cards || [], trust = d.trust || []; %>
+  <div class="sg-scrim-wrap" style="<%= d.scrimVars || '' %>" data-sc-layout="<%= d.scrimLayout || 'full' %>" data-sc-align="<%= d.align || 'left' %>" data-sc-tier="<%= d.tier || 'standard' %>">
+    <div class="sg-scrim tw:relative tw:isolate tw:overflow-hidden">
+      <% if (d.image) { %><img class="sg-scrim-bg sg-noshape tw:absolute tw:inset-0 tw:-z-20 tw:h-full tw:w-full tw:object-cover" src="<%= d.image %>" alt="" fetchpriority="high" style="object-position: <%= d.focal || '50% 50%' %>"><% } else { %><div class="sg-scrim-bg sg-scrim-sky tw:absolute tw:inset-0 tw:-z-20" aria-hidden="true"></div><% } %>
+      <div class="sg-scrim-shade tw:absolute tw:inset-0 tw:-z-10" aria-hidden="true"></div>
+      <% if (d.tier === 'showcase') { %><canvas class="tw:absolute tw:inset-0 tw:-z-10 tw:h-full tw:w-full" data-sg-stars aria-hidden="true"></canvas><% } %>
+      <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-24 tw:sm:px-6 tw:sm:py-32 tw:lg:px-8 tw:lg:py-40">
+        <div class="sg-scrim-text tw:max-w-2xl">
+          <h1 class="sg-scrim-h1 tw:font-heading tw:text-4xl tw:font-bold tw:text-balance tw:sm:text-6xl" data-animate="hero"><%- d.headlineHtml %></h1>
+          <% if (d.sub) { %><p class="tw:mt-5 tw:text-base tw:text-pretty tw:text-white tw:sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+          <div class="sg-scrim-btns tw:mt-8 tw:flex tw:flex-wrap tw:gap-4" data-animate="hero">
+            <a class="sg-scrim-cta tw:inline-block tw:px-6 tw:py-3 tw:font-semibold" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+            <% if (d.phone) { %><a class="sg-scrim-ghost tw:inline-block tw:border tw:border-white/60 tw:px-6 tw:py-3 tw:font-medium tw:text-white tw:transition-colors tw:hover:bg-white/10" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+          </div>
+          <% if (trust.length) { %>
+            <ul class="sg-scrim-btns tw:mt-7 tw:flex tw:list-none tw:flex-wrap tw:gap-x-6 tw:gap-y-2 tw:p-0 tw:text-sm tw:text-white" data-animate="hero">
+              <% trust.forEach(function (t) { %><li class="tw:flex tw:items-center tw:gap-2"><svg class="tw:size-4 tw:shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><%= t %></li><% }) %>
+            </ul>
+          <% } %>
+        </div>
+        <% if (cards.length) { %>
+          <ul class="sg-scrim-cards tw:mt-14 tw:grid tw:list-none tw:gap-4 tw:p-0 tw:sm:grid-cols-2 <%= cards.length >= 4 ? 'tw:lg:grid-cols-4' : cards.length === 3 ? 'tw:lg:grid-cols-3' : '' %>" data-animate="stagger">
+            <% cards.forEach(function (c) { %>
+              <li class="sg-glass tw:rounded-xl tw:p-5">
+                <h2 class="tw:font-heading tw:text-lg tw:font-semibold tw:text-white"><%= c.title %></h2>
+                <% if (c.text) { %><p class="tw:mt-1 tw:text-sm/relaxed tw:text-white"><%= c.text %></p><% } %>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>

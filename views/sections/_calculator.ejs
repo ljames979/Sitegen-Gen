@@ -1,0 +1,103 @@
+<% const cc = calcLib.normalize(site.sections.calculator); const ccRows = cc.fields.length ? cc.fields : []; %>
+<label class="check"><input type="checkbox" name="calc_enabled" value="1" <%= cc.enabled ? 'checked' : '' %>> Add an estimate page (shown in the menu)</label>
+<p class="muted" style="font-size:12.5px;">Visitors answer a few questions and see a price range, then send it to you as a lead (marked "From estimate") with their choices attached. <strong>You set every price</strong>: nothing is pre-filled. Switch "Show prices" off for a plain quote wizard (good for insurance). It is labelled as a rough estimate, not a firm quote.</p>
+<div style="display:flex; gap:6px; flex-wrap:wrap; margin:6px 0;">
+  <span class="muted" style="font-size:13px; align-self:center;">Start from:</span>
+  <% [['cleaning', 'Cleaning'], ['lawn', 'Lawn care'], ['moving', 'Moving'], ['insurance', 'Insurance quote wizard']].forEach(p => { %><button type="button" class="btn-secondary" data-calc-preset="<%= p[0] %>"><%= p[1] %></button><% }) %>
+</div>
+<label>Page title</label>
+<input type="text" name="calc_heading" id="calc_heading" value="<%= cc.heading %>" maxlength="80">
+<label>Short intro (optional)</label>
+<input type="text" name="calc_intro" value="<%= cc.intro %>" maxlength="400">
+<label>Show prices to visitors</label>
+<select name="calc_showPrice" id="calc_showPrice"><option value="yes" <%= cc.showPrice ? 'selected' : '' %>>Yes, show an estimate</option><option value="no" <%= !cc.showPrice ? 'selected' : '' %>>No, just collect the answers</option></select>
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:8px;">
+  <div><label>Starting price ($)</label><input type="number" name="calc_basePrice" min="0" step="0.01" value="<%= cc.basePrice || '' %>" placeholder="0"></div>
+  <div><label>Minimum total ($)</label><input type="number" name="calc_minimum" min="0" step="0.01" value="<%= cc.minimum || '' %>" placeholder="0"></div>
+  <div><label>Range: high end is __% above</label><input type="number" name="calc_spread" min="0" max="100" value="<%= cc.spread || '' %>" placeholder="0 = one price"></div>
+</div>
+<label>Button text</label>
+<input type="text" name="calc_buttonText" id="calc_buttonText" value="<%= cc.buttonText %>" maxlength="40">
+<label>Note under the estimate (optional, replaces the standard sentence)</label>
+<input type="text" name="calc_note" value="<%= cc.note %>" maxlength="400">
+<h4 style="margin:16px 0 6px;">Questions</h4>
+<div id="calcRows">
+  <% ccRows.forEach(f => { %>
+    <div class="seo-page-row calc-row" style="padding:10px;">
+      <div style="display:flex; gap:6px;">
+        <input type="text" name="calc_label" value="<%= f.label %>" placeholder="Question" maxlength="80" style="flex:1;">
+        <select name="calc_type" class="calc-type"><% calcLib.TYPES.forEach(t => { %><option value="<%= t[0] %>" <%= f.type === t[0] ? 'selected' : '' %>><%= t[1] %></option><% }) %></select>
+        <button type="button" class="btn-secondary calc-del">✕</button>
+      </div>
+      <textarea name="calc_options" rows="3" placeholder="One choice per line: Name | price"><%= calcLib.optionsText(f.options) %></textarea>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <input type="number" name="calc_price" min="0" step="0.01" value="<%= f.price || '' %>" placeholder="Price each / add-on $" style="flex:1; min-width:130px;">
+        <input type="text" name="calc_unit" value="<%= f.unit %>" placeholder="Unit (e.g. rooms)" maxlength="20" style="flex:1; min-width:110px;">
+        <input type="number" name="calc_min" min="0" value="<%= f.min || '' %>" placeholder="Min" style="width:80px;">
+        <input type="number" name="calc_max" min="1" value="<%= f.max || '' %>" placeholder="Max" style="width:80px;">
+        <select name="calc_required"><option value="yes" <%= f.required ? 'selected' : '' %>>Required</option><option value="no" <%= !f.required ? 'selected' : '' %>>Optional</option></select>
+      </div>
+      <p class="muted calc-hint" style="font-size:12px; margin:4px 0 0;"></p>
+    </div>
+  <% }) %>
+</div>
+<button type="button" class="btn-secondary" id="calcAdd">+ Add a question</button>
+<template id="tplCalcRow">
+  <div class="seo-page-row calc-row" style="padding:10px;">
+    <div style="display:flex; gap:6px;">
+      <input type="text" name="calc_label" placeholder="Question" maxlength="80" style="flex:1;">
+      <select name="calc_type" class="calc-type"><% calcLib.TYPES.forEach(t => { %><option value="<%= t[0] %>"><%= t[1] %></option><% }) %></select>
+      <button type="button" class="btn-secondary calc-del">✕</button>
+    </div>
+    <textarea name="calc_options" rows="3" placeholder="One choice per line: Name | price"></textarea>
+    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+      <input type="number" name="calc_price" min="0" step="0.01" placeholder="Price each / add-on $" style="flex:1; min-width:130px;">
+      <input type="text" name="calc_unit" placeholder="Unit (e.g. rooms)" maxlength="20" style="flex:1; min-width:110px;">
+      <input type="number" name="calc_min" min="0" placeholder="Min" style="width:80px;">
+      <input type="number" name="calc_max" min="1" placeholder="Max" style="width:80px;">
+      <select name="calc_required"><option value="yes">Required</option><option value="no">Optional</option></select>
+    </div>
+    <p class="muted calc-hint" style="font-size:12px; margin:4px 0 0;"></p>
+  </div>
+</template>
+<script type="application/json" id="calcPresets"><%- JSON.stringify(calcLib.PRESETS).replace(/</g, '\\u003c') %></script>
+<script>
+  (function () {
+    var rows = document.getElementById('calcRows'), tpl = document.getElementById('tplCalcRow'), form = document.getElementById('editorForm');
+    var HINT = { select: 'Each line is a choice. The price after | is added to the total.', radio: 'Each line is a choice. The price after | is added to the total.', number: 'The visitor types a number. Total adds number × the price each.', checkbox: 'A tick box. The price is added if it is ticked.' };
+    function sync(row) {
+      var t = row.querySelector('.calc-type').value, isOpt = t === 'select' || t === 'radio', isNum = t === 'number';
+      row.querySelector('[name=calc_options]').style.display = isOpt ? '' : 'none';
+      row.querySelector('[name=calc_price]').style.display = isOpt ? 'none' : '';
+      row.querySelector('[name=calc_unit]').style.display = isNum ? '' : 'none';
+      row.querySelector('[name=calc_min]').style.display = isNum ? '' : 'none';
+      row.querySelector('[name=calc_max]').style.display = isNum ? '' : 'none';
+      row.querySelector('[name=calc_required]').style.display = t === 'checkbox' ? 'none' : '';
+      row.querySelector('.calc-hint').textContent = HINT[t] || '';
+    }
+    function changed() { form.dispatchEvent(new Event('input', { bubbles: true })); }
+    function add(data) {
+      var node = tpl.content.cloneNode(true), row = node.querySelector('.calc-row');
+      if (data) {
+        row.querySelector('[name=calc_label]').value = data.label || ''; row.querySelector('.calc-type').value = data.type || 'select';
+        row.querySelector('[name=calc_options]').value = data.options || ''; row.querySelector('[name=calc_price]').value = data.price || '';
+        row.querySelector('[name=calc_unit]').value = data.unit || ''; row.querySelector('[name=calc_min]').value = data.min || ''; row.querySelector('[name=calc_max]').value = data.max || '';
+        row.querySelector('[name=calc_required]').value = data.required === 'yes' ? 'yes' : 'no';
+      }
+      rows.appendChild(node); sync(rows.lastElementChild);
+    }
+    rows.querySelectorAll('.calc-row').forEach(sync);
+    document.getElementById('calcAdd').onclick = function () { if (rows.children.length < 12) { add(); changed(); } };
+    rows.addEventListener('click', function (e) { var d = e.target.closest('.calc-del'); if (d) { d.closest('.calc-row').remove(); changed(); } });
+    rows.addEventListener('change', function (e) { if (e.target.classList.contains('calc-type')) sync(e.target.closest('.calc-row')); });
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-calc-preset]'); if (!b) return;
+      if (rows.children.length && !confirm('Replace the current questions with this starting point? Prices will be blank for you to fill in.')) return;
+      var p = JSON.parse(document.getElementById('calcPresets').textContent)[b.dataset.calcPreset];
+      rows.innerHTML = ''; p.fields.forEach(add);
+      document.getElementById('calc_heading').value = p.heading; document.getElementById('calc_showPrice').value = p.showPrice === false ? 'no' : 'yes';
+      if (p.buttonText) document.getElementById('calc_buttonText').value = p.buttonText;
+      changed();
+    });
+  })();
+</script>

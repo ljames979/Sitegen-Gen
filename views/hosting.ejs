@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Publish online — <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .flashbar { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; }
+    .flashbar.bad { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+    .flashbar.warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+    .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #f1f5f9; color: #475569; }
+    .pill.ok { background: #dcfce7; color: #166534; } .pill.wait { background: #fef3c7; color: #92400e; }
+    table.dns { border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 8px; }
+    table.dns th, table.dns td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    table.dns code { background: #f1f5f9; padding: 2px 6px; border-radius: 6px; word-break: break-all; }
+    .card { margin-bottom: 18px; } .card h3 { margin-top: 0; }
+    ul.plain { margin: 6px 0 0 18px; padding: 0; font-size: 14px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  </style>
+</head>
+<body>
+  <nav><div class="row"><a href="/sites/<%= site.id %>/edit" class="muted">&larr; <%= site.name %></a><strong>Publish online</strong><a href="/sites/<%= site.id %>/history" class="muted">Publish history</a></div></nav>
+  <div class="container">
+    <% if (flash && msgs[flash]) { %><div class="flashbar <%= (flash === 'sslwait' || flash === 'pending') ? 'warn' : '' %>"><%= msgs[flash] %></div><% } %>
+    <% if (err) { %><div class="flashbar bad"><%= err %></div><% } %>
+
+    <% if (!configured) { %>
+      <div class="card">
+        <h3>Connect Netlify (one time)</h3>
+        <p class="muted" style="margin-top:-6px;">Netlify hosts the finished site for free, with automatic HTTPS. You only do this once for all your sites.</p>
+        <ol class="plain">
+          <li>Make a free account at netlify.com.</li>
+          <li>In Netlify open <strong>User settings</strong>, then <strong>Applications</strong>, then <strong>New access token</strong>.</li>
+          <li>Open the <code>.env</code> file in your SiteGen folder and add a line: <code>NETLIFY_AUTH_TOKEN=your-token-here</code></li>
+          <li>Close SiteGen and start it again (<code>start.bat</code>), then come back to this page.</li>
+        </ol>
+        <p class="muted" style="font-size:13px; margin-bottom:0;">The token stays in that file on your computer. It is never shown on any page.</p>
+      </div>
+    <% } else { %>
+      <div class="card">
+        <h3><%= site.netlify_site_id ? 'Your site is published' : 'Publish this site' %></h3>
+        <% if (site.netlify_site_id) { %>
+          <p style="margin:0 0 6px;"><a href="<%= live && live.url ? live.url : site.netlify_url %>" target="_blank" rel="noopener"><%= (live && live.url) || site.netlify_url %></a></p>
+          <p class="muted" style="margin:0 0 12px; font-size:13px;">Last published: <%= site.netlify_deployed_at ? site.netlify_deployed_at + ' (UTC)' : 'not yet' %>. Edit the site as usual, then publish again to update it.</p>
+        <% } else { %>
+          <p class="muted" style="margin-top:-6px;">Sends the finished site to Netlify and gives it a web address you can share right away. You can add your own domain afterwards.</p>
+        <% } %>
+        <form method="POST" action="/sites/<%= site.id %>/hosting/publish" onsubmit="var b=this.querySelector('button'); b.disabled=true; b.textContent='Publishing…';"><button type="submit"><%= site.netlify_site_id ? 'Publish again' : 'Publish to Netlify' %></button></form>
+      </div>
+
+      <div class="card">
+        <h3>What is on the published copy</h3>
+        <ul class="plain">
+          <li>All pages, photos, services, FAQ, hours, map, privacy and terms pages.</li>
+          <% if (formsOn) { %><li>The contact form works through Netlify Forms. Messages are emailed to <strong><%= notify || 'the address you set in Netlify' %></strong> and kept in your Netlify dashboard under Forms.</li><% } else { %><li>The contact form is off because "accept messages" is switched off in the editor.</li><% } %>
+        </ul>
+        <% if (hasBooking || hasChat || hasCalc) { %>
+          <p style="margin:12px 0 0; font-size:14px;"><strong>Not on the published copy:</strong>
+            <%= [hasBooking ? 'online booking' : '', hasCalc ? 'the estimate calculator' : '', hasChat ? 'the chat assistant' : ''].filter(Boolean).join(', ') %>.
+            They need SiteGen running on a server, so they only work on the site address SiteGen itself serves.</p>
+        <% } %>
+        <p class="muted" style="font-size:13px; margin:10px 0 0;">Also not included: customer review form, lead follow-ups and visitor reports. Those stay with SiteGen.</p>
+      </div>
+
+      <% if (site.netlify_site_id) { %>
+        <div class="card">
+          <h3>Your own domain</h3>
+          <% if (!site.netlify_domain) { %>
+            <p class="muted" style="margin-top:-6px;">Already own a domain such as www.yourbusiness.com? Enter it here. HTTPS (the padlock) is free and automatic.</p>
+            <form method="POST" action="/sites/<%= site.id %>/hosting/domain" class="row"><input type="text" name="domain" placeholder="www.yourbusiness.com" maxlength="253" style="flex:1; margin:0;"><button type="submit">Add domain</button></form>
+          <% } else { %>
+            <p style="margin:0 0 6px;"><strong><%= site.netlify_domain %></strong>
+              <% if (live && live.ssl) { %><span class="pill ok">HTTPS on</span><% } else { %><span class="pill wait">HTTPS not on yet</span><% } %></p>
+            <p style="margin:12px 0 0; font-size:14px;"><strong>Step 1.</strong> At the company where the domain is registered (GoDaddy, Namecheap, Squarespace Domains and so on), open the DNS settings and add:</p>
+            <table class="dns"><thead><tr><th>Type</th><th>Host / Name</th><th>Value</th><th></th></tr></thead><tbody>
+              <% dns.forEach(r => { %><tr><td><code><%= r.type %></code></td><td><code><%= r.host %></code></td><td><code><%= r.value %></code></td><td class="muted"><%= r.note %></td></tr><% }) %>
+            </tbody></table>
+            <p style="margin:14px 0 6px; font-size:14px;"><strong>Step 2.</strong> Wait a little (often minutes, sometimes a few hours), then ask for HTTPS:</p>
+            <div class="row">
+              <form method="POST" action="/sites/<%= site.id %>/hosting/ssl"><button type="submit">Turn on HTTPS</button></form>
+              <form method="POST" action="/sites/<%= site.id %>/hosting/remove-domain" onsubmit="return confirm('Remove this domain from the site?');"><button type="submit" class="btn-secondary">Remove domain</button></form>
+            </div>
+          <% } %>
+        </div>
+        <form method="POST" action="/sites/<%= site.id %>/hosting/unlink" onsubmit="return confirm('Disconnect this site from Netlify? The Netlify site stays online until you delete it there.');"><button type="submit" class="btn-secondary">Disconnect from Netlify</button></form>
+      <% } %>
+    <% } %>
+  </div>
+</body>
+</html>

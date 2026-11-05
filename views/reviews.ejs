@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reviews — <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .rev { margin-bottom: 14px; }
+    .rev .stars { color: #f5a623; letter-spacing: 2px; }
+    .rev-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .copy-row { display: flex; gap: 8px; }
+    .copy-row input { margin: 0; flex: 1; }
+    .flashbar { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; }
+    .flashbar.bad { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="row">
+      <a href="/sites/<%= site.id %>/edit" class="muted">&larr; <%= site.name %></a>
+      <strong>Reviews</strong>
+    </div>
+  </nav>
+  <div class="container">
+    <% const msgs = { approved: 'Review approved and added to the Reviews page.', rejected: 'Review rejected.', sent: 'Review request sent.', sendfailed: 'Could not send the email. Check that email sending is set up (see the README, "Email alerts").', full: 'The Reviews page is full (30). Remove an old one in the editor first.', bademail: 'That email address does not look right.' }; %>
+    <% if (flash) { %><div class="flashbar <%= ['sendfailed','full','bademail'].includes(flash) ? 'bad' : '' %>"><%= msgs[flash] %></div><% } %>
+
+    <div class="card" style="margin-bottom:20px;">
+      <h3>Ask customers for a review</h3>
+      <p class="muted" style="margin-top:-6px;">Send this link to happy <em>and</em> unhappy customers alike. Reviews wait here for your approval and only appear on the site once you approve them. Please don't hide or only request reviews from satisfied customers; Google and review sites prohibit that.</p>
+      <label>Review link</label>
+      <div class="copy-row">
+        <input type="text" id="reviewLink" readonly value="<%= link %>">
+        <button type="button" class="btn-secondary" id="copyLink">Copy</button>
+      </div>
+      <label>Message you can paste into a text or email</label>
+      <textarea id="reviewMsg" rows="4" readonly>Hi! Thank you for choosing <%= site.name %>. If you have a minute, we'd really appreciate a short review of your experience: <%= link %></textarea>
+      <button type="button" class="btn-secondary" id="copyMsg" style="margin-top:8px;">Copy message</button>
+
+      <% if (mailConfigured) { %>
+        <form method="POST" action="/sites/<%= site.id %>/reviews/request" style="margin-top:20px;">
+          <label>Or email the request directly</label>
+          <div class="copy-row">
+            <input type="text" name="name" placeholder="Customer name (optional)" maxlength="80">
+            <input type="email" name="email" placeholder="customer@example.com" maxlength="254" required>
+            <button type="submit">Send</button>
+          </div>
+        </form>
+      <% } else { %>
+        <p class="muted" style="font-size:13px; margin-bottom:0;">To email requests from here, set up email sending in the server's <code>.env</code> (README, "Email alerts"). Until then, copy the message above.</p>
+      <% } %>
+    </div>
+
+    <h3>Waiting for approval (<%= pending.length %>)</h3>
+    <% if (!pending.length) { %>
+      <div class="card"><p class="muted" style="margin:0;">Nothing waiting. New reviews from the link above will show up here.</p></div>
+    <% } %>
+    <% pending.forEach(r => { %>
+      <div class="card rev">
+        <div class="stars"><%= '\u2605'.repeat(r.rating) %><span style="color:#cbd5e1;"><%= '\u2605'.repeat(5 - r.rating) %></span></div>
+        <p style="margin:8px 0;"><%= r.quote %></p>
+        <div class="muted" style="font-size:13px;">&mdash; <%= r.name || 'Anonymous' %> &middot; <%= r.created_at %></div>
+        <form method="POST" action="/sites/<%= site.id %>/reviews/<%= r.id %>" class="rev-actions">
+          <button type="submit" name="action" value="approve">Approve &amp; show on site</button>
+          <button type="submit" name="action" value="reject" class="btn-secondary">Reject</button>
+        </form>
+      </div>
+    <% }) %>
+
+    <% if (done.length) { %>
+      <h3 style="margin-top:28px;">Earlier</h3>
+      <% done.forEach(r => { %>
+        <div class="card rev" style="opacity:.75;">
+          <div class="muted" style="font-size:13px;"><%= r.status === 'approved' ? 'Approved' : 'Rejected' %> &middot; <%= r.rating %>/5 &middot; <%= r.name || 'Anonymous' %></div>
+          <p style="margin:6px 0 0;"><%= r.quote %></p>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+  <script>
+    function copyFrom(id, btn) {
+      const el = document.getElementById(id); el.select();
+      (navigator.clipboard ? navigator.clipboard.writeText(el.value) : Promise.resolve(document.execCommand('copy')))
+        .then(() => { const t = btn.textContent; btn.textContent = 'Copied'; setTimeout(() => btn.textContent = t, 1500); });
+    }
+    document.getElementById('copyLink').onclick = (e) => copyFrom('reviewLink', e.target);
+    document.getElementById('copyMsg').onclick = (e) => copyFrom('reviewMsg', e.target);
+  </script>
+</body>
+</html>

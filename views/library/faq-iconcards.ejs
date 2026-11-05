@@ -1,0 +1,21 @@
+<%# Adapted from Meraki UI (MIT) marketing/faq "Grid": every question with its answer showing, under a small brand-color square with a question mark. %>
+<section class="sg-lib" data-sg-section="faq/iconcards">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-6xl tw:px-4 tw:py-14 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-3xl tw:font-bold tw:text-ink tw:sm:text-4xl"><%= d.heading %></h2>
+      </div>
+      <div class="tw:mt-10 tw:grid tw:grid-cols-1 tw:gap-x-8 tw:gap-y-10 tw:md:grid-cols-2 tw:lg:grid-cols-3" data-sg-cards data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <div>
+            <span class="tw:inline-flex tw:size-9 tw:items-center tw:justify-center tw:rounded-lg tw:bg-primary tw:text-on-primary" aria-hidden="true"><svg class="tw:size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6"/><path d="M12 17h.01"/></svg></span>
+            <h3 class="tw:mt-4 tw:font-heading tw:text-lg tw:font-semibold tw:text-ink"><%= it.question %></h3>
+            <p class="tw:mt-2 tw:text-sm/relaxed tw:text-pretty tw:text-muted"><%= it.answer %></p>
+          </div>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="tw:mt-10"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">More questions &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

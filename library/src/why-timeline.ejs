@@ -1,0 +1,23 @@
+<%# Adapted from Start Bootstrap Agency (MIT) about timeline: each reason hangs off a center line in a big circle (its photo, or its number), the words swapping sides. On phones the line runs down the left. %>
+<section class="sg-lib" data-sg-section="why/timeline">
+  <div class="bg-page">
+    <div class="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+      <div class="mx-auto max-w-3xl text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="text-sm font-medium tracking-wide text-primary uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="font-heading text-3xl font-bold tracking-wide text-ink uppercase sm:text-4xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="mt-3 text-lg text-pretty italic text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <ol class="sg-tl mt-14" data-animate="stagger">
+        <% d.items.forEach(function (it, i) { %>
+          <li class="sg-tl-item">
+            <span class="sg-tl-dot font-heading text-3xl font-bold" aria-hidden="true"><% if (it.imageUrl) { %><img class="h-full w-full object-cover" src="<%= it.imageUrl %>" alt="" loading="lazy"><% } else { %><%= i + 1 %><% } %></span>
+            <div class="sg-tl-panel">
+              <% if (it.title) { %><h3 class="font-heading text-xl font-bold text-ink"><%= it.title %></h3><% } %>
+              <% if (it.text) { %><p class="mt-2 text-pretty text-muted"><%= it.text %></p><% } %>
+            </div>
+          </li>
+        <% }) %>
+      </ol>
+    </div>
+  </div>
+</section>

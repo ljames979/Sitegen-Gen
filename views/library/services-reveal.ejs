@@ -1,0 +1,23 @@
+<%# Original layout (hover-reveal photo cards, drawn from scratch): the description slides up on mouse hover or keyboard focus; on touch screens and with reduced motion it is always visible. %>
+<section class="sg-lib" data-sg-section="services/reveal">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="tw:mt-10 tw:grid tw:grid-cols-1 tw:gap-4 tw:sm:grid-cols-2 <%= d.items.length === 4 ? 'tw:lg:grid-cols-4' : 'tw:lg:grid-cols-3' %>" data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <a class="sg-reveal tw:group tw:relative tw:isolate tw:flex tw:aspect-[4/5] tw:flex-col tw:justify-end tw:overflow-hidden tw:rounded-xl tw:border tw:border-line tw:bg-primary tw:p-5 tw:shadow-[var(--shadow-sm)]" href="<%= it.href %>">
+            <% if (it.imageUrl) { %><img class="tw:absolute tw:inset-0 tw:-z-10 tw:h-full tw:w-full tw:object-cover tw:transition-transform tw:duration-500 tw:group-hover:scale-105" src="<%= it.imageUrl %>"<% if (it.image2) { %> data-sg-hover="<%= it.image2 %>"<% } %> alt="" loading="lazy"><% } %>
+            <span class="tw:absolute tw:inset-0 tw:-z-10 tw:bg-linear-to-t tw:from-black/75 tw:via-black/10 tw:to-transparent" aria-hidden="true"></span>
+            <span class="tw:block tw:font-heading tw:text-xl tw:font-semibold <%= it.imageUrl ? 'tw:text-white' : 'tw:text-on-primary' %>"><%= it.title %></span>
+            <% if (it.description) { %><span class="sg-reveal-desc tw:mt-2 tw:block tw:text-sm/relaxed tw:text-pretty <%= it.imageUrl ? 'tw:text-white/90' : 'tw:text-on-primary' %>"><%= it.description %></span><% } %>
+            <% if (it.price) { %><span class="tw:mt-2 tw:block tw:text-sm tw:font-medium <%= it.imageUrl ? 'tw:text-white' : 'tw:text-on-primary' %>"><%= it.price %></span><% } %>
+          </a>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="tw:mt-8 tw:text-center"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">See all services &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

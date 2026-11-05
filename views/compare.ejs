@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Compare designs: <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; background: #eef1f5; }
+    .cp-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--border); }
+    .cp-bar h1 { font-size: 16px; margin: 0; } .cp-bar .sp { flex: 1; }
+    .cp-bar .seg button { border-radius: 0; padding: 7px 12px; font-size: 13px; } .cp-bar .seg button:first-child { border-radius: 8px 0 0 8px; } .cp-bar .seg button:last-child { border-radius: 0 8px 8px 0; }
+    .cp-bar .seg button.on { background: #0f172a; color: #fff; }
+    .cp-bar label.check { display: flex; gap: 6px; align-items: center; margin: 0; font-weight: 400; }
+    .cp-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding: 14px; }
+    .cp-col { display: flex; flex-direction: column; min-height: 0; background: #fff; border-radius: 14px; box-shadow: 0 6px 24px rgba(15,23,42,.08); overflow: hidden; }
+    .cp-head { display: flex; gap: 8px; align-items: center; padding: 10px; border-bottom: 1px solid var(--border); }
+    .cp-head select { flex: 1; margin: 0; padding: 7px 8px; font-size: 13.5px; }
+    .cp-head form { margin: 0; } .cp-head button { padding: 8px 12px; font-size: 13.5px; white-space: nowrap; }
+    .cp-view { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #f8fafc; }
+    .cp-view iframe { position: absolute; top: 0; left: 0; border: 0; background: #fff; transform-origin: 0 0; }
+    .cp-view.phone iframe { left: 50%; }
+    .cp-note { font-size: 12.5px; color: var(--muted); padding: 0 16px 10px; margin: 0; background: #fff; }
+    @media (max-width: 900px) { .cp-grid { grid-template-columns: 1fr; } .cp-col { min-height: 70vh; } }
+  </style>
+</head>
+<body>
+  <div class="cp-bar">
+    <a href="/sites/<%= site.id %>/edit" class="muted">&larr; Editor</a>
+    <h1><%= site.name %>: three designs</h1>
+    <span class="sp"></span>
+    <label class="check"><input type="checkbox" id="ownColors" <%= ownColors ? 'checked' : '' %>> Use each style's own colors</label>
+    <span class="seg" role="group" aria-label="Screen">
+      <button type="button" class="btn-secondary on" data-dev="desktop" aria-pressed="true">Desktop</button><button type="button" class="btn-secondary" data-dev="phone" aria-pressed="false">Phone</button>
+    </span>
+  </div>
+  <p class="cp-note">Same words and photos in three styles. Nothing changes until you press "Use this design" (your current look is saved in Version history first). Untick "own colors" to show all three in the client's brand colors.</p>
+  <div class="cp-grid">
+    <% styles.forEach((st, i) => { %>
+      <div class="cp-col">
+        <div class="cp-head">
+          <select data-col="<%= i %>" aria-label="Style for design <%= i + 1 %>">
+            <optgroup label="Approved client styles"><% options.filter(o => o.approved).forEach(o => { %><option value="<%= o.id %>" <%= o.id === st ? 'selected' : '' %>><%= o.label %></option><% }) %></optgroup>
+            <optgroup label="Other styles"><% options.filter(o => !o.approved).forEach(o => { %><option value="<%= o.id %>" <%= o.id === st ? 'selected' : '' %>><%= o.label %></option><% }) %></optgroup>
+          </select>
+          <form method="POST" action="/sites/<%= site.id %>/compare/use">
+            <input type="hidden" name="style" value="<%= st %>"><input type="hidden" name="pal" value="<%= ownColors ? '1' : '0' %>">
+            <button type="submit">Use this design</button>
+          </form>
+        </div>
+        <div class="cp-view"><iframe title="Design <%= i + 1 %>" loading="lazy" src="/sites/<%= site.id %>/preview?bar=0&amp;style=<%= st %>&amp;pal=<%= ownColors ? '1' : '0' %>"></iframe></div>
+      </div>
+    <% }) %>
+  </div>
+  <script>
+  (function () {
+    var W = { desktop: 1280, phone: 390 }, dev = 'desktop';
+    function fit() {
+      document.querySelectorAll('.cp-view').forEach(function (v) {
+        var f = v.querySelector('iframe'), w = W[dev];
+        var s = Math.min(1, v.clientWidth / w);
+        f.style.width = w + 'px';
+        f.style.height = (v.clientHeight / s) + 'px';
+        f.style.transform = (dev === 'phone' ? 'translateX(-50%) ' : '') + 'scale(' + s + ')';
+        v.classList.toggle('phone', dev === 'phone');
+      });
+    }
+    addEventListener('resize', fit);
+    document.querySelectorAll('[data-dev]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        dev = b.dataset.dev;
+        document.querySelectorAll('[data-dev]').forEach(function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); });
+        fit();
+      });
+    });
+    function reload() {
+      var s = Array.prototype.map.call(document.querySelectorAll('[data-col]'), function (x) { return x.value; }).join(',');
+      location.href = location.pathname + '?s=' + encodeURIComponent(s) + '&pal=' + (document.getElementById('ownColors').checked ? '1' : '0');
+    }
+    document.querySelectorAll('[data-col]').forEach(function (x) { x.addEventListener('change', reload); });
+    document.getElementById('ownColors').addEventListener('change', reload);
+    fit();
+  })();
+  </script>
+</body>
+</html>

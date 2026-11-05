@@ -1,0 +1,24 @@
+<%# Adapted from Start Bootstrap Agency (MIT) portfolio grid: photo cards that wash over in the brand color with a plus on hover, a caption under each (only when the owner wrote one). Clicking opens the photo viewer. %>
+<section class="sg-lib" data-sg-section="gallery/portfolio">
+  <div class="bg-surface">
+    <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+      <div class="mx-auto max-w-3xl text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="text-sm font-medium tracking-wide text-primary uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="font-heading text-3xl font-bold tracking-wide text-ink uppercase sm:text-4xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="mt-3 text-lg text-pretty italic text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" data-lightbox data-sg-cards data-animate="stagger">
+        <% d.images.forEach(function (im) { %>
+          <figure class="group overflow-hidden rounded-md bg-page shadow-[var(--shadow-sm)]">
+            <div class="relative cursor-zoom-in overflow-hidden">
+              <img class="aspect-[4/3] w-full object-cover" src="<%= im.src %>" alt="<%= im.alt %>" loading="lazy">
+              <div class="pointer-events-none absolute inset-0 flex items-center justify-center bg-primary/90 text-on-primary opacity-0 transition-opacity duration-300 group-hover:opacity-100" aria-hidden="true"><svg class="size-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+            </div>
+            <% if (im.caption) { %><figcaption class="px-5 py-5 text-center font-heading text-lg font-bold text-ink"><%= im.caption %></figcaption><% } %>
+          </figure>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="mt-12 text-center"><a class="inline-block rounded-md bg-primary px-6 py-3 text-sm font-bold tracking-wider text-on-primary uppercase transition-opacity hover:opacity-90" href="<%= d.moreHref %>">See the full gallery</a></p><% } %>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,21 @@
+<%# Adapted from Meraki UI (MIT) marketing/testimonials "Single #2": one review on a wide brand-color panel, the reviewer's photo (when they gave one) standing over its edge. %>
+<% var r = d.items[0]; %>
+<section class="sg-lib" data-sg-section="testimonials/panel">
+  <div class="bg-page">
+    <div class="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+      <div data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="text-sm font-medium tracking-wide text-primary uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="font-heading text-3xl font-bold text-ink sm:text-4xl"><%= d.heading %></h2>
+      </div>
+      <div class="mt-10 <%= r.photo ? 'lg:relative lg:py-10' : '' %>" data-animate="fade-up">
+        <div class="rounded-xl bg-primary p-8 text-on-primary sm:p-10 <%= r.photo ? 'lg:ml-56 lg:pl-48' : '' %>">
+          <% if (r.rating) { %><p aria-label="<%= r.rating %> out of 5 stars"><%= "★".repeat(Math.round(r.rating)) %></p><% } %>
+          <blockquote class="mt-3 font-heading text-xl/relaxed text-pretty sm:text-2xl/relaxed">&ldquo;<%= r.quote %>&rdquo;</blockquote>
+          <p class="mt-6 font-semibold"><%= r.name %><% if (r.role) { %><span class="font-normal text-on-primary/80"> &middot; <%= r.role %></span><% } %></p>
+        </div>
+        <% if (r.photo) { %><img class="mx-auto -mt-6 size-40 rounded-xl object-cover shadow-[var(--shadow-md)] lg:absolute lg:inset-y-0 lg:left-12 lg:mt-0 lg:h-full lg:w-72" src="<%= r.photo %>" alt="" loading="lazy"><% } %>
+      </div>
+      <% if (d.moreHref) { %><p class="mt-8"><a class="font-medium text-primary underline-offset-4 hover:underline" href="<%= d.moreHref %>"><%= d.moreText || 'Read more reviews' %> &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

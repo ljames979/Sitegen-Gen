@@ -1,0 +1,23 @@
+<%# Adapted from HyperUI (MIT) marketing/pricing: only the prices the client gave us; the middle plan is highlighted when there are three. %>
+<section class="sg-lib" data-sg-section="pricing/cards">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="tw:mt-10 tw:grid tw:grid-cols-1 tw:items-stretch tw:gap-6 <%= ({ 1: 'tw:md:grid-cols-1', 2: 'tw:md:grid-cols-2', 3: 'tw:md:grid-cols-3' })[Math.min(d.items.length, 3)] %>" data-animate="stagger">
+        <% d.items.forEach(function (it, i) { var hi = d.items.length === 3 && i === 1; %>
+          <div class="tw:flex tw:flex-col tw:rounded-2xl tw:border tw:p-6 tw:sm:p-8 <%= hi ? 'tw:border-primary tw:shadow-[var(--shadow-md)] tw:bg-surface' : 'tw:border-line tw:bg-surface' %>">
+            <h3 class="tw:font-heading tw:text-lg tw:font-semibold tw:text-ink"><%= it.title %></h3>
+            <p class="tw:mt-3"><strong class="tw:font-heading tw:text-3xl tw:font-bold tw:text-primary tw:sm:text-4xl"><%= it.price %></strong></p>
+            <% if (it.description) { %><p class="tw:mt-3 tw:text-sm/relaxed tw:text-pretty tw:text-muted"><%= it.description %></p><% } %>
+            <div class="tw:flex-1"></div>
+            <a class="tw:mt-6 tw:inline-block tw:rounded-md tw:px-5 tw:py-3 tw:text-center tw:font-medium tw:transition-opacity tw:hover:opacity-90 <%= hi ? 'tw:bg-primary tw:text-on-primary' : 'tw:border tw:border-primary tw:text-primary' %>" href="<%= it.href %>">Get started</a>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,20 @@
+<%# Original layout (magazine: words in columns with a drop cap, a pull-quote from a real review and a small inset photo) %>
+<% var ims = (d.images || []).map(function (x) { return x && typeof x === 'object' ? x.src : x; }).filter(Boolean); if (!ims.length && d.image) ims = [d.image]; var alt = d.imageAlt || ((d.images || [])[0] || {}).alt || ''; %>
+<section class="sg-lib" data-sg-section="about/magazine">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <% if (d.heading) { %><h2 data-sg-head class="tw:font-heading tw:text-3xl tw:font-semibold tw:text-ink tw:sm:text-4xl" data-animate="fade-up"><%= d.heading %></h2><% } %>
+      <div class="sg-flip tw:mt-8 tw:grid tw:grid-cols-1 tw:gap-10 tw:lg:grid-cols-12" data-animate="fade-up">
+        <div class="tw:lg:col-span-8">
+          <% if (d.bodyFull || d.body) { %><p class="sg-dropcap tw:gap-10 tw:text-lg/relaxed tw:text-pretty tw:whitespace-pre-line tw:text-muted tw:md:columns-2"><%= d.bodyFull || d.body %></p><% } %>
+          <% if (d.moreHref) { %><a class="tw:mt-6 tw:inline-block tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">Learn more about us &rarr;</a><% } %>
+          <% if (d.buttonText && d.buttonHref) { %><p class="tw:mt-6"><a class="tw:inline-block tw:rounded-md tw:bg-primary tw:px-5 tw:py-3 tw:font-medium tw:text-on-primary tw:shadow-[var(--shadow-sm)] tw:transition-opacity tw:hover:opacity-90" href="<%= d.buttonHref %>"><%= d.buttonText %></a></p><% } %>
+        </div>
+        <aside class="tw:space-y-6 tw:lg:col-span-4">
+          <% if (ims.length) { %><img class="tw:aspect-[4/3] tw:w-full tw:rounded-xl tw:object-cover" src="<%= ims[0] %>" alt="<%= alt %>" loading="lazy"><% } %>
+          <% if (d.quote) { %><blockquote class="tw:border-l-4 tw:border-primary tw:pl-5"><p class="tw:font-heading tw:text-xl/snug tw:text-pretty tw:text-ink tw:italic">&ldquo;<%= d.quote.text %>&rdquo;</p><% if (d.quote.name) { %><footer class="tw:mt-2 tw:text-sm tw:text-muted">&mdash; <%= d.quote.name %></footer><% } %></blockquote><% } %>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,36 @@
+<%# Adapted from Start Bootstrap Grayscale (MIT) projects: the first service large with its words beside it, then each photo joined to a black panel of words with a short brand-color rule, sides swapping. A service without a photo gets the panel across the row. %>
+<% var first = d.items[0], rest = d.items.slice(1); %>
+<section class="sg-lib" data-sg-section="services/panels">
+  <div class="bg-surface">
+    <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+      <div class="mx-auto max-w-3xl text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="text-sm font-medium tracking-wide text-primary uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="font-heading text-3xl font-bold tracking-[.12em] text-ink uppercase sm:text-4xl"><%= d.heading %></h2>
+      </div>
+      <a class="group mt-12 grid items-center gap-6 lg:grid-cols-12 lg:gap-10" href="<%= first.href %>" data-animate="fade-up">
+        <% if (first.imageUrl) { %><img class="aspect-[16/10] w-full object-cover lg:col-span-8" src="<%= first.imageUrl %>" alt="<%= first.title %>" loading="lazy"><% } %>
+        <div class="text-center lg:text-left <%= first.imageUrl ? 'lg:col-span-4' : 'lg:col-span-12 lg:text-center' %>">
+          <h3 class="font-heading text-2xl font-bold tracking-[.08em] text-ink uppercase group-hover:underline"><%= first.title %></h3>
+          <% if (first.description) { %><p class="mt-3 text-pretty text-muted"><%= first.description %></p><% } %>
+          <% if (first.price) { %><p class="mt-3 text-sm font-bold text-ink"><%= first.price %></p><% } %>
+        </div>
+      </a>
+      <div class="mt-12" data-sg-cards data-animate="stagger">
+        <% rest.forEach(function (it, i) { var right = i % 2 === 1; %>
+          <a class="group grid <%= it.imageUrl ? 'md:grid-cols-2' : '' %>" href="<%= it.href %>">
+            <% if (it.imageUrl) { %><img class="aspect-[4/3] h-full w-full object-cover <%= right ? 'md:order-2' : '' %>" src="<%= it.imageUrl %>" alt="<%= it.title %>" loading="lazy"><% } %>
+            <div class="flex items-center bg-black p-8 sm:p-12">
+              <div class="w-full text-center <%= it.imageUrl ? (right ? 'md:text-right' : 'md:text-left') : '' %>">
+                <h3 class="font-heading text-xl font-bold tracking-[.08em] text-white uppercase group-hover:underline"><%= it.title %></h3>
+                <% if (it.description) { %><p class="mt-3 text-pretty text-white/60"><%= it.description %></p><% } %>
+                <% if (it.price) { %><p class="mt-3 text-sm font-bold text-white/80"><%= it.price %></p><% } %>
+                <hr class="mx-auto mt-5 h-1 w-16 border-0 bg-primary <%= it.imageUrl ? (right ? 'md:mr-0' : 'md:ml-0') : '' %>">
+              </div>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="mt-12 text-center"><a class="inline-block rounded-md bg-primary px-8 py-4 text-sm font-bold tracking-[.15em] text-on-primary uppercase transition-opacity hover:opacity-90" href="<%= d.moreHref %>">See all services</a></p><% } %>
+    </div>
+  </div>
+</section>

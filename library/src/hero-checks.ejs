@@ -1,0 +1,19 @@
+<%# Adapted from Meraki UI (MIT) marketing/heros "Image": headline and words beside a photo that runs to the edge of the screen, with a two-column check list (the owner's trust line and badges). %>
+<section class="sg-lib" data-sg-section="hero/checks">
+  <div class="relative overflow-hidden bg-page">
+    <div class="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:px-8 lg:py-24">
+      <div class="lg:pr-6">
+        <h1 class="font-heading text-4xl/tight font-bold tracking-wide text-ink sm:text-5xl/tight" data-animate="hero"><%- d.headlineHtml %></h1>
+        <% if (d.sub) { %><p class="mt-4 max-w-xl text-pretty text-muted sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+        <% if ((d.checks || []).length) { %><ul class="mt-7 grid gap-x-6 gap-y-4 sm:grid-cols-2" data-animate="hero">
+          <% d.checks.forEach(function (c) { %><li class="flex items-start gap-3 text-ink"><svg class="size-5 shrink-0 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span><%= c %></span></li><% }) %>
+        </ul><% } %>
+        <div class="mt-8 flex flex-wrap gap-3" data-animate="hero">
+          <a class="inline-block rounded-lg bg-primary px-6 py-3 text-sm font-medium tracking-wide text-on-primary uppercase transition-opacity hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+          <% if (d.phone) { %><a class="inline-block rounded-lg border border-line px-6 py-3 text-sm font-medium tracking-wide text-ink uppercase transition-colors hover:bg-surface" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+        </div>
+      </div>
+      <% if (d.image) { %><div class="lg:-mr-[max(2rem,calc((100vw-80rem)/2+2rem))]" data-animate="hero"><img class="h-72 w-full rounded-lg object-cover sm:h-96 lg:h-[30rem] lg:rounded-r-none" src="<%= d.image %>" alt="" fetchpriority="high" style="object-position: <%= d.focal %>"></div><% } %>
+    </div>
+  </div>
+</section>

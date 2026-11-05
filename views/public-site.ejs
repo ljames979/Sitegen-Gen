@@ -1,0 +1,1898 @@
+<% const eb = (k) => { const e = site.sections[k] && site.sections[k].eyebrow; return e ? '<p class="eyebrow">' + String(e).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) + '</p>' : ''; }; %><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <%- extraThemes.creditComment(extraThemes.byId[site.theme.style]) %>
+  <% const siteMeta = site.sections.meta || {};
+     const city = (siteMeta.city || '').trim();
+     const cityLocality = city.split(',')[0].trim();
+     const bizType = (siteMeta.businessType || '').trim();
+     const bizTypeCap = bizType ? bizType.charAt(0).toUpperCase() + bizType.slice(1) : '';
+     const locationLine = city ? (bizTypeCap ? `${bizTypeCap} in ${city}` : `Serving ${city}`) : '';
+     const isServicePage = page === 'service' && !!service;
+     const isThankYou = page === 'thank-you';
+     const isNotFound = page === 'notfound';
+     const isCalcPage = page === 'estimate' && calcLib.isUsable(site.sections.calculator);
+     const calcCfg = isCalcPage ? calcLib.normalize(site.sections.calculator) : null;
+     const isLegalPage = legalLib.PAGES.includes(page) && legalLib.enabled(site);
+     const legalDoc = isLegalPage ? legalLib.build(site)[page] : null;
+     const legalOn = legalLib.enabled(site);
+     const isReviewPage = page === 'review';
+     const isBookPage = page === 'book';
+     const isMembersPage = page === 'members';
+     const isAreaPage = page === 'area' && !!area;
+     const isPostPage = page === 'post' && !!post;
+     const isExtraPage = page === 'extra' && !!extra;
+     const firstChars = (t, n) => String(t || '').replace(/\s+/g, ' ').trim().slice(0, n);
+     const baseTitle = (site.sections.seo && site.sections.seo.title) || (city ? `${site.name} — ${locationLine}` : site.name);
+     const pageHeading = (page !== 'home' && !isServicePage && !isThankYou && !isReviewPage && !isBookPage && !isAreaPage && !isPostPage && !isExtraPage && site.sections[page] && site.sections[page].heading) ? site.sections[page].heading : null;
+     let fullTitle = baseTitle;
+     if (isServicePage) fullTitle = `${service.title}${city ? ' in ' + city : ''} — ${site.name}`;
+     else if (isThankYou) fullTitle = `Thank you — ${site.name}`;
+     else if (isNotFound) fullTitle = `Page not found — ${site.name}`;
+     else if (isCalcPage) fullTitle = `${calcCfg.heading} — ${site.name}`;
+     else if (isLegalPage) fullTitle = `${legalDoc.title} — ${site.name}`;
+     else if (isReviewPage) fullTitle = `Leave a review — ${site.name}`;
+     else if (isMembersPage) fullTitle = `${(site.sections.members && site.sections.members.title) || 'Members area'} — ${site.name}`;
+     else if (isBookPage) fullTitle = `${site.sections.booking.heading} — ${site.name}`;
+     else if (isAreaPage) fullTitle = `${bizTypeCap || 'Services'} in ${area.name} — ${site.name}`;
+     else if (isPostPage) fullTitle = `${post.title} — ${site.name}`;
+     else if (isExtraPage) fullTitle = `${extra.title} — ${site.name}`;
+     else if (pageHeading && page === 'services' && city) fullTitle = `${pageHeading} in ${city} — ${site.name}`;
+     else if (pageHeading) fullTitle = `${pageHeading} — ${site.name}${city && !site.name.toLowerCase().includes(cityLocality.toLowerCase()) ? ' | ' + city : ''}`;
+     let pageDescription = isAreaPage ? firstChars(area.text || `${site.name} serves ${area.name}.`, 155)
+       : isPostPage ? firstChars(post.body, 155) : isExtraPage ? firstChars(extra.body, 155) : isServicePage
+       ? [service.description, city ? `Serving ${city}.` : ''].filter(Boolean).join(' ').slice(0, 160)
+       : ((site.sections.seo && site.sections.seo.description) || '');
+     // titles and descriptions the owner wrote for this page win over the automatic ones
+     const pageSeo = ((site.sections.seo && site.sections.seo.pages) || {})[page] || {};
+     if (isServicePage) { if (service.seoTitle) fullTitle = service.seoTitle; if (service.seoDescription) pageDescription = service.seoDescription; }
+     else if (!isAreaPage && !isPostPage && !isExtraPage && !isNotFound) { if (pageSeo.title) fullTitle = pageSeo.title; if (pageSeo.description) pageDescription = pageSeo.description; }
+     // a service page with no text of its own would just repeat the services list
+     const noindexPage = isNotFound || !!pageSeo.noindex || isThankYou || isReviewPage || isMembersPage || (isBookPage && !!(bookingView && bookingView.mode !== 'form')) || (isAreaPage && !area.text) || (isServicePage && !service.detail);
+  %>
+  <title><%= fullTitle %></title>
+  <% if (pageDescription) { %>
+    <meta name="description" content="<%= pageDescription %>">
+  <% } %>
+  <%
+    const ldAbs = (u) => !u ? '' : /^https?:\/\//i.test(u) ? u : (typeof origin !== 'undefined' ? origin : '') + (u.startsWith('/') ? u : '/' + u);
+    const pageKey = (typeof page !== 'undefined') ? page : 'home';
+    const canonical = (typeof origin !== 'undefined' ? origin : '') + (pageKey === 'home' ? (basePath || '/') : isServicePage ? `${basePath}/services/${service.slug}` : isAreaPage ? `${basePath}/areas/${area.slug}` : isPostPage ? `${basePath}/blog/${post.slug}` : isExtraPage ? `${basePath}/p/${extra.slug}` : `${basePath}/${pageKey}`);
+    const shareImage = ldAbs((!isServicePage && !isAreaPage && !isPostPage && !isExtraPage && pageSeo.shareImage) || (site.sections.seo && site.sections.seo.shareImage) || site.sections.hero.imageUrl);
+    const seoDesc = pageDescription;
+    const ldInitial = ((site.name || '?').trim().charAt(0) || '?').toUpperCase();
+    const faviconSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='${site.theme.primaryColor}'/><text x='32' y='44' font-family='Arial,sans-serif' font-size='36' font-weight='700' text-anchor='middle' fill='white'>${ldInitial.replace(/[<>&'"]/g, '')}</text></svg>`;
+    const ldC = site.sections.contact;
+    const ldSocial = [ldC.social && ldC.social.facebook, ldC.social && ldC.social.instagram, ldC.social && ldC.social.twitter].filter(Boolean);
+    const ld = { '@context': 'https://schema.org', '@type': 'LocalBusiness', name: site.name, url: (typeof origin !== 'undefined' ? origin : '') + (basePath || '/') };
+    if (seoDesc) ld.description = seoDesc;
+    if (shareImage) ld.image = shareImage;
+    if (ldC.phone) ld.telephone = ldC.phone;
+    if (ldC.email) ld.email = ldC.email;
+    if (ldC.address || city) {
+      ld.address = { '@type': 'PostalAddress' };
+      if (ldC.address) ld.address.streetAddress = ldC.address;
+      const cp = city.split(',').map(x => x.trim()).filter(Boolean);
+      if (cp[0]) ld.address.addressLocality = cp[0];
+      if (cp[1]) ld.address.addressRegion = cp[1];
+    }
+    if (ldSocial.length) ld.sameAs = ldSocial;
+    { // opening hours: only rows we can read as a weekday plus a time range (anything else is left out rather than guessed)
+      const dayMap = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' };
+      const to24 = (t) => { const m = /^(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m?\.?$/i.exec(t.trim()); if (!m) return null; let h = +m[1] % 12; if (m[3].toLowerCase() === 'p') h += 12; return String(h).padStart(2, '0') + ':' + (m[2] || '00'); };
+      const specs = [];
+      ((site.sections.hours && site.sections.hours.items) || []).forEach(it => {
+        const d = dayMap[String(it.day || '').trim().slice(0, 3).toLowerCase()]; if (!d || String(it.day).trim().length > 10) return;
+        const parts = String(it.time || '').split(/\s*[–—-]\s*|\s+to\s+/i); if (parts.length !== 2) return;
+        const o = to24(parts[0]), c = to24(parts[1]); if (o && c) specs.push({ '@type': 'OpeningHoursSpecification', dayOfWeek: d, opens: o, closes: c });
+      });
+      if (specs.length) ld.openingHoursSpecification = specs;
+    }
+    const ldAreas = (site.sections.trust && site.sections.trust.serviceAreas) || [];
+    const ldAreaNames = [...new Set([...(city ? [city] : []), ...ldAreas])];
+    if (ldAreaNames.length) ld.areaServed = ldAreaNames.map(a => ({ '@type': 'Place', name: a }));
+  %>
+  <% if (preview || noindexPage) { %><meta name="robots" content="noindex"><% } %>
+  <link rel="canonical" href="<%= canonical %>">
+  <% if (site.theme.faviconUrl) { %><link rel="icon" href="<%= ldAbs(site.theme.faviconUrl) %>"><link rel="apple-touch-icon" href="<%= ldAbs(site.theme.touchIconUrl || site.theme.faviconUrl) %>"><% } else if (site.theme.logoUrl) { %><link rel="icon" href="<%= ldAbs(site.theme.logoUrl) %>"><link rel="apple-touch-icon" href="<%= ldAbs(site.theme.logoUrl) %>"><% } else { %>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<%= encodeURIComponent(faviconSvg) %>"> <% } %>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="<%= site.name %>">
+  <meta property="og:title" content="<%= fullTitle %>">
+  <meta property="og:url" content="<%= canonical %>">
+  <% if (seoDesc) { %><meta property="og:description" content="<%= seoDesc %>"><% } %>
+  <% if (shareImage) { %><meta property="og:image" content="<%= shareImage %>"><% } %>
+  <meta name="twitter:card" content="<%= shareImage ? 'summary_large_image' : 'summary' %>">
+  <script type="application/ld+json"><%- JSON.stringify(ld).replace(/</g, '\\u003c') %></script>
+  <% if (pageKey === 'faq' && site.sections.faq.items.length) { %>
+    <script type="application/ld+json"><%- JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: site.sections.faq.items.filter(q => q.question && q.answer).map(q => ({ '@type': 'Question', name: q.question, acceptedAnswer: { '@type': 'Answer', text: q.answer } })) }).replace(/</g, '\\u003c') %></script>
+  <% } %>
+  <% if (isPostPage) { %>
+    <script type="application/ld+json"><%- JSON.stringify(Object.assign({ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: post.title, author: { '@type': 'Organization', name: site.name } }, isNaN(Date.parse(post.date)) ? {} : { datePublished: new Date(post.date).toISOString().slice(0, 10) })).replace(/</g, '\\u003c') %></script>
+  <% } %>
+  <% if (isServicePage) { %>
+    <script type="application/ld+json"><%- JSON.stringify({ '@context': 'https://schema.org', '@type': 'Service', name: service.title, description: service.detail || service.description, provider: { '@type': 'LocalBusiness', name: site.name }, areaServed: ldAreaNames.map(a => ({ '@type': 'Place', name: a })) }).replace(/</g, '\\u003c') %></script>
+  <% } %>
+  <%# visitor tracking: only on live pages, only with IDs the owner entered (validated on save) %>
+  <% const trackingOn = !preview && !!(siteMeta.gaId || siteMeta.metaPixelId);
+     const trackingMode = siteMeta.trackingMode === 'always' ? 'always' : 'ask'; %>
+  <% if (trackingOn) { %>
+    <script>
+      (function () {
+        var GA = <%- JSON.stringify(siteMeta.gaId || '').replace(/</g, '\\u003c') %>, PX = <%- JSON.stringify(siteMeta.metaPixelId || '').replace(/</g, '\\u003c') %>, MODE = <%- JSON.stringify(trackingMode) %>;
+        function load() {
+          if (window.__trkLoaded) return; window.__trkLoaded = 1;
+          if (GA) {
+            var s = document.createElement('script'); s.async = 1; s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA; document.head.appendChild(s);
+            window.dataLayer = window.dataLayer || []; window.gtag = function () { dataLayer.push(arguments); };
+            gtag('js', new Date()); gtag('config', GA);
+          }
+          if (PX) {
+            !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+            fbq('init', PX); fbq('track', 'PageView');
+          }
+        }
+        window.__loadTracking = load;
+        var c = null; try { c = localStorage.getItem('trkConsent'); } catch (e) {}
+        if (MODE === 'always' || c === 'yes') load();
+      })();
+    </script>
+  <% } %>
+  <% const motionLevel = motionLib.resolve(site.theme, site.sections.hero); %>
+  <% const _pv0 = typeof preview !== 'undefined' && preview; const _t0 = typeof tierOverride !== 'undefined' ? tierOverride : '';
+     const mTier = (_pv0 && motionLib.isLevel(_t0)) ? _t0 : motionLib.resolveLevel(site.theme, site.sections.hero);
+     const mShader = motionLib.isShader(site.theme.motionShader) ? site.theme.motionShader : 'aurora';
+     const mPro = motionLevel !== 'none' && mTier !== 'standard';
+     const mIcons = mPro ? motionLib.iconsFor(libTemplateId(site)) : []; %>
+  <% const _sx = typeof staticExport !== 'undefined' && staticExport;
+     // Blueprint home layout: sections come from the section library (library/), chosen per industry
+     const bp = (page === 'home' && extraThemes.homeLayoutOf(site.theme) === 'blueprint') ? libPlan({
+       site, basePath, services, areas, navPages, templateId: libTemplateId(site),
+       visible: k => !((site.layout && site.layout.hidden) || []).includes(k),
+       nativeHero: !!(site.sections.hero.videoUrl || (site.sections.hero.slides || []).filter(Boolean).length)
+     }) : null;
+     // Style Library page: a Style Library style's own hero and sections, filled with the site's content (stylelib-page.js)
+     const slHome = (page === 'home' && extraThemes.homeLayoutOf(site.theme) === 'stylelib') ? slPage({
+       site, basePath, services, areas, navPages, preview: typeof preview !== 'undefined' && preview,
+       staticExport: _sx, netlifyForms: typeof netlifyForms !== 'undefined' && netlifyForms, still: motionLevel === 'none'
+     }) : null;
+     // Signature page: an Atelier piece's live artwork over the site's own content (atelier.js)
+     const atHome = (page === 'home' && !slHome && extraThemes.homeLayoutOf(site.theme) === 'atelier') ? atelierPage({
+       site, basePath, services, areas, navPages, preview: typeof preview !== 'undefined' && preview,
+       staticExport: _sx, netlifyForms: typeof netlifyForms !== 'undefined' && netlifyForms, still: motionLevel === 'none'
+     }) : null;
+     // Mix and match: blocks from the section library, Style Library and Signature pieces, in any order (mixpage.js)
+     const mixHome = (page === 'home' && !slHome && !atHome && extraThemes.homeLayoutOf(site.theme) === 'mix') ? mixPage({
+       site, basePath, services, areas, navPages, preview: typeof preview !== 'undefined' && preview,
+       staticExport: _sx, netlifyForms: typeof netlifyForms !== 'undefined' && netlifyForms, still: motionLevel === 'none'
+     }, site.theme.mix) : null;
+     const sigHome = slHome || atHome || mixHome;
+     // Image + Scrim hero: chosen in hero setup (or automatic for fitting industries), or as the blueprint's hero layout.
+     // It has its own Showcase motion (zoom and stars), so unlike the other library heroes it stays at that level.
+     const _bpH = bp ? bp.items.find(i => i.family === 'hero') : null;
+     // The Showcase strip hero (gliding photos and a proof bar) is chosen the same way and also keeps its own motion.
+     const _heroPick = (page === 'home' && !sigHome) ? scrimHero.resolve(site.sections.hero, (site.sections.meta && site.sections.meta.businessType) || '', libTemplateId(site)) : 'classic';
+     const scrimOn = ['scrim', 'showcase', 'scroll', 'shapes', 'blend'].includes(_heroPick);
+     let bpHero = (_bpH && (mTier !== 'showcase' || ['scrim', 'showcase', 'scroll', 'shapes', 'blend'].includes(_bpH.variant))) ? _bpH : null;   // Showcase draws its animated background on the site's own hero
+     if (scrimOn) {
+       const _hd = libHeroData({ site, basePath, services, areas, navPages, templateId: libTemplateId(site) });
+       if (_hd) bpHero = { family: 'hero', variant: _heroPick, id: 'hero/' + _heroPick, file: 'hero-' + _heroPick, d: _hd, opts: _bpH ? _bpH.opts : {} };
+     }
+     if (bpHero && bpHero.variant === 'scrim') bpHero.d.tier = motionLevel === 'none' ? 'standard' : mTier;
+     // the blended photo hero puts the header over its photo, whether it comes from the hero setup or is the first block of a Blocks page
+     const _mix0 = mixHome && mixHome.items[0] && mixHome.items[0].lib;
+     const blendTop = (bpHero && bpHero.variant === 'blend') || !!(_mix0 && _mix0.family === 'hero' && _mix0.variant === 'blend');
+     // a photo mosaic hero with its own menu, first on a Blocks home page, takes the whole screen: its menu is the menu at
+     // the top, and the site's menu bar stays out of sight until the visitor scrolls past it (then it slides in, sg-fx.js)
+     const _blkAll = ((site.sections.blocks && site.sections.blocks.items) || []).filter(b => !(b.id && ((site.layout && site.layout.hidden) || []).includes('blk:' + b.id)));
+     const _blkFirst = !mixHome ? null : mixHome.items.length ? (mixHome.items[0].blk ? _blkAll.find(b => b.id === mixHome.items[0].blk) : null)
+       : _blkAll.find(b => (b.place || 'bottom') === 'top' && (b.page || 'home') === 'home');
+     const mhTop = !!(_blkFirst && _blkFirst.type === 'mosaic' && _blkFirst.side === 'menu'); %>
+  <% // sections ticked under "Add a section" (the blueprint layout places them itself) and the owner's own sections
+     const _mixFams = mixHome ? mixHome.items.map(it => it.lib && it.lib.family).filter(Boolean) : [];
+     // a Word carousel collage content block uses the section library's stylesheet and script (collageblock.js)
+     const _clBlk = ((site.sections.blocks || {}).items || []).some(b => b.type === 'collage');
+     const _mixXfx = mixHome ? [...new Set(mixHome.items.flatMap(it => it.xfx || []))] : [];
+     const customTail = (page === 'home' && !bp) ? libCustoms({ site, basePath, services, areas, navPages, templateId: libTemplateId(site), visible: k => !((site.layout && site.layout.hidden) || []).includes(k) }).filter(i => i.family === 'custom' || !_mixFams.includes(i.family)) : []; %>
+  <% if (bp || customTail.length || bpHero) { %><link rel="stylesheet" href="<%= _sx ? '' : '/' %>sg-library.css"><% } %>
+  <% if (mixHome && mixHome.needs.lib && !(bp || customTail.length || bpHero)) { %><link rel="stylesheet" href="<%= _sx ? '' : '/' %>sg-library.css"><% } %>
+  <% if (_clBlk && !(bp || customTail.length || bpHero || (mixHome && mixHome.needs.lib))) { %><link rel="stylesheet" href="<%= _sx ? '' : '/' %>sg-library.css"><% } %>
+  <% if (slHome || (mixHome && mixHome.needs.sl)) { %><link rel="stylesheet" href="<%= _sx ? '' : '/' %>sg-stylelib.css"><% } %>
+  <% if (atHome || (mixHome && mixHome.needs.at)) { %><link rel="stylesheet" href="<%= _sx ? '' : '/' %>sg-atelier.css"><% } %>
+  <% if (mixHome && mixHome.css) { %><style><%- mixHome.css.replace(/<\//g, '<\\/') %></style><% } %>
+  <% if (mixHome && mixHome.arrange) { %><style id="sg-arrange"><%- mixHome.arrange %></style><% } %>
+  <% if (typeof bare !== 'undefined' && bare) { %><style>body.sg-bare>:not(main):not(script):not(style){display:none!important}body.sg-bare main>:not(.sg-mix){display:none!important}body.sg-bare{padding:0!important;margin:0!important}</style><% } %>
+  <% if (typeof calm !== 'undefined' && calm) { %><style id="sg-calm">*,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important;transition-duration:0s!important;transition-delay:0s!important}</style><script>setTimeout(function(){var s=document.getElementById('sg-calm');if(s)s.remove()},1500)</script><% } %>
+  <% if (!(typeof calm !== 'undefined' && calm) && (motionLevel !== 'none' || (typeof preview !== 'undefined' && preview))) { %><script>(function(d){try{if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;var h=d.documentElement;h.classList.add('sg-anim');setTimeout(function(){h.classList.remove('sg-anim')},3000)}catch(e){}})(document)</script><% } %>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <% const isSerif = site.theme.style === 'classic' || site.theme.style === 'editorial';
+     const isEditorial = site.theme.style === 'editorial';
+     const isMinimal = site.theme.style === 'minimal';
+     const isWarm = site.theme.style === 'warm';
+     const isMidnight = site.theme.style === 'midnight';
+     const isPoster = site.theme.style === 'poster';
+     const isAgency = site.theme.style === 'agency';
+     const extraTheme = extraThemes.byId[site.theme.style] || null;
+     const hexLum = (h) => { h = String(h || '').replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16) || 0; const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f((n >> 16) & 255) + 0.7152 * f((n >> 8) & 255) + 0.0722 * f(n & 255); };
+     const onPrimary = hexLum(site.theme.primaryColor) > 0.1916 ? '#111111' : '#ffffff'; // whichever contrasts more (same as contrast.textOn)
+     const primaryInk = hexLum(site.theme.primaryColor) <= 0.1833 ? site.theme.primaryColor : '#111111'; // brand color as text on white, when it reaches 4.5:1
+     const accEmoji = accentsLib.cleanEmoji(site.theme.emoji);
+     const accFirst = accEmoji.split(' ')[0] || '';
+     const heroFx = accentsLib.HERO_FLOATS.includes(site.sections.hero.float) ? site.sections.hero.float : '';
+     const layoutName = extraThemes.homeLayoutOf(site.theme);
+     const homeFull = layoutName !== 'basic';
+     const withPhotoIntro = ['story', 'showcase', 'split', 'trust', 'localpro'].includes(layoutName); // intro text sits beside the About photo
+     const rowsLayout = ['story', 'showcase'].includes(layoutName);
+     const tilesLayout = ['tiles', 'servicesfirst', 'photos'].includes(layoutName);
+     const listLayout = ['list', 'trust'].includes(layoutName);
+     const heroVariant = (extraTheme && extraTheme.hero) || 'center';
+     const baseInk = isAgency ? '#1f2a37' : isMidnight ? '#e8ecf3' : isPoster ? '#111111' : isEditorial ? '#1c2a3a' : isWarm ? '#3a2c22' : isMinimal ? '#171717' : '#0f172a';
+     const basePageBg = isMidnight ? '#0e1320' : isPoster ? '#fffdf5' : isEditorial ? '#fdfbf5' : isWarm ? '#fff8f0' : '#ffffff'; %>
+<% const hFont = fonts.cleanFontName(site.theme.headingFont), bFont = fonts.cleanFontName(site.theme.bodyFont);
+   const fontFamilies = ['Inter:wght@400;500;600;700;800'];
+   if (isAgency && !hFont) fontFamilies.push('Oswald:wght@400;500;600');
+   if (isSerif && !hFont) fontFamilies.push('Playfair+Display:wght@500;600;700');
+   if (isWarm && !hFont) fontFamilies.push('Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700');
+   if (blendTop || ((site.sections.blocks || {}).items || []).some(b => b.type === 'photoBanner' && /\[[^\]]+\]/.test(b.heading || ''))) fontFamilies.push('Instrument+Serif:ital@0;1');   // the italic words in the blended photo hero and photo banners
+   if (extraTheme && !hFont && extraTheme.heading.param && !fontFamilies.includes(extraTheme.heading.param)) fontFamilies.push(extraTheme.heading.param);
+   if (extraTheme && extraTheme.body && !bFont && extraTheme.body.param && !fontFamilies.includes(extraTheme.body.param)) fontFamilies.push(extraTheme.body.param);
+   if (mixHome) mixHome.fonts.forEach(f => { if (f && !fontFamilies.includes(f)) fontFamilies.push(f); });
+   const customFonts = [hFont, bFont].filter(Boolean).filter((n, i, a) => a.indexOf(n) === i);
+   const fontsHref = 'https://fonts.googleapis.com/css2?family=' + fontFamilies.join('&family=') + customFonts.map(n => '&' + fonts.familyParam(n)).join('') + '&display=swap'; %>
+  <%# fonts load without blocking the first paint; the system font shows meanwhile %>
+  <link rel="preload" as="style" href="<%= fontsHref %>" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="<%= fontsHref %>"></noscript>
+  <% if (page === 'home' && site.sections.hero.imageUrl) { %><link rel="preload" as="image" href="<%= site.sections.hero.imageUrl %>" fetchpriority="high"><% } %>
+  <style>
+    :root {
+      --primary: <%= site.theme.primaryColor %>;
+      --accent: <%= site.theme.accentColor %>;
+      --on-primary: <%= onPrimary %>;
+      --primary-ink: <%= primaryInk %>;
+      <% if (accFirst) { %>--emoji-q: "<%- accFirst %>";<% } %>
+      --ink: <%= baseInk %>;
+      --muted: <%= isAgency ? '#5b6573' : isMidnight ? '#9aa6b8' : isPoster ? '#4a4a4a' : isEditorial ? '#5b6a73' : isWarm ? '#746556' : isMinimal ? '#6b7280' : '#64748b' %>;
+      --page-bg: <%= basePageBg %>;
+      --surface: <%= isAgency ? '#f2f5fa' : isMidnight ? '#151c2c' : isPoster ? '#fff3c4' : isEditorial ? '#f2ede1' : isWarm ? '#fbeee0' : isMinimal ? '#fafafa' : '#f8fafc' %>;
+      --border: <%= isAgency ? '#dfe5ee' : isMidnight ? '#263047' : isPoster ? '#111111' : isEditorial ? '#e4ddc9' : isWarm ? '#f0ddc0' : isMinimal ? '#e5e5e5' : '#e6e9ee' %>;
+      --radius: <%= isAgency ? '4px' : isPoster ? '0px' : isMidnight ? '14px' : site.theme.style === 'split' ? '12px' : site.theme.style === 'classic' ? '6px' : isEditorial ? '14px' : isWarm ? '22px' : isMinimal ? '4px' : '16px' %>;
+      --radius-sm: <%= isAgency ? '3px' : isPoster ? '0px' : isMidnight ? '10px' : site.theme.style === 'split' ? '8px' : site.theme.style === 'classic' ? '4px' : isEditorial ? '10px' : isWarm ? '16px' : isMinimal ? '3px' : '10px' %>;
+      --shadow-sm: <%= isMidnight ? '0 1px 2px rgba(0,0,0,0.4)' : isPoster ? '4px 4px 0 #111' : isMinimal ? '0 0 0 rgba(0,0,0,0)' : isWarm ? '0 1px 3px rgba(89,61,34,0.10), 0 1px 4px rgba(89,61,34,0.08)' : '0 1px 2px rgba(15,23,42,0.06), 0 1px 3px rgba(15,23,42,0.08)' %>;
+      --shadow-md: <%= isMidnight ? '0 10px 30px rgba(0,0,0,0.45)' : isPoster ? '6px 6px 0 #111' : isMinimal ? '0 0 0 rgba(0,0,0,0)' : isWarm ? '0 10px 28px rgba(89,61,34,0.14), 0 3px 8px rgba(89,61,34,0.08)' : '0 8px 24px rgba(15,23,42,0.10), 0 2px 6px rgba(15,23,42,0.06)' %>;
+      --heading-font: <%- hFont ? fonts.cssFamily(hFont, 'Georgia, serif') : isAgency ? "'Oswald', 'Arial Narrow', Arial, sans-serif" : isSerif ? "'Playfair Display', Georgia, serif" : isWarm ? "'Fraunces', Georgia, serif" : site.theme.font %>;
+      --body-font: <%- bFont ? fonts.cssFamily(bFont, 'system-ui, sans-serif') : site.theme.font %>;
+      --btn-r: <%= isPoster ? '0' : site.theme.style === 'classic' ? '4px' : isMinimal ? '6px' : '999px' %>;
+    }
+    <% if (extraTheme) { %>
+    body.style-<%= extraTheme.id %> { <% Object.entries(extraTheme.vars).forEach(([k, v]) => { %><%- k %>: <%- v %>; <% }) %><% if (!hFont) { %>--heading-font: <%- extraTheme.heading.css %>;<% } %><% if (extraTheme.body && !bFont) { %> --body-font: <%- extraTheme.body.css %>;<% } %> }
+    <%- extraTheme.css.split('\n').map(l => l.trim() ? 'body.style-' + extraTheme.id + ' ' + l.trim().replace(/^([^{]+)\{/, (m, sel) => sel.split(',').map(x => x.trim()).join(', body.style-' + extraTheme.id + ' ') + ' {') : '').join('\n') %>
+    <% if (extraTheme.dark && /^#[0-9a-fA-F]{6}$/.test(site.theme.bgColor || '')) { %>body.style-<%= extraTheme.id %> { --page-bg: <%= site.theme.bgColor %>; }<% } %>
+    <% } %>
+    <% if (hFont && fonts.isSingleWeight(hFont)) { %>h1, h2, h3, nav.site-nav .brand, .footer-grid .brand, .trust-stat strong, .hero h1 { font-weight: 400 !important; letter-spacing: 0.01em; }<% } %>
+    <% if (site.theme.headingCase === 'uppercase') { %>h1, h2, h3, nav.site-nav .brand { text-transform: uppercase !important; }<% } else if (site.theme.headingCase === 'none') { %>h1, h2, h3, nav.site-nav .brand { text-transform: none !important; }<% } %>
+  </style>
+  <link rel="stylesheet" href="<%= _sx ? '' : '/' %>sg-site.css<%= _sx ? '' : '?v=' + siteCssV %>">
+  <script>/* one shared scroll listener: the page's effects hand it their work (sgOnScroll(fn)), and it runs them together once a frame while the page scrolls or resizes */window.sgOnScroll=function(){var f=[],r=0,run=function(){r=0;for(var i=0;i<f.length;i++)try{f[i]()}catch(e){}},ask=function(){if(!r)r=requestAnimationFrame(run)};addEventListener('scroll',ask,{passive:true});addEventListener('resize',ask);return function(fn){f.push(fn)}}();</script>
+  <%- include('_lookfeel-head', { site }) %>
+  <% const _cardCss = cardLayouts.css(site.theme); if (_cardCss) { %><style id="sg-cards"><%- _cardCss %></style><% } %>
+  <%- include('_motionfx-head', { site }) %>
+  <% if (site.theme.headerBg) { %><style><%- headerColor.css(site.theme) %></style><% } %>
+  <% const _gAll = [].concat(((site.sections.blocks || {}).items) || site.sections.blocks || []).filter(x => x), _gBlk = _gAll.filter(x => String(x.bg || '').startsWith('g-'));
+     const _gUsed = _gBlk.filter(x => !x.bgmix).map(x => [x.bg.slice(2), x.bgink || '', x.gx || '']), _gBlend = _gBlk.filter(x => x.bgmix).map(x => [x.bg.slice(2), gradients.blockMix(x), x.bgink || '', x.gx || '']);
+     const _gCards = _gAll.filter(x => x.cardbg).map(x => [x.cardbg, x.cardgx || '']); %>
+  <style id="sg-grad"><%- gradients.headCss(site.theme, (extraTheme && extraTheme.vars && extraTheme.vars['--page-bg']) || basePageBg, _gUsed, _gBlend, _gCards) %></style>
+  <% if (site.theme.nameFx) { %><style><%- nameFx.css(site.theme, nameFx.backgrounds(site.theme, extraTheme, { nav: headerColor.barColor(site.theme), pageBg: basePageBg, ink: baseInk, agency: isAgency, dark: site.theme.darkMode && !lookfeel.isDarkStyle(site.theme.style, extraTheme) ? lookfeel.darkPalette(site.theme.primaryColor, site.theme.accentColor)['--page-bg'] : '' })) %></style><% } %>
+</head>
+<body class="style-<%= site.theme.style %> layout-<%= layoutName %><%= (typeof bare !== 'undefined' && bare) ? ' sg-bare' : '' %> hero-<%= heroVariant %><%= site.theme.buttonShape ? ' btn-' + site.theme.buttonShape : '' %><%= site.theme.corners ? ' corners-' + site.theme.corners : '' %><%= site.theme.spacing ? ' space-' + site.theme.spacing : '' %><%= site.theme.headerLayout === 'centered' ? ' hdr-centered' : '' %><%= site.theme.hoverLift ? ' hover-lift' : '' %><%= ['large','xl'].includes(site.theme.headingScale) ? ' hs-' + site.theme.headingScale : '' %><%= site.theme.bands ? ' bands' : '' %><%= site.theme.doodles ? ' doodles' : '' %><%= (site.theme.emojiHeads && accFirst) ? ' emoji-heads' : '' %><%= site.theme.header === 'static' ? ' hdr-static' : '' %><%= site.theme.header === 'shrink' ? ' hdr-shrink' : '' %><%= ((site.theme.header === 'transparent' && page === 'home') || blendTop) ? ' hdr-transparent' : '' %><%= blendTop ? ' blend-top' : '' %><%= mhTop ? ' sg-mh-top' : '' %><%= headerColor.bodyClasses(site.theme) %><%= menuStyles.bodyClass(site.theme.menuStyle) %><%= site.sections.hero.overlay ? ' hero-ov' : '' %><%= site.sections.hero.align ? ' heroalign-' + site.sections.hero.align : '' %><%= (site.sections.contact.phone || (site.sections.contact.acceptSubmissions && !(typeof staticExport !== 'undefined' && staticExport))) ? ' has-mobile-bar' : '' %><%= lookfeel.bodyClasses(site.theme) %><%= motionFx.bodyClasses(site.theme) %><%= extraFx.bodyClasses(site.theme) %><%= gradients.bodyClasses(site.theme) %>" data-mtune="<%= JSON.stringify(motionFx.tune(site.theme)) %>"<% if (page === 'home' && site.sections.hero.rotate && motionFx.rotateWords(site.sections.services.items).length) { %> data-sg-rotate="<%= JSON.stringify({ prefix: site.sections.hero.rotatePrefix || '', words: motionFx.rotateWords(site.sections.services.items) }) %>"<% } %><% if (page === 'home' && site.sections.hero.highlight) { %> data-sg-hl="<%= JSON.stringify(site.sections.hero.highlight) %>"<% } %> data-motion="<%= motionLevel %>" data-motion-level="<%= mTier %>" data-shader="<%= mShader %>"<% if (typeof preview !== 'undefined' && preview && String(typeof basePath !== 'undefined' ? basePath : '').startsWith('/sites/')) { %> data-sg-pv="1"<% } %>>
+  <% const annB = site.sections.announcement || {}; if (annB.enabled && annB.text) { const annKey = (annB.text + '|' + annB.linkUrl).split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7); %>
+    <div class="ann-bar" id="annBar" data-key="<%= annKey %>" role="region" aria-label="Announcement">
+      <span><%= annB.text %></span><% if (annB.linkText && annB.linkUrl) { %><a href="<%= annB.linkUrl %>"><%= annB.linkText %></a><% } %>
+      <% if (annB.dismissible !== false) { %><button type="button" aria-label="Dismiss announcement" id="annClose">&times;</button><% } %>
+    </div>
+  <% } %>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <% const hidden = site.layout ? site.layout.hidden : [];
+     const visible = key => !hidden.includes(key);
+     const openWeek = site.sections.hours.openBadge && visible('hours') ? openHours.parse(site.sections.hours.items) : null; // "Open now" badge
+     const social = site.sections.contact.social || {};
+     const hasTopBar = visible('contact') && (site.sections.contact.phone || (isAgency && site.sections.contact.email) || social.facebook || social.instagram || social.twitter);
+     // Multi-page site: `page` ('home' or a section key) and `basePath` are
+     // passed in by the route. `navPages` is the precomputed, ordered list
+     // of {key, label, href} for every section that currently has its own
+     // page (hidden or empty-content sections are left out, same rule the
+     // server used to decide whether that page 404s if visited directly).
+     const homeHref = basePath || '/';
+     const pageIsAvail = (key) => navPages.some(p => p.key === key);
+     function whyIconPath(name) {
+       switch (name) {
+         case 'dollar': return '<path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>';
+         case 'shield': return '<path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"/>';
+         case 'clock': return '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>';
+         case 'people': return '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>';
+         case 'tools': return '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>';
+         case 'star': return '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>';
+         case 'truck': return '<rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>';
+         case 'leaf': return '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 11 13 11 10"/>';
+         case 'home': return '<path d="M3 9l9-7 9 7"/><path d="M9 22V12h6v10"/>';
+         default: return '<polyline points="20 6 9 17 4 12"/>'; // check
+       }
+     }
+     function socialIconPath(name) {
+       switch (name) {
+         case 'facebook': return '<path d="M15 3H12a5 5 0 0 0-5 5v3H4v4h3v8h4v-8h3l1-4h-4V8a1 1 0 0 1 1-1h3z"/>';
+         case 'instagram': return '<rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>';
+         case 'twitter': return '<path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/>';
+         default: return '';
+       }
+     }
+  %>
+  <% if (hasTopBar) { %>
+    <div class="top-bar">
+      <div class="wrap top-bar-inner">
+        <% if (site.sections.contact.phone) { %>
+          <a class="top-bar-phone" href="tel:<%= site.sections.contact.phone.replace(/[^0-9+]/g, '') %>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            Call us: <strong><%= site.sections.contact.phone %></strong>
+          </a>
+        <% } else { %><span></span><% } %>
+        <% if (openWeek) { %><span class="open-badge" id="sgOpen" hidden data-week="<%= JSON.stringify(openWeek) %>" data-tz="<%= site.sections.hours.timezone || site.sections.booking.timezone || '' %>"></span><% } %>
+        <% if (isAgency && site.sections.contact.email) { %><a class="top-bar-phone" href="mailto:<%= site.sections.contact.email %>">Email an agent</a><% } %>
+        <% if (social.facebook || social.instagram || social.twitter) { %>
+          <div class="top-bar-social">
+            <% ['facebook','instagram','twitter'].forEach(p => { if (social[p]) { %>
+              <a href="<%= social[p] %>" target="_blank" rel="noopener" aria-label="<%= p %>">
+                <svg viewBox="0 0 24 24" fill="currentColor"><%- socialIconPath(p) %></svg>
+              </a>
+            <% } }) %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+    <% if (blendTop) { %><script>(function () { var t = document.querySelector('.top-bar'); if (!t) return; var set = function () { document.body.style.setProperty('--tb-h', t.offsetHeight + 'px'); }; set(); if (window.ResizeObserver) new ResizeObserver(set).observe(t); })();</script><% } %>
+  <% } %>
+  <nav class="site-nav" id="siteNav">
+    <a class="brand" href="<%= homeHref %>">
+      <% if (site.theme.logoUrl) { %><img src="<%= site.theme.logoUrl %>" alt="<%= site.name %> logo"><% } %>
+      <span class="sg-name"><%= site.name %></span>
+    </a>
+    <div class="links">
+      <% const _mnu = menuStyles.clean(site.theme.menuStyle), _navShown = site.theme.hideMenu ? [] : navPages; %>
+      <% _navShown.forEach((p, _ni) => { %>
+        <a href="<%= p.href %>" class="<%= page === p.key || (page === 'service' && p.key === 'services') ? 'active' : '' %>"<% if (_mnu === 'split') { %> style="order: <%= menuStyles.splitOrder(_ni, _navShown.length) %>"<% } %>><%= p.label %></a>
+      <% }) %>
+      <% if (!hasTopBar) { %><% if (openWeek) { %><span class="open-badge" id="sgOpen" hidden data-week="<%= JSON.stringify(openWeek) %>" data-tz="<%= site.sections.hours.timezone || site.sections.booking.timezone || '' %>"></span><% } %><% } %>
+      <% if (site.theme.darkMode === 'toggle' && !lookfeel.isDarkStyle(site.theme.style, extraTheme)) { %><button type="button" class="lf-dark-btn" id="lfDark" aria-label="Switch to dark mode" aria-pressed="false"><svg class="lf-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="lf-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button><% } %>
+      <% const bookingOn = site.sections.booking.enabled && !(typeof staticExport !== 'undefined' && staticExport); %>
+      <% if (bookingOn) { %>
+        <a class="nav-cta" href="<%= basePath %>/book">Book Now</a>
+      <% } else if (visible('contact')) { %>
+        <% if (site.sections.contact.phone) { %><a class="nav-cta" href="tel:<%= site.sections.contact.phone.replace(/[^0-9+]/g, '') %>">Call Now</a>
+        <% } else { %><a class="nav-cta" href="<%= basePath %>/contact">Contact</a><% } %>
+      <% } %>
+    </div>
+    <% if (menuStyles.usesPanel(site.theme.menuStyle) && navPages.length && !site.theme.hideMenu) { %>
+    <button type="button" class="sg-mnu-btn" id="sgMnuBtn" aria-expanded="false" aria-controls="sgMnuPanel" aria-label="Open the menu"><span></span><span></span><span></span></button>
+    <div class="sg-mnu-panel" id="sgMnuPanel" hidden>
+      <button type="button" class="sg-mnu-close" aria-label="Close the menu">&times;</button>
+      <nav class="sg-mnu-links" aria-label="Menu"><% navPages.forEach(p => { %><a href="<%= p.href %>"<%- page === p.key ? ' aria-current="page"' : '' %>><%= p.label %></a><% }) %></nav>
+    </div>
+    <% } %>
+  </nav>
+
+  <main id="main">
+  <% const blkPage = ['about', 'services', 'testimonials', 'whyChoose', 'gallery', 'faq', 'blog', 'hours', 'contact'].includes(page) ? page : ''; %>
+  <% if (blkPage) { %><%- include('_blocks', { site, place: 'top', pageKey: blkPage }) %><% } %>
+  <% if (page === 'home' && mixHome) { %>
+    <%# the owner's own sections sit right after the block they chose ("Where it goes"), and blocks set near the top
+        sit right under the first block (the top banner); the rest follow at the end %>
+    <% const _mixFamsOn = mixHome.items.map(it => it.f);
+       const _csAt = i => i.family === 'custom' ? (i.after === 'top' ? 0 : _mixFamsOn.indexOf(i.after)) : -1;
+       const _csEnd = customTail.filter(i => i.family !== 'custom' || i.after === 'end' || _csAt(i) < 0);
+       // content blocks that are blocks of this page are drawn in their spot, not again at the top or bottom
+       const _mixBlk = ((site.theme && site.theme.mix) || []).filter(m => m && m.k === 'blk').map(m => m.v); %>
+    <% mixHome.items.forEach((it, n) => { const _pin = pinFx.attrs(it.pin), _film = filmFx.attrs(it.film, site.theme), _ix = imgFx.attrs(it.imgfx), _ht = heightFx.attrs(it.height), _gl = glassFx.attrs(it.glass); %><div class="sg-mix<%= _pin.cls %><%= _film.cls %><%= _ix.cls %><%= _ht.cls %><%= _gl.cls %>" data-mix-i="<%= it.i %>" data-mix-f="<%= it.f %>"<% if (it.xfx) { %> data-xfx="<%= it.xfx.join(' ') %>"<% } %><% if (_pin.style || _film.style || _ht.style) { %> style="<%= [_pin.style, _film.style, _ht.style].filter(Boolean).join(' ') %>"<% } %>><% if (it.lib) { %><%- include('_lib-section', { item: it.lib }) %><% } else if (it.blk) { %><%- include('_blocks', { site, only: it.blk }) %><% } else { %><%- it.html %><% } %></div>
+    <% if (n === 0) { %><%- include('_blocks', { site, place: 'top', skipIds: _mixBlk }) %><% } %>
+    <% customTail.filter(i => i.after !== 'end' && _csAt(i) === n).forEach(i => { %><%- include('_lib-section', { item: i }) %>
+    <% }) %>
+    <% }) %>
+    <% if (!mixHome.items.length && !_blkFirst && typeof preview !== 'undefined' && preview) { %><section class="sg-mix-empty" style="padding:4rem 1rem;text-align:center;opacity:.7">This block has nothing to show yet: add the content it needs in the editor.</section><% } %>
+    <% if (!mixHome.items.length) { %><%- include('_blocks', { site, place: 'top', skipIds: _mixBlk }) %><% } %>
+    <% _csEnd.forEach(i => { %><%- include('_lib-section', { item: i }) %>
+    <% }) %>
+    <%- include('_blocks', { site, place: 'bottom', skipIds: _mixBlk }) %>
+  <% } else if (page === 'home' && sigHome) { %>
+    <%- sigHome.html %>
+    <%- include('_blocks', { site, place: 'top' }) %>
+    <% customTail.forEach(i => { %><%- include('_lib-section', { item: i }) %>
+    <% }) %>
+    <%- include('_blocks', { site, place: 'bottom' }) %>
+  <% } else if (page === 'home') { %>
+    <% const hv = site.sections.hero.videoUrl ? videoInfo(site.sections.hero.videoUrl) : null; const hvOn = !!(hv && hv.kind === 'file' && site.sections.hero.imageUrl); const hOv = parseInt(site.sections.hero.overlay, 10) || 0; %>
+    <% if (bpHero) { %><%- include('_lib-section', { item: bpHero }) %><% } else { %>
+    <div class="hero<%= site.sections.hero.edge === 'wave' || site.sections.hero.edge === 'scallop' ? ' edge-' + site.sections.hero.edge : '' %>" id="hero" style="--fx: <%= +site.sections.hero.focalX >= 0 ? +site.sections.hero.focalX : 50 %>%; --fy: <%= +site.sections.hero.focalY >= 0 ? +site.sections.hero.focalY : 50 %>%;<% if (hOv) { %> --ov-b: <%= (hOv / 100).toFixed(2) %>; --ov-t: <%= (hOv / 200).toFixed(2) %>;<% } %>">
+      <% if (site.sections.hero.imageUrl) { %>
+        <div class="hero-bg" id="heroBg" data-animate="scene" style="--hero-photo: url('<%= site.sections.hero.imageUrl %>')" data-hero-photo="<%= site.sections.hero.imageUrl %>"></div>
+        <% const heroSlides = (site.sections.hero.slides || []).filter(Boolean); %>
+        <% if (heroSlides.length) { %>
+          <% heroSlides.forEach(u => { %><div class="hero-bg hero-slide" data-photo="<%= u %>" aria-hidden="true"></div><% }) %>
+          <div class="hero-controls">
+            <button type="button" class="hero-prev" aria-label="Previous photo">&lsaquo;</button>
+            <button type="button" class="hero-next" aria-label="Next photo">&rsaquo;</button>
+          </div>
+        <% } %>
+      <% } else { %>
+        <div class="hero-bg pattern"></div>
+      <% } %>
+      <% if (hvOn) { %><video class="hero-video" autoplay muted loop playsinline preload="metadata" aria-hidden="true" tabindex="-1" src="<%= hv.src %>"></video><div class="hero-vov"></div><% } %>
+      <% if (heroFx) { %><canvas class="hero-fx" aria-hidden="true" data-fx="<%= heroFx %>" data-emoji="<%= accEmoji || '✨' %>" data-colors="#ffffff,<%= site.theme.primaryColor %>,<%= site.theme.accentColor %>"></canvas><% } %>
+      <div class="hero-inner">
+        <% if (mIcons[0]) { %><div data-animate="fade-up"><span class="sg-lottie" data-lottie="<%= mIcons[0] %>" aria-hidden="true"></span></div><% } %>
+        <% if (locationLine) { %><div class="hero-eyebrow" data-animate="fade-up"><%= locationLine %></div><% } %>
+        <h1 data-animate="hero"><%- hlHtml(site.sections.hero.headline) %></h1>
+        <p data-animate="fade-up" data-delay="0.15"><%= site.sections.hero.subheadline %></p>
+        <% if (site.sections.hero.ctaText) { %>
+          <a class="btn" data-animate="fade-up" data-delay="0.25" href="<%= site.sections.hero.ctaLink && site.sections.hero.ctaLink !== '#contact' ? site.sections.hero.ctaLink : (basePath + '/contact') %>"><%= site.sections.hero.ctaText %></a>
+        <% } %>
+        <% const trustItems = (site.sections.hero.trustText || '').split('•').map(s => s.trim()).filter(Boolean); %>
+        <% if (trustItems.length) { %>
+          <ul class="hero-trust" data-animate="fade-up" data-delay="0.35">
+            <% trustItems.forEach(item => { %>
+              <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><%= item %></li>
+            <% }) %>
+          </ul>
+        <% } %>
+      </div>
+      <%- include('_stickers', { list: site.sections.hero.stickers }) %>
+    </div>
+    <% } %>
+    <% if (page === 'home' && site.sections.hero.quickLinks) {
+         const qlStatic = typeof staticExport !== 'undefined' && staticExport;
+         const qlItems = [];
+         const navHref = (k) => { const p = navPages.find(x => x.key === k); return p ? p.href : ''; };
+         if (site.sections.booking && site.sections.booking.enabled && !qlStatic) qlItems.push(['Book', basePath + '/book']);
+         if (navHref('services')) qlItems.push(['Services', navHref('services')]);
+         if (navHref('about')) qlItems.push(['About', navHref('about')]);
+         if (navHref('testimonials')) qlItems.push(['Reviews', navHref('testimonials')]);
+         if (site.sections.contact.homeMap && (site.sections.contact.address || (site.sections.trust && site.sections.trust.serviceAreas && site.sections.trust.serviceAreas.length))) qlItems.push(['Location', '#where-we-work']);
+         if (navHref('contact')) qlItems.push(['Contact', navHref('contact')]);
+         if (qlItems.length) { %>
+      <nav class="quick-links" aria-label="Jump to"><% qlItems.slice(0, 6).forEach(q => { %><a href="<%= q[1] %>"><%= q[0] %></a><% }) %></nav>
+    <% } } %>
+    <% const heroCards = (bpHero && bpHero.variant === 'scrim') ? [] : (site.sections.hero.cards || []).filter(c => c.title); %>
+    <% if (heroCards.length) { %>
+      <section class="hero-cards-wrap">
+        <div class="hero-cards n<%= heroCards.length %>">
+          <% heroCards.forEach(c => { %>
+            <div class="hero-card">
+              <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><%- icons.iconPath(c.title, '') %></svg>
+              <strong><%= c.title %></strong>
+              <% if (c.text) { %><p><%= c.text %></p><% } %>
+            </div>
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+    <% if (layoutName === 'full' && visible('services') && services.length) { %>
+      <nav class="home-tiles" aria-label="Services">
+        <% services.slice(0, 8).forEach((sv, i, arr) => { %>
+          <a class="home-tile" style="--t: <%= arr.length > 1 ? (i / (arr.length - 1)).toFixed(2) : 0 %>" href="<%= basePath %>/services/<%= sv.slug %>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><%- icons.iconPath(sv.title, sv.icon) %></svg>
+            <span><%= sv.title %></span>
+          </a>
+        <% }) %>
+      </nav>
+    <% } %>
+    <%- include('_blocks', { site, place: 'top' }) %>
+    <% if (bp) { %>
+      <% bp.items.filter(i => i.family !== 'hero').forEach(i => { %><%- include('_lib-section', { item: i, icon: i.family === 'services' ? (mIcons[1] || '') : '' }) %>
+      <% }) %>
+    <% } else { %>
+    <% const T = site.sections.trust || { badges: [], stats: [], serviceAreas: [], googleReviewsUrl: '' }; %>
+    <% if (T.badges.length || T.stats.length || T.googleReviewsUrl) { %>
+      <section class="trust-strip">
+        <div class="trust-strip-inner" data-animate="stagger">
+          <% T.stats.forEach(st => { %>
+            <div class="trust-stat"><strong<%- motionLib.countAttrs(st.value) %>><%= st.value %></strong><span><%= st.label %></span></div>
+          <% }) %>
+          <% if (T.badges.length) { %>
+            <div class="trust-badges">
+              <% T.badges.forEach(bd => { %>
+                <span class="trust-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg><%= bd %></span>
+              <% }) %>
+            </div>
+          <% } %>
+          <% if (T.googleReviewsUrl) { %>
+            <a class="btn-google" href="<%= T.googleReviewsUrl %>" target="_blank" rel="noopener">&#9733; Read our Google reviews</a>
+          <% } %>
+        </div>
+      </section>
+    <% } %>
+    <% const logoList = (T.logos || []).filter(l => l.imageUrl); %>
+    <% if (logoList.length) { %>
+      <section class="logo-strip">
+        <% if (T.logosHeading) { %><h2><%= T.logosHeading %></h2><% } %>
+        <div class="logo-row" data-animate="fade-up">
+          <% logoList.forEach(l => { %><img src="<%= l.imageUrl %>" alt="<%= l.label || 'Logo' %>" loading="lazy" decoding="async"><% }) %>
+        </div>
+      </section>
+    <% } %>
+    <% if (homeFull) { %>
+      <% const aboutText = (site.sections.about.body || '').trim(); %>
+      <% if (visible('about') && aboutText && !['servicesfirst', 'photos'].includes(layoutName)) { %>
+        <section class="home-intro<%= withPhotoIntro && site.sections.about.imageUrl ? ' with-photo' : '' %>">
+          <% if (withPhotoIntro && site.sections.about.imageUrl) { %><div class="intro-photo" data-animate="fade-up"><img src="<%= site.sections.about.imageUrl %>" alt="<%= site.sections.about.imageAlt || site.name %>" loading="lazy" decoding="async"></div><% } %>
+          <div class="intro-text">
+          <div class="section-head" data-animate="fade-up"><div class="rule"></div><%- eb('about') %><h2><%= site.sections.about.heading %></h2></div>
+          <p data-animate="fade-up"><%= aboutText.length > 480 ? aboutText.slice(0, 480).replace(/\s+\S*$/, '') + '…' : aboutText %></p>
+          <% if (navPages.some(p => p.key === 'about')) { %><p class="more"><a href="<%= basePath %>/about">Learn more about us &rarr;</a></p><% } %>
+          </div>
+        </section>
+      <% } %>
+      <% if (visible('services') && services.length) { %>
+        <section class="home-services">
+          <div class="section-head" data-animate="fade-up"><% if (mIcons[1]) { %><span class="sg-lottie sm" data-lottie="<%= mIcons[1] %>" aria-hidden="true"></span><% } %><div class="rule"></div><%- eb('services') %><h2><%= site.sections.services.heading %></h2></div>
+          <% if (rowsLayout) { %>
+          <div class="svc-rows">
+            <% services.slice(0, 6).forEach((sv, i) => { %>
+              <div class="svc-row<%= i % 2 ? ' flip' : '' %>" data-animate="fade-up">
+                <a class="pic" href="<%= basePath %>/services/<%= sv.slug %>" aria-hidden="true" tabindex="-1">
+                  <% if (sv.imageUrl) { %><img src="<%= sv.imageUrl %>" alt="" loading="lazy" decoding="async"><% } else { %><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><%- icons.iconPath(sv.title, sv.icon) %></svg><% } %>
+                </a>
+                <div class="txt"><h3><%= sv.title %></h3><p><%= sv.description %></p><a class="more" href="<%= basePath %>/services/<%= sv.slug %>">Read more &rarr;</a></div>
+              </div>
+            <% }) %>
+          </div>
+          <% } else if (tilesLayout) { %>
+          <div class="svc-tiles n<%= Math.min(services.length, 6) %>">
+            <% services.slice(0, 6).forEach(sv => { %>
+              <a class="svc-tile" href="<%= basePath %>/services/<%= sv.slug %>" data-animate="fade-up">
+                <% if (sv.imageUrl) { %><img src="<%= sv.imageUrl %>" alt="" loading="lazy" decoding="async"><% } else { %><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><%- icons.iconPath(sv.title, sv.icon) %></svg><% } %>
+                <span class="cap"><strong><%= sv.title %></strong><em><%= sv.description %></em></span>
+              </a>
+            <% }) %>
+          </div>
+          <% } else if (listLayout) { %>
+          <ol class="svc-list">
+            <% services.slice(0, 8).forEach((sv, i) => { %>
+              <li data-animate="fade-up"><a href="<%= basePath %>/services/<%= sv.slug %>"><span class="n"><%= String(i + 1).padStart(2, '0') %></span><span class="t"><strong><%= sv.title %></strong><em><%= sv.description %></em></span><span class="go" aria-hidden="true">&rarr;</span></a></li>
+            <% }) %>
+          </ol>
+          <% } else { %>
+          <div class="home-svc-grid" data-sg-cards="services">
+            <% services.slice(0, 6).forEach(sv => { %>
+              <div class="home-svc" data-animate="fade-up">
+                <a class="pic" href="<%= basePath %>/services/<%= sv.slug %>" aria-hidden="true" tabindex="-1">
+                  <% if (sv.imageUrl) { %><img src="<%= sv.imageUrl %>" alt="" loading="lazy" decoding="async"><% } else { %><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><%- icons.iconPath(sv.title, sv.icon) %></svg><% } %>
+                </a>
+                <h3><%= sv.title %></h3>
+                <p><%= sv.description %></p>
+                <a class="more" href="<%= basePath %>/services/<%= sv.slug %>">Read more</a>
+              </div>
+            <% }) %>
+          </div>
+          <% } %>
+        </section>
+      <% } %>
+      <% const revs = (site.sections.testimonials.items || []).filter(r => r.quote); %>
+      <% const gHome = (typeof googleData !== 'undefined' && googleData); %>
+      <% if (visible('testimonials') && (revs.length || (gHome && gHome.showReviews))) { %>
+        <% const rated = revs.filter(r => r.rating); const avg = rated.length ? rated.reduce((a, r) => a + r.rating, 0) / rated.length : 0; %>
+        <section class="home-reviews">
+          <div class="section-head" data-animate="fade-up"><div class="rule"></div><%- eb('testimonials') %><h2><%= site.sections.testimonials.heading %></h2></div>
+          <%- include('_google-reviews') %>
+          <% if (rated.length) { %>
+            <div class="rating-box" data-animate="fade-up">
+              <strong><%= site.name %></strong>
+              <div class="big-stars" aria-hidden="true"><%= '★'.repeat(Math.round(avg)) %></div>
+              <div class="score"><%= avg.toFixed(1) %> out of 5 stars</div>
+              <div class="count"><%= rated.length %> review<%= rated.length === 1 ? '' : 's' %> shown on this site</div>
+              <% if (!(typeof staticExport !== 'undefined' && staticExport)) { %><a class="btn" href="<%= basePath %>/review">Write a review</a><% } %>
+            </div>
+          <% } %>
+          <% const hWall = site.sections.testimonials.display === 'wall' && revs.length >= 4; %>
+          <% if (hWall) { %><%- include('_review-wall', { items: revs.slice(0, 16) }) %><% } else { %>
+          <% const hCar = site.sections.testimonials.display === 'carousel'; %>
+          <% if (hCar) { %><div class="strip-wrap"><button type="button" class="strip-btn prev" aria-label="Previous reviews">&lsaquo;</button><% } %>
+          <div class="<%= hCar ? 'strip t-carousel' : 'review-row' %>"<%- hCar ? '' : ' data-sg-cards="testimonials"' %><%- hCar ? ' tabindex="0"' : '' %>>
+            <% revs.slice(0, hCar ? 12 : 5).forEach(r => { %>
+              <div class="review-card" data-animate="fade-up">
+                <div class="who"><%= r.author || 'Customer' %></div>
+                <% if (r.rating) { %><div class="stars"><%= '★'.repeat(r.rating) %><span class="stars-empty"><%= '★'.repeat(5 - r.rating) %></span></div><% } %>
+                <p><%= r.quote %></p>
+                <% if (r.date) { %><div class="when"><%= r.date %></div><% } %>
+              </div>
+            <% }) %>
+          </div>
+          <% if (hCar) { %><button type="button" class="strip-btn next" aria-label="Next reviews">&rsaquo;</button></div><% } %>
+          <% } %>
+          <p class="all">
+            <% if (navPages.some(p => p.key === 'testimonials')) { %><a class="btn" href="<%= basePath %>/testimonials">View all reviews</a><% } %>
+            <% if (site.sections.trust && site.sections.trust.googleReviewsUrl) { %> <a class="btn-google" href="<%= site.sections.trust.googleReviewsUrl %>" target="_blank" rel="noopener">&#9733; Read more on Google</a><% } %>
+          </p>
+        </section>
+      <% } %>
+      <% if (layoutName === 'localpro') { %>
+        <% const lpWhy = (site.sections.whyChoose.items || []).filter(i => i.title || i.text).slice(0, 4); %>
+        <% if (visible('whyChoose') && lpWhy.length) { %>
+          <section class="lp-why">
+            <div class="section-head" data-animate="fade-up"><div class="rule"></div><%- eb('whyChoose') %><h2><%= site.sections.whyChoose.heading %></h2></div>
+            <div class="lp-why-grid n<%= lpWhy.length %>" data-sg-cards="why" data-animate="stagger">
+              <% lpWhy.forEach(item => { %>
+                <div class="lp-why-card">
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><%- whyIconPath(item.icon) %></svg>
+                  <% if (item.title) { %><h3><%= item.title %></h3><% } %>
+                  <% if (item.text) { %><p><%= item.text %></p><% } %>
+                </div>
+              <% }) %>
+            </div>
+          </section>
+        <% } %>
+        <% const lpFaq = ((site.sections.faq || {}).items || []).filter(f => f.question && f.answer).slice(0, 5); %>
+        <% if (visible('faq') && lpFaq.length) { %>
+          <section class="lp-faq">
+            <div class="section-head" data-animate="fade-up"><div class="rule"></div><%- eb('faq') %><h2><%= site.sections.faq.heading %></h2></div>
+            <div class="faq-list">
+              <% lpFaq.forEach((item, i) => { %><details class="faq-item" data-animate="fade-up"><summary><%= item.question %></summary><p><%= item.answer %></p></details><% }) %>
+            </div>
+          </section>
+        <% } %>
+        <% const lpAreas = (site.sections.trust && site.sections.trust.serviceAreas) || []; %>
+        <% if (lpAreas.length) { %>
+          <section class="lp-areas">
+            <div class="section-head" data-animate="fade-up"><div class="rule"></div><h2>Areas we serve</h2></div>
+            <div class="area-chips" style="justify-content:center;"><% lpAreas.slice(0, 30).forEach(a => { %><span class="area-chip"><%= a %></span><% }) %></div>
+          </section>
+        <% } %>
+        <% if (!(typeof staticExport !== 'undefined' && staticExport) && site.sections.contact.acceptSubmissions) { %>
+          <section class="lp-quote">
+            <div class="section-head" data-animate="fade-up"><div class="rule"></div><h2>Get a free quote</h2></div>
+            <%- include('_quote-card', { site, basePath, preview, services, visible, subject: 'Home page', selected: '', staticExport: false }) %>
+          </section>
+        <% } %>
+      <% } %>
+    <% } %>
+    <% if (site.sections.gallery.images.length >= 1) { %>
+      <section class="featured-row<%= layoutName === 'photos' ? ' featured-big' : '' %>">
+        <div class="wrap featured-grid">
+          <% site.sections.gallery.images.slice(0, layoutName === 'photos' ? 6 : 2).forEach(img => { %>
+            <div class="featured-frame"><img src="<%= img %>" alt="<%= site.name %>" loading="lazy" decoding="async"></div>
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+    <% } %>
+    <% customTail.forEach(i => { %><%- include('_lib-section', { item: i }) %>
+    <% }) %>
+
+    <% const hmAreas = (site.sections.trust && site.sections.trust.serviceAreas) || []; %>
+    <% if (site.sections.contact.homeMap && (site.sections.contact.address || hmAreas.length)) { %>
+      <section class="home-location" id="where-we-work">
+        <div class="loc-grid">
+          <div class="loc-text" data-animate="fade-up">
+            <div class="section-head left"><div class="rule"></div><h2>Where We Work</h2></div>
+            <% if (locationLine) { %><p><%= locationLine %></p><% } %>
+            <% if (site.sections.contact.address) { %><p><%= site.sections.contact.address %></p><% } %>
+            <% if (hmAreas.length) { %><div class="area-chips"><% areas.forEach(a => { %><% if (a.text) { %><a class="area-chip" href="<%= basePath %>/areas/<%= a.slug %>"><%= a.name %></a><% } else { %><span class="area-chip"><%= a.name %></span><% } %><% }) %></div><% } %>
+          </div>
+          <% if (!(typeof staticExport !== 'undefined' && staticExport)) { %>
+          <div class="loc-map" data-animate="fade-up"><iframe loading="lazy" title="Map of the area we serve" src="https://maps.google.com/maps?q=<%= encodeURIComponent(site.sections.contact.address || (hmAreas[0] + (city ? ', ' + city : ''))) %>&amp;output=embed"></iframe></div>
+          <% } %>
+        </div>
+      </section>
+    <% } %>
+    <%- include('_blocks', { site, place: 'bottom' }) %>
+
+  <% } else if (page === 'about') { %>
+    <section class="block" id="<%= page %>">
+      <div class="wrap">
+        <% if (site.sections.about.imageUrl) { %>
+          <div class="about-split">
+            <div class="about-split-photo" data-img-wrap>
+              <img src="<%= site.sections.about.imageUrl %>" alt="<%= site.sections.about.imageAlt || site.name %>" loading="lazy" decoding="async" data-fallback-hide>
+            </div>
+            <div class="about-split-text">
+              <div class="section-head left">
+                <div class="rule"></div>
+                <%- eb('about') %><h2><%= site.sections.about.heading %></h2>
+              </div>
+              <p class="about-body"><%= site.sections.about.body %></p>
+            </div>
+          </div>
+        <% } else { %>
+          <div class="section-head" data-animate="fade-up">
+            <div class="rule"></div>
+            <%- eb('about') %><h2><%= site.sections.about.heading %></h2>
+          </div>
+          <p class="about-body" data-animate="fade-up"><%= site.sections.about.body %></p>
+        <% } %>
+      </div>
+    </section>
+    <% const aboutAreas = areas || []; %>
+    <% if (aboutAreas.length) { %>
+      <section class="block" id="service-area" style="padding-top:0;">
+        <div class="wrap">
+          <div class="section-head" data-animate="fade-up">
+            <div class="rule"></div>
+            <h2>Areas We Serve</h2>
+          </div>
+          <div class="area-chips" data-animate="fade-up">
+            <% aboutAreas.forEach(a => { %>
+              <% if (a.text) { %><a class="area-chip" href="<%= basePath %>/areas/<%= a.slug %>"><%= a.name %></a><% } else { %><span class="area-chip"><%= a.name %></span><% } %>
+            <% }) %>
+          </div>
+        </div>
+      </section>
+    <% } %>
+
+  <% } else if (page === 'services') { %>
+    <section class="block" id="<%= page %>">
+      <div class="wrap">
+        <div class="section-head" data-animate="fade-up">
+          <div class="rule"></div>
+          <%- eb('services') %><h2><%= site.sections.services.heading %></h2>
+          <% if (locationLine) { %><p class="section-sub"><%= locationLine %></p><% } %>
+        </div>
+        <% if (rowsLayout) { %>
+          <div class="svc-rows">
+            <% services.forEach((sv, i) => { %>
+              <div class="svc-row<%= i % 2 ? ' flip' : '' %>" data-animate="fade-up">
+                <a class="pic" href="<%= basePath %>/services/<%= sv.slug %>" aria-hidden="true" tabindex="-1">
+                  <% if (sv.imageUrl) { %><img src="<%= sv.imageUrl %>" alt="" loading="lazy" decoding="async"><% } else { %><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><%- icons.iconPath(sv.title, sv.icon) %></svg><% } %>
+                </a>
+                <div class="txt"><h3><%= sv.title %></h3><p><%= sv.description %></p><a class="more" href="<%= basePath %>/services/<%= sv.slug %>">Read more &rarr;</a></div>
+              </div>
+            <% }) %>
+          </div>
+        <% } else if (layoutName === 'tiles') { %>
+          <div class="svc-tiles n<%= Math.min(services.length, 6) %>">
+            <% services.forEach(sv => { %>
+              <a class="svc-tile" href="<%= basePath %>/services/<%= sv.slug %>" data-animate="fade-up">
+                <% if (sv.imageUrl) { %><img src="<%= sv.imageUrl %>" alt="" loading="lazy" decoding="async"><% } else { %><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><%- icons.iconPath(sv.title, sv.icon) %></svg><% } %>
+                <span class="cap"><strong><%= sv.title %></strong><em><%= sv.description %></em></span>
+              </a>
+            <% }) %>
+          </div>
+        <% } else if (layoutName === 'list') { %>
+          <ol class="svc-list">
+            <% services.forEach((sv, i) => { %>
+              <li data-animate="fade-up"><a href="<%= basePath %>/services/<%= sv.slug %>"><span class="n"><%= String(i + 1).padStart(2, '0') %></span><span class="t"><strong><%= sv.title %></strong><em><%= sv.description %></em></span><span class="go" aria-hidden="true">&rarr;</span></a></li>
+            <% }) %>
+          </ol>
+        <% } else { %>
+        <div class="grid" data-sg-cards="services">
+          <% services.forEach(item => { %>
+            <div class="card" data-animate="fade-up">
+              <div class="badge-circle">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <h3><%= item.title %></h3>
+              <p><%= item.description %></p>
+              <a class="card-link" href="<%= basePath %>/services/<%= item.slug %>">Learn more &rarr;</a>
+            </div>
+          <% }) %>
+        </div>
+        <% } %>
+      </div>
+    </section>
+
+  <% } else if (page === 'service' && service) { %>
+    <section class="block" id="service">
+      <div class="wrap">
+        <div class="contact-layout with-form">
+          <div class="service-hero">
+            <div class="crumbs"><a href="<%= homeHref %>">Home</a> &rsaquo; <a href="<%= basePath %>/services"><%= site.sections.services.heading %></a> &rsaquo; <%= service.title %></div>
+            <h1><%= service.title %><%= city ? ' in ' + city : '' %></h1>
+            <% if (service.description) { %><p class="service-lede"><%= service.description %></p><% } %>
+            <% if (service.detail) { %>
+              <div class="service-body">
+                <% service.detail.split(/\n{2,}/).forEach(para => { %><p><%= para %></p><% }) %>
+              </div>
+            <% } %>
+            <% const buyCents = (typeof payOn !== 'undefined' && payOn && !(typeof staticExport !== 'undefined' && staticExport)) ? payLib.toCents(service.pay) : 0; %>
+            <% if (buyCents) { %>
+              <form method="POST" action="<%= basePath %>/buy" class="buy-form" style="margin:22px 0 0;" <%= preview ? 'onsubmit="return false;"' : '' %>>
+                <input type="hidden" name="service" value="<%= service.title %>">
+                <button class="btn" type="submit" style="cursor:pointer; border:0;"><%= buyLabel %> &middot; <%= payLib.money(buyCents, payCur) %></button>
+              </form>
+            <% } %>
+            <% const otherServices = services.filter(sv => sv.slug !== service.slug); %>
+            <% if (otherServices.length) { %>
+              <h3 style="margin: 28px 0 4px;">Other services</h3>
+              <div class="service-links">
+                <% otherServices.forEach(sv => { %><a href="<%= basePath %>/services/<%= sv.slug %>"><%= sv.title %></a><% }) %>
+              </div>
+            <% } %>
+            <% const svcAreas = areas || []; %>
+            <% if (svcAreas.length) { %>
+              <h3 style="margin: 28px 0 4px;">Areas we serve</h3>
+              <div class="area-chips" style="justify-content:flex-start;">
+                <% svcAreas.forEach(a => { %>
+                  <% if (a.text) { %><a class="area-chip" href="<%= basePath %>/areas/<%= a.slug %>"><%= a.name %></a><% } else { %><span class="area-chip"><%= a.name %></span><% } %>
+                <% }) %>
+              </div>
+            <% } %>
+          </div>
+          <%- include('_quote-card', { site, basePath, preview, services, visible, subject: service.title, selected: service.title, staticExport: (typeof staticExport !== 'undefined' && staticExport) }) %>
+        </div>
+      </div>
+    </section>
+
+  <% } else if (page === 'area' && area) { %>
+    <section class="block" id="area">
+      <div class="wrap">
+        <div class="contact-layout with-form">
+          <div class="service-hero">
+            <div class="crumbs"><a href="<%= homeHref %>">Home</a> &rsaquo; <%= area.name %></div>
+            <h1><%= bizTypeCap || 'Services' %> in <%= area.name %></h1>
+            <% if (area.text) { %>
+              <div class="service-body prose"><% area.text.split(/\n{2,}/).forEach(para => { %><p><%= para %></p><% }) %></div>
+            <% } else { %>
+              <p class="service-lede"><%= site.name %> serves <%= area.name %>.</p>
+            <% } %>
+            <% if (services.length && pageIsAvail('services')) { %>
+              <h3 style="margin: 28px 0 4px;">What we do in <%= area.name %></h3>
+              <div class="service-links">
+                <% services.forEach(sv => { %><a href="<%= basePath %>/services/<%= sv.slug %>"><%= sv.title %></a><% }) %>
+              </div>
+            <% } %>
+            <% const otherAreas = areas.filter(x => x.slug !== area.slug); %>
+            <% if (otherAreas.length) { %>
+              <h3 style="margin: 28px 0 4px;">Other areas we serve</h3>
+              <div class="area-chips" style="justify-content:flex-start;">
+                <% otherAreas.forEach(a => { %>
+                  <% if (a.text) { %><a class="area-chip" href="<%= basePath %>/areas/<%= a.slug %>"><%= a.name %></a><% } else { %><span class="area-chip"><%= a.name %></span><% } %>
+                <% }) %>
+              </div>
+            <% } %>
+          </div>
+          <%- include('_quote-card', { site, basePath, preview, services, visible, subject: area.name, selected: '', staticExport: (typeof staticExport !== 'undefined' && staticExport) }) %>
+        </div>
+      </div>
+    </section>
+
+  <% } else if (page === 'blog') { %>
+    <section class="block" id="blog">
+      <div class="wrap">
+        <div class="section-head" data-animate="fade-up">
+          <div class="rule"></div>
+          <%- eb('blog') %><h2><%= site.sections.blog.heading %></h2>
+        </div>
+        <div class="grid">
+          <% posts.forEach(po => { %>
+            <div class="card" data-animate="fade-up">
+              <% if (po.date) { %><p style="font-size:13px; margin:0 0 6px;"><%= po.date %></p><% } %>
+              <h3><%= po.title %></h3>
+              <p><%= firstChars(po.body, 150) %><%= po.body.length > 150 ? '…' : '' %></p>
+              <a class="card-link" href="<%= basePath %>/blog/<%= po.slug %>">Read more &rarr;</a>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+  <% } else if (page === 'post' && post) { %>
+    <section class="block" id="post">
+      <div class="wrap prose-wrap">
+        <div class="crumbs"><a href="<%= homeHref %>">Home</a> &rsaquo; <a href="<%= basePath %>/blog"><%= site.sections.blog.heading %></a> &rsaquo; <%= post.title %></div>
+        <h1><%= post.title %></h1>
+        <% if (post.date) { %><p class="post-date"><%= post.date %></p><% } %>
+        <div class="prose"><% post.body.split(/\n{2,}/).forEach(para => { %><p><%= para %></p><% }) %></div>
+        <% const otherPosts = posts.filter(x => x.slug !== post.slug).slice(0, 3); %>
+        <% if (otherPosts.length) { %>
+          <h3 style="margin: 36px 0 4px;">More from <%= site.sections.blog.heading %></h3>
+          <div class="service-links">
+            <% otherPosts.forEach(x => { %><a href="<%= basePath %>/blog/<%= x.slug %>"><%= x.title %></a><% }) %>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+  <% } else if (page === 'extra' && extra) { %>
+    <section class="block" id="extra">
+      <div class="wrap prose-wrap">
+        <div class="crumbs"><a href="<%= homeHref %>">Home</a> &rsaquo; <%= extra.title %></div>
+        <h1><%= extra.title %></h1>
+        <div class="prose"><% extra.body.split(/\n{2,}/).forEach(para => { %><p><%= para %></p><% }) %></div>
+      </div>
+    </section>
+
+  <% } else if (page === 'members') { %>
+    <%- include('_members', { site, basePath, preview, memberView: (typeof memberView !== 'undefined' ? memberView : null) }) %>
+  <% } else if (page === 'book') { %>
+    <%- include('_book', { site, basePath, preview, bookingView: (typeof bookingView !== 'undefined' ? bookingView : null), homeHref }) %>
+
+  <% } else if (page === 'review') { %>
+    <section class="block" id="review">
+      <div class="wrap">
+        <div class="section-head" data-animate="fade-up">
+          <div class="rule"></div>
+          <h2>Leave a review</h2>
+          <p class="section-sub">Your feedback helps <%= site.name %> and the neighbors who read it.</p>
+        </div>
+        <div class="contact-card review-form-card">
+          <% const gUrl = site.sections.trust && site.sections.trust.googleReviewsUrl; %>
+          <% if (reviewThanks) { %>
+            <div class="form-flash success">Thank you! Your review was received<%= preview ? '' : ' and will appear on this site once it has been approved' %>.</div>
+            <% if (gUrl) { %>
+              <p style="text-align:center; margin:20px 0 0;">Want to share it on Google too?<br><a class="btn-google" href="<%= gUrl %>" target="_blank" rel="noopener" style="display:inline-block; margin-top:12px;">&#9733; Review us on Google</a></p>
+            <% } %>
+          <% } else { %>
+            <% if (reviewError) { %><div class="form-flash error">Please choose a star rating and write at least a sentence.</div><% } %>
+            <form method="POST" action="<%= basePath %>/review" class="contact-form" <%= preview ? 'onsubmit="return false;"' : '' %>>
+              <input type="text" name="website" class="hp-field" tabindex="-1" autocomplete="off">
+              <label>Your rating</label>
+              <div class="star-pick">
+                <% [5,4,3,2,1].forEach(n => { %>
+                  <input type="radio" name="rating" id="rate<%= n %>" value="<%= n %>" <%= n === 5 ? 'checked' : '' %>><label for="rate<%= n %>" title="<%= n %> star<%= n === 1 ? '' : 's' %>">&#9733;</label>
+                <% }) %>
+              </div>
+              <label>Your name</label>
+              <input type="text" name="name" maxlength="80" placeholder="First name and last initial is fine">
+              <label>Your review</label>
+              <textarea name="quote" maxlength="800" placeholder="What was your experience like?"></textarea>
+              <button type="submit" class="btn" style="width:100%; margin-top:16px;">Submit review</button>
+            </form>
+          <% } %>
+        </div>
+      </div>
+    </section>
+
+  <% } else if (page === 'notfound') { %>
+    <% const nfc = (site.sections.seo && site.sections.seo.notFound) || {}; %>
+    <section class="block" id="not-found">
+      <div class="wrap">
+        <div class="thanks">
+          <div class="check nf-code" aria-hidden="true">404</div>
+          <h1><%= nfc.heading || 'We can\'t find that page' %></h1>
+          <p><%= nfc.text || 'The link may be old or mistyped. Here are some places to go instead.' %></p>
+          <div class="actions">
+            <a class="btn" href="<%= homeHref %>">Back to home</a>
+            <% navPages.filter(p => p.key !== 'contact').slice(0, 3).forEach(p => { %><a class="btn-outline" href="<%= p.href %>"><%= p.label %></a><% }) %>
+            <% if (site.sections.contact.phone) { %><a class="btn-outline" href="tel:<%= site.sections.contact.phone.replace(/[^0-9+]/g, '') %>">Call <%= site.sections.contact.phone %></a><% } %>
+          </div>
+        </div>
+      </div>
+    </section>
+  <% } else if (isCalcPage) { %>
+    <section class="block calc-page" id="estimate">
+      <div class="wrap">
+        <div class="section-head" data-animate="fade-up"><div class="rule"></div><h1 style="margin:0;"><%= calcCfg.heading %></h1></div>
+        <% if (calcCfg.intro) { %><p class="calc-intro"><%= calcCfg.intro %></p><% } %>
+        <% if (estimateError) { %><p class="calc-err" role="alert"><%= estimateError %></p><% } %>
+        <form method="POST" action="<%= basePath %>/estimate" class="calc-form" id="calcForm">
+          <% calcCfg.fields.forEach((f, i) => { %>
+            <div class="calc-q">
+              <% if (f.type === 'select') { %>
+                <label for="ce_<%= i %>"><%= f.label %><%= f.required ? ' *' : '' %></label>
+                <select id="ce_<%= i %>" name="ce_<%= i %>" <%= f.required ? 'required' : '' %>><option value="">Choose...</option><% f.options.forEach((o, j) => { %><option value="<%= j %>"><%= o.label %></option><% }) %></select>
+              <% } else if (f.type === 'radio') { %>
+                <fieldset><legend><%= f.label %><%= f.required ? ' *' : '' %></legend>
+                  <% f.options.forEach((o, j) => { %><label class="calc-opt"><input type="radio" name="ce_<%= i %>" value="<%= j %>" <%= f.required && j === 0 ? 'required' : '' %>> <%= o.label %></label><% }) %>
+                </fieldset>
+              <% } else if (f.type === 'number') { %>
+                <label for="ce_<%= i %>"><%= f.label %><%= f.required ? ' *' : '' %></label>
+                <input type="number" id="ce_<%= i %>" name="ce_<%= i %>" min="<%= f.min %>" max="<%= f.max %>" step="1" inputmode="numeric" <%= f.required ? 'required' : '' %>>
+              <% } else { %>
+                <label class="calc-opt"><input type="checkbox" name="ce_<%= i %>" value="1"> <%= f.label %></label>
+              <% } %>
+            </div>
+          <% }) %>
+          <% if (calcCfg.showPrice) { %>
+            <div class="calc-result" id="calcResult" aria-live="polite" hidden><span class="calc-label">Estimated price</span><strong id="calcTotal"></strong></div>
+            <p class="calc-note"><%= calcCfg.note || ('This is a rough estimate based on the options you chose, not a firm quote. ' + site.name + ' confirms the final price.') %></p>
+          <% } else if (calcCfg.note) { %><p class="calc-note"><%= calcCfg.note %></p><% } %>
+          <h3 class="calc-h">Where should we send it?</h3>
+          <div class="calc-contact">
+            <input type="text" name="name" placeholder="Your name" maxlength="100" autocomplete="name">
+            <input type="email" name="email" placeholder="Email" maxlength="254" autocomplete="email">
+            <input type="tel" name="phone" placeholder="Phone" maxlength="40" autocomplete="tel">
+          </div>
+          <textarea name="message" rows="3" maxlength="1000" placeholder="Anything else we should know? (optional)"></textarea>
+          <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute; left:-9999px;" aria-hidden="true">
+          <button type="submit" class="btn"><%= calcCfg.buttonText %></button>
+        </form>
+      </div>
+    </section>
+    <script>
+      (function () {
+        var cfg = <%- JSON.stringify({ base: calcCfg.basePrice, min: calcCfg.minimum, spread: calcCfg.spread, show: calcCfg.showPrice, fields: calcCfg.fields.map(function (f) { return { t: f.type, p: f.price, mn: f.min, mx: f.max, o: f.options.map(function (o) { return o.price; }) }; }) }).replace(/</g, '\u003c') %>;
+        if (!cfg.show) return;
+        var form = document.getElementById('calcForm'), box = document.getElementById('calcResult'), out = document.getElementById('calcTotal');
+        function money(n) { return '$' + (Math.round(n) === n ? n.toLocaleString('en-US') : n.toFixed(2)); }
+        function calc() {
+          var total = cfg.base, any = false;
+          cfg.fields.forEach(function (f, i) {
+            var el = form.elements['ce_' + i]; if (!el) return;
+            if (f.t === 'select') { var v = el.value; if (v !== '') { total += f.o[+v] || 0; any = true; } }
+            else if (f.t === 'radio') { var r = form.querySelector('input[name="ce_' + i + '"]:checked'); if (r) { total += f.o[+r.value] || 0; any = true; } }
+            else if (f.t === 'number') { var n = parseFloat(el.value); if (isFinite(n)) { n = Math.min(f.mx, Math.max(f.mn, n)); total += n * f.p; any = true; } }
+            else if (el.checked) { total += f.p; any = true; }
+          });
+          if (!any) { box.hidden = true; return; }
+          total = Math.max(total, cfg.min); total = Math.round(total * 100) / 100;
+          var hi = cfg.spread ? Math.round(total * (1 + cfg.spread / 100) * 100) / 100 : total;
+          out.textContent = hi > total ? money(total) + ' to ' + money(hi) : money(total);
+          box.hidden = total <= 0;
+        }
+        form.addEventListener('input', calc); form.addEventListener('change', calc); calc();
+      })();
+    </script>
+  <% } else if (isLegalPage) { %>
+    <section class="block legal-page" id="<%= page %>">
+      <div class="wrap">
+        <h1><%= legalDoc.title %></h1>
+        <p class="legal-updated">Last updated: <%= legalDoc.updated %></p>
+        <% legalDoc.sections.forEach(sec => { %>
+          <h2><%= sec.h %></h2>
+          <% sec.p.forEach(t => { %><p><%= t %></p><% }) %>
+        <% }) %>
+        <p class="legal-other"><a href="<%= basePath %>/<%= page === 'privacy' ? 'terms' : 'privacy' %>"><%= page === 'privacy' ? 'Terms of Use' : 'Privacy Policy' %></a> &middot; <a href="<%= homeHref %>">Back to home</a></p>
+      </div>
+    </section>
+  <% } else if (page === 'thank-you') { %>
+    <section class="block" id="thank-you">
+      <div class="wrap">
+        <div class="thanks">
+          <div class="check"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <h1>Thank you!</h1>
+          <p>We received your request and will be in touch. If it's urgent, you can also call us directly.</p>
+          <div class="actions">
+            <% if (site.sections.contact.phone) { %><a class="btn" href="tel:<%= site.sections.contact.phone.replace(/[^0-9+]/g, '') %>">Call <%= site.sections.contact.phone %></a><% } %>
+            <a class="btn-outline" href="<%= homeHref %>">Back to home</a>
+          </div>
+        </div>
+      </div>
+    </section>
+    <% if (!preview) { %>
+      <script>
+        // lets the business count this as a lead in Google Analytics / Meta Ads
+        if (window.gtag) gtag('event', 'generate_lead');
+        if (window.fbq) fbq('track', 'Lead');
+      </script>
+    <% } %>
+
+  <% } else if (page === 'testimonials') { %>
+    <section class="block" id="<%= page %>">
+      <div class="wrap">
+        <div class="section-head" data-animate="fade-up">
+          <div class="rule"></div>
+          <%- eb('testimonials') %><h2><%= site.sections.testimonials.heading %></h2>
+        </div>
+        <%- include('_google-reviews') %>
+        <% const tWall = site.sections.testimonials.display === 'wall' && site.sections.testimonials.items.length >= 4; %>
+        <% if (tWall) { %><%- include('_review-wall', { items: site.sections.testimonials.items.slice(0, 20) }) %><% } else { %>
+        <% const tCar = site.sections.testimonials.display === 'carousel'; %>
+        <% if (tCar) { %><div class="strip-wrap"><button type="button" class="strip-btn prev" aria-label="Previous reviews">&lsaquo;</button><% } %>
+        <div class="<%= tCar ? 'strip t-carousel' : 'grid' %>"<%- tCar ? '' : ' data-sg-cards="testimonials"' %><%- tCar ? ' tabindex="0"' : '' %>>
+          <% site.sections.testimonials.items.forEach(item => { %>
+            <div class="card testimonial-card" data-animate="fade-up">
+              <span class="quotemark">&ldquo;</span>
+              <% if (item.rating) { %>
+                <div class="stars"><%= '★'.repeat(item.rating) %><span class="stars-empty"><%= '★'.repeat(5 - item.rating) %></span></div>
+              <% } %>
+              <p class="quote"><%= item.quote %></p>
+              <% if (item.author) { %><p class="author"><%= item.author %></p><% } %>
+              <% if (item.date) { %><p class="review-date"><%= item.date %></p><% } %>
+            </div>
+          <% }) %>
+        </div>
+        <% if (tCar) { %><button type="button" class="strip-btn next" aria-label="Next reviews">&rsaquo;</button></div><% } %>
+        <% } %>
+        <% if (site.sections.trust && site.sections.trust.googleReviewsUrl) { %>
+          <p style="text-align:center; margin-top:32px;"><a class="btn-google" href="<%= site.sections.trust.googleReviewsUrl %>" target="_blank" rel="noopener">&#9733; Read more on Google</a></p>
+        <% } %>
+      </div>
+    </section>
+
+  <% } else if (page === 'whyChoose') { %>
+    <section class="block" id="<%= page %>">
+      <div class="wrap">
+        <div class="section-head" data-animate="fade-up">
+          <div class="rule"></div>
+          <%- eb('whyChoose') %><h2><%= site.sections.whyChoose.heading %></h2>
+        </div>
+        <div class="why-grid" data-sg-cards="why">
+          <% site.sections.whyChoose.items.forEach((item, i) => { %>
+            <div class="why-card <%= i % 2 === 0 ? 'c1' : 'c2' %>" data-animate="fade-up">
+              <div class="why-icon">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><%- whyIconPath(item.icon) %></svg>
+              </div>
+              <% if (item.title) { %><h3><%= item.title %></h3><% } %>
+              <% if (item.text) { %><p><%= item.text %></p><% } %>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+  <% } else if (page === 'gallery') { %>
+    <section class="block" id="<%= page %>">
+      <div class="wrap">
+        <div class="section-head" data-animate="fade-up">
+          <div class="rule"></div>
+          <%- eb('gallery') %><h2><%= site.sections.gallery.heading %></h2>
+        </div>
+        <% const pairs = site.sections.gallery.beforeAfter || []; %>
+        <% if (pairs.length) { %>
+          <div class="ba-grid">
+            <% pairs.forEach(p => { %>
+              <div data-animate="fade-up">
+                <div class="ba-slider">
+                  <img src="<%= p.after %>" alt="After<%= p.caption ? ': ' + p.caption : '' %>" loading="lazy" decoding="async">
+                  <img class="ba-b" src="<%= p.before %>" alt="Before<%= p.caption ? ': ' + p.caption : '' %>" loading="lazy" decoding="async">
+                  <span class="ba-tag">Before</span><span class="ba-tag after">After</span>
+                  <span class="ba-line" aria-hidden="true"></span>
+                  <input type="range" min="0" max="100" value="50" aria-label="Slide to compare before and after<%= p.caption ? ': ' + p.caption : '' %>">
+                </div>
+                <% if (p.caption) { %><p class="ba-caption"><%= p.caption %></p><% } %>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+        <% if (site.sections.gallery.images.length) { %>
+        <div class="gallery-grid" data-lightbox data-sg-cards="gallery">
+          <% site.sections.gallery.images.forEach((img, gi) => { %>
+            <div class="frame" data-animate="fade-up"><img src="<%= img %>" alt="<%= (site.sections.gallery.alts || [])[gi] || (site.name + ' — photo') %>" loading="lazy" decoding="async"></div>
+          <% }) %>
+        </div>
+        <% } %>
+      </div>
+    </section>
+
+  <% } else if (page === 'faq') { %>
+    <section class="block" id="<%= page %>">
+      <div class="wrap">
+        <div class="section-head" data-animate="fade-up">
+          <div class="rule"></div>
+          <%- eb('faq') %><h2><%= site.sections.faq.heading %></h2>
+        </div>
+        <div class="faq-list">
+          <% site.sections.faq.items.forEach((item, i) => { %>
+            <details class="faq-item" data-animate="fade-up" <%= i === 0 ? 'open' : '' %>>
+              <summary><%= item.question %></summary>
+              <p><%= item.answer %></p>
+            </details>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+  <% } else if (page === 'hours') { %>
+    <section class="block" id="<%= page %>">
+      <div class="wrap">
+        <div class="section-head" data-animate="fade-up">
+          <div class="rule"></div>
+          <%- eb('hours') %><h2><%= site.sections.hours.heading %></h2>
+        </div>
+        <div class="hours-list" data-animate="fade-up">
+          <% site.sections.hours.items.forEach(item => { %>
+            <div class="hours-row" data-day="<%= item.day %>"><span class="day"><%= item.day %></span><span class="time"><%= item.time %></span></div>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+  <% } else if (page === 'contact') { %>
+    <% const hasContactInfo = site.sections.contact.phone || site.sections.contact.email || site.sections.contact.address;
+       const nlForms = typeof netlifyForms !== 'undefined' && netlifyForms; const showForm = !!site.sections.contact.acceptSubmissions && (!(typeof staticExport !== 'undefined' && staticExport) || nlForms); // an exported static copy has no server to receive messages
+       const infoCard = `
+          <div class="contact-card">
+            ${!hasContactInfo ? '<p style="margin:0; color: var(--muted); text-align: center;">Get in touch to learn more — contact details coming soon.</p>' : ''}
+            ${site.sections.contact.phone ? `<div class="contact-row"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>${site.sections.contact.phone}</div>` : ''}
+            ${site.sections.contact.email ? `<div class="contact-row"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z" opacity="0"/><path d="M22 6l-10 7L2 6"/><path d="M2 6h20v12H2z"/></svg><a href="mailto:${site.sections.contact.email}">${site.sections.contact.email}</a></div>` : ''}
+            ${site.sections.contact.address ? `<div class="contact-row"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${site.sections.contact.address}</div>` : ''}
+            <div class="contact-actions">
+              ${site.sections.contact.phone ? `<a class="btn" href="tel:${site.sections.contact.phone.replace(/[^0-9+]/g, '')}">Call Now</a>` : ''}
+              ${site.sections.contact.email ? `<a class="btn-outline" href="mailto:${site.sections.contact.email}">Email Us</a>` : ''}
+            </div>
+          </div>`;
+       const mapFrame = site.sections.contact.address ? `
+          <div class="map-frame">
+            <iframe loading="lazy" src="https://maps.google.com/maps?q=${encodeURIComponent(site.sections.contact.address)}&output=embed"></iframe>
+          </div>` : '';
+    %>
+    <section class="block" id="<%= page %>">
+      <div class="wrap">
+        <div class="section-head" data-animate="fade-up">
+          <div class="rule"></div>
+          <%- eb('contact') %><h2><%= site.sections.contact.heading %></h2>
+        </div>
+
+        <% if (showForm) { %>
+          <div class="contact-layout with-form" data-animate="fade-up">
+            <div class="contact-card contact-form-card">
+              <% const cfm = formsLib.normalize(site.sections.contact.form); const cfCustom = cfm.mode === 'custom'; %>
+              <h3 style="margin:0 0 6px;"><%= cfCustom && cfm.title ? cfm.title : (services.length ? 'Request a quote' : 'Send us a message') %></h3>
+              <p class="muted" style="margin:0 0 18px; font-size:14px;"><%= cfCustom && cfm.intro ? cfm.intro : "Fill out the form and we'll be in touch." %></p>
+              <% if (contactSent) { %><div class="form-flash success">Thanks — your message has been sent.</div><% } %>
+              <% if (contactError) { %><div class="form-flash error">Something went wrong. Please double-check the form, or reach out directly instead.</div><% } %>
+              <%- include('_quote-form', { site, basePath, preview, services, selected: '', compact: false, netlifyForms: nlForms }) %>
+            </div>
+            <div>
+              <%- infoCard %>
+              <% if (mapFrame) { %><div style="margin-top: 20px;"><%- mapFrame %></div><% } %>
+            </div>
+          </div>
+        <% } else { %>
+          <div class="contact-layout" data-animate="fade-up" style="<%= hasContactInfo ? '' : 'grid-template-columns: 1fr; max-width: 480px;' %>">
+            <%- infoCard %>
+            <%- mapFrame %>
+          </div>
+        <% } %>
+        <% const offices = site.sections.contact.locations || []; %>
+        <% if (offices.length) { %>
+          <div class="offices" data-animate="fade-up">
+            <h3>Our offices</h3>
+            <div class="office-grid">
+              <% offices.forEach(o => { %>
+                <div class="office-card">
+                  <% if (o.name) { %><h4><%= o.name %></h4><% } %>
+                  <% if (o.address) { %><p><%= o.address %></p><% } %>
+                  <% if (o.phone) { %><p><a href="tel:<%= o.phone.replace(/[^0-9+]/g, '') %>"><%= o.phone %></a></p><% } %>
+                  <% if (o.address) { %><div class="map-frame"><iframe loading="lazy" title="Map of <%= o.name || 'office' %>" src="https://maps.google.com/maps?q=<%= encodeURIComponent(o.address) %>&amp;output=embed"></iframe></div><% } %>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </section>
+  <% } %>
+
+  <% if (page !== 'contact' && page !== 'thank-you' && page !== 'review' && page !== 'notfound' && !isLegalPage && !isCalcPage && !(sigHome && sigHome.sections.includes('cta'))) { %>
+    <section class="cta-band">
+      <h2 data-animate="fade-up">Ready to get started?</h2>
+      <p data-animate="fade-up">Reach out today and we'll be happy to help.</p>
+      <a class="btn" href="<%= visible('contact') ? basePath + '/contact' : (site.sections.contact.phone ? 'tel:' + site.sections.contact.phone.replace(/[^0-9+]/g, '') : (site.sections.contact.email ? 'mailto:' + site.sections.contact.email : homeHref)) %>">
+        <%= site.sections.hero.ctaText || 'Contact Us' %>
+      </a>
+    </section>
+  <% } %>
+
+  <% if (blkPage) { %><%- include('_blocks', { site, place: 'bottom', pageKey: blkPage }) %><% } %>
+  </main>
+
+  <% const footStyle = site.theme.footerStyle || ''; %>
+  <footer class="site-footer"<% if (footStyle) { %> data-foot="<%= footStyle %>"<% } %>>
+    <% if (footStyle === 'brand') { %>
+      <div class="foot-cta">
+        <strong><%= site.name %></strong>
+        <div class="btns">
+          <a href="<%= (site.sections.hero.ctaLink && site.sections.hero.ctaLink !== '#contact') ? site.sections.hero.ctaLink : basePath + '/contact' %>"><%= site.sections.hero.ctaText || 'Contact us' %></a>
+          <% if (site.sections.contact.phone) { %><a class="ghost" href="tel:<%= site.sections.contact.phone.replace(/[^0-9+]/g, '') %>">Call <%= site.sections.contact.phone %></a><% } %>
+        </div>
+      </div>
+    <% } %>
+    <% const fExtra = (site.sections.contact.footerHours && (site.sections.hours.items || []).length ? 1 : 0) + ((typeof payOn !== 'undefined' && payOn) ? 1 : 0); %>
+    <div class="footer-grid<%= homeFull ? ' wide' : '' %>"<% if (fExtra) { %> style="--fcols: 1.3fr repeat(<%= 2 + fExtra %>, 1fr)"<% } %>>
+      <div>
+        <div class="brand"><span class="sg-name"><%= site.name %></span></div>
+        <p><%= site.sections.hero.subheadline %></p>
+        <% if (locationLine) { %><p style="margin-top:8px;"><%= locationLine %></p><% } %>
+        <% if (footStyle === 'split' && site.sections.contact.phone) { %><a class="foot-phone" href="tel:<%= site.sections.contact.phone.replace(/[^0-9+]/g, '') %>"><%= site.sections.contact.phone %></a><% } %>
+        <% if (social.facebook || social.instagram || social.twitter) { %>
+          <div class="footer-social">
+            <% ['facebook','instagram','twitter'].forEach(p => { if (social[p]) { %>
+              <a href="<%= social[p] %>" target="_blank" rel="noopener" aria-label="<%= p %>">
+                <svg viewBox="0 0 24 24" fill="currentColor"><%- socialIconPath(p) %></svg>
+              </a>
+            <% } }) %>
+          </div>
+        <% } %>
+      </div>
+      <div>
+        <h4>Quick Links</h4>
+        <a href="<%= homeHref %>">Home</a>
+        <% navPages.forEach(p => { %><a href="<%= p.href %>"><%= p.label %></a><% }) %>
+      </div>
+      <% if (homeFull && posts.length && visible('blog')) { %>
+        <div>
+          <h4><%= site.sections.blog.heading %></h4>
+          <% posts.slice(-2).reverse().forEach(po => { %>
+            <div class="footer-post"><a href="<%= basePath %>/blog/<%= po.slug %>"><strong><%= po.title %></strong></a><% if (po.date) { %><span><%= po.date %></span><% } %></div>
+          <% }) %>
+        </div>
+      <% } %>
+      <% if (site.sections.contact.footerHours && (site.sections.hours.items || []).length) { %>
+        <div>
+          <h4>Hours</h4>
+          <% site.sections.hours.items.forEach(h => { %><div class="foot-hours"><span><%= h.day %></span><span><%= h.time %></span></div><% }) %>
+        </div>
+      <% } %>
+      <% if (typeof payOn !== 'undefined' && payOn) { %>
+        <div>
+          <h4>We accept</h4>
+          <div class="foot-accept"><span>Visa</span><span>Mastercard</span><span>American Express</span><span>Discover</span></div>
+        </div>
+      <% } %>
+      <div>
+        <h4>Contact</h4>
+        <% if (site.sections.contact.phone) { %><a href="tel:<%= site.sections.contact.phone.replace(/[^0-9+]/g, '') %>"><%= site.sections.contact.phone %></a><% } %>
+        <% if (site.sections.contact.email) { %><a href="mailto:<%= site.sections.contact.email %>"><%= site.sections.contact.email %></a><% } %>
+        <% if (site.sections.contact.address) { %><p style="margin:0;"><%= site.sections.contact.address %></p>
+          <% if (homeFull && !(typeof staticExport !== 'undefined' && staticExport)) { %><iframe class="foot-map" loading="lazy" title="Map" src="https://maps.google.com/maps?q=<%= encodeURIComponent(site.sections.contact.address) %>&amp;output=embed"></iframe><% } %>
+        <% } %>
+        <% (site.sections.contact.locations || []).forEach(l => { %>
+          <div class="footer-loc" style="margin-top:14px;">
+            <% if (l.name) { %><strong><%= l.name %></strong><% } %>
+            <% if (l.address) { %><p><%= l.address %></p><% } %>
+            <% if (l.phone) { %><a href="tel:<%= l.phone.replace(/[^0-9+]/g, '') %>"><%= l.phone %></a><% } %>
+            <% if (homeFull && l.address && !(typeof staticExport !== 'undefined' && staticExport)) { %><iframe class="foot-map" loading="lazy" title="Map of <%= l.name || 'office' %>" src="https://maps.google.com/maps?q=<%= encodeURIComponent(l.address) %>&amp;output=embed"></iframe><% } %>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+    <% if (site.sections.trust && site.sections.trust.legalNote) { %><div class="footer-legal"><%= site.sections.trust.legalNote %></div><% } %>
+    <div class="footer-bottom">
+      <% if (preview) { %>Preview mode — this page is not live.<% } else { %>&copy; <%= new Date().getFullYear() %> <%= site.name %>. All rights reserved.<% } %>
+      <% if (legalOn) { %><div class="footer-legal-links"><a href="<%= basePath %>/privacy">Privacy Policy</a><a href="<%= basePath %>/terms">Terms of Use</a></div><% } %>
+      <% const _pc = photoCreditsFor(site); if (_pc) { %><div class="footer-credits">Photos by <% _pc.people.forEach(function (c, i) { %><%= i ? (i === _pc.people.length - 1 ? ' and ' : ', ') : '' %><% if (c.href) { %><a href="<%= c.href %>" rel="noopener"><%= c.name %></a><% } else { %><%= c.name %><% } %><% }) %> on <a href="<%= _pc.unsplashHref %>" rel="noopener">Unsplash</a></div><% } %>
+    </div>
+    <% if (footStyle === 'wordmark') { %><div class="foot-mark" aria-hidden="true" style="--mark-len: <%= Math.max(4, String(site.name || '').length) %>"><%= site.name %></div><% } %>
+  </footer>
+  <% const _tsPage = textBoxes.pageId(pageKey, { service: typeof service !== 'undefined' ? service : null, area: typeof area !== 'undefined' ? area : null, post: typeof post !== 'undefined' ? post : null, extra: typeof extra !== 'undefined' ? extra : null }), _ts = textStyles.forPage(site, _tsPage), _tsFont = textStyles.fontLink(_ts); %>
+  <% if (_tsFont) { %><link rel="stylesheet" href="<%= _tsFont %>" data-sg-tsfonts><% } %>
+  <% if (_ts.length || (typeof preview !== 'undefined' && preview)) { %><script type="application/json" id="sg-ts-data"><%- textStyles.data(_ts) %></script><script data-sg-ts><%- textStyles.SCRIPT.replace(/<\//g, '<\\/') %></script><% } %>
+  <% const _es = elStyles.forPage(site, _tsPage); %>
+  <% if (_es.length || (typeof preview !== 'undefined' && preview)) { %><script type="application/json" id="sg-es-data"><%- elStyles.data(_es) %></script><script data-sg-es><%- elStyles.SCRIPT.replace(/<\//g, '<\\/') %></script><% } %>
+
+  <% const bannerMode = legalLib.bannerMode(site, trackingOn, trackingMode); %>
+  <% if (bannerMode) { %>
+    <div class="cookie-bar" id="cookieBar" role="dialog" aria-label="Cookie notice" hidden>
+      <% if (bannerMode === 'consent') { %>
+        <p>This site uses cookies to measure visits and the ads that bring people here. You can accept or decline.<% if (legalOn) { %> <a href="<%= basePath %>/privacy">Privacy Policy</a><% } %></p>
+        <div><button type="button" id="cookieNo">Decline</button><button type="button" class="yes" id="cookieYes">Accept</button></div>
+      <% } else { %>
+        <p>We keep a small setting in your browser and count visits without tracking who you are. <a href="<%= basePath %>/privacy">Privacy Policy</a></p>
+        <div><button type="button" class="yes" id="cookieYes">OK</button></div>
+      <% } %>
+    </div>
+    <script>
+      (function () {
+        var bar = document.getElementById('cookieBar'); if (!bar) return;
+        var KEY = <%- JSON.stringify(bannerMode === 'consent' ? 'trkConsent' : 'noticeSeen') %>;
+        var c = null; try { c = localStorage.getItem(KEY); } catch (e) {}
+        if (c) return;
+        bar.hidden = false;
+        function done(v) { try { localStorage.setItem(KEY, v); } catch (e) {} bar.hidden = true; if (v === 'yes' && window.__loadTracking) window.__loadTracking(); }
+        document.getElementById('cookieYes').onclick = function () { done('yes'); };
+        var no = document.getElementById('cookieNo'); if (no) no.onclick = function () { done('no'); };
+      })();
+    </script>
+  <% } %>
+
+  <%
+    const mbPhone = site.sections.contact.phone ? site.sections.contact.phone.replace(/[^0-9+]/g, '') : '';
+    const mbQuote = !(typeof staticExport !== 'undefined' && staticExport) && site.sections.contact.acceptSubmissions && visible('contact') && page !== 'contact' && page !== 'thank-you' && page !== 'review';
+  %>
+  <% if (isAgency && (mbPhone || mbQuote) && page !== 'contact' && page !== 'thank-you' && page !== 'review') { %>
+    <div class="help-bar" id="helpBar" role="region" aria-label="Get help">
+      <span>Questions? We're here to help.</span>
+      <% if (mbQuote) { %><a class="btn" href="<%= basePath %>/contact">Get a Quote</a><% } %>
+      <% if (mbPhone) { %><a class="btn alt" href="tel:<%= mbPhone %>">Call <%= site.sections.contact.phone %></a><% } %>
+      <button type="button" class="x" id="helpBarX" aria-label="Close">&times;</button>
+    </div>
+    <script>
+      (function () {
+        var b = document.getElementById('helpBar'); if (!b) return;
+        var gone = false; try { gone = sessionStorage.getItem('helpBarX') === '1'; } catch (e) {}
+        if (!gone) b.classList.add('on');
+        document.getElementById('helpBarX').onclick = function () { b.classList.remove('on'); try { sessionStorage.setItem('helpBarX', '1'); } catch (e) {} };
+      })();
+    </script>
+  <% } %>
+
+  <% if (mbPhone || mbQuote) { %>
+    <div class="mobile-bar">
+      <% if (mbPhone) { %><a class="mb-call" href="tel:<%= mbPhone %>">Call Now</a><% } %>
+      <% if (mbQuote) { %><a class="mb-quote" href="<%= basePath %>/contact">Get a Quote</a><% } %>
+    </div>
+  <% } %>
+
+  <script>
+    // count what visitors do (taps on phone, email, text, contact/book buttons) without cookies;
+    // also tells Google Analytics / Meta Ads when those are set up
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest && e.target.closest('a[href]');
+      if (!a) return;
+      const href = a.getAttribute('href') || '';
+      let ev = '';
+      if (/^tel:/i.test(href)) ev = 'call';
+      else if (/^mailto:/i.test(href)) ev = 'email';
+      else if (/^sms:|^https?:\/\/(wa\.me|api\.whatsapp\.com)\//i.test(href)) ev = 'text';
+      else if (/maps\.google\.|google\.com\/maps|maps\.apple\.com/i.test(href)) ev = 'directions';
+      else if (a.matches('.btn, .btn-outline, .nav-cta, .mobile-bar a, .float-contact') && /(^|\/)(contact|book)(\/|$|\?|#)/.test(href)) ev = 'cta';
+      if (!ev) return;
+      if (ev === 'call') { if (window.gtag) gtag('event', 'click_to_call'); if (window.fbq) fbq('track', 'Contact'); }
+      else if (ev === 'email') { if (window.gtag) gtag('event', 'click_email'); if (window.fbq) fbq('track', 'Contact'); }
+      else if (ev === 'text') { if (window.gtag) gtag('event', 'click_text'); if (window.fbq) fbq('track', 'Contact'); }
+      <% if (!preview && !(typeof staticExport !== 'undefined' && staticExport)) { %>
+      try { navigator.sendBeacon('<%= basePath %>/e', new URLSearchParams({ e: ev, p: <%- JSON.stringify(page === 'service' && service ? 'services/' + service.slug : page).replace(/</g, '\\u003c') %> })); } catch (err) { /* counting is optional */ }
+      <% } %>
+    });
+    // links like /contact?service=Roof%20Repair preselect that service in the quote form
+    (function () {
+      const want = new URLSearchParams(location.search).get('service');
+      const sel = document.querySelector('select[name=service]');
+      if (!want || !sel) return;
+      for (const o of sel.options) if (o.value === want) sel.value = want;
+    })();
+
+    // sticky nav shadow on scroll
+    const nav = document.getElementById('siteNav');
+    const navScroll = () => nav.classList.toggle('scrolled', window.scrollY > 8);
+    (window.sgOnScroll || function (f) { addEventListener('scroll', f, { passive: true }); addEventListener('resize', f); })(navScroll);
+    navScroll();
+
+    // menu bar styles with a menu button (full-screen menu, side drawer: menustyles.js): open, close, Esc, link clicks
+    (function () {
+      var btn = document.getElementById('sgMnuBtn'), panel = document.getElementById('sgMnuPanel');
+      if (!btn || !panel) return;
+      var set = function (open) {
+        if (open) { panel.hidden = false; requestAnimationFrame(function () { document.body.classList.add('sg-mnu-open'); }); }
+        else { document.body.classList.remove('sg-mnu-open'); setTimeout(function () { if (!document.body.classList.contains('sg-mnu-open')) panel.hidden = true; }, 400); }
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open) { var f = panel.querySelector('a'); if (f) setTimeout(function () { f.focus(); }, 60); } else btn.focus();
+      };
+      btn.addEventListener('click', function () { set(btn.getAttribute('aria-expanded') !== 'true'); });
+      panel.querySelector('.sg-mnu-close').addEventListener('click', function () { set(false); });
+      panel.addEventListener('click', function (e) { if (e.target === panel || e.target.closest('a')) set(false); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && btn.getAttribute('aria-expanded') === 'true') set(false); });
+    })();
+
+    // custom contact form: step-by-step wizard + friendly checks (the server checks again)
+    document.querySelectorAll('form.cform').forEach(function (form) {
+      const steps = Array.prototype.slice.call(form.querySelectorAll('.cf-step'));
+      const back = form.querySelector('.cf-back'), next = form.querySelector('.cf-next'), submit = form.querySelector('.cf-submit');
+      const bar = form.querySelector('.cf-bar'), count = form.querySelector('.cf-count');
+      let cur = 0;
+      form.classList.add('cf-js');
+      form.noValidate = true;
+      function show(n) {
+        cur = n;
+        steps.forEach(function (s, i) { s.hidden = steps.length > 1 && i !== n; });
+        if (back) back.hidden = n === 0;
+        if (next) next.hidden = n === steps.length - 1;
+        if (submit) submit.hidden = steps.length > 1 && n !== steps.length - 1;
+        if (bar) bar.style.width = Math.round((n + 1) / steps.length * 100) + '%';
+        if (count) count.textContent = 'Step ' + (n + 1) + ' of ' + steps.length;
+      }
+      function check(step) {
+        let firstBad = null;
+        step.querySelectorAll('.cf-field').forEach(function (f) {
+          const t = f.dataset.type, err = f.querySelector('.cf-error');
+          let msg = '';
+          const inputs = f.querySelectorAll('input:not([type=hidden]), select, textarea');
+          let val = '';
+          if (t === 'radio' || t === 'checkbox') val = f.querySelector('input:checked') ? 'x' : '';
+          else if (t === 'photo') val = inputs[0].files && inputs[0].files.length ? 'x' : '';
+          else val = (inputs[0].value || '').trim();
+          if (f.dataset.required === '1' && !val) msg = t === 'radio' || t === 'checkbox' || t === 'select' || t === 'service' ? 'Please choose an option.' : 'This one is needed.';
+          else if (t === 'email' && val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) msg = 'That email address does not look right.';
+          f.classList.toggle('bad', !!msg);
+          err.hidden = !msg; err.textContent = msg;
+          if (msg && !firstBad) firstBad = f;
+        });
+        if (firstBad) { const i = firstBad.querySelector('input, select, textarea'); if (i) i.focus({ preventScroll: true }); firstBad.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+        return !firstBad;
+      }
+      if (next) next.addEventListener('click', function () { if (check(steps[cur])) show(cur + 1); });
+      if (back) back.addEventListener('click', function () { show(cur - 1); });
+      form.addEventListener('submit', function (e) {
+        for (let i = 0; i < steps.length; i++) {
+          if (!check(steps[i])) { e.preventDefault(); show(i); check(steps[i]); return; }
+        }
+      });
+      form.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && next && !next.hidden && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); next.click(); }
+      });
+      show(0);
+    });
+
+    // highlight today's row in the hours section
+    const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const today = dayNames[new Date().getDay()];
+    document.querySelectorAll('.hours-row').forEach(row => {
+      if (row.dataset.day && row.dataset.day.toLowerCase() === today.toLowerCase()) row.classList.add('today');
+    });
+
+    // Self-healing hero: stock-photo links occasionally go dead. If the hero
+    // photo fails to load, fall back to the themed pattern background
+    // instead of leaving a bare gray box.
+    const heroBg = document.getElementById('heroBg');
+    if (heroBg && heroBg.dataset.heroPhoto) {
+      const probe = new Image();
+      probe.onerror = () => {
+        heroBg.classList.add('pattern');
+        heroBg.style.removeProperty('--hero-photo');
+      };
+      probe.src = heroBg.dataset.heroPhoto;
+    }
+
+    // Hero slideshow (only when extra hero photos exist): fades between the photos,
+    // pauses on hover, and does not auto-advance for people who prefer reduced motion.
+    (function () {
+      const heroEl = document.getElementById('hero');
+      const slides = heroEl ? Array.prototype.slice.call(heroEl.querySelectorAll('.hero-slide')) : [];
+      if (!slides.length) return;
+      const base = document.getElementById('heroBg');
+      const urls = [base && base.dataset.heroPhoto].concat(slides.map(function (s) { return s.dataset.photo; })).filter(Boolean);
+      if (urls.length < 2) return;
+      let i = 0, timer = null, hover = false;
+      function load(el) { if (el && !el.dataset.loaded) { el.style.setProperty('--hero-photo', "url('" + el.dataset.photo + "')"); el.dataset.loaded = '1'; } }
+      function show(n) {
+        i = (n + urls.length) % urls.length;
+        slides.forEach(function (s, k) { s.classList.toggle('on', k === i - 1); });
+        load(slides[i % urls.length]); // warm up the next one
+      }
+      load(slides[0]);
+      const next = function () { show(i + 1); }, prev = function () { show(i - 1); };
+      heroEl.querySelector('.hero-next').onclick = function () { next(); restart(); };
+      heroEl.querySelector('.hero-prev').onclick = function () { prev(); restart(); };
+      heroEl.addEventListener('mouseenter', function () { hover = true; });
+      heroEl.addEventListener('mouseleave', function () { hover = false; });
+      function restart() { clearInterval(timer); if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return; timer = setInterval(function () { if (!hover) next(); }, 6000); }
+      slides.forEach(function (s, k) { if (k <= 1) load(s); });
+      restart();
+    })();
+
+    // Same safety net for the About section's photo, if it has one: drop the
+    // broken image and collapse back to the single-column text layout.
+    document.querySelectorAll('img[data-fallback-hide]').forEach(img => {
+      img.addEventListener('error', () => {
+        const wrap = img.closest('[data-img-wrap]');
+        const split = wrap?.closest('.about-split');
+        wrap?.remove();
+        split?.classList.add('no-photo');
+      }, { once: true });
+    });
+  </script>
+
+  <script>
+    // side-scrolling photo strips: arrows scroll by most of the visible width
+    document.querySelectorAll('.strip-wrap').forEach(function (w) {
+      var strip = w.querySelector('.strip');
+      w.querySelector('.strip-btn.prev').addEventListener('click', function () { strip.scrollBy({ left: -strip.clientWidth * 0.8 }); });
+      w.querySelector('.strip-btn.next').addEventListener('click', function () { strip.scrollBy({ left: strip.clientWidth * 0.8 }); });
+    });
+  </script>
+
+  <% if (page === 'book' && (!bookingView || bookingView.mode === 'form')) { %>
+  <script>
+    (function () {
+      var form = document.getElementById('bookForm'); if (!form) return;
+      var dateEl = document.getElementById('bookDate'), slotsEl = document.getElementById('bookSlots'), timeEl = document.getElementById('bookTime');
+      var url = form.dataset.slots, wantTime = form.dataset.pickTime || '';
+      function chosenService() { var r = form.querySelector('input[name=service]:checked'); return r ? r.value : ''; }
+      function chosenAddons() { return Array.prototype.map.call(form.querySelectorAll('input[name=addon]:checked'), function (c) { return c.value; }); }
+      var seq = 0;
+      function load() {
+        timeEl.value = wantTime; var svc = chosenService(), date = dateEl.value;
+        if (!svc || !date) { slotsEl.innerHTML = '<p class="book-hint">Choose a service and a date to see open times.</p>'; return; }
+        var my = ++seq; slotsEl.innerHTML = '<p class="book-hint">Checking open times…</p>';
+        fetch(url + '?service=' + encodeURIComponent(svc) + '&date=' + encodeURIComponent(date) + '&addons=' + encodeURIComponent(chosenAddons().join('|')), { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+          .then(function (r) { return r.json(); }).then(function (d) {
+            if (my !== seq) return; slotsEl.innerHTML = '';
+            if (!d.slots || !d.slots.length) { slotsEl.innerHTML = '<p class="book-hint">No open times that day. Please try another date.</p>'; timeEl.value = ''; wantTime = ''; return; }
+            d.slots.forEach(function (s) {
+              var b = document.createElement('button'); b.type = 'button'; b.textContent = s.label; b.dataset.time = s.time;
+              if (s.time === timeEl.value) b.className = 'on';
+              b.addEventListener('click', function () {
+                Array.prototype.forEach.call(slotsEl.children, function (x) { x.className = ''; });
+                b.className = 'on'; timeEl.value = s.time; wantTime = s.time;
+              });
+              slotsEl.appendChild(b);
+            });
+            if (timeEl.value && !slotsEl.querySelector('.on')) { timeEl.value = ''; wantTime = ''; }
+          }).catch(function () { if (my === seq) slotsEl.innerHTML = '<p class="book-hint">Could not load times. Please refresh and try again.</p>'; });
+      }
+      form.addEventListener('change', function (e) { if (e.target.name === 'service' || e.target.name === 'addon' || e.target.name === 'date') { if (e.target.name !== 'addon' || true) { wantTime = e.target.name === 'date' ? '' : wantTime; load(); } } });
+      form.addEventListener('submit', function (e) { if (!timeEl.value) { e.preventDefault(); slotsEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (!slotsEl.querySelector('.err')) slotsEl.insertAdjacentHTML('afterbegin', '<p class="book-hint err" style="color:#dc2626;width:100%;">Please pick a time.</p>'); } });
+      if (chosenService() && dateEl.value) load();
+    })();
+  </script>
+  <% } %>
+
+  <% { const ch = site.sections.chat || {};
+       if (ch.enabled && !preview && !(typeof staticExport !== 'undefined' && staticExport) && !isThankYou) {
+         const greet = ch.greeting || ('Hi! Ask a question about ' + site.name + '.'); %>
+    <button type="button" class="chat-fab" id="chatFab" aria-expanded="false" aria-controls="chatPanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chat</button>
+    <div class="chat-panel" id="chatPanel" role="dialog" aria-label="Chat with <%= site.name %>" hidden>
+      <div class="chat-head"><span>Ask <%= site.name %></span><button type="button" id="chatClose" aria-label="Close chat">&times;</button></div>
+      <div class="chat-log" id="chatLog" aria-live="polite"><div class="chat-msg bot"><%= greet %></div></div>
+      <div class="chat-note">Automated assistant: answers can be wrong. Please confirm important details with us.</div>
+      <form class="chat-form" id="chatForm"><input type="text" id="chatInput" maxlength="500" placeholder="Type your question" aria-label="Your question" autocomplete="off"><button type="submit">Send</button></form>
+      <button type="button" class="chat-link" id="chatLeadToggle">Rather have us contact you?</button>
+      <form class="chat-lead" id="chatLead" hidden>
+        <input type="text" name="name" placeholder="Your name" maxlength="100" autocomplete="name">
+        <input type="text" name="phone" placeholder="Phone" maxlength="40" autocomplete="tel">
+        <input type="email" name="email" placeholder="Email" maxlength="254" autocomplete="email">
+        <textarea name="message" rows="2" maxlength="1000" placeholder="How can we help?"></textarea>
+        <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute; left:-9999px;" aria-hidden="true">
+        <button type="submit">Send to <%= site.name %></button>
+      </form>
+    </div>
+    <script>
+      (function () {
+        var base = <%- JSON.stringify(basePath || '') %>;
+        var fab = document.getElementById('chatFab'), panel = document.getElementById('chatPanel'), log = document.getElementById('chatLog');
+        var form = document.getElementById('chatForm'), input = document.getElementById('chatInput'), lead = document.getElementById('chatLead');
+        var hist = [], busy = false;
+        function add(cls, text) { var d = document.createElement('div'); d.className = 'chat-msg ' + cls; d.textContent = text; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; }
+        function open(o) { panel.hidden = !o; fab.hidden = o; fab.setAttribute('aria-expanded', o); if (o) input.focus(); else fab.focus(); }
+        fab.onclick = function () { open(true); };
+        document.getElementById('chatClose').onclick = function () { open(false); };
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !panel.hidden) open(false); });
+        document.getElementById('chatLeadToggle').onclick = function () { lead.hidden = !lead.hidden; if (!lead.hidden) lead.querySelector('input').focus(); };
+        form.addEventListener('submit', function (e) {
+          e.preventDefault(); var q = input.value.trim(); if (!q || busy) return;
+          input.value = ''; add('me', q); hist.push({ role: 'user', content: q }); busy = true;
+          var wait = add('bot', '…');
+          fetch(base + '/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: hist }) })
+            .then(function (r) { return r.json(); })
+            .then(function (j) { var t = (j && j.reply) || 'Sorry, something went wrong. Please use the contact form.'; wait.textContent = t; hist.push({ role: 'assistant', content: t }); if (/leave your contact|contact information below|get back to you/i.test(t)) lead.hidden = false; })
+            .catch(function () { wait.textContent = 'Sorry, something went wrong. Please use the contact form.'; })
+            .then(function () { busy = false; log.scrollTop = log.scrollHeight; });
+        });
+        lead.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var fd = new FormData(lead), body = { transcript: hist };
+          fd.forEach(function (v, k) { body[k] = v; });
+          fetch(base + '/chat/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+            .then(function (r) { return r.json(); })
+            .then(function (j) { if (j && j.ok) { lead.hidden = true; lead.reset(); add('bot', 'Thank you. We received your details and will be in touch.'); } else add('bot', (j && j.error) || 'Please add a phone number or email.'); })
+            .catch(function () { add('bot', 'Sorry, that did not send. Please try the contact form.'); });
+        });
+      })();
+    </script>
+  <% } } %>
+
+  <% { const fc = site.sections.contact || {}; const digits = String(fc.phone || '').replace(/[^0-9]/g, ''); const intl = digits.length === 10 ? '1' + digits : digits;
+       const isStatic = typeof staticExport !== 'undefined' && staticExport; const fb = fc.floatButton;
+       const okPhone = intl.length >= 10 && intl.length <= 15;
+       const icon = { chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>', call: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>', cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>' };
+       let fHref = '', fLabel = '', fIcon = icon.chat, fExtra = '', fCls = '';
+       if ((fb === 'text' || fb === 'whatsapp') && okPhone) { fHref = fb === 'whatsapp' ? 'https://wa.me/' + intl : 'sms:+' + intl; fLabel = fb === 'whatsapp' ? 'WhatsApp' : 'Text us'; fCls = fb === 'whatsapp' ? ' wa' : ''; fExtra = fb === 'whatsapp' ? ' target="_blank" rel="noopener"' : ''; }
+       else if (fb === 'call' && okPhone) { fHref = 'tel:+' + intl; fLabel = 'Call us'; fIcon = icon.call; }
+       else if (fb === 'book' && site.sections.booking.enabled && !isStatic) { fHref = basePath + '/book'; fLabel = 'Book now'; fIcon = icon.cal; }
+       else if (fb === 'quote' && !isStatic && page !== 'contact') { fHref = basePath + '/contact'; fLabel = 'Get a quote'; fIcon = icon.cal; }
+       if (fHref) { %>
+    <a class="float-contact<%= fCls %>" href="<%= fHref %>"<%- fExtra %>>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><%- fIcon %></svg>
+      <%= fLabel %>
+    </a>
+  <% } } %>
+  <script>
+    (function () {
+      // announcement bar: stays closed once dismissed (until the owner changes the message)
+      var bar = document.getElementById('annBar');
+      if (bar) {
+        var k = 'ann-' + bar.dataset.key;
+        try { if (localStorage.getItem(k)) bar.hidden = true; } catch (e) {}
+        var x = document.getElementById('annClose');
+        if (x) x.addEventListener('click', function () { bar.hidden = true; try { localStorage.setItem(k, '1'); } catch (e) {} });
+      }
+      // photo lightbox for any [data-lightbox] group
+      var groups = document.querySelectorAll('[data-lightbox]'); if (!groups.length) return;
+      var box = document.createElement('div'); box.className = 'lb'; box.hidden = true; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Photo viewer');
+      box.innerHTML = '<button type="button" class="lb-close" aria-label="Close">&times;</button><button type="button" class="lb-prev" aria-label="Previous photo">&lsaquo;</button><img alt=""><button type="button" class="lb-next" aria-label="Next photo">&rsaquo;</button><div class="lb-count"></div>';
+      document.body.appendChild(box);
+      var img = box.querySelector('img'), count = box.querySelector('.lb-count'), list = [], at = 0, opener = null;
+      function show(i) { at = (i + list.length) % list.length; img.src = list[at].src; img.alt = list[at].alt; count.textContent = list.length > 1 ? (at + 1) + ' / ' + list.length : ''; }
+      function open(group, i, from) { list = Array.prototype.slice.call(group.querySelectorAll('img')); opener = from; show(i); box.hidden = false; document.body.style.overflow = 'hidden'; box.querySelector('.lb-close').focus(); }
+      function close() { box.hidden = true; document.body.style.overflow = ''; img.removeAttribute('src'); if (opener) opener.focus(); }
+      groups.forEach(function (g) {
+        g.addEventListener('click', function (e) {
+          var t = e.target.closest('img'); if (!t || !g.contains(t) || e.target.closest('a')) return;
+          var all = Array.prototype.slice.call(g.querySelectorAll('img')); open(g, all.indexOf(t), t);
+        });
+      });
+      box.addEventListener('click', function (e) {
+        if (e.target.closest('.lb-close') || e.target === box) return close();
+        if (e.target.closest('.lb-prev')) return show(at - 1);
+        if (e.target.closest('.lb-next')) return show(at + 1);
+      });
+      document.addEventListener('keydown', function (e) {
+        if (box.hidden) return;
+        if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft') show(at - 1); else if (e.key === 'ArrowRight') show(at + 1);
+      });
+      var sx = 0; box.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; }, { passive: true });
+      box.addEventListener('touchend', function (e) { var dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 50) show(at + (dx < 0 ? 1 : -1)); });
+    })();
+  </script>
+
+  <script>
+    (function () {
+      // video: load the player only when clicked (no tracking until then)
+      document.querySelectorAll('.video-frame').forEach(function (f) {
+        f.querySelector('.video-play').addEventListener('click', function () {
+          var i = document.createElement('iframe'); i.src = f.dataset.embed; i.allow = 'autoplay; fullscreen; picture-in-picture'; i.allowFullscreen = true; i.title = 'Video';
+          f.innerHTML = ''; f.appendChild(i);
+        });
+      });
+      // tabs
+      document.querySelectorAll('[data-tabs]').forEach(function (box) {
+        box.classList.add('js-tabs');
+        var btns = box.querySelectorAll('.tab-btn'), panels = box.querySelectorAll('.tab-panel');
+        btns.forEach(function (b, n) { b.addEventListener('click', function () {
+          btns.forEach(function (x, m) { x.classList.toggle('on', m === n); x.setAttribute('aria-selected', m === n); });
+          panels.forEach(function (p, m) { if (m === n) p.removeAttribute('data-off'); else p.setAttribute('data-off', ''); });
+        }); });
+      });
+    })();
+  </script>
+  <% if (heroFx) { %>
+  <script>
+  (function () {
+    var cv = document.querySelector('canvas.hero-fx'); if (!cv) return;
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { cv.remove(); return; }
+    var kind = cv.dataset.fx, emo = (cv.dataset.emoji || '✨').split(' ').filter(Boolean), cols = (cv.dataset.colors || '#fff').split(',');
+    if (kind === 'confetti') cols = ['#ffffff', '#ffd166', '#ff8fb1', '#7bdff2', cols[1] || '#fff'];
+    var ctx = cv.getContext('2d'), W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2), ps = [], raf = 0, visible = true, t0 = 0;
+    function size() { var r = cv.getBoundingClientRect(); W = r.width; H = r.height; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+    function rnd(a, b) { return a + Math.random() * (b - a); }
+    function make(initial) {
+      var big = W < 600 ? 0.75 : 1;
+      var p = { x: rnd(0, W), y: initial ? rnd(0, H) : (kind === 'confetti' ? -20 : H + 30), ph: rnd(0, 6.28), sw: rnd(8, 26), r: rnd(0, 6.28), vr: rnd(-0.03, 0.03), c: cols[Math.floor(Math.random() * cols.length)], e: emo[Math.floor(Math.random() * emo.length)], t: rnd(0, 6.28) };
+      if (kind === 'emoji') { p.s = rnd(16, 34) * big; p.vy = rnd(0.25, 0.7); }
+      else if (kind === 'bubbles') { p.s = rnd(5, 20) * big; p.vy = rnd(0.35, 0.9); }
+      else if (kind === 'confetti') { p.s = rnd(6, 11) * big; p.vy = -rnd(0.5, 1.3); }
+      else { p.s = rnd(6, 15) * big; p.vy = 0; p.y = rnd(0, H); }
+      return p;
+    }
+    function init() { size(); var n = W < 600 ? 9 : 16; if (kind === 'confetti') n = W < 600 ? 22 : 40; ps = []; for (var i = 0; i < n; i++) ps.push(make(true)); }
+    function star(x, y, s, a) { ctx.beginPath(); for (var i = 0; i < 8; i++) { var rr = i % 2 ? s * 0.28 : s, an = i * Math.PI / 4 - Math.PI / 2; ctx.lineTo(x + Math.cos(an) * rr, y + Math.sin(an) * rr); } ctx.closePath(); ctx.globalAlpha = a; ctx.fill(); }
+    function frame(ts) {
+      raf = 0; if (!visible) return;
+      ctx.clearRect(0, 0, W, H);
+      for (var i = 0; i < ps.length; i++) {
+        var p = ps[i]; p.t += 0.02; p.r += p.vr; p.y -= p.vy;
+        var x = p.x + Math.sin(p.t + p.ph) * (kind === 'sparkles' ? 0 : p.sw);
+        var edge = Math.min(1, Math.max(0, kind === 'confetti' ? Math.min(p.y + 20, H - p.y) / 60 : Math.min(H - p.y, p.y) / 90));
+        if (kind === 'emoji') { ctx.globalAlpha = 0.85 * edge; ctx.font = p.s + 'px serif'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; ctx.fillText(p.e, x, p.y); }
+        else if (kind === 'bubbles') { ctx.globalAlpha = 0.9 * edge; ctx.beginPath(); ctx.arc(x, p.y, p.s, 0, 6.283); ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1.4; ctx.stroke(); ctx.beginPath(); ctx.arc(x - p.s * 0.35, p.y - p.s * 0.35, p.s * 0.16, 0, 6.283); ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fill(); }
+        else if (kind === 'confetti') { ctx.save(); ctx.translate(x, p.y); ctx.rotate(p.r * 3); ctx.globalAlpha = 0.9 * edge; ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); ctx.restore(); }
+        else { ctx.fillStyle = p.c; star(p.x, p.y, p.s * (0.6 + 0.4 * Math.sin(p.t * 1.6 + p.ph)), 0.35 + 0.55 * Math.abs(Math.sin(p.t * 0.9 + p.ph))); }
+        if (kind === 'confetti' ? p.y > H + 20 : (kind !== 'sparkles' && p.y < -40)) ps[i] = make(false);
+      }
+      ctx.globalAlpha = 1;
+      raf = requestAnimationFrame(frame);
+    }
+    function start() { if (!raf && visible) raf = requestAnimationFrame(frame); }
+    init(); start();
+    var rt; window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(init, 200); });
+    if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { visible = es[0].isIntersecting; if (visible) start(); }).observe(cv);
+  })();
+  </script>
+  <% } %>
+  <% if (openWeek) { %>
+  <script>
+  (function () {
+    var b = document.getElementById('sgOpen'); if (!b) return;
+    var w = JSON.parse(b.getAttribute('data-week')), tz = b.getAttribute('data-tz') || undefined;
+    var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    function fmt(m) { m = m % 1440; var h = Math.floor(m / 60), mm = m % 60; return (h % 12 || 12) + (mm ? ':' + (mm < 10 ? '0' : '') + mm : '') + (h < 12 ? ' AM' : ' PM'); }
+    function update() {
+      var p = {};
+      try { new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; }); } catch (e) { return; }
+      var d = DAYS.indexOf(p.weekday), m = (+p.hour % 24) * 60 + +p.minute; if (d < 0 || isNaN(m)) return;
+      var until = null, allDay = false, next = null;
+      (w[d] || []).forEach(function (r) { if (m >= r[0] && m < r[1]) { until = r[1]; allDay = r[0] === 0 && r[1] >= 1440; } else if (r[0] > m && (next === null || r[0] < next)) next = r[0]; });
+      (w[(d + 6) % 7] || []).forEach(function (r) { if (r[1] > 1440 && m < r[1] - 1440) until = r[1] - 1440; });
+      b.className = 'open-badge ' + (until !== null ? 'is-open' : 'is-closed');
+      b.textContent = '';
+      b.appendChild(document.createElement('i'));
+      b.appendChild(document.createTextNode(until !== null ? 'Open now' : 'Closed now'));
+      var more = until !== null ? (allDay ? '' : until === 1440 ? 'until midnight' : 'until ' + fmt(until)) : (next !== null ? 'opens ' + fmt(next) : '');
+      if (more) { var s = document.createElement('small'); s.textContent = more; b.appendChild(s); }
+      b.hidden = false;
+    }
+    update(); setInterval(update, 60000);
+  })();
+  </script>
+  <% } %>
+  <script>
+  (function () {
+    var sliders = document.querySelectorAll('.ba-slider'); if (!sliders.length) return;
+    var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    sliders.forEach(function (s) {
+      var r = s.querySelector('input');
+      r.addEventListener('input', function () { s.style.setProperty('--pos', r.value + '%'); });
+      if (still || !('IntersectionObserver' in window)) return;
+      // a short sweep the first time it comes into view, so visitors see it can be dragged
+      var io = new IntersectionObserver(function (es) {
+        if (!es[0].isIntersecting) return; io.disconnect();
+        var t0 = null;
+        requestAnimationFrame(function step(t) {
+          if (t0 === null) t0 = t; var k = Math.min(1, (t - t0) / 1400);
+          var v = 50 + 22 * Math.sin(k * Math.PI * 2) * (1 - k);
+          if (document.activeElement !== r) { s.style.setProperty('--pos', v + '%'); r.value = Math.round(v); }
+          if (k < 1) requestAnimationFrame(step);
+        });
+      }, { threshold: 0.6 });
+      io.observe(s);
+    });
+  })();
+  </script>
+  <% const _exp = typeof staticExport !== 'undefined' && staticExport; const _prev = typeof preview !== 'undefined' && preview; %>
+  <% if (motionLevel !== 'none' || _prev) { %>
+  <% if (mTier === 'standard') { %>
+  <script src="<%= _exp ? '' : '/' %>sg-motion-lite.js" defer></script>
+  <% } else { %>
+  <script src="<%= _exp ? '' : '/' %>vendor/motion.js" defer></script>
+  <script src="<%= _exp ? '' : '/' %>sitegen-motion.js" defer></script>
+  <script src="<%= _exp ? '' : '/' %>sg-premium.js" defer></script>
+  <% if (mTier === 'showcase') { %><script src="<%= _exp ? '' : '/' %>sg-shader.js" defer></script><% } %>
+  <% } %>
+  <% } %>
+  <% if (bp || bpHero || customTail.length || (mixHome && mixHome.needs.lib) || _clBlk) { %><script src="<%= _exp ? '' : '/' %>sg-lib.js" defer></script><% } %>
+  <% const _txPage = textBoxes.pageId(pageKey, { service: typeof service !== 'undefined' ? service : null, area: typeof area !== 'undefined' ? area : null, post: typeof post !== 'undefined' ? post : null, extra: typeof extra !== 'undefined' ? extra : null }), _tx = textBoxes.forPage(site, _txPage), _txFont = textBoxes.fontLink(_tx); %>
+  <% if (_txFont) { %><link rel="stylesheet" href="<%= _txFont %>" data-sg-txfonts><% } %>
+  <div class="sg-tx-src" data-sg-txpage="<%= _txPage %>" hidden><% _tx.forEach(t => { %><div class="sg-tx" data-sg-tx="<%= t.id %>" data-at="<%= t.at %>" style="<%= textBoxes.style(t) %>"><%= t.text %></div><% }) %><% picBoxes.forPage(site, _txPage).forEach(p => { %><%- picBoxes.html(p) %><% }) %></div>
+  <script src="<%= _exp ? '' : '/' %>sg-fx.js" defer></script>
+  <% const _smooth = smoothScroll.script(site.theme); if (_smooth) { %><script data-sg-smooth><%- _smooth.replace(/<\//g, '<\\/') %></script><% } %>
+  <% if (((site.sections.blocks && site.sections.blocks.items) || []).some(b => b.type === 'video' && videoMask.masked(b.side))) { %><style data-sg-vm><%- videoMask.CSS %></style><%- videoMask.BLOB_SVG %><script data-sg-vm><%- videoMask.SCRIPT %></script><% } %>
+  <% if (mixHome && mixHome.items.some(it => it.glass)) { %><style data-sg-glass><%- glassFx.CSS %></style><script data-sg-glass><%- glassFx.SCRIPT %></script><% } %>
+  <% if (((site.sections.blocks && site.sections.blocks.items) || []).some(b => b.imgfx) || (mixHome && mixHome.items.some(it => it.imgfx))) { %><style data-sg-ix><%- imgFx.CSS %></style><script data-sg-ix><%- imgFx.SCRIPT %></script><% } %>
+  <% if (((site.sections.blocks && site.sections.blocks.items) || []).some(b => b.height) || (mixHome && mixHome.items.some(it => it.height))) { %><style data-sg-ht><%- heightFx.CSS %></style><% } %>
+  <% if (((site.sections.blocks && site.sections.blocks.items) || []).some(b => b.film) || (mixHome && mixHome.items.some(it => it.film))) { %><style data-sg-film><%- filmFx.CSS %></style><% } %>
+  <% if (((site.sections.blocks && site.sections.blocks.items) || []).some(b => b.pin) || (mixHome && mixHome.items.some(it => it.pin))) { %><style data-sg-pin><%- pinFx.CSS %></style><script data-sg-pin><%- pinFx.SCRIPT %></script><% } %>
+  <% const _sfx = scrollFx.script(site.theme); if (_sfx) { %><style data-sg-sfx><%- scrollFx.css(site.theme) %></style><script data-sg-sfx><%- _sfx.replace(/<\//g, '<\\/') %></script><% } %>
+  <% if (extraFx.list(site.theme).length || _mixXfx.length) { %><style data-sg-xfx><%- extraFx.CSS %></style><script type="application/json" id="sg-xfx"><%- extraFx.data(site, page, _mixXfx) %></script><script data-sg-xfx><%- extraFx.SCRIPT.replace(/<\//g, '<\\/') %></script><% } %>
+  <% const _split = splitText.script(site.theme); if (_split) { %><style data-sg-split><%- splitText.CSS %></style><script data-sg-split><%- _split.replace(/<\//g, '<\\/') %></script><% } %>
+  <% if (_prev && !_exp && page === 'home' && !(typeof hideMotionBar !== 'undefined' && hideMotionBar)) { %>
+  <div class="sg-motion-bar" role="group" aria-label="Motion style preview">
+    <div class="sg-mb-label">Motion<small>Preview only</small></div>
+    <div class="sg-mb-seg" aria-label="Motion level">
+      <% motionLib.LEVELS.forEach(l => { %><button type="button" data-sg-tier="<%= l.id %>" aria-pressed="<%= l.id === mTier %>" title="<%= l.hint %>"><%= l.label %></button><% }) %>
+    </div>
+    <div class="sg-mb-seg">
+      <% motionLib.PRESETS.forEach(pr => { %><button type="button" data-sg-preset="<%= pr.id %>" aria-pressed="<%= pr.id === motionLevel %>" title="<%= pr.hint %>"><%= pr.label %></button><% }) %>
+    </div>
+    <button type="button" class="sg-mb-replay" id="sgReplay">&#8635; Replay</button>
+    <% if (site.id) { %><form method="POST" action="/sites/<%= site.id %>/motion" class="sg-mb-save"><input type="hidden" name="motionStyle" id="sgMotionPick" value="<%= motionLevel %>"><input type="hidden" name="motionLevel" id="sgTierPick" value="<%= mTier %>"><button type="submit" id="sgMotionSave" disabled>Use this</button></form><% } %>
+  </div>
+  <style>
+    .sg-motion-bar { position: fixed; z-index: 2147483000; left: 50%; transform: translateX(-50%); bottom: 16px; max-width: calc(100% - 24px); background: #12302c; color: #e9f2ef; border-radius: 16px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; box-shadow: 0 18px 40px -16px rgba(0,0,0,.5); font: 13px/1.3 system-ui, sans-serif; }
+    .sg-mb-label { font-weight: 700; padding: 0 6px; } .sg-mb-label small { display: block; font-weight: 400; color: #93ada7; font-size: 11px; }
+    .sg-mb-seg { display: inline-flex; background: rgba(255,255,255,.12); border-radius: 10px; padding: 3px; }
+    .sg-motion-bar button { font: inherit; font-weight: 700; border: 0; border-radius: 8px; padding: 9px 14px; min-height: 44px; cursor: pointer; background: transparent; color: inherit; }
+    .sg-mb-seg button[aria-pressed="true"] { background: #f2b134; color: #1d1503; }
+    .sg-mb-replay, .sg-mb-save button { border: 1px solid rgba(255,255,255,.35) !important; }
+    .sg-mb-save button:not(:disabled) { background: #f2b134; color: #1d1503; border-color: #f2b134 !important; } .sg-mb-save button:disabled { opacity: .5; cursor: default; }
+    .sg-mb-save { margin: 0; }
+  </style>
+  <script>
+  (function () {
+    var cur = document.body.getAttribute('data-motion') || 'none', start = cur;
+    function startTierSame() { return '<%= mTier %>' === '<%= motionLib.resolveLevel(site.theme, site.sections.hero) %>'; }
+    var btns = document.querySelectorAll('[data-sg-preset]');
+    function apply(level, top) {
+      cur = level; document.body.setAttribute('data-motion', level);
+      btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-sg-preset') === level)); });
+      var pick = document.getElementById('sgMotionPick'), save = document.getElementById('sgMotionSave');
+      if (pick) pick.value = level; if (save) save.disabled = (level === start && startTierSame());
+      if (top) window.scrollTo({ top: 0, behavior: 'instant' });
+      requestAnimationFrame(function () { if (window.SiteGenMotion) window.SiteGenMotion.init(level); });
+    }
+    btns.forEach(function (b) { b.addEventListener('click', function () { apply(b.getAttribute('data-sg-preset'), true); }); });
+    // the level changes which scripts the page loads, so switching reloads the preview with ?tier=
+    var startTier = '<%= mTier %>', savedTier = '<%= motionLib.resolveLevel(site.theme, site.sections.hero) %>';
+    document.querySelectorAll('[data-sg-tier]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var u = new URL(location.href); u.searchParams.set('tier', b.getAttribute('data-sg-tier')); location.href = u.toString();
+      });
+    });
+    (function () { var save = document.getElementById('sgMotionSave'); if (save && startTier !== savedTier) save.disabled = false; })();
+    document.getElementById('sgReplay').addEventListener('click', function () { apply(cur, true); });
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { var sm = document.querySelector('.sg-mb-label small'); if (sm) sm.textContent = 'This device has reduce-motion on, so nothing animates here'; }
+  })();
+  </script>
+  <% } %>
+  <%- include('_lookfeel-foot', { site }) %>
+<% if (site.theme.pageGrad && site.theme.pageGradScroll) { %><script><%- gradients.SCROLL_JS %></script><% } %>
+</body>
+</html>

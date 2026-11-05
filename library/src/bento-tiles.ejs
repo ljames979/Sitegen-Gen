@@ -1,0 +1,52 @@
+<%# Original layout (bento grid, drawn from scratch): one overview made of mixed tiles built only from the client's real content: a big photo, their numbers, top services, one review, a second photo and how to call. Tiles with no content are left out. %>
+<section class="sg-lib" data-sg-section="bento/tiles">
+  <div class="bg-page">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+      <% if (d.heading) { %><div class="mx-auto max-w-3xl text-center" data-animate="fade-up"><h2 data-sg-head class="font-heading text-2xl font-semibold text-ink sm:text-3xl"><%= d.heading %></h2></div><% } %>
+      <div class="sg-bento mt-10 grid grid-flow-dense grid-cols-2 gap-4 md:grid-cols-4 md:auto-rows-[minmax(10.5rem,auto)]" data-animate="stagger">
+        <figure class="relative col-span-2 row-span-2 min-h-64 overflow-hidden rounded-2xl bg-surface shadow-[var(--shadow-sm)]">
+          <img class="absolute inset-0 h-full w-full object-cover" src="<%= d.photos[0].src %>" alt="<%= d.photos[0].alt %>" loading="lazy" decoding="async">
+          <% if (d.place) { %><figcaption class="absolute bottom-4 left-4 rounded-full bg-page px-4 py-2 text-sm font-semibold text-ink shadow-[var(--shadow-sm)]"><%= d.place %></figcaption><% } %>
+        </figure>
+        <% d.stats.forEach(function (st) { %>
+          <div class="flex flex-col justify-end rounded-2xl bg-primary p-6 shadow-[var(--shadow-sm)]">
+            <span class="font-heading text-4xl font-bold text-on-primary"><span<%- st.countAttrs || '' %>><%= st.value %></span></span>
+            <span class="mt-1 text-sm text-on-primary opacity-90"><%= st.label %></span>
+          </div>
+        <% }) %>
+        <% if (d.services.length) { %>
+          <div class="col-span-2 flex flex-col justify-between rounded-2xl border border-line bg-surface p-6 shadow-[var(--shadow-sm)]">
+            <h3 class="font-heading text-lg font-semibold text-ink"><%= d.servicesHeading %></h3>
+            <ul class="mt-4 flex flex-wrap gap-2">
+              <% d.services.forEach(function (sv) { %><li><a class="inline-block rounded-full border border-line bg-page px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-primary hover:text-primary" href="<%= sv.href %>"><%= sv.title %></a></li><% }) %>
+            </ul>
+            <% if (d.servicesHref) { %><a class="mt-4 text-sm font-medium text-primary underline-offset-4 hover:underline" href="<%= d.servicesHref %>">See all services &rarr;</a><% } %>
+          </div>
+        <% } %>
+        <% if (d.review) { %>
+          <blockquote class="col-span-2 flex flex-col justify-between rounded-2xl border border-line bg-page p-6 shadow-[var(--shadow-sm)]">
+            <span class="font-heading text-5xl leading-none text-primary" aria-hidden="true">&ldquo;</span>
+            <p class="mt-1 text-pretty text-ink"><%= d.review.text %></p>
+            <footer class="mt-4 flex items-center gap-2 text-sm text-muted">
+              <% if (d.review.rating) { %><span class="text-primary" aria-label="<%= d.review.rating %> out of 5 stars"><%= '★'.repeat(Math.min(5, Math.round(d.review.rating))) %></span><% } %>
+              <% if (d.review.name) { %><cite class="not-italic font-medium"><%= d.review.name %></cite><% } %>
+            </footer>
+          </blockquote>
+        <% } %>
+        <% if (d.photos[1]) { %>
+          <figure class="relative min-h-40 overflow-hidden rounded-2xl bg-surface shadow-[var(--shadow-sm)]"><img class="absolute inset-0 h-full w-full object-cover" src="<%= d.photos[1].src %>" alt="<%= d.photos[1].alt %>" loading="lazy" decoding="async"></figure>
+        <% } %>
+        <% if (d.phone) { %>
+          <a class="group flex flex-col justify-end rounded-2xl border border-line bg-surface p-6 shadow-[var(--shadow-sm)]" href="tel:<%= d.phoneHref %>">
+            <span class="text-sm text-muted">Call</span>
+            <span class="font-heading text-xl font-semibold text-ink group-hover:text-primary"><%= d.phone %></span>
+          </a>
+        <% } else if (d.ctaHref) { %>
+          <a class="group flex flex-col justify-end rounded-2xl border border-line bg-surface p-6 shadow-[var(--shadow-sm)]" href="<%= d.ctaHref %>">
+            <span class="font-heading text-xl font-semibold text-ink group-hover:text-primary"><%= d.ctaText %> &rarr;</span>
+          </a>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>

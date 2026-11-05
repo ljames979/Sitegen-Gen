@@ -1,0 +1,60 @@
+<%# Size (and optionally photo) controls for one home-page section.
+    Expects: pre (field-name prefix, e.g. "bps_services_" or "cs_"), o (current options), photo (show the photo controls) %>
+<% const _g = (k) => (o && o[k] != null ? o[k] : ''); const _sel = (name, list, cur) => '<select name="' + pre + name + '">' + list.map(x => '<option value="' + x[0] + '"' + (cur === x[0] ? ' selected' : '') + '>' + x[1] + '</option>').join('') + '</select>'; %>
+<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border,#e2e8f0);">
+  <p style="margin:0 0 4px; font-size:13px; font-weight:600;">Size</p>
+  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+    <div style="flex:1; min-width:210px; font-weight:400;"><label style="font-weight:400;">Height (space above and below)</label>
+      <div style="display:flex; gap:6px;"><%- _sel('space', [['', 'Normal'], ['compact', 'Compact'], ['roomy', 'Roomy'], ['tall', 'Extra tall']], _g('space')) %><input type="number" name="<%= pre %>padY" value="<%= _g('padY') %>" min="0" max="400" step="4" placeholder="px" style="width:80px;" title="Exact space in pixels (overrides the choice)"></div></div>
+    <div style="flex:1; min-width:210px; font-weight:400;"><label style="font-weight:400;">Content width</label>
+      <div style="display:flex; gap:6px;"><%- _sel('width', [['', 'Normal'], ['narrow', 'Narrow'], ['wide', 'Wide'], ['full', 'Full width']], _g('width')) %><input type="number" name="<%= pre %>maxW" value="<%= _g('maxW') %>" min="320" max="1920" step="10" placeholder="px" style="width:80px;" title="Exact width in pixels (overrides the choice)"></div></div>
+    <div style="flex:1; min-width:210px; font-weight:400;"><label style="font-weight:400;">Text size</label>
+      <div style="display:flex; gap:6px;"><%- _sel('text', [['', 'Normal'], ['small', 'Smaller'], ['large', 'Larger']], _g('text')) %><input type="number" name="<%= pre %>fs" value="<%= _g('fs') %>" min="70" max="160" step="5" placeholder="%" style="width:80px;" title="Exact text size in percent (overrides the choice)"></div></div>
+  </div>
+  <p class="muted" style="font-size:12px; margin:4px 0 0;">Leave the boxes empty to use the normal size. A number in the box wins over the choice next to it.</p>
+</div>
+<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border,#e2e8f0);">
+  <p style="margin:0 0 4px; font-size:13px; font-weight:600;">Your own color or gradient</p>
+  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+    <label style="font-weight:400;">Color 1 <input type="color" name="<%= pre %>bgColor" value="<%= _g('bgColor') || '#1f6f5c' %>" style="width:64px; height:38px; padding:2px;"></label>
+    <label style="font-weight:400;">Color 2 <input type="color" name="<%= pre %>bgColor2" value="<%= _g('bgColor2') || '#14342c' %>" style="width:64px; height:38px; padding:2px;"></label>
+    <label style="flex:1; min-width:170px; font-weight:400;">Gradient direction <%- _sel('gradDir', [['diag', 'Diagonal'], ['down', 'Top to bottom'], ['up', 'Bottom to top'], ['right', 'Left to right'], ['radial', 'Glow from the top']], _g('gradDir') || 'diag') %></label>
+  </div>
+  <p class="muted" style="font-size:12px; margin:4px 0 0;">These apply when Background (above) is set to "Your color" or "Your gradient" (a gradient uses both colors). The text turns light or dark on its own so it stays readable.</p>
+</div>
+<% const _gm = gradients.menu(typeof site !== 'undefined' ? site.theme : {}), _gcur = _g('grad'), _gcss = (_gm.flatMap(g => g[1]).find(x => x[0] === _gcur) || [])[2] || ''; %>
+<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border,#e2e8f0);">
+  <p style="margin:0 0 4px; font-size:13px; font-weight:600;">Gradient gallery, textures and gradient style</p>
+  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+    <label style="flex:2; min-width:200px; font-weight:400;">Gradient from the gallery
+      <select name="<%= pre %>grad" class="grad-pick" onchange="var o=this.options[this.selectedIndex];this.closest('div').querySelector('.grad-swatch').style.background=o.getAttribute('data-css')||'transparent'">
+        <option value="" data-css="">None</option>
+        <% _gm.forEach(g => { %><optgroup label="<%= g[0] %>"><% g[1].forEach(x => { %><option value="<%= x[0] %>" data-css="<%= x[2] %>" <%= _gcur === x[0] ? 'selected' : '' %>><%= x[1] %></option><% }) %></optgroup><% }) %>
+      </select></label>
+    <span class="grad-swatch" aria-hidden="true" style="width:64px; height:38px; border-radius:8px; border:1px solid var(--border,#e2e8f0); background:<%= _gcss || 'transparent' %>;"></span>
+    <label style="flex:1; min-width:150px; font-weight:400;">Style <%- _sel('gradStyle', [['', 'Automatic']].concat(Object.entries(gradients.STYLES)), _g('gradStyle')) %></label>
+    <label style="width:110px; font-weight:400;">Angle <input type="number" name="<%= pre %>gradAngle" value="<%= _g('gradAngle') %>" min="0" max="359" step="5" placeholder="135" title="Degrees, for straight and cone gradients"></label>
+    <label style="flex:1; min-width:150px; font-weight:400;">Movement <%- _sel('gradMove', [['', 'Still'], ['1', 'Slowly drifting']], _g('gradMove') ? '1' : '') %></label>
+    <label style="flex:2; min-width:200px; font-weight:400;">With the section's color <%- _sel('gradBlend', [['', 'Replace it with the gallery pick'], ['1', 'Blend the pick into it']], _g('gradBlend') ? '1' : '') %></label>
+    <label style="flex:1; min-width:150px; font-weight:400;">Grain <%- _sel('grain', [['', 'Smooth'], ['1', 'Grain over it (print-like)']], _g('grain') ? '1' : '') %></label>
+    <label style="flex:3; min-width:260px; font-weight:400;">Texture colors <%- include('_ink-pick', { name: pre + 'gradInk', value: _g('gradInk'), theme: typeof site !== 'undefined' ? site.theme : {} }) %></label>
+  </div>
+  <p class="muted" style="font-size:12px; margin:4px 0 0;">Set Background (above) to "Gradient from the gallery" to use a gallery pick. Style, angle, movement and grain work with any gradient background, including "Brand gradient" and "Your gradient". Movement stays still for visitors who turn motion off. The textures at the end of the gallery (contour lines, dot grids, a wire globe and more) are drawn as they are, so style and angle do not change them; the swatch shows only their colors. "Blend the pick into it" keeps the section's own color and text: the gradient's colors glow in from the corners and a texture's lines and dots are drawn over it in your brand color. Texture colors draw a texture's lines and dots in your brand color, colors you pick (two or three sweep across it) or a rainbow.</p>
+</div>
+<% if (typeof photo !== 'undefined' && photo) { %>
+<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border,#e2e8f0);">
+  <p style="margin:0 0 4px; font-size:13px; font-weight:600;">Photo for this section</p>
+  <div class="upload-row">
+    <input type="url" name="<%= pre %>photo" value="<%= _g('photo') %>" placeholder="https://... or upload (leave empty for no photo)">
+    <input type="file" accept="image/*" class="file-input" hidden>
+    <button type="button" class="btn-secondary upload-btn">Upload</button>
+    <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+  </div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <label style="flex:1; min-width:170px; font-weight:400;">Where <%- _sel('photoPos', [['', 'Choose where'], ['left', 'Beside the text, on the left'], ['right', 'Beside the text, on the right'], ['above', 'A band above the section'], ['below', 'A band below the section'], ['bg', 'Behind the section (background)']], _g('photoPos')) %></label>
+    <label style="flex:1; min-width:140px; font-weight:400;">Photo size <%- _sel('photoSize', [['medium', 'Medium'], ['small', 'Small'], ['large', 'Large']], _g('photoSize') || 'medium') %></label>
+    <label style="flex:1; min-width:140px; font-weight:400;">Darkness behind text <%- _sel('photoOverlay', [['medium', 'Medium'], ['light', 'Light'], ['dark', 'Dark']], _g('photoOverlay') || 'medium') %></label>
+  </div>
+  <p class="muted" style="font-size:12px; margin:4px 0 0;">Side photos need a wide screen; on phones they sit on top. "Darkness" applies to a background photo, which turns the section's text light. Works best on text sections like About, FAQ and Why choose us.</p>
+</div>
+<% } %>

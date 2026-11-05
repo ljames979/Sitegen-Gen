@@ -1,0 +1,22 @@
+<%# Original layout (your own section, same arrangement as About: editorial: a big number or heading in a narrow column, the words in a wide one) %>
+<% var ims = (d.images || []).map(function (x) { return x && typeof x === 'object' ? x.src : x; }).filter(Boolean); if (!ims.length && d.image) ims = [d.image]; var alt = d.imageAlt || ((d.images || [])[0] || {}).alt || ''; %>
+<section class="sg-lib" data-sg-section="custom/editorial">
+  <div class="bg-page">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+      <div class="sg-flip grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-16">
+        <div class="lg:border-r lg:border-line lg:pr-10" data-animate="fade-up">
+          <% if (d.stat) { %>
+            <p class="font-heading text-6xl font-bold text-primary sm:text-7xl" <%- d.stat.countAttrs || '' %>><%= d.stat.value %></p>
+            <p class="mt-2 text-sm font-medium tracking-wide text-muted uppercase"><%= d.stat.label %></p>
+          <% } else if (d.heading) { %><h2 data-sg-head class="font-heading text-4xl font-bold text-ink sm:text-5xl"><%= d.heading %></h2><% } %>
+        </div>
+        <div class="lg:col-span-2" data-animate="fade-up">
+          <% if (d.stat && d.heading) { %><h2 data-sg-head class="font-heading text-2xl font-semibold text-ink sm:text-3xl"><%= d.heading %></h2><% } %>
+          <% if (d.body) { %><p class="<%= d.stat && d.heading ? 'mt-4' : '' %> text-xl/relaxed text-pretty whitespace-pre-line text-muted"><%= d.body %></p><% } %>
+          <% if (d.moreHref) { %><a class="mt-6 inline-block font-medium text-primary underline-offset-4 hover:underline" href="<%= d.moreHref %>">Learn more about us &rarr;</a><% } %>
+          <% if (d.buttonText && d.buttonHref) { %><p class="mt-6"><a class="inline-block rounded-md bg-primary px-5 py-3 font-medium text-on-primary shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90" href="<%= d.buttonHref %>"><%= d.buttonText %></a></p><% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

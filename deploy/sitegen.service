@@ -1,0 +1,19 @@
+# systemd unit to keep SiteGen running on a Linux server (starts on boot,
+# restarts if it crashes). Adjust User and the two paths, then:
+#   sudo cp deploy/sitegen.service /etc/systemd/system/sitegen.service
+#   sudo systemctl enable --now sitegen
+[Unit]
+Description=SiteGen website builder
+After=network.target
+
+[Service]
+Type=simple
+User=sitegen
+WorkingDirectory=/opt/sitegen
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=3
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,36 @@
+<%# Original layout ("Image + Scrim", cosmic): a full photo, or a night-sky gradient in the brand colors when there is none, with a dark scrim on the text side, a gradient headline, a glowing button and optional glass feature cards. Colors are worked out in scrimhero.js so the words stay readable on any photo. %>
+<section class="sg-lib" data-sg-section="hero/scrim">
+  <% var cards = d.cards || [], trust = d.trust || []; %>
+  <div class="sg-scrim-wrap" style="<%= d.scrimVars || '' %>" data-sc-layout="<%= d.scrimLayout || 'full' %>" data-sc-align="<%= d.align || 'left' %>" data-sc-tier="<%= d.tier || 'standard' %>">
+    <div class="sg-scrim relative isolate overflow-hidden">
+      <% if (d.image) { %><img class="sg-scrim-bg sg-noshape absolute inset-0 -z-20 h-full w-full object-cover" src="<%= d.image %>" alt="" fetchpriority="high" style="object-position: <%= d.focal || '50% 50%' %>"><% } else { %><div class="sg-scrim-bg sg-scrim-sky absolute inset-0 -z-20" aria-hidden="true"></div><% } %>
+      <div class="sg-scrim-shade absolute inset-0 -z-10" aria-hidden="true"></div>
+      <% if (d.tier === 'showcase') { %><canvas class="absolute inset-0 -z-10 h-full w-full" data-sg-stars aria-hidden="true"></canvas><% } %>
+      <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8 lg:py-40">
+        <div class="sg-scrim-text max-w-2xl">
+          <h1 class="sg-scrim-h1 font-heading text-4xl font-bold text-balance sm:text-6xl" data-animate="hero"><%- d.headlineHtml %></h1>
+          <% if (d.sub) { %><p class="mt-5 text-base text-pretty text-white sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+          <div class="sg-scrim-btns mt-8 flex flex-wrap gap-4" data-animate="hero">
+            <a class="sg-scrim-cta inline-block px-6 py-3 font-semibold" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+            <% if (d.phone) { %><a class="sg-scrim-ghost inline-block border border-white/60 px-6 py-3 font-medium text-white transition-colors hover:bg-white/10" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+          </div>
+          <% if (trust.length) { %>
+            <ul class="sg-scrim-btns mt-7 flex list-none flex-wrap gap-x-6 gap-y-2 p-0 text-sm text-white" data-animate="hero">
+              <% trust.forEach(function (t) { %><li class="flex items-center gap-2"><svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><%= t %></li><% }) %>
+            </ul>
+          <% } %>
+        </div>
+        <% if (cards.length) { %>
+          <ul class="sg-scrim-cards mt-14 grid list-none gap-4 p-0 sm:grid-cols-2 <%= cards.length >= 4 ? 'lg:grid-cols-4' : cards.length === 3 ? 'lg:grid-cols-3' : '' %>" data-animate="stagger">
+            <% cards.forEach(function (c) { %>
+              <li class="sg-glass rounded-xl p-5">
+                <h2 class="font-heading text-lg font-semibold text-white"><%= c.title %></h2>
+                <% if (c.text) { %><p class="mt-1 text-sm/relaxed text-white"><%= c.text %></p><% } %>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>

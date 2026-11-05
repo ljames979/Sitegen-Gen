@@ -1,0 +1,19 @@
+<%# Adapted from Meraki UI (MIT) marketing/heros "Image": headline and words beside a photo that runs to the edge of the screen, with a two-column check list (the owner's trust line and badges). %>
+<section class="sg-lib" data-sg-section="hero/checks">
+  <div class="tw:relative tw:overflow-hidden tw:bg-page">
+    <div class="tw:mx-auto tw:grid tw:max-w-7xl tw:items-center tw:gap-10 tw:px-4 tw:py-14 tw:sm:px-6 tw:lg:grid-cols-2 tw:lg:px-8 tw:lg:py-24">
+      <div class="tw:lg:pr-6">
+        <h1 class="tw:font-heading tw:text-4xl/tight tw:font-bold tw:tracking-wide tw:text-ink tw:sm:text-5xl/tight" data-animate="hero"><%- d.headlineHtml %></h1>
+        <% if (d.sub) { %><p class="tw:mt-4 tw:max-w-xl tw:text-pretty tw:text-muted tw:sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+        <% if ((d.checks || []).length) { %><ul class="tw:mt-7 tw:grid tw:gap-x-6 tw:gap-y-4 tw:sm:grid-cols-2" data-animate="hero">
+          <% d.checks.forEach(function (c) { %><li class="tw:flex tw:items-start tw:gap-3 tw:text-ink"><svg class="tw:size-5 tw:shrink-0 tw:text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span><%= c %></span></li><% }) %>
+        </ul><% } %>
+        <div class="tw:mt-8 tw:flex tw:flex-wrap tw:gap-3" data-animate="hero">
+          <a class="tw:inline-block tw:rounded-lg tw:bg-primary tw:px-6 tw:py-3 tw:text-sm tw:font-medium tw:tracking-wide tw:text-on-primary tw:uppercase tw:transition-opacity tw:hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+          <% if (d.phone) { %><a class="tw:inline-block tw:rounded-lg tw:border tw:border-line tw:px-6 tw:py-3 tw:text-sm tw:font-medium tw:tracking-wide tw:text-ink tw:uppercase tw:transition-colors tw:hover:bg-surface" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+        </div>
+      </div>
+      <% if (d.image) { %><div class="tw:lg:-mr-[max(2rem,calc((100vw-80rem)/2+2rem))]" data-animate="hero"><img class="tw:h-72 tw:w-full tw:rounded-lg tw:object-cover tw:sm:h-96 tw:lg:h-[30rem] tw:lg:rounded-r-none" src="<%= d.image %>" alt="" fetchpriority="high" style="object-position: <%= d.focal %>"></div><% } %>
+    </div>
+  </div>
+</section>

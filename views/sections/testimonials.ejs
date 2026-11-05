@@ -1,0 +1,67 @@
+<h3>Testimonials</h3>
+<p class="muted" style="font-size:13px; margin-top:-8px;">Only use real reviews from real customers — rating and date are optional.</p>
+<label>Heading</label>
+<input type="text" name="testimonials_heading" value="<%= site.sections.testimonials.heading %>" maxlength="60">
+<label>Small label above the heading (optional, e.g. "Our care")</label>
+<input type="text" name="testimonials_eyebrow" value="<%= site.sections.testimonials.eyebrow || '' %>" maxlength="40">
+<label>How reviews are shown</label>
+<select name="testimonials_display"><option value="grid" <%= !['carousel', 'wall'].includes(site.sections.testimonials.display) ? 'selected' : '' %>>Grid (all visible)</option><option value="carousel" <%= site.sections.testimonials.display === 'carousel' ? 'selected' : '' %>>Sliding row (swipe or arrows)</option><option value="wall" <%= site.sections.testimonials.display === 'wall' ? 'selected' : '' %>>Moving wall (two slow rows, needs 4 or more reviews)</option></select>
+<div class="seo-page-row" style="padding:10px; margin:10px 0;">
+  <strong>Google reviews</strong>
+  <p class="muted" style="font-size:12.5px; margin:4px 0 8px;">Show your Google star rating, and optionally Google's own selection of recent reviews, pulled in automatically once a day. Reviews are shown exactly as Google returns them (nothing is picked or edited) and marked "from Google". Needs a Google key on this server and your business's Place ID (README, "Google reviews"). Your own testimonials below still work as before.</p>
+  <label>Google Place ID</label>
+  <input type="text" name="testimonials_googlePlaceId" value="<%= site.sections.testimonials.googlePlaceId || '' %>" maxlength="200" placeholder="ChIJ...">
+  <label>What to show</label>
+  <select name="testimonials_googleMode"><% [['', 'Nothing'], ['badge', 'Star rating badge'], ['reviews', 'Badge and Google reviews']].forEach(o => { %><option value="<%= o[0] %>" <%= (site.sections.testimonials.googleMode || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+  <% if (typeof googleFlash !== 'undefined' && googleFlash) { %><p class="flash" style="margin:8px 0 0;"><%= { ok: 'Google reviews updated.', fail: 'Google did not return the reviews: ' + ((typeof googleCache !== 'undefined' && googleCache && googleCache.error) || 'see the server log') , noid: 'Save a Place ID first.' }[googleFlash] || '' %></p><% } %>
+  <% if (typeof googleCache !== 'undefined' && googleCache && googleCache.data && googleCache.data !== '{}') { const gd = JSON.parse(googleCache.data); %><p class="muted" style="font-size:12.5px; margin:8px 0 0;">Last pulled <%= googleCache.fetched_at.slice(0, 16).replace('T', ' ') %> UTC: <%= gd.rating %> stars, <%= gd.count %> reviews.</p><% } %>
+  <% if (typeof googleConfigured !== 'undefined' && !googleConfigured) { %><p class="muted" style="font-size:12.5px; margin:8px 0 0;">No Google key is set up on this server yet, so nothing can be pulled.</p><% } %>
+  <button type="button" class="btn-secondary" style="margin-top:8px;" data-google-refresh>Save, then pull reviews now</button>
+</div>
+<div id="testimonialsList">
+  <% site.sections.testimonials.items.forEach(item => { %>
+    <div class="service-row">
+      <input type="text" name="testimonial_quote" value="<%= item.quote %>" placeholder="Quote" maxlength="500">
+      <input type="text" name="testimonial_author" value="<%= item.author %>" placeholder="Customer name" maxlength="80">
+      <select name="testimonial_rating" style="flex: 0 0 110px;">
+        <option value="0" <%= !item.rating ? 'selected' : '' %>>No rating</option>
+        <% [5,4,3,2,1].forEach(n => { %>
+          <option value="<%= n %>" <%= item.rating === n ? 'selected' : '' %>><%= n %> star<%= n === 1 ? '' : 's' %></option>
+        <% }) %>
+      </select>
+      <input type="text" name="testimonial_date" value="<%= item.date %>" placeholder="e.g. March 2026" maxlength="40" style="flex: 0 0 130px;">
+      <div class="svc-extra"><div class="upload-row">
+        <input type="url" name="testimonial_photo" value="<%= item.photo || '' %>" placeholder="Photo of the customer (optional, shown next to the name)">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div></div>
+      <button type="button" class="btn-secondary remove-row">✕</button>
+    </div>
+  <% }) %>
+</div>
+<button type="button" class="btn-secondary" data-add="testimonial">+ Add testimonial</button>
+
+<%- include('_cards-pick', { site, fam: 'testimonials' }) %>
+<template id="tpl-testimonial">
+  <div class="service-row">
+    <input type="text" name="testimonial_quote" placeholder="Quote" maxlength="500">
+    <input type="text" name="testimonial_author" placeholder="Customer name" maxlength="80">
+    <select name="testimonial_rating" style="flex: 0 0 110px;">
+      <option value="0" selected>No rating</option>
+      <option value="5">5 stars</option>
+      <option value="4">4 stars</option>
+      <option value="3">3 stars</option>
+      <option value="2">2 stars</option>
+      <option value="1">1 star</option>
+    </select>
+    <input type="text" name="testimonial_date" placeholder="e.g. March 2026" maxlength="40" style="flex: 0 0 130px;">
+    <div class="svc-extra"><div class="upload-row">
+        <input type="url" name="testimonial_photo" value="" placeholder="Photo of the customer (optional, shown next to the name)">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div></div>
+    <button type="button" class="btn-secondary remove-row">✕</button>
+  </div>
+</template>

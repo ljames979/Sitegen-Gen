@@ -1,0 +1,16 @@
+<%# Original layout (big plus small): one large featured photo beside a grid of smaller ones. %>
+<% var pics = ((d.all && d.all.length ? d.all : d.images) || []).slice(0, 5); %>
+<section class="sg-lib" data-sg-section="gallery/feature">
+  <div class="bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+      <div class="mx-auto max-w-3xl text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="text-sm font-medium tracking-wide text-primary uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="font-heading text-2xl font-semibold text-ink sm:text-3xl"><%= d.heading %></h2>
+      </div>
+      <div class="sg-flip mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4" data-animate="stagger">
+        <% pics.forEach(function (im, i) { %><img class="<%= i === 0 ? 'col-span-2 row-span-2 h-full min-h-64' : 'aspect-square' %> w-full rounded-xl object-cover" src="<%= im.src %>" alt="<%= im.alt %>" loading="lazy"><% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="mt-8 text-center"><a class="font-medium text-primary underline-offset-4 hover:underline" href="<%= d.moreHref %>">See the full gallery &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

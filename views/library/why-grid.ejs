@@ -1,0 +1,23 @@
+<%# Adapted from HyperUI (MIT) marketing/feature-grids: reasons to choose us, with a check mark. %>
+<section class="sg-lib" data-sg-section="why/grid">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="tw:mt-10 tw:grid tw:grid-cols-1 tw:gap-6 tw:sm:grid-cols-2 <%= ({ 1: 'tw:lg:grid-cols-1', 2: 'tw:lg:grid-cols-2', 3: 'tw:lg:grid-cols-3', 4: 'tw:lg:grid-cols-4' })[Math.min(d.items.length, 4)] %>" data-sg-cards data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <div class="tw:rounded-xl tw:border tw:border-line tw:bg-surface tw:p-6">
+            <% if (it.imageUrl) { %><img class="tw:aspect-[3/2] tw:w-full tw:rounded-lg tw:object-cover" src="<%= it.imageUrl %>" alt="" loading="lazy" decoding="async"><% } else { %>
+            <span class="tw:flex tw:size-10 tw:items-center tw:justify-center tw:rounded-full tw:bg-primary tw:text-on-primary" aria-hidden="true"><svg class="tw:size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+            <% } %>
+            <h3 class="tw:mt-4 tw:font-heading tw:text-lg tw:font-semibold tw:text-ink"><%= it.title %></h3>
+            <% if (it.text) { %><p class="tw:mt-2 tw:text-sm/relaxed tw:text-pretty tw:text-muted"><%= it.text %></p><% } %>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</section>

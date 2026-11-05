@@ -1,0 +1,11 @@
+<% const an = site.sections.announcement || {}; %>
+<p class="muted" style="font-size:13px; margin-top:0;">A thin bar above the menu on every page, for a promotion, holiday hours or booking news. It uses the accent color. Visitors can close it, and it stays closed until you change the message.</p>
+<label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" style="width:auto;" name="ann_enabled" value="1" <%= an.enabled ? 'checked' : '' %>> Show the announcement bar</label>
+<label>Message</label>
+<input type="text" name="ann_text" maxlength="160" value="<%= an.text || '' %>" placeholder="e.g. Now booking holiday appointments">
+<div class="upload-row">
+  <input type="text" name="ann_linkText" maxlength="40" value="<%= an.linkText || '' %>" placeholder="Link text (optional)">
+  <input type="text" name="ann_linkUrl" value="<%= an.linkUrl || '' %>" placeholder="Link, e.g. /site/name/book">
+</div>
+<label>Visitors can close it</label>
+<select name="ann_dismissible"><option value="1" <%= an.dismissible !== false ? 'selected' : '' %>>Yes</option><option value="0" <%= an.dismissible === false ? 'selected' : '' %>>No, always show</option></select>

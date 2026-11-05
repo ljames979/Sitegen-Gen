@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Secrets (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# App data: database, DB backups, intake PDFs
+data/*
+!data/.gitkeep
+tests/intake-pdfs/
+
+# User uploads
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Local backup folders
+_backup-before-*/
+_backups/
+
+# Large downloaded models
+models/
+
+# Logs and OS / editor clutter
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

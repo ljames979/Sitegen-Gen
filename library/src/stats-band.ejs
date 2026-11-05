@@ -1,0 +1,15 @@
+<%# Adapted from HyperUI (MIT) marketing/stats: a band of real numbers (only ones the client gave us). %>
+<section class="sg-lib" data-sg-section="stats/band">
+  <div class="bg-primary">
+    <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+      <dl class="grid grid-cols-2 gap-6 text-center <%= ({ 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4' })[Math.min(d.items.length, 4)] %>" data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <div>
+            <dd class="font-heading text-3xl font-bold text-on-primary sm:text-4xl"><span<%- it.countAttrs || '' %>><%= it.value %></span></dd>
+            <dt class="mt-1 text-sm text-on-primary opacity-90"><%= it.label %></dt>
+          </div>
+        <% }) %>
+      </dl>
+    </div>
+  </div>
+</section>

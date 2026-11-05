@@ -1,0 +1,18 @@
+<%# Original layout (photo strip: a row of cropped photos, then the words centered below) %>
+<% var ims = (d.images || []).map(function (x) { return x && typeof x === 'object' ? x.src : x; }).filter(Boolean); if (!ims.length && d.image) ims = [d.image]; var alt = d.imageAlt || ((d.images || [])[0] || {}).alt || ''; %>
+<section class="sg-lib" data-sg-section="about/strip">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <% if (ims.length) { %><div class="tw:grid tw:gap-3 <%= ims.length >= 4 ? 'tw:grid-cols-2 tw:sm:grid-cols-4' : ims.length === 3 ? 'tw:grid-cols-3' : ims.length === 2 ? 'tw:grid-cols-2' : 'tw:grid-cols-1' %>" data-animate="stagger">
+        <% ims.slice(0, 4).forEach(function (u, i) { %><img class="<%= ims.length === 1 ? 'tw:aspect-[21/9]' : 'tw:aspect-square' %> tw:w-full tw:rounded-xl tw:object-cover" src="<%= u %>" alt="<%= i ? '' : alt %>" loading="lazy"><% }) %>
+      </div><% } %>
+      <div class="tw:mx-auto tw:mt-10 tw:max-w-3xl tw:text-center" data-animate="fade-up">
+          <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+          <% if (d.heading) { %><h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2><% } %>
+          <% if (d.body) { %><p class="<%= d.heading ? 'tw:mt-4' : '' %> tw:text-lg/relaxed tw:text-pretty tw:whitespace-pre-line tw:text-muted"><%= d.body %></p><% } %>
+          <% if (d.moreHref) { %><a class="tw:mt-6 tw:inline-block tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">Learn more about us &rarr;</a><% } %>
+          <% if (d.buttonText && d.buttonHref) { %><p class="tw:mt-6"><a class="tw:inline-block tw:rounded-md tw:bg-primary tw:px-5 tw:py-3 tw:font-medium tw:text-on-primary tw:shadow-[var(--shadow-sm)] tw:transition-opacity tw:hover:opacity-90" href="<%= d.buttonHref %>"><%= d.buttonText %></a></p><% } %>
+      </div>
+    </div>
+  </div>
+</section>

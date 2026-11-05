@@ -1,0 +1,16 @@
+<%# Original layout (frosted band: a photo across the page with a frosted-glass panel of words over it) %>
+<% var ims = (d.images || []).map(function (x) { return x && typeof x === 'object' ? x.src : x; }).filter(Boolean); if (!ims.length && d.image) ims = [d.image]; var alt = d.imageAlt || ((d.images || [])[0] || {}).alt || ''; %>
+<section class="sg-lib" data-sg-section="about/frosted">
+  <div class="tw:relative tw:overflow-hidden tw:bg-surface">
+    <div class="tw:relative tw:z-10 tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-16 tw:sm:px-6 tw:lg:px-8 tw:lg:py-28">
+      <div class="sg-glass sg-dockself tw:max-w-xl tw:rounded-2xl tw:border tw:border-line tw:p-6 tw:shadow-[var(--shadow-md)] tw:sm:p-10" data-animate="fade-up">
+          <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+          <% if (d.heading) { %><h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2><% } %>
+          <% if (d.body) { %><p class="<%= d.heading ? 'tw:mt-4' : '' %> tw:text-lg/relaxed tw:text-pretty tw:whitespace-pre-line tw:text-muted"><%= d.body %></p><% } %>
+          <% if (d.moreHref) { %><a class="tw:mt-6 tw:inline-block tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">Learn more about us &rarr;</a><% } %>
+          <% if (d.buttonText && d.buttonHref) { %><p class="tw:mt-6"><a class="tw:inline-block tw:rounded-md tw:bg-primary tw:px-5 tw:py-3 tw:font-medium tw:text-on-primary tw:shadow-[var(--shadow-sm)] tw:transition-opacity tw:hover:opacity-90" href="<%= d.buttonHref %>"><%= d.buttonText %></a></p><% } %>
+      </div>
+    </div>
+    <% if (ims.length) { %><img class="sg-noshape tw:absolute tw:inset-0 tw:size-full tw:object-cover" src="<%= ims[0] %>" alt="" loading="lazy" aria-hidden="true"><% } %>
+  </div>
+</section>

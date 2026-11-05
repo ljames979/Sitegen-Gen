@@ -1,0 +1,11 @@
+/* A small scoped reset (the site does not use Tailwind's global preflight). :where() keeps it at zero
+   specificity, and .sg-lib beats plain element rules in the site CSS. */
+.sg-lib { font-family: var(--body-font); color: var(--ink); line-height: 1.5; box-sizing: border-box; }
+.sg-lib *, .sg-lib *::before, .sg-lib *::after { box-sizing: border-box; border: 0 solid var(--border); }
+.sg-lib :where(h1, h2, h3, h4, h5, p, ul, ol, dl, dd, figure, blockquote, details, summary) { margin: 0; padding: 0; }
+.sg-lib :where(h1, h2, h3, h4) { font-family: var(--heading-font); font-size: inherit; font-weight: inherit; line-height: 1.15; color: inherit; letter-spacing: inherit; text-transform: inherit; }
+.sg-lib :where(ul, ol) { list-style: none; }
+.sg-lib :where(a) { color: inherit; text-decoration: none; }
+.sg-lib :where(img, svg, video) { display: block; max-width: 100%; }
+.sg-lib :where(button, input, select, textarea) { font: inherit; color: inherit; }
+.sg-lib summary { list-style: none; cursor: pointer; } .sg-lib summary::-webkit-details-marker { display: none; }

@@ -1,0 +1,23 @@
+<h3>FAQ</h3>
+<label>Heading</label>
+<input type="text" name="faq_heading" value="<%= site.sections.faq.heading %>" maxlength="60">
+<label>Small label above the heading (optional, e.g. "Our care")</label>
+<input type="text" name="faq_eyebrow" value="<%= site.sections.faq.eyebrow || '' %>" maxlength="40">
+<div id="faqList">
+  <% site.sections.faq.items.forEach(item => { %>
+    <div class="service-row">
+      <input type="text" name="faq_question" value="<%= item.question %>" placeholder="Question" maxlength="150">
+      <input type="text" name="faq_answer" value="<%= item.answer %>" placeholder="Answer" maxlength="500">
+      <button type="button" class="btn-secondary remove-row">✕</button>
+    </div>
+  <% }) %>
+</div>
+<button type="button" class="btn-secondary" data-add="faq">+ Add question</button>
+
+<template id="tpl-faq">
+  <div class="service-row">
+    <input type="text" name="faq_question" placeholder="Question" maxlength="150">
+    <input type="text" name="faq_answer" placeholder="Answer" maxlength="500">
+    <button type="button" class="btn-secondary remove-row">✕</button>
+  </div>
+</template>

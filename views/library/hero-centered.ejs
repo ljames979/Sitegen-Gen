@@ -1,0 +1,16 @@
+<%# Adapted from HyperUI (MIT) marketing/banners/1. Colors, fonts and corners come from the site theme. %>
+<section class="sg-lib" data-sg-section="hero/centered">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-16 tw:sm:px-6 tw:sm:py-24 tw:lg:px-8 tw:lg:py-32">
+      <div class="tw:mx-auto tw:max-w-prose tw:text-center">
+        <h1 class="tw:font-heading tw:text-4xl tw:font-bold tw:text-ink tw:sm:text-5xl" data-animate="hero"><%- d.headlineHtml %></h1>
+        <% if (d.sub) { %><p class="tw:mt-4 tw:text-base tw:text-pretty tw:text-muted tw:sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+        <div class="tw:mt-4 tw:flex tw:flex-wrap tw:justify-center tw:gap-4 tw:sm:mt-6" data-animate="hero">
+          <a class="tw:inline-block tw:rounded-md tw:bg-primary tw:px-5 tw:py-3 tw:font-medium tw:text-on-primary tw:shadow-[var(--shadow-sm)] tw:transition-opacity tw:hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+          <% if (d.phone) { %><a class="tw:inline-block tw:rounded-md tw:border tw:border-line tw:bg-page tw:px-5 tw:py-3 tw:font-medium tw:text-ink tw:shadow-[var(--shadow-sm)] tw:transition-colors tw:hover:bg-surface" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+        </div>
+      </div>
+      <% if (d.image) { %><img class="tw:mx-auto tw:mt-10 tw:w-full tw:max-w-5xl tw:rounded-xl tw:object-cover tw:shadow-[var(--shadow-md)] tw:sm:mt-14" src="<%= d.image %>" alt="" fetchpriority="high"><% } %>
+    </div>
+  </div>
+</section>

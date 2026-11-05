@@ -1,0 +1,24 @@
+<%# Adapted from Meraki UI (MIT) marketing/features "Cards": the heading on the left with one word underlined in the brand color, cards outlined in the brand color with an icon, the words and a round arrow. %>
+<section class="sg-lib" data-sg-section="services/outlined">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-6xl tw:px-4 tw:py-14 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:max-w-2xl" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="sg-mk-under tw:font-heading tw:text-3xl tw:font-bold tw:text-ink tw:sm:text-4xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-4 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="tw:mt-10 tw:grid tw:grid-cols-1 tw:gap-6 tw:sm:grid-cols-2 <%= d.items.length === 4 ? 'tw:lg:grid-cols-4' : 'tw:lg:grid-cols-3' %>" data-sg-cards data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <a class="tw:group tw:flex tw:flex-col tw:rounded-xl tw:border-2 tw:border-primary/60 tw:bg-page tw:p-7 tw:transition-colors tw:hover:border-primary tw:hover:bg-primary/5" href="<%= it.href %>">
+            <span class="tw:inline-flex tw:size-10 tw:items-center tw:justify-center tw:rounded-full tw:bg-primary/10 tw:text-primary" aria-hidden="true"><svg class="tw:size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><%- it.icon || '<polyline points="20 6 9 17 4 12"></polyline>' %></svg></span>
+            <h3 class="tw:mt-4 tw:font-heading tw:text-lg tw:font-semibold tw:text-ink"><%= it.title %></h3>
+            <% if (it.description) { %><p class="tw:mt-2 tw:flex-1 tw:text-sm/relaxed tw:text-pretty tw:text-muted"><%= it.description %></p><% } %>
+            <% if (it.price) { %><p class="tw:mt-3 tw:text-sm tw:font-semibold tw:text-ink"><%= it.price %></p><% } %>
+            <span class="tw:mt-5 tw:inline-flex tw:size-8 tw:items-center tw:justify-center tw:rounded-full tw:bg-primary/10 tw:text-primary tw:transition-transform tw:group-hover:translate-x-1" aria-hidden="true"><svg class="tw:size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          </a>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="tw:mt-10"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">See all services &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,19 @@
+<%# Reviews wall: two slow rows moving in opposite directions. Every review is the owner's own pasted text. %>
+<% const wallRows = [items.filter((x, i) => i % 2 === 0), items.filter((x, i) => i % 2 === 1)]; %>
+<div class="t-wall" data-animate="fade-up">
+  <% wallRows.forEach((row, ri) => { %>
+    <div class="t-wall-row<%= ri ? ' rev' : '' %>">
+      <% // each half of the loop must be wider than a big screen, so short rows are repeated; only the first copy is read out
+         const half = []; while (row.length && half.length < 6) half.push(...row.map((item, k) => ({ item, dup: half.length + k >= row.length }))); %>
+      <div class="t-wall-track" style="--dur:<%= half.length * 9 %>s">
+        <% half.concat(half.map(h => ({ item: h.item, dup: true }))).forEach(({ item, dup }) => { %>
+          <div class="card testimonial-card<%= dup ? ' t-wall-dup' : '' %>"<%- dup ? ' aria-hidden="true"' : '' %>>
+            <% if (item.rating) { %><div class="stars"><%= '★'.repeat(item.rating) %><span class="stars-empty"><%= '★'.repeat(5 - item.rating) %></span></div><% } %>
+            <p class="quote"><%= item.quote %></p>
+            <% if (item.author) { %><p class="author"><%= item.author %></p><% } %>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  <% }) %>
+</div>

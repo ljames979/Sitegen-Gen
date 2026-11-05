@@ -1,0 +1,27 @@
+<%# Card arrangement picker for one section family. Expects: fam (services, why, testimonials, gallery) %>
+<% const _cur = ((site.theme.cards || {})[fam]) || ''; const _ok = cardLayouts.allowed(fam);
+   const _thumb = {
+     '': '<rect x="6" y="6" width="48" height="28" rx="4" fill="none" stroke="currentColor" stroke-dasharray="3 3"/><path d="M24 20l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2"/>',
+     cols2: '<rect x="6" y="8" width="22" height="24" rx="3"/><rect x="32" y="8" width="22" height="24" rx="3"/>',
+     cols3: '<rect x="5" y="10" width="15" height="20" rx="2"/><rect x="22.5" y="10" width="15" height="20" rx="2"/><rect x="40" y="10" width="15" height="20" rx="2"/>',
+     cols4: '<rect x="4" y="12" width="11" height="16" rx="2"/><rect x="17.5" y="12" width="11" height="16" rx="2"/><rect x="31" y="12" width="11" height="16" rx="2"/><rect x="44.5" y="12" width="11" height="16" rx="2"/>',
+     list: '<rect x="10" y="5" width="40" height="8" rx="2"/><rect x="10" y="16" width="40" height="8" rx="2"/><rect x="10" y="27" width="40" height="8" rx="2"/>',
+     feature: '<rect x="5" y="5" width="32" height="30" rx="3"/><rect x="40" y="5" width="15" height="14" rx="2"/><rect x="40" y="21" width="15" height="14" rx="2"/>',
+     stagger: '<rect x="5" y="4" width="15" height="20" rx="2"/><rect x="22.5" y="16" width="15" height="20" rx="2"/><rect x="40" y="4" width="15" height="20" rx="2"/>',
+     zigzag: '<rect x="6" y="4" width="28" height="9" rx="2"/><rect x="26" y="15.5" width="28" height="9" rx="2"/><rect x="6" y="27" width="28" height="9" rx="2"/>',
+     scroll: '<rect x="2" y="9" width="20" height="22" rx="3"/><rect x="25" y="9" width="20" height="22" rx="3"/><rect x="48" y="9" width="12" height="22" rx="3" opacity=".45"/>',
+     tilt: '<rect x="6" y="10" width="15" height="20" rx="2" transform="rotate(-8 13 20)"/><rect x="22.5" y="10" width="15" height="20" rx="2" transform="rotate(6 30 20)"/><rect x="40" y="10" width="15" height="20" rx="2" transform="rotate(-4 47 20)"/>'
+   }; %>
+<div class="cards-pick" data-cards-pick="<%= fam %>">
+  <label>Card arrangement</label>
+  <div class="cp-grid" role="radiogroup" aria-label="Card arrangement">
+    <% cardLayouts.ARRANGEMENTS.filter(a => _ok.includes(a.id)).forEach(a => { %>
+      <label class="cp-tile" title="<%= a.label %>: <%= a.hint %>">
+        <input type="radio" name="theme_cards_<%= fam %>" value="<%= a.id %>" <%= _cur === a.id ? 'checked' : '' %>>
+        <svg viewBox="0 0 60 40" aria-hidden="true" fill="currentColor"><%- _thumb[a.id] %></svg>
+        <span><%= a.label %></span>
+      </label>
+    <% }) %>
+  </div>
+  <p class="hint">Re-lays the cards on the classic home and pages and on section designs that show cards in a grid. To change the order of the cards, use the arrows beside each one above.</p>
+</div>

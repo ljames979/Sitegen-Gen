@@ -1,0 +1,25 @@
+<%# Original layout (bento grid pattern, drawn from scratch): one large featured service beside smaller tiles. Shows 3 or 6 services so the grid has no gaps. %>
+<section class="sg-lib" data-sg-section="services/bento">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <% var list = d.items.length >= 6 ? d.items.slice(0, 6) : d.items.length >= 3 ? d.items.slice(0, 3) : d.items; var bento = list.length >= 3; %>
+      <div class="tw:mt-10 tw:grid tw:grid-cols-1 tw:gap-4 <%= bento ? 'tw:md:grid-cols-3 tw:md:grid-rows-[repeat(2,minmax(11rem,auto))]' : 'tw:sm:grid-cols-2' %>" data-animate="stagger">
+        <% list.forEach(function (it, i) { var big = bento && i === 0; %>
+          <a class="tw:group tw:relative tw:flex tw:flex-col tw:justify-end tw:overflow-hidden tw:rounded-xl tw:border tw:border-line tw:bg-page tw:p-6 tw:shadow-[var(--shadow-sm)] tw:transition-shadow tw:hover:shadow-[var(--shadow-md)] <%= big ? 'tw:md:col-span-2 tw:md:row-span-2 tw:md:p-8 tw:min-h-72' : '' %>" href="<%= it.href %>">
+            <% if (big && it.imageUrl) { %><img class="tw:absolute tw:inset-0 tw:-z-0 tw:h-full tw:w-full tw:object-cover" src="<%= it.imageUrl %>"<% if (it.image2) { %> data-sg-hover="<%= it.image2 %>"<% } %> alt="" loading="lazy"><span class="tw:absolute tw:inset-0 tw:bg-overlay" aria-hidden="true"></span><% } %>
+            <span class="tw:relative tw:block">
+              <span class="tw:block tw:font-heading tw:font-semibold <%= big ? (it.imageUrl ? 'tw:text-3xl tw:text-white' : 'tw:text-3xl tw:text-ink') : 'tw:text-lg tw:text-ink tw:group-hover:text-primary' %>"><%= it.title %></span>
+              <% if (it.description) { %><span class="tw:mt-2 tw:block tw:text-sm/relaxed tw:text-pretty <%= big && it.imageUrl ? 'tw:text-white/90' : 'tw:text-muted' %>"><%= it.description %></span><% } %>
+              <% if (it.price) { %><span class="tw:mt-3 tw:block tw:text-sm tw:font-medium <%= big && it.imageUrl ? 'tw:text-white' : 'tw:text-primary' %>"><%= it.price %></span><% } %>
+            </span>
+          </a>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="tw:mt-8 tw:text-center"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">See all services &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,26 @@
+<%# Adapted from Meraki UI (MIT) marketing/testimonials "Card": review cards with the reviewer under each quote, the middle card filled with the brand color. %>
+<section class="sg-lib" data-sg-section="testimonials/highlight">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-6xl tw:px-4 tw:py-14 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-3xl tw:font-bold tw:text-ink tw:sm:text-4xl"><%= d.heading %></h2>
+        <div class="tw:mt-3 tw:flex tw:gap-1.5" aria-hidden="true"><span class="tw:h-1 tw:w-24 tw:rounded-full tw:bg-primary"></span><span class="tw:h-1 tw:w-3 tw:rounded-full tw:bg-primary"></span><span class="tw:h-1 tw:w-1 tw:rounded-full tw:bg-primary"></span></div>
+      </div>
+      <% var list = d.items.slice(0, 3), mid = list.length === 3 ? 1 : (list.length === 2 ? 1 : 0); %>
+      <div class="tw:mt-10 tw:grid tw:grid-cols-1 tw:gap-6 <%= list.length >= 3 ? 'tw:md:grid-cols-3' : list.length === 2 ? 'tw:md:grid-cols-2' : 'tw:max-w-2xl' %>" data-sg-cards data-animate="stagger">
+        <% list.forEach(function (it, i) { var on = i === mid && list.length > 1; %>
+          <blockquote class="tw:flex tw:h-full tw:flex-col tw:rounded-xl tw:p-7 <%= on ? 'tw:bg-primary tw:text-on-primary' : 'tw:border tw:border-line tw:bg-page tw:text-muted' %>">
+            <% if (it.rating) { %><p class="<%= on ? 'tw:text-on-primary' : 'tw:text-primary' %>" aria-label="<%= it.rating %> out of 5 stars"><%= "★".repeat(Math.round(it.rating)) %></p><% } %>
+            <p class="tw:mt-2 tw:flex-1 tw:leading-relaxed tw:text-pretty">&ldquo;<%= it.quote %>&rdquo;</p>
+            <footer class="tw:mt-6 tw:flex tw:items-center tw:gap-3">
+              <% if (it.photo) { %><img class="tw:size-12 tw:shrink-0 tw:rounded-full tw:object-cover tw:ring-2 <%= on ? 'tw:ring-on-primary/60' : 'tw:ring-primary/30' %>" src="<%= it.photo %>" alt="" loading="lazy"><% } else { %><span class="tw:flex tw:size-12 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-full tw:font-heading tw:font-bold <%= on ? 'tw:bg-on-primary/15 tw:text-on-primary' : 'tw:bg-primary/10 tw:text-primary' %>" aria-hidden="true"><%= String(it.name || '?').trim().charAt(0).toUpperCase() %></span><% } %>
+              <span class="tw:text-sm"><span class="tw:block tw:font-semibold <%= on ? 'tw:text-on-primary' : 'tw:text-ink' %>"><%= it.name %></span><% if (it.role) { %><span class="tw:block <%= on ? 'tw:text-on-primary/80' : 'tw:text-muted' %>"><%= it.role %></span><% } %></span>
+            </footer>
+          </blockquote>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="tw:mt-10"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>"><%= d.moreText || 'Read more reviews' %> &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

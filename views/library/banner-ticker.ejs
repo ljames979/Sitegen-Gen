@@ -1,0 +1,14 @@
+<%# Original layout (scrolling slogan banner, drawn from scratch): large uppercase phrases on the brand color, separated by a star. Built from the client's own badges and service names. Pauses on hover; with reduced motion it stops and scrolls by hand. The repeat is hidden from screen readers. %>
+<section class="sg-lib" data-sg-section="banner/ticker">
+  <div class="tw:bg-primary tw:py-5">
+    <div class="sg-marquee" tabindex="0" aria-label="<%= d.items.join(', ') %>">
+      <div class="sg-marquee-track" style="animation-duration: <%= Math.max(30, d.items.length * 9) %>s">
+        <% [0, 1].forEach(function (copy) { %>
+          <div class="tw:flex tw:shrink-0 tw:items-center tw:gap-8 <%= copy ? 'sg-marquee-dup' : '' %>" <%- copy ? 'aria-hidden="true"' : '' %>>
+            <% d.items.forEach(function (t) { %><span class="tw:font-heading tw:text-xl tw:font-bold tw:tracking-wide tw:whitespace-nowrap tw:text-on-primary tw:uppercase tw:sm:text-2xl"><%= t %></span><span class="tw:text-on-primary tw:opacity-70" aria-hidden="true">&#10022;</span><% }) %>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</section>

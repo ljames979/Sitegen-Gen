@@ -1,0 +1,33 @@
+<%# Original layout (pinned scroll story, drawn from scratch): the services scroll past on one side while the photo on the other side stays pinned and changes to the service being read (public/sg-fx.js). Without the script the first photo shows; on phones each service shows its own photo. %>
+<% var pics = d.items.filter(function (it) { return it.imageUrl; }); %>
+<section class="sg-lib" data-sg-section="services/story">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:max-w-3xl" data-animate="fade-up">
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+      </div>
+      <div class="sg-flip tw:mt-6 tw:grid tw:gap-10 <%= pics.length ? 'tw:md:grid-cols-2' : '' %>" data-sg-story>
+        <div>
+          <% d.items.forEach(function (it, i) { %>
+            <article class="sg-story-step tw:flex tw:flex-col tw:justify-center tw:border-l-4 tw:border-line tw:py-8 tw:pl-6 tw:md:min-h-[60vh] <%= i === 0 ? 'tw:on' : '' %>" data-sg-step="<%= i %>">
+              <% if (it.imageUrl) { %><img class="tw:mb-5 tw:aspect-[4/3] tw:w-full tw:rounded-xl tw:object-cover tw:md:hidden" src="<%= it.imageUrl %>" alt="" loading="lazy" decoding="async"><% } %>
+              <span class="tw:font-heading tw:text-sm tw:font-semibold tw:tracking-widest tw:text-primary"><%= (i + 1 < 10 ? '0' : '') + (i + 1) %></span>
+              <h3 class="tw:mt-2 tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= it.title %></h3>
+              <% if (it.description) { %><p class="tw:mt-3 tw:max-w-prose tw:text-pretty tw:text-muted"><%= it.description %></p><% } %>
+              <% if (it.price) { %><p class="tw:mt-3 tw:font-medium tw:text-primary"><%= it.price %></p><% } %>
+              <p class="tw:mt-5"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= it.href %>">More about <%= it.title %> &rarr;</a></p>
+            </article>
+          <% }) %>
+        </div>
+        <% if (pics.length) { %>
+          <div class="tw:hidden tw:md:block">
+            <div class="tw:sticky tw:top-24 tw:aspect-[4/5] tw:overflow-hidden tw:rounded-2xl tw:bg-surface tw:shadow-[var(--shadow-md)]">
+              <% d.items.forEach(function (it, i) { if (!it.imageUrl) return; %><img class="sg-story-pic tw:absolute tw:inset-0 tw:size-full tw:object-cover <%= it === pics[0] ? 'tw:on' : '' %>" src="<%= it.imageUrl %>" alt="" loading="lazy" decoding="async" data-sg-pic="<%= i %>"><% }) %>
+            </div>
+          </div>
+        <% } %>
+      </div>
+      <% if (d.moreHref) { %><p class="tw:mt-8"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">See all services &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

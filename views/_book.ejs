@@ -1,0 +1,120 @@
+<%# The public booking page. Locals: site, basePath, preview, bookingView %>
+<% const B = bookingLib; const bk = site.sections.booking; const view = bookingView || { mode: 'form', values: {} };
+   const vals = view.values || {}; const svcs = bk.services.length ? bk.services : [{ name: 'Appointment', minutes: 60, price: '', description: '' }];
+   const nowB = B.nowIn(bk.timezone);
+   const maxDate = new Date(Date.UTC(+nowB.date.slice(0, 4), +nowB.date.slice(5, 7) - 1, +nowB.date.slice(8, 10) + (+bk.windowDays || 45))).toISOString().slice(0, 10);
+   const tzLabel = (B.TIMEZONES.find(t => t[0] === bk.timezone) || [0, bk.timezone])[1]; %>
+<section class="block" id="book">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <div class="rule"></div>
+      <h2><%= bk.heading %></h2>
+      <% if (view.mode === 'form' && bk.intro) { %><p class="section-sub"><%= bk.intro %></p><% } %>
+    </div>
+
+    <% if (view.mode === 'done') { %>
+      <div class="contact-card book-card"><div class="form-flash success">Thank you! Your request was received.</div>
+        <p style="text-align:center;"><a class="btn-outline" href="<%= homeHref %>">Back to home</a></p></div>
+
+    <% } else if (view.mode === 'status') { const r = view.booking;
+         const whenText = B.prettyDate(r.start_at.slice(0, 10)) + ' at ' + B.prettyTime(r.start_at.slice(11, 16)); %>
+      <% if (view.isNew && !preview) { %><script>if (window.gtag) gtag('event', 'generate_lead'); if (window.fbq) fbq('track', 'Schedule');</script><% } %>
+      <div class="contact-card book-card">
+        <% if (r.status === 'awaiting_payment') { %><div class="form-flash error">Your time is held for 30 minutes. It is <strong>not booked</strong> until the deposit is paid.<% if (view.payToken) { %> <a href="/pay/<%= view.payToken %>" style="font-weight:700;">Pay the deposit</a><% } %></div>
+        <% } else if (r.status === 'pending') { %><div class="form-flash success"><%= view.isNew ? 'Thank you! Your request was received.' : 'Your request is waiting for confirmation.' %> It is <strong>not confirmed yet</strong>. We will contact you at <%= r.email %> once it is.</div>
+        <% } else if (r.status === 'confirmed') { %><div class="form-flash success"><%= view.isNew ? 'You are booked!' : 'Your appointment is confirmed.' %></div><% if (view.isNew && site.theme.confetti) { %><span data-sg-confetti hidden></span><% } %>
+        <% } else if (r.status === 'declined') { %><div class="form-flash error">Sorry, this request could not be accepted. You are welcome to choose another time.</div>
+        <% } else if (r.status === 'cancelled') { %><div class="form-flash error">This appointment was cancelled.</div>
+        <% } else { %><div class="form-flash success">This appointment is complete. Thank you!</div><% } %>
+        <% if (view.depositPaid) { %><p class="muted" style="margin:0 0 8px; font-size:14px;">Deposit paid: <%= view.depositPaid %></p><% } %>
+        <dl class="book-sum">
+          <dt>When</dt><dd><%= whenText %> <small>(<%= tzLabel %> time)</small></dd>
+          <dt>Service</dt><dd><%= r.service %><%= view.addons.length ? ' + ' + view.addons.join(', ') : '' %></dd>
+          <dt>Name</dt><dd><%= r.name %></dd>
+          <% if (r.address) { %><dt>Address</dt><dd><%= r.address %></dd><% } %>
+          <% view.details.filter(d => d.value).forEach(d => { %><dt><%= d.label %></dt><dd><%= d.value %></dd><% }) %>
+        </dl>
+        <% if ((r.status === 'confirmed' || (view.isNew && r.status === 'pending')) && bk.confirmNote && r.status === 'confirmed') { %><p><%= bk.confirmNote %></p><% } %>
+        <% if (bk.policy) { %><p class="book-policy"><%= bk.policy %></p><% } %>
+        <% if (r.status === 'pending' || r.status === 'confirmed') { %>
+          <form method="POST" action="<%= basePath %>/book/cancel" onsubmit="return confirm('Cancel this appointment?');" style="margin-top:14px;">
+            <input type="hidden" name="token" value="<%= r.token %>">
+            <button type="submit" class="btn-outline">Cancel this appointment</button>
+          </form>
+        <% } %>
+        <% if (site.sections.contact.phone) { %><p style="margin-top:12px;">To change the time, call <a href="tel:<%= site.sections.contact.phone.replace(/[^0-9+]/g, '') %>"><%= site.sections.contact.phone %></a>.</p><% } %>
+        <p style="margin-top:12px;"><a href="<%= basePath %>/book">Book another time</a></p>
+      </div>
+
+    <% } else { %>
+      <div class="contact-card book-card">
+        <% if (view.error) { %><div class="form-flash error"><%= view.error %></div><% } %>
+        <form method="POST" action="<%= basePath %>/book" class="contact-form book-form" id="bookForm" <%= preview ? 'onsubmit="return false;"' : '' %>
+              data-slots="<%= basePath %>/book/slots" data-pick-service="<%= vals.service || '' %>" data-pick-date="<%= vals.date || '' %>" data-pick-time="<%= vals.time || '' %>">
+          <input type="text" name="website" class="hp-field" tabindex="-1" autocomplete="off">
+
+          <div class="book-step"><span>1</span> Choose a service</div>
+          <div class="book-services">
+            <% svcs.forEach((s, i) => { %>
+              <label class="book-svc">
+                <input type="radio" name="service" value="<%= s.name %>" data-minutes="<%= s.minutes %>" <%= (vals.service ? vals.service === s.name : i === 0 && svcs.length === 1) ? 'checked' : '' %> required>
+                <span class="book-svc-body">
+                  <strong><%= s.name %></strong>
+                  <% if (s.price) { %><em><%= s.price %></em><% } %>
+                  <small><%= s.minutes %> min<%= s.description ? ' · ' + s.description : '' %></small>
+                </span>
+              </label>
+            <% }) %>
+          </div>
+
+          <% if (bk.addons.length) { %>
+            <div class="book-step"><span>+</span> Add-ons <small>(optional)</small></div>
+            <div class="book-addons">
+              <% bk.addons.forEach(a => { %>
+                <label class="book-addon"><input type="checkbox" name="addon" value="<%= a.name %>" data-minutes="<%= a.minutes %>" <%= (vals.addon || []).includes(a.name) ? 'checked' : '' %>>
+                  <span><%= a.name %><% if (a.price) { %> <em><%= a.price %></em><% } %><% if (+a.minutes) { %> <small>+<%= a.minutes %> min</small><% } %></span></label>
+              <% }) %>
+            </div>
+          <% } %>
+
+          <div class="book-step"><span>2</span> Pick a date and time</div>
+          <input type="date" name="date" id="bookDate" min="<%= nowB.date %>" max="<%= maxDate %>" value="<%= vals.date || '' %>" required>
+          <div id="bookSlots" class="book-slots" aria-live="polite"><p class="book-hint">Choose a service and a date to see open times.</p></div>
+          <input type="hidden" name="time" id="bookTime" value="<%= vals.time || '' %>">
+          <p class="book-hint" style="margin-top:6px;">Times are in <%= tzLabel %> time.</p>
+
+          <div class="book-step"><span>3</span> Your details</div>
+          <label>Your name</label>
+          <input type="text" name="name" maxlength="100" required value="<%= vals.name || '' %>" class="<%= view.field === 'name' ? 'bad' : '' %>">
+          <label>Email</label>
+          <input type="email" name="email" maxlength="254" required value="<%= vals.email || '' %>" class="<%= view.field === 'email' ? 'bad' : '' %>">
+          <label>Phone <small>(optional)</small></label>
+          <input type="text" name="phone" maxlength="40" value="<%= vals.phone || '' %>">
+          <% if (bk.askAddress) { %>
+            <label>Address where we should come</label>
+            <input type="text" name="address" maxlength="200" required value="<%= vals.address || '' %>" class="<%= view.field === 'address' ? 'bad' : '' %>">
+          <% } %>
+
+          <% if (bk.fields.length) { %>
+            <% bk.fields.forEach((f, i) => { const fv = (vals.fields || {})[i] || ''; const cls = view.field === 'f_' + i ? 'bad' : ''; %>
+              <label><%= f.label %><%= f.required ? '' : ' (optional)' %></label>
+              <% if (f.type === 'select') { %>
+                <select name="f_<%= i %>" <%= f.required ? 'required' : '' %> class="<%= cls %>"><option value="">Choose…</option><% f.options.forEach(o => { %><option value="<%= o %>" <%= fv === o ? 'selected' : '' %>><%= o %></option><% }) %></select>
+              <% } else if (f.type === 'textarea') { %>
+                <textarea name="f_<%= i %>" maxlength="500" <%= f.required ? 'required' : '' %> class="<%= cls %>"><%= fv %></textarea>
+              <% } else { %>
+                <input type="text" name="f_<%= i %>" maxlength="500" <%= f.required ? 'required' : '' %> value="<%= fv %>" class="<%= cls %>">
+              <% } %>
+            <% }) %>
+          <% } %>
+          <label>Anything else we should know? <small>(optional)</small></label>
+          <textarea name="notes" maxlength="1000"><%= vals.notes || '' %></textarea>
+
+          <% if (bk.policy) { %><p class="book-policy"><%= bk.policy %></p><% } %>
+          <button type="submit" class="btn" id="bookSubmit" style="width:100%; margin-top:14px;" <%= preview ? 'disabled' : '' %>><%= bk.autoConfirm ? 'Book appointment' : 'Request appointment' %></button>
+          <p class="book-hint" style="text-align:center;"><%= preview ? 'Preview: booking is disabled here.' : (bk.autoConfirm ? 'You will get your confirmation right away.' : 'We will confirm your request by email. It is not booked until we do.') %></p>
+        </form>
+      </div>
+    <% } %>
+  </div>
+</section>

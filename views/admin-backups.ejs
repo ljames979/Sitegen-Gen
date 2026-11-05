@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Backups — SiteGen</title>
+  <%- include('partials-head') %>
+</head>
+<body>
+  <nav>
+    <strong>SiteGen</strong>
+    <a href="/dashboard" class="btn-secondary btn">Dashboard</a>
+  </nav>
+  <div class="container">
+    <h1>Automatic backups</h1>
+    <p class="muted">SiteGen saves a copy of every site, account and lead once a day (while it is running) in the <code>data/backups</code> folder and keeps the newest <%= keep %>. These files hold the database only. Uploaded photos are in <code>public/uploads</code>; the “full backup” on the dashboard includes them.</p>
+    <% if (done) { %><div class="flash">Backup saved.</div><% } %>
+    <% if (failed) { %><div class="error">The backup could not be saved. Check the server log.</div><% } %>
+    <form method="POST" action="/admin/backups/run" style="margin:16px 0;"><button type="submit" class="btn">Back up now</button></form>
+    <div class="card">
+      <% if (!files.length) { %>
+        <p class="muted" style="margin:0;">No backups yet. The first one is made a couple of minutes after SiteGen starts, or press the button.</p>
+      <% } else { files.forEach(f => { %>
+        <div class="row between" style="padding:8px 0; border-bottom:1px solid var(--border);">
+          <div><strong><%= f.name %></strong><div class="muted" style="font-size:13px;"><%= f.when.toLocaleString('en-US') %> · <%= (f.size / 1024 / 1024).toFixed(2) %> MB</div></div>
+          <a class="btn-secondary btn" href="/admin/backups/<%= f.name %>">Download</a>
+        </div>
+      <% }) } %>
+    </div>
+    <p class="muted" style="font-size:13px; margin-top:20px;"><strong>To restore:</strong> stop SiteGen, unzip a backup file (7-Zip or <code>gunzip</code>) to get the .db file, and use it to replace <code>data/sitegen.db</code> (delete the <code>sitegen.db-wal</code> and <code>-shm</code> files beside it), then start SiteGen again. Copy backups somewhere else now and then (another drive, cloud storage): a backup on the same disk will not help if the disk fails.</p>
+  </div>
+</body>
+</html>

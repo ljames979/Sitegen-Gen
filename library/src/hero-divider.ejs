@@ -1,0 +1,15 @@
+<%# Adapted from Start Bootstrap Creative (MIT) masthead: a tall photo under a warm dark wash, a bold centered headline, a short brand-color rule, light words and a round button. %>
+<section class="sg-lib" data-sg-section="hero/divider">
+  <div class="relative isolate flex min-h-[min(100svh,58rem)] items-center overflow-hidden <%= d.image ? 'bg-black' : 'bg-primary' %>">
+    <div class="mx-auto w-full max-w-4xl px-4 py-24 text-center sm:px-6 lg:px-8">
+      <h1 class="font-heading text-4xl/tight font-bold sm:text-5xl/tight lg:text-6xl/tight <%= d.image ? 'text-white' : 'text-on-primary' %>" data-animate="hero"><%- d.headlineHtml %></h1>
+      <hr class="mx-auto mt-7 h-1 w-14 border-0 <%= d.image ? 'bg-primary' : 'bg-on-primary' %>" data-animate="hero">
+      <% if (d.sub) { %><p class="mx-auto mt-7 max-w-2xl text-lg text-pretty sm:text-xl/relaxed <%= d.image ? 'text-white/75' : 'text-on-primary' %>" data-animate="hero"><%= d.sub %></p><% } %>
+      <div class="mt-9 flex flex-wrap justify-center gap-4" data-animate="hero">
+        <a class="inline-block rounded-full px-9 py-4 font-bold transition-opacity hover:opacity-90 <%= d.image ? 'bg-primary text-on-primary' : 'bg-page text-ink' %>" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+        <% if (d.phone) { %><a class="inline-block rounded-full border-2 px-9 py-4 font-bold transition-colors hover:bg-white/10 <%= d.image ? 'border-white/70 text-white' : 'border-current text-on-primary' %>" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+      </div>
+    </div>
+    <% if (d.image) { %><img class="absolute inset-0 -z-10 h-full w-full object-cover" src="<%= d.image %>" alt="" fetchpriority="high" style="object-position: <%= d.focal %>"><div class="sg-cr-wash absolute inset-0 -z-10"></div><% } %>
+  </div>
+</section>

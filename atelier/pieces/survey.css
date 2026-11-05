@@ -1,0 +1,53 @@
+
+.p-survey{--bg:#0D1A1F;--panel:#12242B;--teal:#9FD3C7;--orange:#FF7A1A;--cream:#EDF2EE;--muted:#86A2A0;--line:rgba(159,211,199,.18);--pad:max(clamp(20px, 5cqw, 72px), calc((100cqw - 1240px) / 2), env(safe-area-inset-left, 0px));background:var(--bg);color:var(--cream);font-family:'Barlow Condensed',system-ui,sans-serif;font-size:20px;line-height:1.45;overflow:hidden;text-align:left}
+.p-survey *{box-sizing:border-box}
+.p-survey :where(a){color:inherit;text-decoration:none}
+.p-survey :where(h1,h2,h3,p){margin:0}
+.z-pad{padding-left:var(--pad);padding-right:var(--pad)}
+.z-hero{position:relative;min-height:880px;cursor:crosshair}
+.z-cv{position:absolute;inset:0;width:100%;height:100%;display:block}
+.z-nav{position:relative;display:flex;align-items:center;gap:28px;padding-block:24px;font-family:'Martian Mono',monospace;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;cursor:auto}
+.z-logo{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:30px;letter-spacing:.04em;line-height:1}
+.z-logo span{color:var(--orange)}
+.z-nav nav{margin-left:auto;display:flex;gap:24px;color:var(--muted)}
+.z-btn{display:inline-flex;align-items:center;justify-content:center;height:52px;padding:0 22px;background:var(--orange);color:#160B02;font-family:'Martian Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.z-btn-sm{height:42px;padding:0 16px;font-size:11px}
+.z-btn-line{background:rgba(13,26,31,.6);color:var(--cream);box-shadow:inset 0 0 0 1px var(--cream)}
+.z-copy{position:relative;max-width:560px;display:flex;flex-direction:column;gap:22px;align-items:flex-start;padding-top:56px;pointer-events:none;text-shadow:0 2px 20px rgba(13,26,31,.95)}
+.z-copy a{pointer-events:auto;text-shadow:none}
+.z-kick{font-family:'Martian Mono',monospace;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--orange)}
+.z-h1{font-weight:800;font-size:clamp(64px,8.8cqw,128px);line-height:.86;text-transform:uppercase;text-wrap:balance}
+.z-h1 em{font-style:normal;color:var(--orange)}
+.z-lead{font-size:21px;font-weight:500;color:#C3D3D0;max-width:28em}
+.z-actions{display:flex;flex-wrap:wrap;gap:12px}
+.z-hud{position:absolute;right:var(--pad);bottom:28px;display:grid;grid-template-columns:auto auto;gap:5px 20px;padding:14px 18px;border:1px solid var(--line);background:rgba(13,26,31,.85);font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:.04em}
+.z-hud span{color:var(--muted)}
+.z-hud b{font-weight:500;color:var(--teal);text-align:right;font-variant-numeric:tabular-nums}
+.z-hud b.o{color:var(--orange)}
+.z-sec{padding-block:112px}
+.z-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px 48px;margin-bottom:44px}
+.z-h2{font-weight:800;font-size:clamp(48px,6cqw,84px);line-height:.9;text-transform:uppercase}
+.z-head p{color:var(--muted);max-width:30em}
+.z-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) 140px 120px;gap:12px 28px;align-items:center;padding:22px 0;border-bottom:1px solid var(--line)}
+.z-row:first-child{border-top:1px solid var(--line)}
+.z-row h3{font-weight:700;font-size:28px;text-transform:uppercase;line-height:1}
+.z-row p{color:var(--muted);font-size:18px}
+.z-row span{font-family:'Martian Mono',monospace;font-size:11.5px;color:var(--teal)}
+.z-row b{font-weight:700;font-size:28px;color:var(--orange);text-align:right}
+.z-datum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:56px}
+.z-datum div{padding:22px;border:1px solid var(--line);background:var(--panel)}
+.z-datum small{display:block;font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.z-datum b{font-weight:700;font-size:28px;line-height:1.1}
+.z-foot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px 32px;padding-block:28px;border-top:1px solid var(--line);font-family:'Martian Mono',monospace;font-size:11.5px;color:var(--muted)}
+@container (max-width:760px){
+ .z-nav nav{display:none}
+ .z-nav > .z-btn{margin-left:auto}
+ .z-hero{min-height:960px}
+ .z-copy{padding-top:20px}
+ .z-lead{font-size:19px}
+ .z-row{grid-template-columns:1fr}
+ .z-row b{text-align:left}
+ .z-datum{grid-template-columns:1fr}
+ .z-hud{left:var(--pad);right:auto}
+ .z-sec{padding-block:72px}
+}

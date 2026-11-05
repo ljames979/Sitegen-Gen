@@ -1,0 +1,22 @@
+<% const g = (typeof googleData !== 'undefined') ? googleData : null; if (g) { %>
+  <div class="g-wrap" data-reveal>
+    <% if (g.url) { %><a class="g-badge" href="<%= g.url %>" target="_blank" rel="noopener"><% } else { %><div class="g-badge"><% } %>
+      <span class="g-g" aria-hidden="true">G</span>
+      <span class="g-stars" aria-hidden="true"><%= '★'.repeat(Math.round(g.rating)) %><span class="g-empty"><%= '★'.repeat(5 - Math.round(g.rating)) %></span></span>
+      <strong><%= g.rating.toFixed(1) %></strong>
+      <span class="g-count"><%= g.count ? g.count + ' Google review' + (g.count === 1 ? '' : 's') : 'on Google' %></span>
+    <% if (g.url) { %></a><% } else { %></div><% } %>
+    <% if (g.showReviews && g.reviews.length) { %>
+      <div class="g-cards">
+        <% g.reviews.forEach(r => { %>
+          <div class="g-card">
+            <div class="g-stars" aria-label="<%= r.rating %> out of 5"><%= '★'.repeat(r.rating) %><span class="g-empty"><%= '★'.repeat(5 - r.rating) %></span></div>
+            <p><%= r.text.length > 320 ? r.text.slice(0, 320).replace(/\s+\S*$/, '') + '…' : r.text %></p>
+            <div class="g-by"><strong><%= r.author %></strong><% if (r.when) { %> · <%= r.when %><% } %></div>
+          </div>
+        <% }) %>
+      </div>
+      <p class="g-credit">Reviews from Google</p>
+    <% } %>
+  </div>
+<% } %>

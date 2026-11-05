@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Design lab: <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; background: #eef1f5; }
+    .lb-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--border); }
+    .lb-bar h1 { font-size: 16px; margin: 0; } .lb-bar .sp { flex: 1; }
+    .lb-bar form { margin: 0; }
+    .seg button { border-radius: 0; padding: 7px 12px; font-size: 13px; } .seg button:first-child { border-radius: 8px 0 0 8px; } .seg button:last-child { border-radius: 0 8px 8px 0; }
+    .seg button.on { background: #0f172a; color: #fff; }
+    .lb-main { flex: 1; min-height: 0; display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 14px; padding: 14px; }
+    .lb-side { overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+    .lb-roll { font-size: 17px; padding: 14px; width: 100%; }
+    .lb-card { background: #fff; border-radius: 12px; padding: 12px 14px; box-shadow: 0 2px 10px rgba(15,23,42,.06); border: 2px solid transparent; }
+    .lb-card.locked { border-color: #0f172a; }
+    .lb-card .hd { display: flex; align-items: center; gap: 8px; }
+    .lb-card .hd strong { flex: 1; font-size: 14px; }
+    .lb-card p { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+    .lb-lock { padding: 5px 10px; font-size: 12.5px; min-height: 0; }
+    .lb-card.locked .lb-lock { background: #0f172a; color: #fff; }
+    .lb-dots { display: inline-flex; gap: 4px; vertical-align: middle; margin-right: 6px; } .lb-dots i { width: 18px; height: 18px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.1); }
+    .lb-side label { font-size: 13px; margin: 0; } .lb-side select { margin: 4px 0 0; padding: 6px 8px; font-size: 13px; }
+    .lb-view { position: relative; min-height: 0; background: #fff; border-radius: 14px; box-shadow: 0 6px 24px rgba(15,23,42,.08); overflow: hidden; }
+    .lb-view iframe { position: absolute; top: 0; left: 0; border: 0; background: #fff; transform-origin: 0 0; transition: opacity .2s ease; }
+    .lb-view.phone iframe { left: 50%; }
+    .lb-view.loading iframe { opacity: .45; }
+    .lb-note { font-size: 12.5px; color: var(--muted); margin: 0; }
+    .lb-motion label { display: block; margin-top: 8px; } .lb-motion input[type=number] { margin: 4px 0 0; padding: 6px 8px; font-size: 13px; width: 100%; }
+    .lb-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; } .lb-nums label { font-size: 12px; }
+    .lb-replay { margin-top: 8px; padding: 5px 10px; font-size: 12.5px; min-height: 0; }
+    .lb-save { width: 100%; margin-top: 10px; } .lb-saved { color: #15803d !important; font-weight: 600; }
+    @media (max-width: 900px) { html, body { height: auto; } .lb-main { display: block; } .lb-side { overflow: visible; margin-bottom: 14px; } .lb-view { height: 75vh; } }
+  </style>
+</head>
+<body>
+  <div class="lb-bar">
+    <a href="/sites/<%= site.id %>/edit" class="muted">&larr; Editor</a>
+    <h1>Design lab: <%= site.name %></h1>
+    <span class="sp"></span>
+    <button type="button" class="btn-secondary" id="lbBack" disabled title="The previous mix">&larr; Back</button>
+    <button type="button" class="btn-secondary" id="lbFwd" disabled title="The next mix">Forward &rarr;</button>
+    <span class="seg" role="group" aria-label="Screen">
+      <button type="button" class="btn-secondary on" data-dev="desktop" aria-pressed="true">Desktop</button><button type="button" class="btn-secondary" data-dev="phone" aria-pressed="false">Phone</button>
+    </span>
+    <form method="POST" action="/sites/<%= site.id %>/lab/use" id="lbUse">
+      <input type="hidden" name="combo" id="lbCombo" value="<%= JSON.stringify(combo) %>">
+      <button type="submit" id="lbKeep" disabled>Keep this design</button>
+    </form>
+  </div>
+  <div class="lb-main">
+    <div class="lb-side">
+      <button type="button" class="lb-roll" id="lbRoll">&#127922; Shuffle</button>
+      <p class="lb-note">Press Shuffle (or the space bar) for a new mix. Lock what you like and keep shuffling the rest. The words and photos stay the client's own. Nothing changes on the site until you press "Keep this design", and the current look is saved in Version history first.</p>
+      <% [['style', 'Style'], ['fonts', 'Fonts'], ['colors', 'Colors'], ['shape', 'Buttons and corners'], ['layouts', 'Section layouts']].forEach(([k, label]) => { %>
+        <div class="lb-card" data-dim="<%= k %>">
+          <div class="hd"><strong><%= label %></strong><button type="button" class="btn-secondary lb-lock" aria-pressed="false" data-lock="<%= k %>">Lock</button></div>
+          <p data-text="<%= k %>"><% if (k === 'colors') { %><span class="lb-dots"><i style="background:<%= combo.primaryColor %>"></i><i style="background:<%= combo.accentColor %>"></i></span><% } %><%= text[k] %></p>
+        </div>
+      <% }) %>
+      <div class="lb-card">
+        <label>Colors come from
+          <select id="lbColors"><option value="brand">The client's brand color (matching sets)</option><option value="any">Anything that reads well</option></select></label>
+        <label style="margin-top:8px; display:block;">Styles to try
+          <select id="lbStyles"><option value="rec">Recommended and approved styles</option><option value="all">All styles</option></select></label>
+      </div>
+      <p class="lb-note">Section layouts switch the home page to the industry blueprint. Lock them to keep the home layout as it is.</p>
+      <div class="lb-card lb-motion" id="lbMotion">
+        <div class="hd"><strong>Scroll and text motion</strong></div>
+        <p>Not shuffled: pick these yourself. The preview shows them as you change them.</p>
+        <% const _t = site.theme || {}, _st = { ...splitText.DEFAULTS, ...Object.fromEntries(Object.entries(_t).filter(([k, v]) => k.startsWith('split') && v !== undefined && v !== '')) }; %>
+        <label>Scroll Smoother
+          <select name="theme_smoothScroll" form="lbUse" data-fx-toggle="lbSmoothRow"><% smoothScroll.MODES.forEach(m => { %><option value="<%= m.id %>" <%= (_t.smoothScroll || '') === m.id ? 'selected' : '' %>><%= m.label %></option><% }) %></select></label>
+        <div id="lbSmoothRow" <%- _t.smoothScroll ? '' : 'hidden' %>>
+          <label>How it feels
+            <select name="theme_smoothFeel" form="lbUse"><% Object.entries(smoothScroll.FEELS).forEach(([id, f]) => { %><option value="<%= id %>" <%= (_t.smoothFeel || smoothScroll.FEEL_DEFAULT) === id ? 'selected' : '' %>><%= f.label %></option><% }) %></select></label>
+        </div>
+        <p>Menu links and buttons that point at a section glide to it instead of jumping. "Whole page" also smooths the mouse wheel. Phones keep their own scrolling. Try it by scrolling or clicking a menu link in the preview.</p>
+        <label>Split text animation
+          <select name="theme_splitText" form="lbUse" data-fx-toggle="lbSplitRow"><% splitText.TARGETS.forEach(m => { %><option value="<%= m.id %>" <%= (_t.splitText || '') === m.id ? 'selected' : '' %>><%= m.label %></option><% }) %></select></label>
+        <div id="lbSplitRow" <%- _t.splitText ? '' : 'hidden' %>>
+          <label>Split into
+            <select name="theme_splitBy" form="lbUse"><% splitText.SPLITS.forEach(o => { %><option value="<%= o[0] %>" <%= _st.splitBy === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select></label>
+          <label>Effect
+            <select name="theme_splitFx" form="lbUse"><% splitText.EFFECTS.forEach(o => { %><option value="<%= o[0] %>" <%= _st.splitFx === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select></label>
+          <label>Plays
+            <select name="theme_splitPlay" form="lbUse"><% splitText.PLAYS.forEach(o => { %><option value="<%= o[0] %>" <%= _st.splitPlay === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select></label>
+          <div class="lb-nums">
+            <label>Duration (ms per piece)<input type="number" name="theme_splitDur" form="lbUse" min="150" max="3000" step="50" value="<%= _st.splitDur %>"></label>
+            <label>Delay between pieces (ms)<input type="number" name="theme_splitGap" form="lbUse" min="0" max="400" step="10" value="<%= _st.splitGap %>"></label>
+            <label>Start X (px, − is left)<input type="number" name="theme_splitX" form="lbUse" min="-400" max="400" step="5" value="<%= _st.splitX %>"></label>
+            <label>Start Y (px, − is above)<input type="number" name="theme_splitY" form="lbUse" min="-400" max="400" step="5" value="<%= _st.splitY %>"></label>
+          </div>
+          <button type="button" class="btn-secondary lb-replay" id="lbReplay">Play it again</button>
+        </div>
+        <p>Headings break into letters, words or lines and each piece moves into place. X and Y set where the pieces come from. Screen readers still read the whole heading, and visitors who turn motion off see still headings.</p>
+        <label>Scroll elements
+          <select name="theme_scrollEl" form="lbUse" data-fx-toggle="lbSfxRow"><% scrollFx.EFFECTS.forEach(o => { %><option value="<%= o[0] %>" <%= (_t.scrollEl || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select></label>
+        <div id="lbSfxRow" <%- _t.scrollEl ? '' : 'hidden' %>>
+          <label>What moves
+            <select name="theme_scrollElWhat" form="lbUse"><% scrollFx.WHAT.forEach(o => { %><option value="<%= o[0] %>" <%= (_t.scrollElWhat || 'sections') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select></label>
+          <label>Speed
+            <select name="theme_scrollElSpeed" form="lbUse"><% scrollFx.SPEED_LABELS.forEach(o => { %><option value="<%= o[0] %>" <%= (_t.scrollElSpeed || 'normal') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select></label>
+          <label>Plays
+            <select name="theme_scrollElPlay" form="lbUse"><% scrollFx.PLAYS.forEach(o => { %><option value="<%= o[0] %>" <%= (_t.scrollElPlay || 'once') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select></label>
+        </div>
+        <p>As visitors scroll, each section (or each heading, photo and card in it) fades, slides, zooms, blurs or flips into place. The top section stays as it is, and this takes over from the motion style's own reveals.</p>
+        <button type="submit" form="lbUse" formaction="/sites/<%= site.id %>/lab/motion" class="lb-save" id="lbMotionSave">Save scroll and text motion</button>
+        <% if (motionSaved) { %><p class="lb-saved" role="status">Saved. It's on the site now (the old settings are in Version history).</p><% } %>
+        <p>"Keep this design" saves these too.</p>
+      </div>
+    </div>
+    <div class="lb-view" id="lbView"><iframe id="lbFrame" title="Design preview" src="/sites/<%= site.id %>/preview?bar=0&amp;lab=<%= encodeURIComponent(JSON.stringify(combo)) %>"></iframe></div>
+  </div>
+  <script>
+  (function () {
+    var siteId = <%= site.id %>, view = document.getElementById('lbView'), frame = document.getElementById('lbFrame');
+    var W = { desktop: 1280, phone: 390 }, dev = 'desktop';
+    var hist = [{ combo: <%- JSON.stringify(combo).replace(/</g, '\\u003c') %>, text: <%- JSON.stringify(text).replace(/</g, '\\u003c') %> }], at = 0;
+    var locks = {}, busy = false;
+    function fit() {
+      var f = frame, w = W[dev], s = Math.min(1, view.clientWidth / w);
+      f.style.width = w + 'px'; f.style.height = (view.clientHeight / s) + 'px';
+      f.style.transform = (dev === 'phone' ? 'translateX(-50%) ' : '') + 'scale(' + s + ')';
+      view.classList.toggle('phone', dev === 'phone');
+    }
+    addEventListener('resize', fit); fit();
+    frame.addEventListener('load', function () { view.classList.remove('loading'); });
+    document.querySelectorAll('[data-dev]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        dev = b.dataset.dev;
+        document.querySelectorAll('[data-dev]').forEach(function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); });
+        fit();
+      });
+    });
+    function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function show() {
+      var h = hist[at];
+      Object.keys(h.text).forEach(function (k) {
+        var el = document.querySelector('[data-text="' + k + '"]'); if (!el) return;
+        el.innerHTML = (k === 'colors' ? '<span class="lb-dots"><i style="background:' + h.combo.primaryColor + '"></i><i style="background:' + h.combo.accentColor + '"></i></span>' : '') + esc(h.text[k]);
+      });
+      document.getElementById('lbCombo').value = JSON.stringify(h.combo);
+      document.getElementById('lbKeep').disabled = at === 0;
+      document.getElementById('lbBack').disabled = at === 0;
+      document.getElementById('lbFwd').disabled = at >= hist.length - 1;
+      view.classList.add('loading');
+      frame.src = '/sites/' + siteId + '/preview?bar=0&lab=' + encodeURIComponent(JSON.stringify(h.combo)) + '&fx=' + encodeURIComponent(JSON.stringify(fx()));
+    }
+    // the Scroll and text motion card: its settings go to the preview as they change
+    var motion = document.getElementById('lbMotion');
+    function fx() {
+      var o = {};
+      motion.querySelectorAll('[name]').forEach(function (el) { o[el.name] = el.value; });
+      return o;
+    }
+    motion.addEventListener('change', function (e) {
+      var t = e.target.dataset && e.target.dataset.fxToggle;
+      if (t) document.getElementById(t).hidden = !e.target.value;
+      view.classList.add('loading');
+      var y = 0; try { y = frame.contentWindow.scrollY; } catch (x) {}
+      frame.addEventListener('load', function back() { frame.removeEventListener('load', back); try { frame.contentWindow.scrollTo(0, y); } catch (x) {} });
+      frame.src = '/sites/' + siteId + '/preview?bar=0&lab=' + encodeURIComponent(JSON.stringify(hist[at].combo)) + '&fx=' + encodeURIComponent(JSON.stringify(fx()));
+    });
+    var saved = motion.querySelector('.lb-saved'); if (saved) saved.scrollIntoView({ block: 'nearest' });
+    document.getElementById('lbReplay').addEventListener('click', function () { try { frame.contentWindow.scrollTo(0, 0); } catch (x) {} frame.src = frame.src; });
+    document.querySelectorAll('[data-lock]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var k = b.dataset.lock; locks[k] = !locks[k];
+        b.setAttribute('aria-pressed', String(locks[k])); b.textContent = locks[k] ? 'Locked' : 'Lock';
+        b.closest('.lb-card').classList.toggle('locked', locks[k]);
+      });
+    });
+    function roll() {
+      if (busy) return; busy = true;
+      fetch('/sites/' + siteId + '/lab/roll', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+        body: JSON.stringify({ from: hist[at].combo, locks: locks, colors: document.getElementById('lbColors').value, styles: document.getElementById('lbStyles').value }) })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { if (!d.ok) return; hist = hist.slice(0, at + 1); hist.push({ combo: d.combo, text: d.text }); if (hist.length > 40) hist.shift(); at = hist.length - 1; show(); })
+        .catch(function () {})
+        .then(function () { busy = false; });
+    }
+    document.getElementById('lbRoll').addEventListener('click', roll);
+    document.getElementById('lbBack').addEventListener('click', function () { if (at > 0) { at--; show(); } });
+    document.getElementById('lbFwd').addEventListener('click', function () { if (at < hist.length - 1) { at++; show(); } });
+    addEventListener('keydown', function (e) {
+      if (e.code !== 'Space' || /INPUT|SELECT|TEXTAREA|BUTTON/.test((document.activeElement || {}).tagName || '')) return;
+      e.preventDefault(); roll();
+    });
+  })();
+  </script>
+</body>
+</html>

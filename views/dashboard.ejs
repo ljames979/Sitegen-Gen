@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard — SiteGen</title>
+  <%- include('partials-head') %>
+</head>
+<body>
+  <nav>
+    <strong>SiteGen</strong>
+    <form method="POST" action="/logout"><button type="submit" class="btn-secondary">Log out</button></form>
+  </nav>
+  <div class="container">
+    <div class="row between" style="margin-bottom:20px;">
+      <h1>Your sites</h1>
+      <a href="/intake" class="btn-secondary" style="padding:8px 14px; border-radius:10px; text-decoration:none;">Client questionnaires</a>
+    </div>
+
+    <div class="card" style="margin-bottom: 24px;">
+      <h3>Generate a site</h3>
+      <p class="muted" style="margin-top:-8px;">
+        Just describe the business and we'll build a starting site for you — headline, about
+        text, services, FAQ, and real photos<% if (!hasPhotoProvider) { %> (add a free Pexels API key to enable photos — see the README)<% } %>.
+        <% if (hasAiProvider) { %>The text is written by AI from the details you give.<% } else { %>The text comes from built-in templates (add an Anthropic API key to have it written for each business — see the README).<% } %>
+        Review and edit anything before publishing.
+      </p>
+      <% if (generateError) { %><div class="error"><%= generateError %></div><% } %>
+      <form method="POST" action="/sites/generate" id="generateForm" enctype="multipart/form-data">
+        <input type="hidden" name="preview" value="1">
+        <div class="row">
+          <input type="text" name="business_type" placeholder="e.g. plumbing company, hair salon, law firm" required style="flex:1;">
+          <input type="text" name="business_name" placeholder="Business name (optional)" style="flex:1;">
+        </div>
+        <div class="row" style="margin-top:8px; align-items:center; flex-wrap:wrap; gap:8px;">
+          <label style="font-weight:600; margin:0;" for="genLogo">Client's logo (optional)</label>
+          <input type="file" name="logo" id="genLogo" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" style="flex:1; min-width:200px;">
+          <span id="genLogoDots" aria-hidden="true" style="display:flex; gap:4px;"></span>
+        </div>
+        <p class="muted" style="margin:4px 0 0; font-size:13px;">The site's colors come from the logo, matched to the closest of our ready-made palettes, and the logo goes in the top bar.</p>
+        <label style="display:flex; gap:8px; align-items:center; font-weight:400; margin-top:8px;"><input type="checkbox" name="auto_blocks" value="1" checked style="width:auto;"> Add the new design blocks that suit this kind of business (About us, photo, social and contact blocks)</label>
+        <details style="margin-top:10px;">
+          <summary style="cursor:pointer; font-weight:600;">Section designs (optional): pick how each section looks</summary>
+          <p class="muted" style="font-size:13px; margin:8px 0;">Leave on "Automatic" and the home page uses the section order and designs chosen for this kind of business. Sections the business has no content for are skipped. You can change all of this later in the editor.</p>
+          <label style="display:flex; gap:8px; align-items:center; font-weight:400; margin-bottom:8px;"><input type="checkbox" name="home_blueprint" value="1" checked> Build the home page from the industry blueprint</label>
+          <div class="row" style="flex-wrap:wrap; gap:8px;">
+            <% [['hero','Hero'],['services','Services'],['testimonials','Reviews'],['pricing','Pricing'],['faq','FAQ'],['contact','Contact']].forEach(function (f) { %>
+              <label style="flex:1; min-width:180px; font-weight:400;"><%= f[1] %>
+                <select name="bpv_<%= f[0] %>" style="width:100%;">
+                  <option value="">Automatic</option>
+                  <% libRegistry.variantsOf(f[0]).forEach(function (v) { %><option value="<%= v.variant %>"><%= v.label %></option><% }) %>
+                </select>
+              </label>
+            <% }) %>
+          </div>
+        </details>
+        <details style="margin-top:10px;">
+          <summary style="cursor:pointer; font-weight:600;">Client details (optional) — fills in the site for you</summary>
+          <div class="row" style="margin-top:8px;">
+            <input type="text" name="phone" placeholder="Phone" maxlength="40" style="flex:1;">
+            <input type="email" name="email" placeholder="Contact email" maxlength="254" style="flex:1;">
+          </div>
+          <div class="row" style="margin-top:8px;">
+            <input type="text" name="address" placeholder="Street address, city, state (shows a map)" maxlength="200" style="flex:1;">
+            <input type="text" name="city" placeholder="Main city, e.g. Orlando, FL (for Google)" maxlength="80" style="flex:1;">
+          </div>
+          <div class="row" style="margin-top:8px;">
+            <input type="text" name="weekday_hours" placeholder="Mon–Fri hours, e.g. 8:00 AM – 5:00 PM" maxlength="40" style="flex:1;">
+            <input type="text" name="saturday_hours" placeholder="Saturday (blank = Closed)" maxlength="40" style="flex:1;">
+            <input type="text" name="sunday_hours" placeholder="Sunday (blank = Closed)" maxlength="40" style="flex:1;">
+          </div>
+          <div class="row" style="margin-top:8px;">
+            <input type="number" name="years_in_business" placeholder="Years in business" min="1" max="199" style="flex:0 0 170px;">
+            <input type="text" name="badges" placeholder="Credentials they really hold, comma-separated (e.g. Licensed &amp; Insured, BBB A+)" style="flex:1;">
+          </div>
+          <div class="row" style="margin-top:8px;">
+            <input type="text" name="service_areas" placeholder="Towns they serve, comma-separated (e.g. Kissimmee, St. Cloud, Celebration)" style="flex:1;">
+          </div>
+          <div class="row" style="margin-top:8px;">
+            <textarea name="specialties" rows="2" placeholder="Anything that sets them apart or should be mentioned (specialties, family-owned, brands they work with…). Used only for the AI-written text." style="flex:1;"></textarea>
+          </div>
+          <div class="row" style="margin-top:8px;">
+            <input type="url" name="facebook" placeholder="Facebook page URL" style="flex:1;">
+            <input type="url" name="instagram" placeholder="Instagram URL" style="flex:1;">
+          </div>
+          <label style="display:flex; align-items:center; gap:8px; font-weight:400; margin-top:8px;">
+            <input type="checkbox" name="use_brand_color" value="1" style="width:auto;" id="useBrandColor">
+            Use this brand color instead of an automatic one
+            <input type="color" name="brand_color" value="#2563eb" style="width:48px; height:32px; padding:0;" oninput="document.getElementById('useBrandColor').checked = true;">
+          </label>
+        </details>
+        <div class="row" style="margin-top:8px;">
+          <input type="text" name="social_url" placeholder="Facebook / Instagram / Google Business link (optional, for photos &amp; brand color)" style="flex:1;">
+          <button type="submit" id="generateBtn">Generate site</button>
+        </div>
+        <p class="muted" style="margin: 6px 0 0; font-size: 13px;">
+          Facebook and Instagram block most content unless you're logged in, so this pulls
+          whatever's public — usually a profile/cover photo and brand color, sometimes nothing.
+        </p>
+      </form>
+      <div id="genOverlay" hidden >
+        <style>
+          #genOverlay { position: fixed; inset: 0; z-index: 200; background: rgba(248,250,252,.96); display: flex; align-items: center; justify-content: center; padding: 20px; }
+          #genOverlay[hidden] { display: none; }
+          .sk { background: linear-gradient(90deg,#e8ecf1 25%,#f4f6f9 50%,#e8ecf1 75%); background-size: 200% 100%; animation: skm 1.4s infinite; border-radius: 8px; }
+          @keyframes skm { to { background-position: -200% 0; } }
+          @media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
+        </style>
+        <div style="width:min(620px,100%);">
+          <h2 style="margin:0 0 6px;">Building the website…</h2>
+          <p class="muted" style="margin:0 0 18px;">Writing the text, picking photos and choosing a look. This takes a few seconds.</p>
+          <div style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:18px; box-shadow:0 8px 30px rgba(15,23,42,.08);">
+            <div class="sk" style="height:14px; width:30%;"></div>
+            <div class="sk" style="height:150px; margin-top:14px;"></div>
+            <div class="sk" style="height:26px; width:70%; margin-top:16px;"></div>
+            <div class="sk" style="height:14px; width:90%; margin-top:10px;"></div>
+            <div style="display:flex; gap:10px; margin-top:16px;"><div class="sk" style="height:60px; flex:1;"></div><div class="sk" style="height:60px; flex:1;"></div><div class="sk" style="height:60px; flex:1;"></div></div>
+          </div>
+        </div>
+      </div>
+      <script src="/palette.js"></script>
+      <script>
+        window.addEventListener('pageshow', function () { var o = document.getElementById('genOverlay'); if (o) o.hidden = true; var b = document.getElementById('generateBtn'); if (b) { b.disabled = false; b.textContent = 'Generate site'; } });
+        (function () { // show the logo's main colors as soon as one is picked (the server does the real match)
+          var inp = document.getElementById('genLogo'), dots = document.getElementById('genLogoDots');
+          if (!inp || !window.Palette) return;
+          inp.addEventListener('change', function () {
+            dots.innerHTML = '';
+            var f = inp.files && inp.files[0]; if (!f) return;
+            var img = new Image(), url = URL.createObjectURL(f);
+            img.onload = function () {
+              try {
+                var c = document.createElement('canvas'), s = Math.min(1, 120 / Math.max(img.width, img.height, 1));
+                c.width = Math.max(1, Math.round(img.width * s)); c.height = Math.max(1, Math.round(img.height * s));
+                var x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height);
+                Palette.extract(x.getImageData(0, 0, c.width, c.height).data, 4).forEach(function (h) {
+                  var i = document.createElement('i'); i.title = h;
+                  i.style.cssText = 'width:20px;height:20px;border-radius:50%;border:1px solid #cbd5e1;display:inline-block;background:' + h;
+                  dots.appendChild(i);
+                });
+              } catch (e) { /* the server still reads it */ }
+              URL.revokeObjectURL(url);
+            };
+            img.src = url;
+          });
+        })();
+        document.getElementById('generateForm').addEventListener('submit', function () {
+          const btn = document.getElementById('generateBtn');
+          btn.disabled = true;
+          btn.textContent = 'Generating…';
+          const ov = document.getElementById('genOverlay'); if (ov) ov.hidden = false;
+        });
+      </script>
+    </div>
+
+    <div class="card" style="margin-bottom: 24px;">
+      <h3>Create a blank site</h3>
+      <form method="POST" action="/sites" class="row">
+        <input type="text" name="name" placeholder="e.g. Sankara Insurance Group" required style="flex:1;">
+        <button type="submit">Create</button>
+      </form>
+    </div>
+
+    <div class="card" style="margin-bottom: 24px;">
+      <h3>Modernize an existing website</h3>
+      <p class="muted" style="margin-top:-8px;">
+        Paste the link to an old, live website. We'll pull its headline, text, images,
+        and contact info and drop them into a fresh, modern design you can edit and republish.
+      </p>
+      <% if (importError) { %><div class="error"><%= importError %></div><% } %>
+      <form method="POST" action="/sites/import" id="importForm">
+        <div class="row">
+          <input type="text" name="url" placeholder="https://your-old-site.com" required style="flex:1;">
+          <button type="submit" id="importBtn">Import &amp; modernize</button>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <input type="text" name="social_url" placeholder="Facebook / Instagram / Google Business link (optional, to fill in missing photos)" style="flex:1;">
+        </div>
+      </form>
+      <script>
+        document.getElementById('importForm').addEventListener('submit', function () {
+          const btn = document.getElementById('importBtn');
+          btn.disabled = true;
+          btn.textContent = 'Importing…';
+        });
+      </script>
+    </div>
+
+    <% if (sites.length === 0) { %>
+      <p class="muted">You haven't created any sites yet.</p>
+    <% } %>
+
+    <% sites.forEach(site => { %>
+      <div class="site-list-item">
+        <div>
+          <strong><%= site.name %></strong>
+          <span class="badge <%= site.published ? '' : 'draft' %>">
+            <%= site.published ? 'Published' : 'Draft' %>
+          </span>
+          <% if (site.billing_required) { %><span class="badge <%= ['active','trialing'].includes(site.billing_status) ? '' : 'draft' %>">Hosting: <%= site.billing_status === 'none' ? 'unpaid' : site.billing_status.replace('_',' ') %></span><% } %>
+          <% if (site.published) { %>
+            <div class="muted" style="font-size:13px; margin-top:4px;">/site/<%= site.slug %></div>
+          <% } %>
+        </div>
+        <div class="row">
+          <a href="/sites/<%= site.id %>/edit" class="btn">Edit</a>
+          <% if (site.published) { %>
+            <a href="/site/<%= site.slug %>" class="btn-secondary btn" target="_blank">View</a>
+          <% } %>
+          <form method="POST" action="/sites/<%= site.id %>/duplicate" style="display:inline;">
+            <button type="submit" class="btn-secondary" title="An exact copy you can edit">Duplicate</button>
+          </form>
+          <form method="POST" action="/sites/<%= site.id %>/duplicate" style="display:inline;">
+            <input type="hidden" name="mode" value="template">
+            <button type="submit" class="btn-secondary" title="Keeps the design and wording, clears phone, email, address, tracking IDs and report emails for a new client">Use as template</button>
+          </form>
+          <a href="/sites/<%= site.id %>/export.json" class="btn-secondary btn" title="Save this site as a file you can bring back later">Save file</a>
+          <form method="POST" action="/sites/<%= site.id %>/delete" onsubmit="return confirm('Delete this site permanently?');">
+            <button type="submit" class="btn-danger">Delete</button>
+          </form>
+        </div>
+      </div>
+    <% }) %>
+
+    <div class="card" style="margin-top:24px;">
+      <h3>Bring in a saved site</h3>
+      <p class="muted" style="margin-top:-8px;">Choose a site file made with “Save file”. It becomes a new, unpublished site. Photos are not inside the file, so they only show if they are already on this server.</p>
+      <form method="POST" action="/sites/import-file" enctype="multipart/form-data" class="row">
+        <input type="file" name="sitefile" accept=".json,application/json" required>
+        <button type="submit" class="btn-secondary">Bring it in</button>
+      </form>
+    </div>
+
+    <% if (isAdmin) { %>
+      <p class="muted" style="margin-top:32px; font-size:13px;">
+        <a href="/admin/backup">Download a full backup</a> — every site, account and uploaded photo in one zip.
+        &nbsp;·&nbsp; <a href="/admin/backups">Automatic backups</a>
+      </p>
+    <% } %>
+  </div>
+</body>
+</html>

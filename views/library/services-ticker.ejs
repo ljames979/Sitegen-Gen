@@ -1,0 +1,27 @@
+<%# Original layout (word ticker, drawn from scratch): a band in the brand color where the service names slide past in huge letters, with a small photo of each service between them. It pauses while the mouse is over it or it has keyboard focus; with motion off the names sit still and wrap. %>
+<section class="sg-lib" data-sg-section="services/ticker">
+  <div class="sg-tk tw:bg-primary tw:text-on-primary">
+    <div class="tw:mx-auto tw:max-w-[120rem] tw:py-12 tw:lg:py-16" style="--n:<%= d.items.length %>">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:sm:px-6 tw:lg:px-8">
+      <h2 data-sg-head class="tw:font-heading tw:text-sm tw:font-semibold tw:tracking-widest tw:uppercase tw:opacity-80"><%= d.heading %></h2>
+    </div>
+    <div class="sg-tk-stage tw:relative tw:mt-6" data-sg-glide>
+    <div class="sg-tk-view" role="region" aria-label="<%= d.heading %>">
+      <ul class="sg-tk-track tw:m-0 tw:flex tw:list-none tw:items-center tw:p-0">
+        <% [0, 1].forEach(function (copy) { d.items.forEach(function (it) { %>
+          <li class="sg-tk-item tw:flex tw:shrink-0 tw:items-center"<%- copy ? ' aria-hidden="true"' : '' %>>
+            <a class="sg-tk-word tw:font-heading tw:font-bold tw:text-on-primary tw:no-underline" href="<%= it.href %>"<%- copy ? ' tabindex="-1"' : '' %>><%= it.title %></a>
+            <% if (it.imageUrl) { %><img class="sg-tk-pic tw:shrink-0 tw:rounded-full tw:object-cover" src="<%= it.imageUrl %>" alt="" loading="lazy" decoding="async"><% } else { %><span class="sg-tk-dot tw:shrink-0 tw:rounded-full tw:bg-on-primary" aria-hidden="true"></span><% } %>
+          </li>
+        <% }) }) %>
+      </ul>
+    </div>
+    <button type="button" class="sg-tk-pause sg-reel-pause tw:absolute tw:right-4 tw:inline-flex tw:items-center tw:justify-center tw:text-white tw:sm:right-6 tw:lg:right-8" data-sg-glide-pause data-what="service names" aria-pressed="false" aria-label="Pause the moving service names">
+      <svg class="sg-sh-i-pause tw:size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>
+      <svg class="sg-sh-i-play tw:size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"></path></svg>
+    </button>
+    </div>
+    <% if (d.moreHref) { %><p class="tw:mx-auto tw:mt-6 tw:max-w-7xl tw:px-4 tw:sm:px-6 tw:lg:px-8"><a class="tw:font-medium tw:text-on-primary tw:underline tw:underline-offset-4" href="<%= d.moreHref %>">See all services &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

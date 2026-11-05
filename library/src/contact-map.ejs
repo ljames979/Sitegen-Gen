@@ -1,0 +1,19 @@
+<%# Original layout (map and details side by side): the map of the client's own address beside how to reach them. No address, no map. %>
+<section class="sg-lib" data-sg-section="contact/map">
+  <div class="bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+      <div class="sg-flip grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-stretch">
+        <% if (d.mapSrc) { %><div class="min-h-80 overflow-hidden rounded-xl border border-line" data-animate="fade-up"><iframe class="block size-full min-h-80 border-0" loading="lazy" title="Map of <%= d.address %>" src="<%= d.mapSrc %>"></iframe></div><% } %>
+        <div class="<%= d.mapSrc ? '' : 'lg:col-span-2' %> self-center" data-animate="fade-up">
+          <h2 data-sg-head class="font-heading text-2xl font-semibold text-ink sm:text-3xl"><%= d.heading %></h2>
+          <dl class="mt-6 space-y-3">
+            <% d.items.forEach(function (it) { %>
+              <div class="flex gap-3"><dt class="w-16 shrink-0 text-sm font-medium tracking-wide text-muted uppercase"><%= it.label %></dt><dd class="font-medium text-ink"><% if (it.href) { %><a class="text-primary underline-offset-4 hover:underline" href="<%= it.href %>"><%= it.value %></a><% } else { %><%= it.value %><% } %></dd></div>
+            <% }) %>
+          </dl>
+          <% if (d.ctaHref) { %><p class="mt-6"><a class="inline-block rounded-md bg-primary px-5 py-3 font-medium text-on-primary shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a></p><% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

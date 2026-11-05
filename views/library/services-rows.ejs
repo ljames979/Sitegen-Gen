@@ -1,0 +1,23 @@
+<%# Original layout (numbered rows with an arrow, drawn from scratch): a calm, text-first list with large numbers. %>
+<section class="sg-lib" data-sg-section="services/rows">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-5xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:max-w-2xl" data-animate="fade-up"><h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2></div>
+      <ul class="tw:mt-8 tw:list-none tw:divide-y tw:divide-line tw:border-y tw:border-line tw:p-0" data-animate="stagger">
+        <% d.items.forEach(function (it, i) { %>
+          <li>
+            <a class="tw:group tw:grid tw:grid-cols-[auto_1fr_auto] tw:items-center tw:gap-4 tw:py-6 tw:sm:gap-8" href="<%= it.href %>">
+              <span class="tw:font-heading tw:text-3xl tw:font-bold tw:text-primary tw:opacity-70 tw:sm:text-4xl"><%= (i + 1 < 10 ? '0' : '') + (i + 1) %></span>
+              <span class="tw:block">
+                <span class="tw:block tw:font-heading tw:text-xl tw:font-semibold tw:text-ink tw:group-hover:text-primary"><%= it.title %></span>
+                <% if (it.description) { %><span class="tw:mt-1 tw:block tw:text-sm/relaxed tw:text-pretty tw:text-muted"><%= it.description %></span><% } %>
+              </span>
+              <span class="tw:text-right tw:text-sm tw:font-medium tw:text-primary"><% if (it.price) { %><span class="tw:block"><%= it.price %></span><% } %><span class="tw:transition-transform tw:group-hover:translate-x-1" aria-hidden="true">&rarr;</span></span>
+            </a>
+          </li>
+        <% }) %>
+      </ul>
+      <% if (d.moreHref) { %><p class="tw:mt-8"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">See all services &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

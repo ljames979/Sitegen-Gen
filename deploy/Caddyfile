@@ -1,0 +1,31 @@
+# Caddy config for running SiteGen on a server with automatic HTTPS.
+#
+# Caddy gets and renews free HTTPS certificates by itself, for the dashboard
+# domain AND for every client's custom domain, the first time someone visits
+# it. Before issuing a certificate it asks SiteGen whether it hosts that
+# domain (the /internal/domain-check route), so strangers can't make your
+# server request certificates for random names.
+#
+# 1. In .env set:  NODE_ENV=production  and  APP_DOMAIN=app.yourcompany.com
+# 2. Point DNS for APP_DOMAIN and each client domain at this server's IP.
+# 3. Install Caddy (https://caddyserver.com/docs/install), then:
+#      caddy run --config deploy/Caddyfile   (or run it as a service)
+
+{
+	on_demand_tls {
+		ask http://localhost:3000/internal/domain-check
+	}
+}
+
+https:// {
+	tls {
+		on_demand
+	}
+	encode gzip
+	reverse_proxy localhost:3000
+}
+
+# Optional: send plain http:// visits to https://
+http:// {
+	redir https://{host}{uri} permanent
+}

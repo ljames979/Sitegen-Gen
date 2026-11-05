@@ -1,0 +1,18 @@
+<%# Adapted from HyperUI (MIT) marketing/sections/1: text beside a photo. %>
+<section class="sg-lib" data-sg-section="about/split">
+  <div class="bg-page">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+      <div class="sg-flip grid grid-cols-1 gap-8 md:grid-cols-2 md:items-center md:gap-12">
+        <div>
+          <div class="max-w-prose md:max-w-none" data-animate="fade-up">
+            <% if (d.eyebrow) { %><p class="text-sm font-medium tracking-wide text-primary uppercase"><%= d.eyebrow %></p><% } %>
+            <h2 data-sg-head class="font-heading text-2xl font-semibold text-ink sm:text-3xl"><%= d.heading %></h2>
+            <p class="mt-4 text-pretty whitespace-pre-line text-muted"><%= d.body %></p>
+            <% if (d.moreHref) { %><a class="mt-6 inline-block font-medium text-primary underline-offset-4 hover:underline" href="<%= d.moreHref %>">Learn more about us &rarr;</a><% } %>
+          </div>
+        </div>
+        <% if (d.image) { %><div data-animate="fade-up"><img class="aspect-[4/3] w-full rounded-xl object-cover" src="<%= d.image %>" alt="<%= d.imageAlt %>" loading="lazy"></div><% } %>
+      </div>
+    </div>
+  </div>
+</section>

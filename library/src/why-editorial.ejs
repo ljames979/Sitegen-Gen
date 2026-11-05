@@ -1,0 +1,22 @@
+<%# Original layout (editorial): a large heading in a narrow column, numbered reasons in a wide one. %>
+<section class="sg-lib" data-sg-section="why/editorial">
+  <div class="bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+      <div class="sg-flip grid grid-cols-1 gap-10 lg:grid-cols-3 lg:gap-16">
+        <div class="lg:sticky lg:top-24 lg:self-start" data-animate="fade-up">
+          <% if (d.eyebrow) { %><p class="text-sm font-medium tracking-wide text-primary uppercase"><%= d.eyebrow %></p><% } %>
+          <h2 data-sg-head class="font-heading text-4xl font-bold text-ink sm:text-5xl"><%= d.heading %></h2>
+          <% if (d.intro) { %><p class="mt-4 text-lg text-pretty text-muted"><%= d.intro %></p><% } %>
+        </div>
+        <ol class="list-none p-0 lg:col-span-2" data-animate="stagger">
+          <% d.items.forEach(function (it, i) { %>
+            <li class="grid grid-cols-[auto_1fr] gap-6 border-t border-line py-6 first:border-t-0 first:pt-0">
+              <span class="font-heading text-4xl font-bold text-primary" aria-hidden="true"><%= String(i + 1).padStart(2, '0') %></span>
+              <span class="block"><span class="block font-heading text-xl font-semibold text-ink"><%= it.title %></span><% if (it.text) { %><span class="mt-2 block text-pretty text-muted"><%= it.text %></span><% } %></span>
+            </li>
+          <% }) %>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>

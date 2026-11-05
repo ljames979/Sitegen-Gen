@@ -1,0 +1,25 @@
+<%# Adapted from HyperUI (MIT) marketing/feature-grids: a numbered, borderless grid with no photos needed. %>
+<section class="sg-lib" data-sg-section="services/grid">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-left tw:mx-0" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="tw:mt-10 tw:grid tw:grid-cols-1 tw:gap-x-8 tw:gap-y-10 tw:sm:grid-cols-2 tw:lg:grid-cols-3" data-sg-cards data-animate="stagger">
+        <% d.items.forEach(function (it, i) { %>
+          <a class="tw:group tw:flex tw:gap-4" href="<%= it.href %>">
+            <span class="tw:flex tw:size-10 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-lg tw:bg-primary tw:font-heading tw:font-semibold tw:text-on-primary"><%= i + 1 %></span>
+            <span class="tw:block">
+              <span class="tw:block tw:font-heading tw:text-lg tw:font-semibold tw:text-ink tw:group-hover:text-primary"><%= it.title %></span>
+              <% if (it.description) { %><span class="tw:mt-1 tw:block tw:text-sm/relaxed tw:text-pretty tw:text-muted"><%= it.description %></span><% } %>
+              <% if (it.price) { %><span class="tw:mt-2 tw:block tw:text-sm tw:font-medium tw:text-primary"><%= it.price %></span><% } %>
+            </span>
+          </a>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="tw:mt-10"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">See all services &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

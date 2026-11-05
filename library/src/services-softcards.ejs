@@ -1,0 +1,23 @@
+<%# Adapted from Meraki UI (MIT) marketing/features "Centered": soft tinted cards, an icon in a pale brand-color circle, centered words and a "Read more" link. %>
+<section class="sg-lib" data-sg-section="services/softcards">
+  <div class="bg-page">
+    <div class="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+      <div class="mx-auto max-w-3xl text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="text-sm font-medium tracking-wide text-primary uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="font-heading text-3xl font-bold text-ink sm:text-4xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="mt-4 text-pretty text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 <%= d.items.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3' %>" data-sg-cards data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <a class="group flex flex-col items-center rounded-xl bg-surface p-7 text-center transition-colors hover:bg-primary/10" href="<%= it.href %>">
+            <span class="inline-flex size-12 items-center justify-center rounded-full bg-primary/15 text-primary" aria-hidden="true"><svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><%- it.icon || '<polyline points="20 6 9 17 4 12"></polyline>' %></svg></span>
+            <h3 class="mt-4 font-heading text-lg font-semibold text-ink"><%= it.title %></h3>
+            <% if (it.description) { %><p class="mt-2 flex-1 text-sm/relaxed text-pretty text-muted"><%= it.description %></p><% } %>
+            <% if (it.price) { %><p class="mt-3 text-sm font-semibold text-ink"><%= it.price %></p><% } %>
+            <span class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary">Read more <span class="transition-transform group-hover:translate-x-1" aria-hidden="true">&rarr;</span></span>
+          </a>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</section>

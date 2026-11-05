@@ -1,0 +1,21 @@
+<%# Original layout (carousel with thumbnails): one big photo with small ones underneath to pick from. Without the script it is a swipeable row. %>
+<% var pics = ((d.all && d.all.length ? d.all : d.images) || []).slice(0, 10); %>
+<section class="sg-lib" data-sg-section="gallery/carousel">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-5xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+      </div>
+      <div class="tw:mt-8" data-sg-slides>
+        <div class="tw:flex tw:snap-x tw:snap-mandatory tw:overflow-x-auto tw:rounded-xl" data-sg-track>
+          <% pics.forEach(function (im) { %><img class="tw:aspect-[16/10] tw:w-full tw:shrink-0 tw:snap-center tw:object-cover" src="<%= im.src %>" alt="<%= im.alt %>" loading="lazy"><% }) %>
+        </div>
+        <div class="tw:mt-3 tw:flex tw:flex-wrap tw:justify-center tw:gap-2" data-sg-thumbs hidden>
+          <% pics.forEach(function (im, i) { %><button type="button" class="tw:size-16 tw:overflow-hidden tw:rounded-md tw:border-2 tw:border-line tw:p-0 tw:opacity-70 tw:transition-opacity tw:hover:opacity-100 tw:sm:size-20" aria-label="Show photo <%= i + 1 %>" data-sg-thumb="<%= i %>"><img class="sg-noshape tw:size-full tw:object-cover" src="<%= im.src %>" alt="" loading="lazy"></button><% }) %>
+        </div>
+      </div>
+      <% if (d.moreHref) { %><p class="tw:mt-8 tw:text-center"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">See the full gallery &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

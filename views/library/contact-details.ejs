@@ -1,0 +1,21 @@
+<%# Adapted from HyperUI (MIT) marketing/sections contact layouts: only details the client gave us. %>
+<section class="sg-lib" data-sg-section="contact/details">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-5xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-16">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <dl class="tw:mt-8 tw:grid tw:grid-cols-1 tw:gap-4 tw:text-center <%= ({ 1: 'tw:sm:grid-cols-1', 2: 'tw:sm:grid-cols-2', 3: 'tw:sm:grid-cols-3' })[Math.min(d.items.length, 3)] %>" data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <div class="tw:rounded-xl tw:border tw:border-line tw:bg-page tw:p-6">
+            <dt class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-muted tw:uppercase"><%= it.label %></dt>
+            <dd class="tw:mt-2 tw:font-heading tw:text-lg tw:font-semibold tw:text-ink"><% if (it.href) { %><a class="tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= it.href %>"><%= it.value %></a><% } else { %><%= it.value %><% } %></dd>
+          </div>
+        <% }) %>
+      </dl>
+      <% if (d.ctaHref) { %><p class="tw:mt-8 tw:text-center"><a class="tw:inline-block tw:rounded-md tw:bg-primary tw:px-5 tw:py-3 tw:font-medium tw:text-on-primary tw:shadow-[var(--shadow-sm)] tw:transition-opacity tw:hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a></p><% } %>
+    </div>
+  </div>
+</section>

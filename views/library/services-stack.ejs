@@ -1,0 +1,24 @@
+<%# Original layout (stacking cards, drawn from scratch): each service is a card that slides up and stacks on the one before as the visitor scrolls, like a deck being dealt. Plain CSS (position: sticky), so it works without scripts. %>
+<section class="sg-lib" data-sg-section="services/stack">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+      </div>
+      <div class="tw:mx-auto tw:mt-10 tw:max-w-4xl">
+        <% d.items.forEach(function (it, i) { %>
+          <a class="sg-stack-card tw:group tw:mb-6 tw:grid tw:items-center tw:gap-6 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-line tw:bg-page tw:p-6 tw:shadow-[var(--shadow-md)] tw:sm:p-8 <%= it.imageUrl ? 'tw:sm:grid-cols-[1fr_15rem]' : '' %>" style="--i: <%= i %>" href="<%= it.href %>">
+            <span class="tw:block">
+              <span class="tw:font-heading tw:text-sm tw:font-semibold tw:tracking-widest tw:text-primary"><%= (i + 1 < 10 ? '0' : '') + (i + 1) %></span>
+              <span class="tw:mt-1 tw:block tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:group-hover:text-primary"><%= it.title %></span>
+              <% if (it.description) { %><span class="tw:mt-2 tw:block tw:text-pretty tw:text-muted"><%= it.description %></span><% } %>
+              <% if (it.price) { %><span class="tw:mt-3 tw:block tw:font-medium tw:text-primary"><%= it.price %></span><% } %>
+            </span>
+            <% if (it.imageUrl) { %><img class="tw:aspect-[4/3] tw:w-full tw:rounded-xl tw:object-cover" src="<%= it.imageUrl %>"<% if (it.image2) { %> data-sg-hover="<%= it.image2 %>"<% } %> alt="" loading="lazy" decoding="async"><% } %>
+          </a>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="tw:mt-4 tw:text-center"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">See all services &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

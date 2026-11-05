@@ -1,0 +1,10 @@
+<%# Original layout (your own section, words only): a readable centered column. %>
+<section class="sg-lib" data-sg-section="custom/text">
+  <div class="bg-page">
+    <div class="mx-auto max-w-3xl px-4 py-12 text-center sm:px-6 lg:px-8 lg:py-16" data-animate="fade-up">
+      <% if (d.heading) { %><h2 data-sg-head class="font-heading text-2xl font-semibold text-ink sm:text-3xl"><%= d.heading %></h2><% } %>
+      <% if (d.body) { %><p class="<%= d.heading ? 'mt-4' : '' %> text-lg/relaxed text-pretty whitespace-pre-line text-muted"><%= d.body %></p><% } %>
+      <% if (d.buttonText && d.buttonHref) { %><p class="mt-6"><a class="inline-block rounded-md bg-primary px-5 py-3 font-medium text-on-primary shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90" href="<%= d.buttonHref %>"><%= d.buttonText %></a></p><% } %>
+    </div>
+  </div>
+</section>

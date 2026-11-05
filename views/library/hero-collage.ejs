@@ -1,0 +1,27 @@
+<%# Original layout ("Word carousel collage"), drawn for SiteGen from a portfolio hero Leo liked: the headline's words rise in one at a time; under it the service names sit in one row through a square photo card, and every few seconds the row slides to the next name, the card wipes to that service's photo and two of the photos scattered around it swap. Pointing at a photo grows it; pointing at or tabbing to a name shows it. With motion off the row stays still and pointing still switches the card. Behavior: public/sg-lib.js. %>
+<section class="sg-lib" data-sg-section="hero/collage">
+  <% var c = d.collage; %>
+  <div class="sg-cl tw:relative tw:overflow-hidden tw:bg-page tw:text-ink"<%- c ? ' data-sg-collage' : '' %>>
+    <div class="tw:mx-auto tw:max-w-5xl tw:px-4 tw:pt-14 tw:text-center tw:sm:px-6 tw:sm:pt-20 tw:lg:px-8">
+      <h1 class="sg-cl-h1 tw:font-heading tw:text-4xl tw:font-light tw:text-balance tw:sm:text-6xl" data-sg-cl-h1><%- d.headlineHtml %></h1>
+      <% if (d.sub) { %><p class="tw:mx-auto tw:mt-5 tw:max-w-2xl tw:text-base tw:text-pretty tw:text-muted tw:sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+    </div>
+    <% if (c) { %>
+      <div class="sg-cl-stage tw:relative tw:mx-auto tw:max-w-7xl" data-sg-cl-stage data-photos="<%= JSON.stringify(c.photos) %>">
+        <% c.tiles.forEach(function (src, i) { %><div class="sg-cl-tile sg-cl-t<%= i + 1 %>" aria-hidden="true"><img class="tw:h-full tw:w-full tw:object-cover" src="<%= src %>" alt="" loading="lazy" data-sg-cl-tile></div><% }) %>
+        <div class="sg-cl-card" aria-hidden="true">
+          <img class="sg-cl-img sg-on tw:h-full tw:w-full tw:object-cover" src="<%= c.words[0].src %>" alt="" data-sg-cl-img>
+          <img class="sg-cl-img tw:h-full tw:w-full tw:object-cover" src="<%= c.words[0].src %>" alt="" data-sg-cl-img>
+        </div>
+        <ul class="sg-cl-row tw:m-0 tw:list-none tw:p-0" aria-label="What we do" data-sg-cl-row>
+          <% c.words.forEach(function (w, i) { %><li><a class="sg-cl-word tw:font-heading<%= i === 0 ? ' sg-on' : '' %>" href="<%= w.href %>" data-sg-cl-word data-photo="<%= w.src %>"><%= w.t %></a></li><% }) %>
+        </ul>
+      </div>
+    <% } %>
+    <div class="tw:mx-auto tw:flex tw:max-w-5xl tw:flex-wrap tw:items-center tw:justify-center tw:gap-4 tw:px-4 tw:pt-8 tw:pb-14 tw:sm:px-6 tw:sm:pb-20 tw:lg:px-8" data-animate="hero">
+      <a class="tw:inline-block tw:rounded-md tw:bg-primary tw:px-6 tw:py-3 tw:font-semibold tw:text-on-primary tw:transition tw:hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+      <% if (d.phone) { %><a class="tw:inline-block tw:rounded-md tw:border tw:border-line tw:px-6 tw:py-3 tw:font-medium tw:text-ink tw:transition tw:hover:border-primary" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+      <% if (c && c.moreHref) { %><a class="tw:text-sm tw:text-ink tw:underline tw:underline-offset-4 tw:hover:text-primary" href="<%= c.moreHref %>">See all our services &#8599;</a><% } %>
+    </div>
+  </div>
+</section>

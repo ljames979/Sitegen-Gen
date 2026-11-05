@@ -1,0 +1,18 @@
+<%# Quote form card shown beside service and town pages (falls back to a call button).
+    Expects: site, basePath, preview, services, visible (fn), subject (e.g. "Roof Repair" or "Orlando"), selected, staticExport %>
+<% const sx = (typeof staticExport !== 'undefined' && staticExport); %>
+<% if (!sx && site.sections.contact.acceptSubmissions && visible('contact')) { %>
+  <div class="contact-card contact-form-card">
+    <h3 style="margin:0 0 6px;">Request a quote<%= subject ? ' for ' + subject : '' %></h3>
+    <p class="muted" style="margin:0 0 18px; font-size:14px;">Tell us what you need and we'll get back to you.</p>
+    <%- include('_quote-form', { site, basePath, preview, services, selected, compact: true }) %>
+    <% if (site.sections.contact.phone) { %>
+      <p style="text-align:center; margin:16px 0 0; font-size:14.5px;">Or call <a href="tel:<%= site.sections.contact.phone.replace(/[^0-9+]/g, '') %>" style="font-weight:700; color:var(--primary);"><%= site.sections.contact.phone %></a></p>
+    <% } %>
+  </div>
+<% } else if (site.sections.contact.phone) { %>
+  <div class="contact-card" style="align-self:start;">
+    <h3 style="margin:0 0 12px;"><%= subject ? 'Interested in ' + subject + '?' : 'Get in touch' %></h3>
+    <a class="btn" href="tel:<%= site.sections.contact.phone.replace(/[^0-9+]/g, '') %>">Call <%= site.sections.contact.phone %></a>
+  </div>
+<% } %>

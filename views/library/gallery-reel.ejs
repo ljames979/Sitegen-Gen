@@ -1,0 +1,23 @@
+<%# Original layout (film reel, drawn from scratch): the site's photos glide sideways on their own in a slow loop, like a film reel. It pauses while the mouse is over it or it has keyboard focus, has a pause button, and is a still row the visitor can swipe for visitors who turn motion off. %>
+<% var pics = (d.all && d.all.length ? d.all : d.images) || []; %>
+<section class="sg-lib" data-sg-section="gallery/reel">
+  <div class="sg-reel tw:bg-page <%= 'sg-n' + Math.min(Math.max(pics.length, 3), 12) %>">
+    <div class="tw:mx-auto tw:max-w-[120rem] tw:py-12 tw:lg:py-16">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:sm:px-6 tw:lg:px-8" data-animate="fade-up">
+      <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+    </div>
+    <div class="sg-reel-stage tw:relative tw:mt-8" data-sg-glide>
+      <div class="sg-reel-view" role="region" aria-label="<%= d.heading || 'Photos' %>" tabindex="0">
+        <div class="sg-reel-track tw:flex">
+          <% [0, 1].forEach(function (copy) { pics.forEach(function (im) { %><img class="sg-reel-pic tw:mr-4 tw:h-64 tw:w-auto tw:max-w-none tw:shrink-0 tw:rounded-xl tw:object-cover tw:shadow-[var(--shadow-sm)] tw:sm:h-[52vh]" src="<%= im.src %>" alt="<%= copy ? '' : im.alt %>"<%- copy ? ' aria-hidden="true"' : '' %> loading="lazy" decoding="async"><% }) }) %>
+        </div>
+      </div>
+      <button type="button" class="sg-reel-pause tw:absolute tw:right-4 tw:bottom-3 tw:inline-flex tw:items-center tw:justify-center tw:text-white tw:sm:right-6 tw:lg:right-8" data-sg-glide-pause aria-pressed="false" aria-label="Pause the moving photos">
+        <svg class="sg-sh-i-pause tw:size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>
+        <svg class="sg-sh-i-play tw:size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"></path></svg>
+      </button>
+    </div>
+    <% if (d.moreHref) { %><p class="tw:mt-6 tw:px-4 tw:text-center"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">See the full gallery &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

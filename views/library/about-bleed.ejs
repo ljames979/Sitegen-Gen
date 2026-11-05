@@ -1,0 +1,16 @@
+<%# Original layout (full-bleed photo: the photo fills the width and a solid panel of words docks to one side) %>
+<% var ims = (d.images || []).map(function (x) { return x && typeof x === 'object' ? x.src : x; }).filter(Boolean); if (!ims.length && d.image) ims = [d.image]; var alt = d.imageAlt || ((d.images || [])[0] || {}).alt || ''; %>
+<section class="sg-lib" data-sg-section="about/bleed">
+  <div class="tw:relative tw:bg-surface">
+    <div class="sg-dockr tw:relative tw:z-10 tw:mx-auto tw:flex tw:max-w-7xl tw:justify-end tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:min-h-[34rem] tw:lg:items-end tw:lg:px-8 tw:lg:py-16">
+      <div class="tw:w-full tw:max-w-lg tw:rounded-xl tw:bg-page tw:p-6 tw:shadow-[var(--shadow-md)] tw:sm:p-8" data-animate="fade-up">
+          <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+          <% if (d.heading) { %><h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2><% } %>
+          <% if (d.body) { %><p class="<%= d.heading ? 'tw:mt-4' : '' %> tw:text-pretty tw:whitespace-pre-line tw:text-muted"><%= d.body %></p><% } %>
+          <% if (d.moreHref) { %><a class="tw:mt-6 tw:inline-block tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">Learn more about us &rarr;</a><% } %>
+          <% if (d.buttonText && d.buttonHref) { %><p class="tw:mt-6"><a class="tw:inline-block tw:rounded-md tw:bg-primary tw:px-5 tw:py-3 tw:font-medium tw:text-on-primary tw:shadow-[var(--shadow-sm)] tw:transition-opacity tw:hover:opacity-90" href="<%= d.buttonHref %>"><%= d.buttonText %></a></p><% } %>
+      </div>
+    </div>
+    <% if (ims.length) { %><img class="sg-noshape tw:aspect-[4/3] tw:w-full tw:object-cover tw:lg:absolute tw:lg:inset-0 tw:lg:aspect-auto tw:lg:h-full" src="<%= ims[0] %>" alt="<%= alt %>" loading="lazy"><% } %>
+  </div>
+</section>

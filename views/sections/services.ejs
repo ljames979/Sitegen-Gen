@@ -1,0 +1,58 @@
+<h3>Services</h3>
+<label>Heading</label>
+<input type="text" name="services_heading" value="<%= site.sections.services.heading %>" maxlength="60">
+<label>Small label above the heading (optional, e.g. "Our care")</label>
+<input type="text" name="services_eyebrow" value="<%= site.sections.services.eyebrow || '' %>" maxlength="40">
+<div id="servicesList">
+  <% site.sections.services.items.forEach(item => { %>
+    <div class="service-row">
+      <input type="text" name="service_title" value="<%= item.title %>" placeholder="Service name" maxlength="60">
+      <input type="text" name="service_description" value="<%= item.description %>" placeholder="Short description" maxlength="300">
+      <input type="text" name="service_pay" value="<%= item.pay || '' %>" placeholder="Pay online price, e.g. 89 (optional, needs Payments switched on)" maxlength="10" inputmode="decimal">
+      <textarea name="service_detail" rows="3" maxlength="1500" placeholder="Page text for this service (optional, a few sentences). Each service gets its own page; it is only listed on Google once it has text here."><%= item.detail || '' %></textarea>
+      <div class="svc-extra">
+        <input type="text" name="service_seoTitle" value="<%= item.seoTitle || '' %>" placeholder="Google title for this service's page (optional, up to 70 characters)" maxlength="70">
+        <input type="text" name="service_seoDescription" value="<%= item.seoDescription || '' %>" placeholder="Google description for this service's page (optional, up to 160 characters)" maxlength="160">
+        <select name="service_icon" title="Icon for the home page tile">
+          <option value="">Icon: pick from the name</option>
+          <% Object.keys(icons.LABELS).forEach(k => { %><option value="<%= k %>" <%= item.icon === k ? 'selected' : '' %>><%= icons.LABELS[k] %></option><% }) %>
+        </select>
+        <div class="upload-row">
+          <input type="url" name="service_image" value="<%= item.imageUrl || '' %>" placeholder="Photo for the home page card (optional)">
+          <input type="file" accept="image/*" class="file-input" hidden>
+          <button type="button" class="btn-secondary upload-btn">Upload</button>
+          <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+        </div>
+        <input type="url" name="service_image2" value="<%= item.image2 || '' %>" placeholder="Hover photo (optional): shown when the mouse is over the card, e.g. the finished job">
+      </div>
+      <button type="button" class="btn-secondary remove-row">✕</button>
+    </div>
+  <% }) %>
+</div>
+<button type="button" class="btn-secondary" data-add="service">+ Add service</button>
+
+<%- include('_cards-pick', { site, fam: 'services' }) %>
+<template id="tpl-service">
+  <div class="service-row">
+    <input type="text" name="service_title" placeholder="Service name" maxlength="60">
+    <input type="text" name="service_description" placeholder="Short description" maxlength="300">
+    <input type="text" name="service_pay" placeholder="Pay online price, e.g. 89 (optional, needs Payments switched on)" maxlength="10" inputmode="decimal">
+    <textarea name="service_detail" rows="3" maxlength="1500" placeholder="Page text for this service (optional, a few sentences). Each service gets its own page; it is only listed on Google once it has text here."></textarea>
+    <div class="svc-extra">
+      <input type="text" name="service_seoTitle" placeholder="Google title for this service's page (optional, up to 70 characters)" maxlength="70">
+      <input type="text" name="service_seoDescription" placeholder="Google description for this service's page (optional, up to 160 characters)" maxlength="160">
+      <select name="service_icon" title="Icon for the home page tile">
+        <option value="">Icon: pick from the name</option>
+        <% Object.keys(icons.LABELS).forEach(k => { %><option value="<%= k %>"><%= icons.LABELS[k] %></option><% }) %>
+      </select>
+      <div class="upload-row">
+        <input type="url" name="service_image" value="" placeholder="Photo for the home page card (optional)">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+        <input type="url" name="service_image2" value="" placeholder="Hover photo (optional): shown when the mouse is over the card, e.g. the finished job">
+    </div>
+    <button type="button" class="btn-secondary remove-row">✕</button>
+  </div>
+</template>

@@ -1,0 +1,21 @@
+<%# Adapted from Meraki UI (MIT) marketing/faq "Grid": every question with its answer showing, under a small brand-color square with a question mark. %>
+<section class="sg-lib" data-sg-section="faq/iconcards">
+  <div class="bg-page">
+    <div class="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+      <div data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="text-sm font-medium tracking-wide text-primary uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="font-heading text-3xl font-bold text-ink sm:text-4xl"><%= d.heading %></h2>
+      </div>
+      <div class="mt-10 grid grid-cols-1 gap-x-8 gap-y-10 md:grid-cols-2 lg:grid-cols-3" data-sg-cards data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <div>
+            <span class="inline-flex size-9 items-center justify-center rounded-lg bg-primary text-on-primary" aria-hidden="true"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6"/><path d="M12 17h.01"/></svg></span>
+            <h3 class="mt-4 font-heading text-lg font-semibold text-ink"><%= it.question %></h3>
+            <p class="mt-2 text-sm/relaxed text-pretty text-muted"><%= it.answer %></p>
+          </div>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="mt-10"><a class="font-medium text-primary underline-offset-4 hover:underline" href="<%= d.moreHref %>">More questions &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

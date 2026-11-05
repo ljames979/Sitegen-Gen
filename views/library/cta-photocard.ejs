@@ -1,0 +1,18 @@
+<%# Adapted from Meraki UI (MIT) marketing/cta "Card": a card with a photo on one side and the heading and a dark button on the other. %>
+<section class="sg-lib" data-sg-section="cta/photocard">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-5xl tw:px-4 tw:py-14 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:overflow-hidden tw:rounded-xl tw:bg-page tw:shadow-[var(--shadow-md)] <%= d.image ? 'tw:md:grid tw:md:grid-cols-2' : '' %>" data-animate="fade-up">
+        <% if (d.image) { %><img class="tw:h-64 tw:w-full tw:object-cover tw:md:h-full" src="<%= d.image %>" alt="" loading="lazy"><% } %>
+        <div class="tw:flex tw:flex-col tw:justify-center tw:p-8 tw:sm:p-10 <%= d.image ? '' : 'tw:text-center' %>">
+          <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-bold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+          <% if (d.text) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.text %></p><% } %>
+          <div class="tw:mt-6 tw:flex tw:flex-wrap tw:gap-3 <%= d.image ? '' : 'tw:justify-center' %>">
+            <a class="tw:inline-block tw:rounded-md tw:bg-ink tw:px-6 tw:py-3 tw:text-sm tw:font-medium tw:text-page tw:transition-opacity tw:hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+            <% if (d.phone) { %><a class="tw:inline-block tw:rounded-md tw:border tw:border-line tw:px-6 tw:py-3 tw:text-sm tw:font-medium tw:text-ink tw:transition-colors tw:hover:bg-surface" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

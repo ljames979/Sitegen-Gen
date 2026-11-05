@@ -1,0 +1,18 @@
+<%# Original layout (card fan, drawn from scratch): the photos start as one neat stack and spread into a fanned row as the section scrolls into view. With motion off they sit fanned out and still. Optional floating tags show the client's own service names. %>
+<% var pics = ((d.all && d.all.length ? d.all : d.images) || []).slice(0, 5), mid = (pics.length - 1) / 2; %>
+<section class="sg-lib" data-sg-section="gallery/fan">
+  <div class="tw:bg-page tw:overflow-hidden">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+      </div>
+      <div class="sg-fan tw:relative tw:mx-auto tw:mt-10" data-sg-progress>
+        <% pics.forEach(function (im, i) { var o = i - mid, a = Math.abs(o); %>
+          <figure class="sg-fan-card tw:m-0 tw:overflow-hidden tw:rounded-2xl tw:border-4 tw:border-surface tw:bg-surface tw:shadow-[var(--shadow-md)]" data-a="<%= Math.ceil(a) %>" style="--o:<%= o %>;--a:<%= a %>"><img class="tw:block tw:size-full tw:object-cover" src="<%= im.src %>" alt="<%= im.alt %>" loading="lazy" decoding="async"></figure>
+        <% }) %>
+        <% (d.tags || []).slice(0, 3).forEach(function (t, i) { %><span class="sg-tag sg-tag-<%= i + 1 %>" aria-hidden="true"><%= t %></span><% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="tw:mt-8 tw:text-center"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">See the full gallery &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Pay <%= siteName %></title>
+  <style>
+    :root { --c: <%= /^#[0-9a-fA-F]{6}$/.test(color) ? color : '#2563eb' %>; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f6f7f9; color: #0f172a; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .card { background: #fff; width: min(460px, 100%); border-radius: 16px; box-shadow: 0 10px 40px rgba(15,23,42,.1); padding: 30px 26px; text-align: center; }
+    .biz { color: #64748b; font-size: 14px; margin: 0 0 6px; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    .amt { font-size: 38px; font-weight: 800; margin: 14px 0 2px; letter-spacing: -.02em; }
+    .desc { color: #475569; margin: 0 0 22px; }
+    button { width: 100%; background: var(--c); color: #fff; border: 0; border-radius: 12px; padding: 15px; font-size: 16px; font-weight: 700; cursor: pointer; }
+    .msg { padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 14.5px; text-align: left; }
+    .ok { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; } .bad { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; } .info { background: #f1f5f9; color: #334155; }
+    .tiny { color: #94a3b8; font-size: 12.5px; margin: 16px 0 0; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <p class="biz"><%= siteName %></p>
+    <% if (p.status === 'paid') { %>
+      <div class="msg ok"><strong>Payment received. Thank you!</strong><%= p.paid_at ? ' Paid on ' + p.paid_at + ' UTC.' : '' %></div>
+      <div class="amt"><%= amount %></div><p class="desc"><%= p.description %></p>
+      <p class="tiny">Keep this page as your receipt. Stripe may also email you one.</p>
+    <% } else if (p.status === 'canceled') { %>
+      <div class="msg info">This payment request was canceled. Please contact <%= siteName %> if you have questions.</div>
+    <% } else if (p.status === 'expired') { %>
+      <div class="msg bad">This payment was not completed in time.<%= p.kind === 'deposit' ? ' The held time was released, so please book again.' : '' %></div>
+    <% } else { %>
+      <% if (error) { %><div class="msg bad">We could not open the payment page. Please try again in a moment, or contact <%= siteName %>.</div><% } %>
+      <% if (done) { %><div class="msg info">We are confirming your payment. This page updates in a moment. Refresh if it does not.</div><% } %>
+      <h1><%= p.kind === 'deposit' ? 'Pay your deposit' : 'Pay online' %></h1>
+      <div class="amt"><%= amount %></div>
+      <p class="desc"><%= p.description %></p>
+      <% if (ready) { %>
+        <form method="POST" action="/pay/<%= p.token %>" onsubmit="var b=this.querySelector('button'); b.disabled=true; b.textContent='Opening secure payment…';"><button type="submit">Pay <%= amount %></button></form>
+        <p class="tiny">Secure card payment by Stripe. <%= siteName %> never sees your card number.</p>
+      <% } else { %><div class="msg bad">Online payment is not available right now. Please contact <%= siteName %>.</div><% } %>
+    <% } %>
+  </main>
+</body>
+</html>

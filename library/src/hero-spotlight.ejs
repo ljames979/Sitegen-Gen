@@ -1,0 +1,20 @@
+<%# Original layout (inspired by the "spotlight" hero pattern common on component marketplaces; drawn from scratch): centered headline over a soft brand-color glow, trust row under the buttons. %>
+<section class="sg-lib" data-sg-section="hero/spotlight">
+  <div class="relative isolate overflow-hidden bg-page">
+    <div class="sg-glow absolute top-0 left-1/2 -z-10 h-72 w-[42rem] max-w-full -translate-x-1/2 rounded-full bg-primary opacity-25" aria-hidden="true"></div>
+    <div class="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 sm:py-24 lg:px-8 lg:py-32">
+      <h1 class="mx-auto max-w-3xl font-heading text-4xl font-bold text-balance text-ink sm:text-6xl" data-animate="hero"><%- d.headlineHtml %></h1>
+      <% if (d.sub) { %><p class="mx-auto mt-5 max-w-2xl text-base text-pretty text-muted sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+      <div class="mt-8 flex flex-wrap justify-center gap-4" data-animate="hero">
+        <a class="inline-block rounded-md bg-primary px-5 py-3 font-medium text-on-primary shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+        <% if (d.phone) { %><a class="inline-block rounded-md border border-line bg-page px-5 py-3 font-medium text-ink shadow-[var(--shadow-sm)] transition-colors hover:bg-surface" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+      </div>
+      <% if (d.trust.length) { %>
+        <ul class="mt-8 flex list-none flex-wrap justify-center gap-x-6 gap-y-2 p-0 text-sm text-muted" data-animate="hero">
+          <% d.trust.forEach(function (t) { %><li class="flex items-center gap-2"><svg class="size-4 shrink-0 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><%= t %></li><% }) %>
+        </ul>
+      <% } %>
+      <% if (d.image) { %><img class="mx-auto mt-12 aspect-[16/7] w-full max-w-5xl rounded-2xl border border-line object-cover shadow-[var(--shadow-md)]" src="<%= d.image %>" alt="" fetchpriority="high"><% } %>
+    </div>
+  </div>
+</section>

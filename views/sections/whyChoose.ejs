@@ -1,0 +1,54 @@
+<h3>Why Choose Us</h3>
+<p class="muted" style="font-size:13px; margin-top:-8px;">Short, scannable reasons to pick you — shown as colored cards with an icon. Leave empty to hide this section.</p>
+<label>Heading</label>
+<input type="text" name="whyChoose_heading" value="<%= site.sections.whyChoose.heading %>" maxlength="60">
+<label>Small label above the heading (optional, e.g. "Our care")</label>
+<input type="text" name="whyChoose_eyebrow" value="<%= site.sections.whyChoose.eyebrow || '' %>" maxlength="40">
+<div id="whyChooseList">
+  <% site.sections.whyChoose.items.forEach(item => { %>
+    <div class="service-row">
+      <select name="whyChoose_icon" style="flex: 0 0 140px;">
+        <% ['check','dollar','shield','clock','people','tools','star','truck','leaf','home'].forEach(opt => { %>
+          <option value="<%= opt %>" <%= item.icon === opt ? 'selected' : '' %>><%= opt.charAt(0).toUpperCase() + opt.slice(1) %></option>
+        <% }) %>
+      </select>
+      <input type="text" name="whyChoose_title" value="<%= item.title %>" placeholder="e.g. Free Quote" maxlength="50">
+      <input type="text" name="whyChoose_text" value="<%= item.text %>" placeholder="e.g. Get a no-obligation quote today" maxlength="160">
+      <div class="svc-extra"><div class="upload-row">
+        <input type="url" name="whyChoose_image" value="<%= item.imageUrl || '' %>" placeholder="Photo for this card (optional, replaces the icon in the Industry blueprint)">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div></div>
+      <button type="button" class="btn-secondary remove-row">✕</button>
+    </div>
+  <% }) %>
+</div>
+<button type="button" class="btn-secondary" data-add="whyChoose">+ Add reason</button>
+
+<%- include('_cards-pick', { site, fam: 'why' }) %>
+<template id="tpl-whyChoose">
+  <div class="service-row">
+    <select name="whyChoose_icon" style="flex: 0 0 140px;">
+      <option value="check">Check</option>
+      <option value="dollar">Dollar</option>
+      <option value="shield">Shield</option>
+      <option value="clock">Clock</option>
+      <option value="people">People</option>
+      <option value="tools">Tools</option>
+      <option value="star">Star</option>
+      <option value="truck">Truck</option>
+      <option value="leaf">Leaf</option>
+      <option value="home">Home</option>
+    </select>
+    <input type="text" name="whyChoose_title" placeholder="e.g. Free Quote" maxlength="50">
+    <input type="text" name="whyChoose_text" placeholder="e.g. Get a no-obligation quote today" maxlength="160">
+    <div class="svc-extra"><div class="upload-row">
+        <input type="url" name="whyChoose_image" value="" placeholder="Photo for this card (optional, replaces the icon in the Industry blueprint)">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div></div>
+    <button type="button" class="btn-secondary remove-row">✕</button>
+  </div>
+</template>

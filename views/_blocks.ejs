@@ -1,0 +1,1021 @@
+<%# Content blocks on the home page. Pass `place` ('top' or 'bottom'). %>
+<% const _pv = typeof preview !== 'undefined' && !!preview && String(typeof basePath !== 'undefined' ? basePath : '').startsWith('/sites/');   // the owner's own preview, not a link shared with the client
+   // in the editor's preview each block names its row (its place in the list), so a click or the ↑ ↓ bar finds it
+   // `only` draws one block by its id (a block placed on a Blocks home page); `skipIds` leaves those blocks out.
+   // A block hidden in Page sections is never drawn.
+   const _hid = (site.layout && site.layout.hidden) || [], _only = typeof only !== 'undefined' ? only : '', _skip = typeof skipIds !== 'undefined' ? skipIds : [];
+   const _blocks = ((site.sections.blocks && site.sections.blocks.items) || []).map((b, i) => (_pv ? { ...b, _i: i } : b))
+     .filter(b => !(b.id && _hid.includes('blk:' + b.id)))
+     .filter(b => _only ? b.id === _only : !(b.id && _skip.includes(b.id)) && (b.place || 'bottom') === place && (b.page || 'home') === (typeof pageKey !== 'undefined' ? pageKey : 'home')); %>
+<% let _photoIdx = 0; %>
+<% _blocks.forEach(blk => { %>
+  <% const _pin = pinFx.attrs(blk.pin); if (_pin.cls) { %><div class="<%= _pin.cls.trim() %>"<% if (_pin.style) { %> style="<%= _pin.style %>"<% } %>><% } %>
+  <% const _film = filmFx.attrs(blk.film, site.theme); if (_film.cls) { %><div class="<%= _film.cls.trim() %>" style="<%= _film.style %>"><% } %>
+  <% const _ix = imgFx.attrs(blk.imgfx); if (_ix.cls) { %><div class="<%= _ix.cls.trim() %>"><% } %>
+  <% const _ht = heightFx.attrs(blk.height); if (_ht.cls) { %><div class="<%= _ht.cls.trim() %>"<% if (_ht.style) { %> style="<%= _ht.style %>"<% } %>><% } %>
+  <% // a gallery gradient that blends into the block's own color: the block keeps that plain color, the gradient goes on as a class (gradients.headCss)
+     const _gbc = String(blk.bg || '').startsWith('g-') && blk.bgmix ? gradients.blendClass(blk.bg.slice(2), gradients.blockMix(blk), blk.bgink, blk.gx) : '';
+     const _gic = String(blk.bg || '').startsWith('g-') && !blk.bgmix ? gradients.inkClass(blk.bg.slice(2), blk.bgink) : '';   // a texture in chosen colors
+     // its intensity (turned up or down) and a gradient on the cards inside it (gradients.headCss writes their CSS)
+     const _gxc = String(blk.bg || '').startsWith('g-') && !blk.bgmix ? gradients.strengthClass(blk.gx) : '', _cgc = gradients.cardClass(blk.cardbg, blk.cardgx);
+     const bg = _gbc ? blk.bgmix : (blk.bg || 'none'); const ec = ((blk.edge === 'wave' || blk.edge === 'scallop') ? ' edge-' + blk.edge : '') + (_gbc ? ' ' + _gbc : '') + (_gic ? ' ' + _gic : '') + (_gxc ? ' ' + _gxc : '') + (_cgc ? ' ' + _cgc : ''); %>
+  <% if (blk.type === 'photoText') { %>
+    <% const side = blk.side === 'left' || blk.side === 'right' ? blk.side : (_photoIdx % 2 === 0 ? 'right' : 'left'); _photoIdx++; %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-bg-<%= bg %><%= ec %>">
+      <div class="blk-inner blk-photo <%= blk.imageUrl ? 'photo-' + side : 'no-photo' %>" data-reveal>
+        <% if (blk.imageUrl) { %><div class="blk-img"><img src="<%= blk.imageUrl %>" alt="<%= blk.heading || site.name %>" loading="lazy" decoding="async"></div><% } %>
+        <div class="blk-text">
+          <% if (blk.heading) { %><h2><%= blk.heading %></h2><% } %>
+          <% (blk.body || '').split(/\n{2,}/).filter(Boolean).forEach(par => { %><p><%= par %></p><% }) %>
+          <% if (blk.buttonText && blk.buttonUrl) { %><a class="btn" href="<%= blk.buttonUrl %>"><%= blk.buttonText %></a><% } %>
+        </div>
+      </div>
+    </section>
+  <% } else if (blk.type === 'steps') { %>
+    <% const steps = (blk.body || '').split('\n').map(l => l.trim()).filter(Boolean).slice(0, 8).map(l => { const i = l.indexOf('|'); return i > -1 ? { t: l.slice(0, i).trim(), d: l.slice(i + 1).trim() } : { t: l, d: '' }; }); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-bg-<%= bg === 'none' ? 'tint' : bg %><%= ec %>">
+      <div class="blk-inner blk-steps" data-reveal>
+        <% if (blk.heading) { %><h2><%= blk.heading %></h2><% } %>
+        <% if (blk.side === 'stack') { %>
+        <ol class="steps-stack">
+          <% steps.forEach((st, i) => { %>
+            <li style="--i: <%= i %>"><span class="step-num"><%= i + 1 %></span><div><strong><%= st.t %></strong><% if (st.d) { %><p><%= st.d %></p><% } %></div></li>
+          <% }) %>
+        </ol>
+        <% } else if (blk.side === 'timeline') { %>
+        <ol class="steps-timeline">
+          <% steps.forEach((st, i) => { %>
+            <li><span class="step-num"><%= i + 1 %></span><strong><%= st.t %></strong><% if (st.d) { %><p><%= st.d %></p><% } %></li>
+          <% }) %>
+        </ol>
+        <% } else { %>
+        <div class="steps-grid">
+          <% steps.forEach((st, i) => { %>
+            <div class="step-card"><span class="step-num"><%= i + 1 %></span><div><strong><%= st.t %></strong><% if (st.d) { %><p><%= st.d %></p><% } %></div></div>
+          <% }) %>
+        </div>
+        <% } %>
+        <% if (blk.buttonText && blk.buttonUrl) { %><p class="blk-cta"><a class="btn" href="<%= blk.buttonUrl %>"><%= blk.buttonText %></a></p><% } %>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'features') { %>
+    <% const feats = (blk.body || '').split('\n').map(l => l.trim()).filter(Boolean).slice(0, 8).map(l => { const i = l.indexOf('|'); return i > -1 ? { t: l.slice(0, i).trim(), d: l.slice(i + 1).trim() } : { t: l, d: '' }; }); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-bg-<%= bg %><%= ec %>">
+      <div class="blk-inner blk-steps" data-reveal>
+        <% if (blk.heading) { %><h2><%= blk.heading %></h2><% } %>
+        <div class="feat-grid">
+          <% feats.forEach(f => { %>
+            <div class="feat-card">
+              <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><%- icons.iconPath(f.t, '') %></svg>
+              <strong><%= f.t %></strong><% if (f.d) { %><p><%= f.d %></p><% } %>
+            </div>
+          <% }) %>
+        </div>
+        <% if (blk.buttonText && blk.buttonUrl) { %><p class="blk-cta"><a class="btn" href="<%= blk.buttonUrl %>"><%= blk.buttonText %></a></p><% } %>
+      </div>
+    </section>
+  <% } else if (blk.type === 'cta') { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-cta-band<%= blk.imageUrl ? ' has-photo' : '' %><%= !blk.imageUrl && (bg.startsWith('g-') || (_gbc && bg !== 'none')) ? ' blk-bg-' + bg : '' %><%= ec %>" <% if (blk.imageUrl) { %>style="background-image: linear-gradient(rgba(10,20,35,.62), rgba(10,20,35,.62)), url('<%= blk.imageUrl %>')"<% } %>>
+      <div class="blk-inner" data-reveal>
+        <% if (blk.heading) { %><h2><%= blk.heading %></h2><% } %>
+        <% (blk.body || '').split(/\n{2,}/).filter(Boolean).forEach(par => { %><p><%= par %></p><% }) %>
+        <% if (blk.buttonText && blk.buttonUrl) { %><a class="btn" href="<%= blk.buttonUrl %>"><%= blk.buttonText %></a><% } %>
+      </div>
+    </section>
+  <% } else if (blk.type === 'chips') { %>
+    <% const chips = (blk.body || '').split('\n').map(l => l.trim()).filter(Boolean).slice(0, 40).map(l => { const i = l.indexOf('|'); return i > -1 ? { t: l.slice(0, i).trim(), u: l.slice(i + 1).trim() } : { t: l, u: '' }; }); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-bg-<%= bg %><%= ec %>">
+      <div class="blk-inner blk-steps" data-reveal>
+        <% if (blk.heading) { %><h2><%= blk.heading %></h2><% } %>
+        <div class="chip-grid">
+          <% chips.forEach(ch => { %>
+            <% if (ch.u && /^(https?:\/\/|\/)/i.test(ch.u)) { %><a class="chip" href="<%= ch.u %>"><%= ch.t %></a><% } else { %><span class="chip"><%= ch.t %></span><% } %>
+          <% }) %>
+        </div>
+        <% if (blk.buttonText && blk.buttonUrl) { %><p class="blk-cta"><a class="btn" href="<%= blk.buttonUrl %>"><%= blk.buttonText %></a></p><% } %>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'team') { %>
+    <% const people = (blk.body || '').split('\n').map(l => l.split('|').map(x => x.trim())).filter(p => p[0]).slice(0, 12); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-bg-<%= bg %><%= ec %>">
+      <div class="blk-inner blk-steps" data-reveal>
+        <% if (blk.heading) { %><h2><%= blk.heading %></h2><% } %>
+        <div class="team-grid">
+          <% people.forEach(pp => { %>
+            <div class="team-card">
+              <% if (pp[3]) { %><img src="<%= pp[3] %>" alt="<%= pp[0] %>" loading="lazy" decoding="async"><% } else { %><span class="team-initial" aria-hidden="true"><%= pp[0].charAt(0).toUpperCase() %></span><% } %>
+              <h3><%= pp[0] %></h3>
+              <% if (pp[1]) { %><div class="team-role"><%= pp[1] %></div><% } %>
+              <% if (pp[2]) { %><p><%= pp[2] %></p><% } %>
+            </div>
+          <% }) %>
+        </div>
+        <% if (blk.buttonText && blk.buttonUrl) { %><p class="blk-cta"><a class="btn" href="<%= blk.buttonUrl %>"><%= blk.buttonText %></a></p><% } %>
+      </div>
+    </section>
+  <% } else if (blk.type === 'stats') { %>
+    <% const stats = (blk.body || '').split('\n').map(l => { const i = l.indexOf('|'); return i > -1 ? { n: l.slice(0, i).trim(), t: l.slice(i + 1).trim() } : { n: l.trim(), t: '' }; }).filter(x => x.n).slice(0, 6); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-bg-<%= bg === 'none' ? 'tint' : bg %><%= ec %>">
+      <div class="blk-inner blk-steps" data-reveal>
+        <% if (blk.heading) { %><h2><%= blk.heading %></h2><% } %>
+        <div class="stats-row">
+          <% stats.forEach(st => { %><div class="stat"><div class="stat-num"<%- motionLib.countAttrs(st.n) %>><%= st.n %></div><% if (st.t) { %><div class="stat-label"><%= st.t %></div><% } %></div><% }) %>
+        </div>
+      </div>
+    </section>
+  <% } else if (blk.type === 'video') { %>
+    <% const vi = videoInfo(blk.body); %>
+    <% if (vi) { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-bg-<%= bg %><%= ec %>">
+      <div class="blk-inner blk-video" data-reveal>
+        <% if (blk.heading) { %><h2<%- vi.kind === 'file' && videoMask.clean(blk.side) === 'text' ? ' class="vm-sr"' : '' %>><%= blk.heading %></h2><% } %>
+        <% const _vm = vi.kind === 'file' ? videoMask.clean(blk.side) : 'auto'; %>
+        <% if (_vm === 'text') { %>
+          <div class="vm vm-text"><video src="<%= vi.src %>" muted loop playsinline autoplay preload="metadata" aria-hidden="true"></video><p class="vm-words" aria-hidden="true"><%= wordStyle.plain(blk.heading || site.name) %></p></div>
+        <% } else if (_vm === 'grow') { %>
+          <div class="vm vm-grow"><video src="<%= vi.src %>" muted loop playsinline autoplay preload="metadata"></video></div>
+        <% } else if (_vm !== 'auto') { %>
+          <div class="vm vm-shape vm-<%= _vm %>" style="clip-path:<%= videoMask.SHAPES[_vm] %>"><video src="<%= vi.src %>" muted loop playsinline autoplay preload="metadata"></video></div>
+        <% } else if (vi.kind === 'file') { %>
+          <video controls playsinline preload="metadata" src="<%= vi.src %>"></video>
+        <% } else { %>
+          <div class="video-frame" data-embed="<%= vi.embed %>" style="<%= vi.poster ? "background-image:url('" + vi.poster + "')" : '' %>">
+            <button type="button" class="video-play" aria-label="Play video<%= blk.heading ? ': ' + blk.heading : '' %>"><svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
+          </div>
+        <% } %>
+        <% if (blk.buttonText && blk.buttonUrl) { %><p class="blk-cta"><a class="btn" href="<%= blk.buttonUrl %>"><%= blk.buttonText %></a></p><% } %>
+      </div>
+    </section>
+    <% } %>
+  <% } else if (blk.type === 'tabs' || blk.type === 'accordion') { %>
+    <% const items = (blk.body || '').split('\n').map(l => { const i = l.indexOf('|'); return i > -1 ? { t: l.slice(0, i).trim(), d: l.slice(i + 1).trim() } : { t: l.trim(), d: '' }; }).filter(x => x.t).slice(0, 8); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-bg-<%= bg %><%= ec %>">
+      <div class="blk-inner blk-steps" data-reveal>
+        <% if (blk.heading) { %><h2><%= blk.heading %></h2><% } %>
+        <% if (blk.type === 'accordion') { %>
+          <div class="acc-list">
+            <% items.forEach((it, n) => { %><details class="acc-item"<%= n === 0 ? ' open' : '' %>><summary><%= it.t %></summary><p><%= it.d %></p></details><% }) %>
+          </div>
+        <% } else { %>
+          <div class="tabs-box" data-tabs>
+            <div class="tabs-bar" role="tablist"><% items.forEach((it, n) => { %><button type="button" role="tab" class="tab-btn<%= n === 0 ? ' on' : '' %>" aria-selected="<%= n === 0 %>"><%= it.t %></button><% }) %></div>
+            <% items.forEach((it, n) => { %><div class="tab-panel" role="tabpanel"<%= n === 0 ? '' : ' data-off' %>><p><%= it.d %></p></div><% }) %>
+          </div>
+        <% } %>
+        <% if (blk.buttonText && blk.buttonUrl) { %><p class="blk-cta"><a class="btn" href="<%= blk.buttonUrl %>"><%= blk.buttonText %></a></p><% } %>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'pricing') { %>
+    <% const plans = (blk.body || '').split('\n').map(l => l.trim()).filter(Boolean).slice(0, 6).map(l => {
+         const hot = l.startsWith('*'); const parts = (hot ? l.slice(1) : l).split('|').map(x => x.trim());
+         return { hot, name: parts[0] || '', price: parts[1] || '', items: (parts.slice(2).join(',') || '').split(',').map(x => x.trim()).filter(Boolean).slice(0, 12) };
+       }).filter(p => p.name); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-bg-<%= bg %><%= ec %>">
+      <div class="blk-inner blk-steps" data-reveal>
+        <% if (blk.heading) { %><h2><%= blk.heading %></h2><% } %>
+        <div class="price-grid n<%= plans.length %>">
+          <% plans.forEach(pl => { %>
+            <div class="price-card<%= pl.hot ? ' hot' : '' %>">
+              <% if (pl.hot) { %><span class="price-flag">Featured</span><% } %>
+              <h3><%= pl.name %></h3>
+              <% if (pl.price) { %><div class="price-amt"><%= pl.price %></div><% } %>
+              <% if (pl.items.length) { %><ul><% pl.items.forEach(it => { %><li><%= it %></li><% }) %></ul><% } %>
+              <% if (blk.buttonText && blk.buttonUrl) { %><a class="btn" href="<%= blk.buttonUrl %>"><%= blk.buttonText %></a><% } %>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'wall') { %>
+    <% const ws = brandWall.settings(blk.side), wallTiles = brandWall.tiles(site, blk), wallCols = brandWall.columns(wallTiles, 5); %>
+    <% if (wallTiles.length) { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-wall blk-bg-<%= bg === 'none' ? 'dark' : bg %><%= ec %>">
+      <div class="wall wall-<%= ws.size %>" data-sg-wall style="--wall-tilt: <%= ws.deg %>deg; --wall-secs: <%= ws.secs %>s;<%= ws.height ? ' --wall-h: ' + ws.height + 'px;' : '' %> <%= brandWall.styleVars(site.theme) %>">
+        <div class="wall-plane" aria-hidden="true">
+          <% wallCols.forEach((col, c) => { %>
+            <div class="wall-col wall-c<%= c %><%= c % 2 ? ' wall-down' : '' %>"><div class="wall-track">
+              <% [0, 1].forEach(() => { col.forEach(w => { %>
+                <%- include('_wall-card', { w }) %>
+              <% }) }) %>
+            </div></div>
+          <% }) %>
+        </div>
+        <% if (blk.heading || (blk.buttonText && blk.buttonUrl)) { %>
+          <div class="wall-over">
+            <div class="wall-card" data-reveal>
+              <% if (blk.heading) { %><h2><%= blk.heading %></h2><% } %>
+              <% if (blk.buttonText && blk.buttonUrl) { %><a class="btn" href="<%= blk.buttonUrl %>"><%= blk.buttonText %></a><% } %>
+            </div>
+          </div>
+        <% } %>
+        <button type="button" class="wall-pause" data-sg-wall-pause aria-pressed="false" aria-label="Pause the moving wall"><svg class="wp-pause" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg><svg class="wp-play" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"></path></svg></button>
+      </div>
+    </section>
+    <% } %>
+  <% } %>
+  <% if (blk.type === 'cascade') { %>
+    <% const cs = cardCascade.settings(blk.side), csCards = cardCascade.cards(site, blk), csText = blk.heading || (blk.buttonText && blk.buttonUrl); %>
+    <% if (csCards.length) { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-cascade blk-bg-<%= bg %><%= ec %>">
+      <div class="cascade<%= csText ? ' cascade-split' : '' %>" data-sg-wall style="--cd-secs: <%= cs.secs %>s; --cd-n: <%= csCards.length %>;<%= cs.height ? ' --cd-h: ' + cs.height + 'px;' : '' %> <%= cardCascade.styleVars(site.theme) %>">
+        <% if (csText) { %>
+          <div class="cascade-text" data-reveal>
+            <% if (blk.heading) { %><h2><%= blk.heading %></h2><% } %>
+            <% if (blk.buttonText && blk.buttonUrl) { %><a class="btn" href="<%= blk.buttonUrl %>"><%= blk.buttonText %></a><% } %>
+          </div>
+        <% } %>
+        <div class="cascade-stage" aria-hidden="true">
+          <% csCards.forEach(w => { %><%- include('_wall-card', { w, extra: 'style="--x: ' + w.x + '; --y: ' + w.y + '; --i: ' + w.i + '"' }) %><% }) %>
+        </div>
+        <button type="button" class="wall-pause" data-sg-wall-pause data-what="card cascade" aria-pressed="false" aria-label="Pause the card cascade"><svg class="wp-pause" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg><svg class="wp-play" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"></path></svg></button>
+      </div>
+    </section>
+    <% } %>
+  <% } %>
+  <% if (blk.type === 'beforeAfter') { %>
+    <% const _pairs = ((site.sections.gallery && site.sections.gallery.beforeAfter) || []).slice(0, 6); %>
+    <% if (_pairs.length) { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-ba blk-bg-<%= bg %><%= ec %>">
+      <div class="blk-inner" data-reveal>
+        <% if (blk.heading) { %><h2 style="text-align:center;"><%= blk.heading %></h2><% } %>
+        <% (blk.body || '').split(/\n{2,}/).filter(Boolean).forEach(par => { %><p style="text-align:center;"><%= par %></p><% }) %>
+        <div class="ba-grid">
+          <% _pairs.forEach(p => { %>
+            <div>
+              <div class="ba-slider">
+                <img src="<%= p.after %>" alt="After<%= p.caption ? ': ' + p.caption : '' %>" loading="lazy" decoding="async">
+                <img class="ba-b" src="<%= p.before %>" alt="Before<%= p.caption ? ': ' + p.caption : '' %>" loading="lazy" decoding="async">
+                <span class="ba-tag">Before</span><span class="ba-tag after">After</span>
+                <span class="ba-line" aria-hidden="true"></span>
+                <input type="range" min="0" max="100" value="50" aria-label="Slide to compare before and after<%= p.caption ? ': ' + p.caption : '' %>">
+              </div>
+              <% if (p.caption) { %><p class="ba-caption"><%= p.caption %></p><% } %>
+            </div>
+          <% }) %>
+        </div>
+        <% if (blk.buttonText && blk.buttonUrl) { %><p style="text-align:center;"><a class="btn" href="<%= blk.buttonUrl %>"><%= blk.buttonText %></a></p><% } %>
+      </div>
+    </section>
+    <% } else if (_pv) { %>
+    <section data-sg-blk="<%= blk._i %>" class="blk blk-bg-<%= bg %> blk-empty" style="padding:2.5rem 1rem;text-align:center;opacity:.7;border:2px dashed currentColor;margin:1rem">Before / after: add photo pairs under Gallery to show them (only you see this)</section>
+    <% } %>
+  <% } %>
+  <% if (blk.type === 'trail') { %>
+    <% const tr = motionBlocks.trail(site, blk, typeof services !== 'undefined' ? services : (site.sections.services || {}).items); %>
+    <% if (tr) { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-trail blk-bg-<%= bg %><%= ec %>">
+      <div class="sg-trail" data-sg-trail data-photos="<%= JSON.stringify(tr.photos) %>">
+        <div class="sg-trail-text">
+          <% if (blk.heading) { %><h2 class="sg-trail-h"><%- tr.headingHtml %></h2><% } %>
+          <% tr.lines.forEach(t => { %><p><%= t %></p><% }) %>
+          <% if (blk.buttonText && blk.buttonUrl) { %><p><a class="btn" href="<%= blk.buttonUrl %>"><%= blk.buttonText %></a></p><% } %>
+        </div>
+        <div class="sg-trail-still" aria-hidden="true"><% tr.photos.slice(0, 5).forEach((src, i) => { %><img src="<%= src %>" alt="" loading="lazy" decoding="async" style="--i: <%= i %>"><% }) %></div>
+      </div>
+    </section>
+    <% } else if (_pv) { %>
+    <section data-sg-blk="<%= blk._i %>" class="blk blk-bg-<%= bg %> blk-empty" style="padding:2.5rem 1rem;text-align:center;opacity:.7;border:2px dashed currentColor;margin:1rem">Photo trail: it needs 3 photos (yours or the site's) (only you see this)</section>
+    <% } %>
+  <% } %>
+  <% if (blk.type === 'wave') { %>
+    <% const wv = motionBlocks.wave(site, blk, typeof services !== 'undefined' ? services : (site.sections.services || {}).items); %>
+    <% if (wv) { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-wave blk-bg-<%= bg %><%= ec %>">
+      <div class="sg-wave" data-sg-wave<% if (wv.shape) { %> data-sg-shape="<%= wv.shape %>"<% } %>>
+        <div class="sg-wave-pin">
+          <% if (wv.left || wv.right) { %><h2 class="sg-wave-words"><span class="sg-wave-l"><%= wv.left %></span> <span class="sg-wave-r"><%= wv.right %></span></h2><% } %>
+          <% if (wv.text || (blk.buttonText && blk.buttonUrl)) { %><div class="sg-wave-text"><% if (wv.text) { %><p><%= wv.text %></p><% } %><% if (blk.buttonText && blk.buttonUrl) { %><p><a class="btn" href="<%= blk.buttonUrl %>"><%= blk.buttonText %></a></p><% } %></div><% } %>
+          <div class="sg-wave-stage" aria-hidden="true"><% wv.pics.forEach(src => { %><img class="sg-wave-pic" src="<%= src %>" alt="" loading="lazy" decoding="async"><% }) %></div>
+        </div>
+      </div>
+    </section>
+    <% } else if (_pv) { %>
+    <section data-sg-blk="<%= blk._i %>" class="blk blk-bg-<%= bg %> blk-empty" style="padding:2.5rem 1rem;text-align:center;opacity:.7;border:2px dashed currentColor;margin:1rem">Photo wave: it needs 4 photos (yours or the site's) (only you see this)</section>
+    <% } %>
+  <% } %>
+  <% if (blk.type === 'bigwords') { %>
+    <% const bw = motionBlocks.bigwords(site, blk, typeof services !== 'undefined' ? services : (site.sections.services || {}).items); %>
+    <% if (bw) { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-bigw blk-bg-<%= bg %><%= ec %>">
+      <div class="sg-bigw" data-sg-bigw>
+        <% if (bw.caption) { %><p class="sg-bigw-cap"><%= bw.caption %></p><% } %>
+        <h2 class="sg-bigw-h" aria-label="<%= bw.label %>"><% bw.rows.forEach(row => { %><span class="sg-bigw-row" aria-hidden="true"><% row.forEach(p => { %><% if (p.photo) { %><span class="sg-bigw-ph" style="--i: <%= p.i %>"><img src="<%= p.photo %>" alt="" decoding="async"></span> <% } else { %><span class="sg-bigw-w" style="--i: <%= p.i %>"><%= p.t %></span> <% } %><% }) %></span><% }) %></h2>
+        <% if (bw.button) { %><p class="sg-bigw-cta"><a class="btn" href="<%= bw.button.url %>"><%= bw.button.text %></a></p><% } %>
+      </div>
+    </section>
+    <% } else if (_pv) { %>
+    <section data-sg-blk="<%= blk._i %>" class="blk blk-bg-<%= bg %> blk-empty" style="padding:2.5rem 1rem;text-align:center;opacity:.7;border:2px dashed currentColor;margin:1rem">Big words: type a heading or some lines to show it (only you see this)</section>
+    <% } %>
+  <% } %>
+  <% const _mbSvc = typeof services !== 'undefined' ? services : (site.sections.services || {}).items; %>
+  <% const _mbEmpty = (what) => _pv ? '<section data-sg-blk="' + blk._i + '" class="blk blk-bg-' + bg + ' blk-empty" style="padding:2.5rem 1rem;text-align:center;opacity:.7;border:2px dashed currentColor;margin:1rem">' + what + ' (only you see this)</section>' : ''; %>
+  <% if (blk.type === 'story') { %>
+    <% const st = motionBlocks.story(site, blk, _mbSvc); %>
+    <% if (st) { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-story blk-bg-<%= bg %><%= ec %>">
+      <div class="sg-story" data-sg-scrollstory style="--n: <%= st.steps.length %>">
+        <div class="sg-story-pin">
+          <div class="sg-story-text">
+            <% if (blk.heading) { %><h2 class="sg-story-h"><%- st.headingHtml %></h2><% } %>
+            <div class="sg-story-bar" aria-hidden="true"><span></span></div>
+            <ol class="sg-story-steps">
+              <% st.steps.forEach((x, i) => { %><li class="sg-story-step" style="--i: <%= i %>"><span class="sg-story-num"><%= String(i + 1).padStart(2, '0') %></span><h3><%= x.t %></h3><% if (x.d) { %><p><%= x.d %></p><% } %><% if (x.photo) { %><img class="sg-story-ph-m" src="<%= x.photo %>" alt="" loading="lazy" decoding="async"><% } %></li><% }) %>
+            </ol>
+            <% if (st.button) { %><p class="sg-story-cta"><a class="btn" href="<%= st.button.url %>"><%= st.button.text %></a></p><% } %>
+          </div>
+          <div class="sg-story-pics" aria-hidden="true"><% st.steps.forEach((x, i) => { if (x.photo) { %><img class="sg-story-pic" style="--i: <%= i %>" src="<%= x.photo %>" alt="" loading="lazy" decoding="async"><% } }) %></div>
+        </div>
+      </div>
+    </section>
+    <% } else { %><%- _mbEmpty('Scroll story: type 2 or more steps, one per line (Title | words)') %><% } %>
+  <% } %>
+  <% if (blk.type === 'path') { %>
+    <% const pt = motionBlocks.path(site, blk, _mbSvc); %>
+    <% if (pt) { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-path blk-bg-<%= bg %><%= ec %>">
+      <div class="sg-path" data-sg-path>
+        <div class="sg-path-pin">
+          <% if (blk.heading) { %><h2 class="sg-path-h"><%- pt.headingHtml %></h2><% } %>
+          <div class="sg-path-stage">
+            <svg class="sg-path-line" aria-hidden="true" preserveAspectRatio="none"><path d=""></path></svg>
+            <% pt.photos.forEach((src, i) => { %><img class="sg-path-pic sg-path-item" src="<%= src %>" alt="" loading="lazy" decoding="async"><% }) %>
+            <% pt.lines.forEach(l => { %><span class="sg-path-word sg-path-item"><%= l %></span><% }) %>
+          </div>
+          <% if (pt.button) { %><p class="sg-path-cta"><a class="btn" href="<%= pt.button.url %>"><%= pt.button.text %></a></p><% } %>
+        </div>
+      </div>
+    </section>
+    <% } else { %><%- _mbEmpty('Path travel: it needs 3 photos (yours or the site\'s)') %><% } %>
+  <% } %>
+  <% if (blk.type === 'zoomword') { %>
+    <% const zw = motionBlocks.zoomword(site, blk, _mbSvc); %>
+    <% if (zw) { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-zoomw blk-bg-<%= bg %><%= ec %>">
+      <div class="sg-zw" data-sg-zoomword style="--len: <%= Math.max(4, zw.word.length) %>; --zw-img: url('<%= zw.photo.replace(/'/g, '') %>')">
+        <div class="sg-zw-pin">
+          <div class="sg-zw-photo" aria-hidden="true"></div>
+          <h2 class="sg-zw-word"><%= zw.word %></h2>
+          <% if (zw.text || zw.button) { %><div class="sg-zw-text"><% if (zw.text) { %><p><%= zw.text %></p><% } %><% if (zw.button) { %><p><a class="btn" href="<%= zw.button.url %>"><%= zw.button.text %></a></p><% } %></div><% } %>
+        </div>
+      </div>
+    </section>
+    <% } else { %><%- _mbEmpty('Zoom through the word: type the word as the heading; it needs a photo (yours or the hero\'s)') %><% } %>
+  <% } %>
+  <% if (blk.type === 'morph') { %>
+    <% const mo = motionBlocks.morph(site, blk, _mbSvc); %>
+    <% if (mo) { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-morph blk-bg-<%= bg %><%= ec %>">
+      <div class="blk-inner sg-morph" data-sg-morph>
+        <div class="sg-morph-text">
+          <% if (blk.heading) { %><h2><%- mo.headingHtml %></h2><% } %>
+          <% mo.paras.forEach(t => { %><p><%= t %></p><% }) %>
+          <% if (mo.button) { %><p><a class="btn" href="<%= mo.button.url %>"><%= mo.button.text %></a></p><% } %>
+        </div>
+        <div class="sg-morph-fig" aria-hidden="true"><img class="sg-morph-img" src="<%= mo.photo %>" alt="" loading="lazy" decoding="async"></div>
+      </div>
+    </section>
+    <% } else { %><%- _mbEmpty('Shape morph: type a heading; it needs a photo (yours, About\'s or the site\'s)') %><% } %>
+  <% } %>
+  <% if (blk.type === 'nodes') { %>
+    <% const nc = nodeCards.view(site, blk, _mbSvc); %>
+    <% if (nc) { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-nodes blk-bg-<%= bg %><%= ec %>">
+      <div class="blk-inner sg-nc sg-nc-<%= nc.change === 'slide' ? 'slide' : 'fade' %>" data-sg-nodes data-sg-wall data-change="<%= nc.change %>">
+        <% if (blk.heading || nc.sub.length || nc.button) { %><div class="sg-nc-head">
+          <% if (blk.heading) { %><h2 class="sg-nc-h"><%- nc.headingHtml %><% if (nc.roll.length) { %> <span class="sg-ps-roll" data-sg-roll aria-hidden="true"><span class="sg-ps-rail"><% nc.roll.forEach(t => { %><span><%= t %></span><% }) %></span></span><span class="sg-ps-sr"><%= nc.roll.join(', ') %></span><% } %></h2><% } %>
+          <% if (nc.sub.length) { %><p class="sg-nc-sub"><% nc.sub.forEach((t, i) => { %><%= t %><% if (i < nc.sub.length - 1) { %><br><% } %><% }) %></p><% } %>
+          <% if (nc.button) { %><p class="sg-nc-sub sg-nc-cta"><a class="btn" href="<%= nc.button.url %>"><%= nc.button.text %></a></p><% } %>
+        </div><% } %>
+        <div class="sg-nc-graph" style="--nc-cols: <%= nc.grid %>">
+          <svg class="sg-nc-wires" aria-hidden="true" focusable="false"></svg>
+          <% nc.cols.forEach((col, ci) => { %><div class="sg-nc-col sg-nc-c<%= ci + 1 %><%= col.big ? ' sg-nc-big' : '' %>">
+            <% col.cards.forEach(c => { %><figure class="sg-nc-card<%= c.words ? ' sg-nc-note' : '' %>">
+              <% if (c.label || c.tag) { %><figcaption class="sg-nc-lab"><% if (c.label) { %><b><%= c.label %></b><% } %><% if (c.tag) { %><span><%= c.tag %></span><% } %></figcaption><% } %>
+              <% if (c.words) { %><div class="sg-nc-frame sg-nc-words"><p><%= c.words %></p></div><% } else { %><div class="sg-nc-frame sg-nc-pics" aria-hidden="true"><% c.pics.forEach((src, i) => { %><img<%- i === 0 ? ' class="sg-on"' : '' %> src="<%= src %>" alt="" loading="lazy" decoding="async"><% }) %></div><% } %>
+            </figure><% }) %>
+          </div><% }) %>
+          <% if (nc.changes || nc.rolls) { %><button type="button" class="wall-pause sg-nc-pause" data-sg-wall-pause data-what="moving words and pictures" aria-pressed="false" aria-label="Pause the moving words and pictures"><svg class="wp-pause" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg><svg class="wp-play" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"></path></svg></button><% } %>
+        </div>
+      </div>
+    </section>
+    <% } else { %><%- _mbEmpty('Connected photo cards: it needs 3 cards (or 3 services) and photos for at least two of them (yours or the site\'s)') %><% } %>
+  <% } %>
+  <% if (blk.type === 'stack') { %>
+    <% const sk = stackCards.view(site, blk, _mbSvc), skN = sk.cards.length; %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-stack blk-bg-<%= bg %><%= ec %>">
+      <div class="sg-sk sg-sk-<%= sk.colors %>" data-sg-stack style="--n: <%= skN %>">
+        <div class="sg-sk-pin">
+          <div class="blk-inner sg-sk-grid">
+            <div class="sg-sk-text">
+              <% if (sk.label) { %><p class="sg-sk-label"><%= sk.label %></p><% } %>
+              <% if (blk.heading) { %><h2 class="sg-sk-h"><%- sk.headingHtml %></h2><% } %>
+              <% if (sk.rating || sk.ratingText) { %><p class="sg-sk-rate"><% if (sk.rating) { %><span class="sg-sk-stars" role="img" aria-label="<%= sk.rating.value %> out of 5 stars"><% for (let i = 0; i < sk.rating.full; i++) { %><span>★</span><% } %><% if (sk.rating.half) { %><span class="half">★</span><% } %><% for (let i = 0; i < sk.rating.empty; i++) { %><span class="off">★</span><% } %></span> <b><%= sk.rating.value %></b><% } %> <%= sk.ratingText %></p><% } %>
+              <% if (sk.button) { %><p class="sg-sk-cta"><a class="btn" href="<%= sk.button.url %>"><%= sk.button.text %></a></p><% } %>
+              <div class="sg-sk-nav">
+                <button type="button" class="sg-sk-arrow" data-sk="prev" aria-label="Previous card"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg></button>
+                <button type="button" class="sg-sk-arrow" data-sk="next" aria-label="Next card"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+                <span class="sg-sk-count" aria-live="polite"><b>1</b> of <%= skN %></span>
+              </div>
+            </div>
+            <div class="sg-sk-pile">
+              <% sk.cards.forEach((c, i) => { %><figure class="sg-sk-card sg-sk-c<%= i % 5 + 1 %><%= c.photo ? ' sg-sk-photo' : '' %><%= c.photo && c.plain ? ' sg-sk-only' : '' %>" data-k="<%= i %>"<%- i ? ' aria-hidden="true"' : '' %>>
+                <% if (c.photo) { %><img src="<%= c.photo %>" alt="" loading="lazy" decoding="async"><% } %>
+                <% if (c.stars) { %><span class="sg-sk-cstars" role="img" aria-label="<%= c.stars %> out of 5 stars"><%= '★'.repeat(c.stars) %></span><% } %>
+                <% if (c.words) { %><blockquote class="sg-sk-words"><p><%= c.words %></p></blockquote><% } %>
+                <% if (c.name || c.line) { %><figcaption class="sg-sk-who"><% if (c.name) { %><b><%= c.name %></b><% } %><% if (c.line) { %><span><%= c.line %></span><% } %></figcaption><% } %>
+              </figure><% }) %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'advice') { %>
+    <% const ad = adviceBlock.view(site, blk, _mbSvc); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-advice blk-bg-<%= bg %><%= ec %>">
+      <div class="sg-ad sg-ad-<%= ad.side %>" style="--ad-band: <%= ad.band %>"<%- ad.turns ? ' data-sg-tb-turns' : '' %>>
+        <div class="sg-ad-panel">
+          <div class="blk-inner sg-ad-grid">
+            <% if (ad.photos.length) { %><div class="sg-tb-pic sg-ad-photo" aria-hidden="true"><% ad.photos.forEach((u, i) => { %><img src="<%= u %>" alt="" loading="lazy" decoding="async"<%- i ? '' : ' class="on"' %>><% }) %></div><% } %>
+            <div class="sg-ad-words" data-reveal>
+              <% if (blk.heading) { %><h2 class="sg-ad-h"><%- ad.headingHtml %></h2><% } %>
+              <span class="sg-ad-line" aria-hidden="true"></span>
+              <% if (ad.items.length) { %><ul class="sg-ad-items"><% ad.items.forEach(it => { %><li><% if (it.photo) { %><img src="<%= it.photo %>" alt="" loading="lazy" decoding="async"><% } %><p><%= it.text %></p></li><% }) %></ul><% } %>
+              <% if (ad.button) { %><p class="sg-ad-cta"><a class="btn" href="<%= ad.button.url %>"><%= ad.button.text %></a></p><% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'photoblend') { %>
+    <% const pb = photoBlend.view(site, blk, _mbSvc); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-photoblend blk-bg-<%= bg %><%= ec %>">
+      <div class="sg-pb sg-pb-<%= pb.side %> sg-pb-<%= pb.blend %>"<% if (pb.style) { %> style="<%= pb.style %>"<% } %><%- pb.match && !pb.ownColor ? ' data-sg-pb-match' : '' %><%- pb.turns ? ' data-sg-tb-turns' : '' %>>
+        <div class="sg-pb-words" data-reveal>
+          <% if (pb.top) { %><p class="sg-pb-top"><%= pb.top %></p><% } %>
+          <% if (blk.heading) { %><h2 class="sg-pb-h"><%- pb.headingHtml %></h2><% } %>
+          <% if (pb.badge) { %><p class="sg-pb-badge"><%= pb.badge %></p><% } %>
+          <% if (pb.note) { %><p class="sg-pb-note"><%= pb.note %></p><% } %>
+          <% if (pb.button) { %><p class="sg-pb-cta"><a class="sg-pb-btn" href="<%= pb.button.url %>"><%= pb.button.text %></a></p><% } %>
+        </div>
+        <% if (_pv && pb.uncut) { %><p class="sg-pb-cutnote">Only you see this: <%= pb.uncut %> photo<%= pb.uncut > 1 ? 's are' : ' is' %> not cut out yet. Use "Cut out the pets" in the editor.</p><% } %>
+        <% if (pb.photos.length) { %><div class="sg-tb-pic sg-pb-photo" aria-hidden="true"><% pb.photos.forEach((u, i) => { %><img src="<%= u %>" alt="" decoding="async"<%- i ? ' loading="lazy"' : ' class="on"' %>><% }) %></div><% } %>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'patterns') { %>
+    <% const gp = patternBlock.view(site, blk); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-gpat sg-gp-<%= gp.motion %> sg-gp-<%= gp.look %><%= gp.words ? '' : ' sg-gp-bare' %>"<% if (gp.style) { %> style="<%= gp.style %>"<% } %>>
+      <div class="sg-gp-bg" aria-hidden="true"><div class="sg-gp-pat" style="background-image: <%= gp.bg %><%= gp.bgPlace %>"></div></div>
+      <% if (gp.words) { %>
+      <div class="sg-gp-words" data-reveal>
+        <% if (blk.heading) { %><h2 class="sg-gp-h"><%- gp.headingHtml %></h2><% } %>
+        <% gp.paras.forEach(par => { %><p><%= par %></p><% }) %>
+        <% if (gp.button) { %><p class="sg-gp-cta"><a class="btn" href="<%= gp.button.url %>"><%= gp.button.text %></a></p><% } %>
+      </div>
+      <% } %>
+    </section>
+  <% } %>
+  <% if (blk.type === 'crossband') { %>
+    <% const cb = crossBand.view(site, blk, _mbSvc); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-crossband blk-bg-<%= bg %><%= ec %>">
+      <div class="sg-cb<%= blk.side === 'right' ? ' sg-cb-flip' : '' %>" style="<%= cb.style %>"<%- cb.turns ? ' data-sg-tb-turns' : '' %>>
+        <span class="sg-cb-band" aria-hidden="true"></span>
+        <div class="blk-inner sg-cb-grid">
+          <div class="sg-cb-main">
+            <% if (cb.left.length) { %><div class="sg-tb-pic sg-cb-photo" aria-hidden="true"><% cb.left.forEach((u, i) => { %><img src="<%= u %>" alt="" loading="lazy" decoding="async"<%- i ? '' : ' class="on"' %>><% }) %></div><% } %>
+            <% if (cb.list || cb.items.length) { %>
+            <div class="sg-cb-list" data-reveal>
+              <% if (cb.list) { %><p class="sg-cb-listh"><%= cb.list %></p><% } %>
+              <% if (cb.items.length) { %><ul><% cb.items.forEach(t => { %><li><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span><%= t %></span></li><% }) %></ul><% } %>
+            </div>
+            <% } %>
+          </div>
+          <div class="sg-cb-card" data-reveal>
+            <% if (blk.heading) { %><h2 class="sg-cb-h"><%- cb.headingHtml %></h2><% } %>
+            <% if (cb.text) { %><p class="sg-cb-text"><%= cb.text %></p><% } %>
+            <% if (cb.button) { %><a class="sg-cb-btn" href="<%= cb.button.url %>"><%= cb.button.text %></a><% } %>
+          </div>
+        </div>
+        <% if (cb.right.length) { %><div class="sg-cb-corner"><div class="sg-tb-pic sg-cb-photo2" aria-hidden="true"><% cb.right.forEach((u, i) => { %><img src="<%= u %>" alt="" loading="lazy" decoding="async"<%- i ? '' : ' class="on"' %>><% }) %></div></div><% } %>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'mosaic') { %>
+    <% const mh = mosaicHero.view(site, blk, _mbSvc, typeof navPages !== 'undefined' ? navPages : []); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-mosaic blk-bg-<%= bg %><%= ec %>" data-sg-mh-frame>
+      <% if (mh.menu) { %>
+      <nav class="blk-inner sg-mh-bar" aria-label="Menu">
+        <a class="sg-mh-name" href="<%= typeof basePath !== 'undefined' && basePath ? basePath : '/' %>"><% if (mh.menu.logo) { %><img src="<%= mh.menu.logo %>" alt="<%= mh.menu.name %> logo"><% } else { %><%= mh.menu.name %><% } %></a>
+        <% if (mh.menu.links.length) { %>
+        <button type="button" class="sg-mh-burger" aria-expanded="false" aria-label="Open the menu"><span></span><span></span><span></span></button>
+        <div class="sg-mh-links"><% mh.menu.links.forEach(l => { %><a href="<%= l.href %>"><%= l.label %></a><% }) %></div>
+        <% } %>
+        <div class="sg-mh-end"><% if (mh.menu.call) { %><a class="sg-mh-call" href="<%= mh.menu.call.href %>"><%= mh.menu.call.label %></a><% } %></div>
+      </nav>
+      <% } %>
+      <div class="blk-inner sg-mh">
+        <div class="sg-mh-words" data-reveal>
+          <% if (blk.heading) { %><h2 class="sg-mh-title"><%- mh.headingHtml %></h2><% } %>
+          <% if (mh.sub) { %><p class="sg-mh-sub"><%= mh.sub %></p><% } %>
+          <% if (mh.button) { %><p class="sg-mh-cta"><a class="btn" href="<%= mh.button.url %>"><%= mh.button.text %></a></p><% } %>
+        </div>
+        <% if (mh.tiles.length) { %>
+        <div class="sg-mh-grid sg-mh-cols<%= mh.cols %>"<%- mh.spare.length ? " data-sg-mh-spare='" + JSON.stringify(mh.spare).replace(/'/g, '&#39;') + "'" : '' %> aria-hidden="true">
+          <% Array.from({ length: mh.cols }, (_, c) => [c, c + mh.cols]).forEach((col, c) => { const own = col.filter(i => mh.tiles[i]); if (!own.length) return; %><div class="sg-mh-col sg-mh-c<%= c + 1 %>"><% own.forEach(i => { %><div class="sg-mh-tile"><img src="<%= mh.tiles[i] %>" alt="" loading="lazy" decoding="async"></div><% }) %></div><% }) %>
+        </div>
+        <% } %>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'thirds') { %>
+    <% const tb = thirdsBlock.view(site, blk, _mbSvc); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-thirds blk-bg-<%= bg %><%= ec %>">
+      <div class="sg-tb sg-tb-<%= tb.box %>"<%- tb.turns ? ' data-sg-tb-turns' : '' %>>
+        <div class="sg-tb-pic sg-tb-left" aria-hidden="true"><% tb.left.forEach((u, i) => { %><img src="<%= u %>" alt="" loading="lazy" decoding="async"<%- i ? '' : ' class="on"' %>><% }) %></div>
+        <div class="sg-tb-words" data-reveal>
+          <% if (blk.heading || tb.bold) { %><h2 class="sg-tb-h"><% if (blk.heading) { %><span><%- tb.headingHtml %></span><% } %><% if (tb.bold) { %><b><%= tb.bold %></b><% } %></h2><% } %>
+          <div class="sg-tb-foot">
+            <% if (tb.text || tb.strong) { %><p><%= tb.text %><% if (tb.strong) { %> <b><%= tb.strong %></b><% } %></p><% } %>
+            <% if (tb.link) { %><a class="sg-tb-more" href="<%= tb.link.url %>"><%= tb.link.text %></a><% } %>
+          </div>
+        </div>
+        <div class="sg-tb-right">
+          <div class="sg-tb-pic" aria-hidden="true"><% tb.right.forEach((u, i) => { %><img src="<%= u %>" alt="" loading="lazy" decoding="async"<%- i ? '' : ' class="on"' %>><% }) %></div>
+          <% if (tb.big) { %><div class="sg-tb-box"><p class="sg-tb-big" style="<%= tb.fitStyle %>"><%= tb.big %></p></div><% } %>
+        </div>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'photopairs') { %>
+    <% const pp = photoPairs.view(site, blk, _mbSvc), _ppLast = pp.pairs.length - 1; %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-photopairs blk-bg-<%= bg %><%= ec %><%= pp.shapes ? ' sg-pp-shapes' : '' %>" style="--pp-c: <%= pp.color %>; --pp-on: <%= pp.on %>; --pp-line: <%= pp.lineColor %>;">
+      <div class="blk-inner sg-pp sg-pp-n<%= pp.pairs.length %>">
+        <div class="sg-pp-head">
+          <% if (pp.label) { %><p class="sg-pp-label"><%= pp.label %></p><span class="sg-pp-line" aria-hidden="true"></span><% } %>
+          <% if (blk.heading) { %><h2 class="sg-pp-h"><%- pp.headingHtml %></h2><% } %>
+        </div>
+        <div class="sg-pp-row" data-reveal>
+          <% pp.pairs.forEach((r, i) => { %>
+          <div class="sg-pp-pair">
+            <div class="sg-pp-pic<%= r.cut ? ' sg-pp-cut' : '' %>"><% if (r.photo) { %><img src="<%= r.photo %>" alt="" loading="lazy" decoding="async"><% } %></div>
+            <div class="sg-pp-tile<%= i === _ppLast && pp.pairs.length > 1 ? ' sg-pp-tile-c' : '' %>">
+              <% if (r.title) { %><h3 class="sg-pp-t"><%= r.title %></h3><% } %>
+              <% if (r.text) { %><p><%= r.text %></p><% } %>
+            </div>
+          </div>
+          <% }) %>
+        </div>
+        <% if (pp.button) { %><p class="sg-pp-cta"><a class="sg-pp-btn" href="<%= pp.button.url %>"><%= pp.button.text %></a></p><% } %>
+      </div>
+    </section>
+  <% } %>
+  <% if (aboutBlocks.SPECS[blk.type]) { %>
+    <% const ab = aboutBlocks.view(blk.type, site, blk, _mbSvc), at = blk.type;
+       const abPic = (p, cls) => { %><div class="sg-ab-pic<%= cls ? ' ' + cls : '' %><%= p && p.cut ? ' sg-ab-cut' : '' %>"><% if (p && p.photo) { %><img src="<%= p.photo %>" alt="" loading="lazy" decoding="async"><% } %></div><% };
+       const abWords = (parts) => { %>
+          <% if (parts.includes('h')) { %><% if (ab.label) { %><p class="sg-ab-label"><%= ab.label %></p><% } %><% if (blk.heading) { %><h2 class="sg-ab-h"><%- ab.headingHtml %></h2><% } %><% } %>
+          <% if (parts.includes('t')) { %><% (ab.text || []).forEach(t => { %><p class="sg-ab-p"><%= t %></p><% }) %><% if (ab.note) { %><p class="sg-ab-note"><%= ab.note %></p><% } %><% } %>
+          <% if (parts.includes('b') && ab.button) { %><p class="sg-ab-cta"><a class="sg-ab-btn" href="<%= ab.button.url %>"><%= ab.button.text %></a></p><% } %>
+       <% };
+       const _h = (v) => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+       const abIcons = () => { if (!ab.links || !ab.links.length) return; %><ul class="sg-so-icons"><% ab.links.forEach(l => { %><li><a class="sg-so-ico sg-so-<%= l.k %>" href="<%= l.url %>" target="_blank" rel="noopener" aria-label="<%= l.name %>"><%- l.icon %></a></li><% }) %></ul><% }; %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-<%= aboutBlocks.SPECS[at].group %> blk-<%= at %> blk-bg-<%= bg %><%= ec %><%= ab.ownBg ? ' sg-ab-ownbg' : '' %>" style="<%= ab.style %>">
+      <div class="blk-inner sg-ab sg-ab-<%= at %> sg-ab-side-<%= ab.side %><%= ab.shapes === false ? ' sg-ab-flat' : '' %>">
+      <% if (at === 'aboutstory') { %>
+        <div class="sg-ab-art">
+          <% if (ab.shapes) { %><span class="sg-ab-ring" aria-hidden="true"></span><span class="sg-ab-dot sg-ab-dot-a" aria-hidden="true"></span><span class="sg-ab-dot sg-ab-dot-b" aria-hidden="true"></span><% } %>
+          <% abPic(ab.main, 'sg-ab-round') %>
+        </div>
+        <div class="sg-ab-card" data-reveal><span class="sg-ab-bar" aria-hidden="true"></span><% abWords('htb') %></div>
+      <% } else if (at === 'aboutme') { %>
+        <div class="sg-ab-top"><% abWords('h') %></div>
+        <div class="sg-ab-panel">
+          <% abPic(ab.main) %>
+          <% if (ab.caption) { %><p class="sg-ab-caption"><%= ab.caption %></p><% } %>
+        </div>
+        <div class="sg-ab-side" data-reveal>
+          <% if (ab.item.length) { %><div class="sg-ab-tiles sg-ab-n<%= ab.item.length %>">
+            <% ab.item.forEach((r, i) => { %><div class="sg-ab-tile"><span class="sg-ab-num"><%= String(i + 1).padStart(2, '0') %></span><% if (r.title) { %><h3 class="sg-ab-t"><%= r.title %></h3><% } %><% if (r.words) { %><p><%= r.words %></p><% } %></div><% }) %>
+          </div><% } %>
+          <% abWords('b') %>
+        </div>
+      <% } else if (at === 'aboutbig') { %>
+        <div class="sg-ab-head"><% abWords('h') %></div>
+        <% abPic(ab.main, 'sg-ab-tall') %>
+        <div class="sg-ab-rest" data-reveal><% abWords('tb') %></div>
+      <% } else if (at === 'aboutfacts') { %>
+        <div class="sg-ab-art">
+          <% if (ab.shapes) { %><span class="sg-ab-blob" aria-hidden="true"></span><% } %>
+          <% abPic(ab.main, 'sg-ab-soft') %>
+        </div>
+        <div class="sg-ab-words" data-reveal>
+          <% abWords('ht') %>
+          <% if (ab.fact.length) { %><ul class="sg-ab-facts"><% ab.fact.forEach(f => { %><li><%= f %></li><% }) %></ul><% } %>
+          <% abWords('b') %>
+        </div>
+      <% } else if (at === 'aboutcollage') { %>
+        <div class="sg-ab-art">
+          <span class="sg-ab-strip" aria-hidden="true"></span>
+          <% abPic(ab.main, 'sg-ab-square') %>
+          <% ab.round.forEach((p, i) => { abPic(p, 'sg-ab-round sg-ab-round-' + (i + 1)); }) %>
+        </div>
+        <div class="sg-ab-words" data-reveal><% abWords('htb') %></div>
+      <% } else if (at === 'aboutnote') { %>
+        <div class="sg-ab-art">
+          <% if (ab.shapes) { %><span class="sg-ab-frame" aria-hidden="true"></span><% } %>
+          <% abPic(ab.main, 'sg-ab-tall') %>
+        </div>
+        <div class="sg-ab-words" data-reveal>
+          <% if (blk.heading) { %><h2 class="sg-ab-h"><%- ab.headingHtml %></h2><% } %>
+          <span class="sg-ab-quote" aria-hidden="true">&ldquo;</span>
+          <% if (ab.text.length) { %><blockquote class="sg-ab-said"><% ab.text.forEach(t => { %><p class="sg-ab-p"><%= t %></p><% }) %></blockquote><% } %>
+          <% if (ab.name || ab.role || ab.portrait.length) { %><div class="sg-ab-who">
+            <% if (ab.portrait.length) { abPic(ab.portrait[0], 'sg-ab-face'); } %>
+            <p><% if (ab.name) { %><strong><%= ab.name %></strong><% } %><% if (ab.role) { %><span><%= ab.role %></span><% } %></p>
+          </div><% } %>
+          <% abWords('b') %>
+        </div>
+      <% } else if (at === 'aboutpanel') { %>
+        <% abPic(ab.main, 'sg-ab-wide') %>
+        <div class="sg-ab-card" data-reveal><% abWords('htb') %></div>
+      <% } else if (at === 'socialshapes') { %>
+        <div class="sg-so-band" aria-hidden="true"><% if (ab.shapes) { %><span class="sg-so-s sg-so-s1"></span><span class="sg-so-s sg-so-s2"></span><span class="sg-so-s sg-so-s3"></span><span class="sg-so-s sg-so-s4"></span><% } %></div>
+        <div class="sg-so-card" data-reveal><% abWords('ht') %><% abIcons() %><% abWords('b') %></div>
+      <% } else if (at === 'socialphoto') { %>
+        <% abPic(ab.main, 'sg-so-photo') %>
+        <div class="sg-so-words" data-reveal><% abWords('ht') %><% abIcons() %><% abWords('b') %></div>
+      <% } else if (at === 'socialcounts') { %>
+        <div class="sg-so-head"><% abWords('ht') %></div>
+        <% if (ab.count.length) { %><div class="sg-so-counts sg-so-n<%= ab.count.length %>" data-reveal>
+          <% ab.count.forEach(r => { %><<%= r.url ? 'a' : 'div' %> class="sg-so-count sg-so-<%= r.net %>"<%- r.url ? ' href="' + _h(r.url) + '" target="_blank" rel="noopener"' : '' %>><span class="sg-so-ring"><%- r.icon %></span><% if (r.number) { %><strong><%= r.number %></strong><% } %><span><%= r.words || r.name %></span></<%= r.url ? 'a' : 'div' %>><% }) %>
+        </div><% } %>
+        <div class="sg-so-head"><% abWords('b') %></div>
+      <% } else if (at === 'socialonphoto') { %>
+        <% abPic(ab.main, 'sg-ab-wide') %>
+        <div class="sg-so-card" data-reveal><% abWords('ht') %><% abIcons() %><% abWords('b') %></div>
+      <% } else if (at === 'socialfeed') { %>
+        <% const _igl = ab.links.find(l => l.k === 'instagram'); %>
+        <div class="sg-so-top">
+          <div><% abWords('h') %><% if (ab.handle) { %><p class="sg-so-handle"><%= ab.handle %></p><% } %><% abWords('t') %></div>
+          <% if (ab.button) { abWords('b'); } else if (_igl) { %><p class="sg-ab-cta"><a class="sg-ab-btn" href="<%= _igl.url %>" target="_blank" rel="noopener">Follow<%= ab.handle ? ' ' + ab.handle : '' %></a></p><% } %>
+        </div>
+        <% if (ab.photo.length) { %><div class="sg-so-grid" data-reveal><% ab.photo.forEach(p => { abPic(p, 'sg-so-tile'); }) %></div><% } %>
+        <% abIcons() %>
+      <% } else if (at === 'socialprofile') { %>
+        <div class="sg-so-card" data-reveal>
+          <% abPic(ab.main, 'sg-so-face') %>
+          <% if (blk.heading) { %><h2 class="sg-ab-h"><%- ab.headingHtml %></h2><% } %>
+          <% if (ab.role) { %><p class="sg-so-role"><%= ab.role %></p><% } %>
+          <% abWords('t') %><% abIcons() %><% abWords('b') %>
+        </div>
+      <% } else if (at === 'socialstrip') { %>
+        <div class="sg-so-bar">
+          <% if (blk.heading) { %><h2 class="sg-ab-h"><%- ab.headingHtml %></h2><% } %>
+          <% abIcons() %><% abWords('b') %>
+        </div>
+      <% } else if (at === 'numcards') { %>
+        <span class="sg-nc-band" aria-hidden="true"></span>
+        <div class="sg-nc-card" data-reveal>
+          <% abWords('h') %>
+          <% if (ab.item.length) { %><div class="sg-nc-grid<%= ab.item.length === 1 ? ' sg-nc-one' : '' %>">
+            <% ab.item.forEach((r, i) => { %><div class="sg-nc-item<%= i % 2 ? ' sg-nc-even' : '' %>"><% if (ab.numbers) { %><span class="sg-nc-num">#<%= String(i + 1).padStart(2, '0') %></span><% } %><% if (r.title) { %><h3 class="sg-nc-t"><%= r.title %></h3><% } %><% if (r.words) { %><p><%= r.words %></p><% } %></div><% }) %>
+          </div><% } %>
+          <% abWords('b') %>
+        </div>
+        <% abPic(ab.main, 'sg-nc-pic') %>
+      <% } else if (at === 'tipcards') { %>
+        <% if (ab.label || blk.heading) { %><div class="sg-tc-head"><% abWords('h') %></div><% } %>
+        <% abPic(ab.main, 'sg-tc-pic') %>
+        <% if (ab.item.length) { %><div class="sg-tc-row sg-tc-n<%= Math.min(ab.item.length, 4) %>" data-reveal>
+          <% ab.item.forEach(r => { %><div class="sg-tc-card"><% if (r.title) { %><h3 class="sg-tc-t"><%= r.title %></h3><% } %><% if (r.words) { %><p><%= r.words %></p><% } %><% if (r.link) { %><a class="sg-tc-more" href="<%= r.link %>"><%= ab.more || 'More' %></a><% } %></div><% }) %>
+        </div><% } %>
+        <% if (ab.button) { %><div class="sg-tc-head"><% abWords('b') %></div><% } %>
+      <% } %>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'offsetphoto') { %>
+    <% const op = offsetPhoto.view(site, blk, _mbSvc); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-offsetphoto blk-bg-<%= bg %><%= ec %><%= op.bg ? ' sg-op-ownbg' : '' %>" style="--op-c: <%= op.color %>; --op-a: <%= op.accent %>; --op-btn: <%= op.button %>; --op-btn-on: <%= op.buttonOn %>;<%= op.bg ? ' --op-bg: ' + op.bg + '; --edge: ' + op.bg + ';' : '' %>">
+      <div class="blk-inner sg-op sg-op-photo-<%= op.side %><%= op.cut ? ' sg-op-cut' : '' %><%= op.shapes ? '' : ' sg-op-flat' %>">
+        <div class="sg-op-art">
+          <% if (op.shapes) { %><span class="sg-op-block sg-op-block-a" aria-hidden="true"></span><span class="sg-op-block sg-op-block-b" aria-hidden="true"></span><% } %>
+          <div class="sg-op-pic"><% if (op.photo) { %><img src="<%= op.photo %>" alt="" loading="lazy" decoding="async"><% } %></div>
+        </div>
+        <div class="sg-op-words" data-reveal>
+          <% if (op.label) { %><p class="sg-op-label"><%= op.label %></p><% } %>
+          <% if (blk.heading) { %><h2 class="sg-op-h"><%- op.headingHtml %></h2><% } %>
+          <% op.text.forEach(t => { %><p><%= t %></p><% }) %>
+          <% if (op.note) { %><p class="sg-op-note"><%= op.note %></p><% } %>
+          <% if (op.cta) { %><p class="sg-op-cta"><a class="sg-op-btn" href="<%= op.cta.url %>"><%= op.cta.text %></a></p><% } %>
+        </div>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'framedphoto') { %>
+    <% const fp = framedPhoto.view(site, blk, _mbSvc); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-framedphoto blk-bg-<%= bg %><%= ec %>" style="--fp-c: <%= fp.color %>; --fp-h: <%= fp.headColor %>; --fp-bg: <%= fp.bg %>; --fp-card: <%= fp.card %>; --fp-ink: <%= fp.ink %>;">
+      <div class="blk-inner sg-fp sg-fp-card-<%= fp.side %><%= fp.cut ? ' sg-fp-cut' : '' %>">
+        <span class="sg-fp-frame sg-fp-frame-a" aria-hidden="true"></span><span class="sg-fp-frame sg-fp-frame-b" aria-hidden="true"></span>
+        <div class="sg-fp-pic"><% if (fp.photo) { %><img src="<%= fp.photo %>" alt="" loading="lazy" decoding="async"><% } %></div>
+        <div class="sg-fp-card" data-reveal>
+          <% if (blk.heading) { %><h2 class="sg-fp-h"><%- fp.headingHtml %></h2><% } %>
+          <% fp.text.forEach(t => { %><p><%= t %></p><% }) %>
+          <% if (fp.note) { %><p class="sg-fp-note"><%= fp.note %></p><% } %>
+          <% if (fp.button) { %><p class="sg-fp-cta"><a class="sg-fp-btn" href="<%= fp.button.url %>"><%= fp.button.text %></a></p><% } %>
+        </div>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'roundphoto') { %>
+    <% const rp = roundPhoto.view(site, blk, _mbSvc); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-roundphoto blk-bg-<%= bg %><%= ec %><%= rp.bg ? ' sg-rp-ownbg' : '' %>" style="--rp-c: <%= rp.color %>; --rp-on: <%= rp.on %>;<%= rp.bg ? ' --rp-bg: ' + rp.bg + '; --edge: ' + rp.bg + ';' : '' %>">
+      <div class="blk-inner sg-rp sg-rp-card-<%= rp.side %><%= rp.cut ? ' sg-rp-cut' : '' %>">
+        <div class="sg-rp-art">
+          <% if (rp.shapes) { %><span class="sg-rp-ring sg-rp-ring-a" aria-hidden="true"></span><span class="sg-rp-dot" aria-hidden="true"></span><span class="sg-rp-ring sg-rp-ring-b" aria-hidden="true"></span><% } %>
+          <div class="sg-rp-pic"><% if (rp.photo) { %><img src="<%= rp.photo %>" alt="" loading="lazy" decoding="async"><% } %></div>
+        </div>
+        <div class="sg-rp-card" data-reveal>
+          <% if (blk.heading) { %><h2 class="sg-rp-h"><%- rp.headingHtml %></h2><% } %>
+          <% rp.text.forEach(t => { %><p><%= t %></p><% }) %>
+          <% if (rp.note) { %><p class="sg-rp-note"><%= rp.note %></p><% } %>
+          <% if (rp.button) { %><p class="sg-rp-cta"><a class="sg-rp-btn" href="<%= rp.button.url %>"><%= rp.button.text %></a></p><% } %>
+        </div>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'shapeform') { %>
+    <% const sf = shapeForm.view(site, blk, _mbSvc);
+       const _sfNl = typeof netlifyForms !== 'undefined' && netlifyForms, _sfForm = !!(site.sections.contact || {}).acceptSubmissions && (!(typeof staticExport !== 'undefined' && staticExport) || _sfNl);
+       const _sfStyle = '--sf-c: ' + sf.color + '; --sf-h: ' + sf.headColor + '; --sf-on: ' + sf.colorOn + ';' + (sf.accent ? ' --sf-a: ' + sf.accent + ';' : '') + (sf.panel ? ' --sf-p: ' + sf.panel + ';' : '') + (sf.bg ? ' --sf-bg: ' + sf.bg + '; --edge: ' + sf.bg + ';' : ''); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-shapeform blk-bg-<%= bg %><%= ec %><%= sf.bg ? ' sg-sf-ownbg' : '' %>" style="<%= _sfStyle %>">
+      <div class="blk-inner sg-sf sg-sf-card-<%= sf.side %><%= sf.cut ? ' sg-sf-cut' : '' %>">
+        <% if (sf.shapes) { %><span class="sg-sf-dot" aria-hidden="true"></span><span class="sg-sf-block" aria-hidden="true"></span><span class="sg-sf-stripes" aria-hidden="true"></span><% } %>
+        <div class="sg-sf-pic"><span class="sg-sf-panel" aria-hidden="true"></span><% if (sf.photo) { %><img src="<%= sf.photo %>" alt="" loading="lazy" decoding="async"><% } %></div>
+        <div class="sg-sf-card" data-reveal>
+          <% if (blk.heading) { %><h2 class="sg-sf-h"><%- sf.headingHtml %></h2><% } %>
+          <% if (sf.text) { %><p class="sg-sf-text"><%= sf.text %></p><% } %>
+          <% if (_sfForm) { %>
+            <%- include('_quote-form', { site, basePath: typeof basePath !== 'undefined' ? basePath : '', preview: typeof preview !== 'undefined' && preview, services: _mbSvc || [], selected: '', compact: true, netlifyForms: _sfNl }) %>
+          <% } else if (sf.phone || sf.email) { %>
+            <p class="sg-sf-ways">
+              <% if (sf.phone) { %><a class="sg-sf-btn" href="tel:<%= sf.tel %>">Call <%= sf.phone %></a><% } %>
+              <% if (sf.email) { %><a class="sg-sf-link" href="mailto:<%= sf.email %>"><%= sf.email %></a><% } %>
+            </p>
+          <% } else if (_pv) { %>
+            <p class="sg-sf-text"><em>Only you see this: turn on "Take messages" in the Contact section, or add a phone or email, and they show here.</em></p>
+          <% } %>
+        </div>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'ringcard') { %>
+    <% const rg = ringCard.view(site, blk, _mbSvc); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-ringcard blk-bg-<%= bg %><%= ec %><%= rg.bg ? ' sg-rg-ownbg' : '' %>" style="--rg-c: <%= rg.color %>; --rg-h: <%= rg.headColor %>; --rg-on: <%= rg.colorOn %>;<%= rg.bg ? ' --rg-bg: ' + rg.bg + '; --edge: ' + rg.bg + ';' : '' %>">
+      <div class="blk-inner sg-rg sg-rg-photo-<%= rg.side %><%= rg.cut ? ' sg-rg-cut' : '' %>">
+        <% if (rg.shapes) { %><span class="sg-rg-stripes" aria-hidden="true"></span><span class="sg-rg-ring" aria-hidden="true"></span><% } %>
+        <div class="sg-rg-words" data-reveal>
+          <% if (blk.heading) { %><h2 class="sg-rg-h"><%- rg.headingHtml %></h2><% } %>
+          <% rg.text.forEach(t => { %><p><%= t %></p><% }) %>
+          <% if (rg.note) { %><p class="sg-rg-note"><%= rg.note %></p><% } %>
+          <% if (rg.button) { %><p class="sg-rg-cta"><a class="sg-rg-btn" href="<%= rg.button.url %>"><%= rg.button.text %></a></p><% } %>
+        </div>
+        <div class="sg-rg-pic"><% if (rg.photo) { %><img src="<%= rg.photo %>" alt="" loading="lazy" decoding="async"><% } %></div>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'twinphotos') { %>
+    <% const tw = twinPhotos.view(site, blk, _mbSvc); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-twinphotos blk-bg-<%= bg %><%= ec %>">
+      <div class="blk-inner sg-tw sg-tw-panel-<%= tw.side %>"<%- (tw.color || tw.panel) ? ' style="' + (tw.color ? '--tw-c: ' + tw.color + '; --tw-h: ' + tw.headColor + '; --tw-on: ' + tw.colorOn + ';' : '') + (tw.panel ? ' --tw-p: ' + tw.panel + ';' : '') + '"' : '' %>>
+        <span class="sg-tw-panel" aria-hidden="true"></span>
+        <div class="sg-tw-intro">
+          <% if (blk.heading) { %><h2 class="sg-tw-h"><%- tw.headingHtml %></h2><% } %>
+          <% tw.text.forEach(t => { %><p><%= t %></p><% }) %>
+          <% if (tw.button) { %><p class="sg-tw-cta"><a class="sg-tw-btn" href="<%= tw.button.url %>"><%= tw.button.text %></a></p><% } %>
+        </div>
+        <div class="sg-tw-pics">
+          <% tw.photos.forEach(ph => { %><div class="sg-tw-pic<%= ph.cut ? ' sg-tw-cut' : '' %>"><% if (ph.url) { %><img src="<%= ph.url %>" alt="" loading="lazy" decoding="async"><% } %></div><% }) %>
+        </div>
+        <% if (tw.links.length) { %>
+        <ul class="sg-tw-links">
+          <% tw.links.forEach(k => { %><li><% if (k.url) { %><a href="<%= k.url %>"><%= k.label %></a><% } else { %><span><%= k.label %></span><% } %></li><% }) %>
+        </ul>
+        <% } %>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'reviewcard') { %>
+    <% const rc = reviewCard.view(site, blk, _mbSvc), rcCut = rc.cut; %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-reviewcard blk-bg-<%= bg %><%= ec %><%= rc.bg ? ' sg-rc-ownbg' : '' %>"<%- rc.bg ? ' style="--rc-bg: ' + rc.bg + '; --edge: ' + rc.bg + ';"' : '' %>>
+      <div class="blk-inner sg-rc sg-rc-photo-<%= rc.side %><%= rcCut ? ' sg-rc-cut sg-rc-fit-' + rc.fit : '' %>" style="--rc-panel: <%= rc.brand %>; --rc-panel-on: <%= rc.brandOn %>;<%= rc.card ? ' --rc-card: ' + rc.card + '; --rc-ink: ' + rc.cardOn + ';' : '' %><%= rc.photoStyle %>">
+        <div class="sg-rc-art">
+          <span class="sg-rc-panel" aria-hidden="true"></span>
+          <% if (rc.photo) { %><img class="sg-rc-img" src="<%= rc.photo %>" alt="" loading="lazy" decoding="async"><% } %>
+        </div>
+        <div class="sg-rc-card" data-reveal>
+          <div class="sg-rc-body">
+            <% if (blk.heading) { %><h2 class="sg-rc-h"><%- rc.headingHtml %></h2><% } %>
+            <span class="sg-rc-rule" aria-hidden="true"></span>
+            <% if (rc.reviews.length) { %>
+            <ul class="sg-rc-list">
+              <% rc.reviews.forEach(r => { %>
+              <li class="sg-rc-item">
+                <% if (r.photo) { %><img class="sg-rc-face" src="<%= r.photo %>" alt="" loading="lazy" decoding="async"><% } else { %><span class="sg-rc-face sg-rc-letter" aria-hidden="true"><%= r.initial %></span><% } %>
+                <figure class="sg-rc-fig">
+                  <blockquote class="sg-rc-q"><p><%= r.quote %></p></blockquote>
+                  <% if (r.name) { %><figcaption class="sg-rc-name"><%= r.name %></figcaption><% } %>
+                </figure>
+              </li>
+              <% }) %>
+            </ul>
+            <% } %>
+            <% if (rc.button) { %><p class="sg-rc-cta"><a class="sg-rc-btn" href="<%= rc.button.url %>"><%= rc.button.text %></a></p><% } %>
+          </div>
+        </div>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'phototabs') { %>
+    <% const pt = photoTabs.view(site, blk, _mbSvc), ptid = 'sgpt' + (blk.id || blk._i || 0); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-phototabs blk-bg-<%= bg %><%= ec %>">
+      <div class="blk-inner sg-pt sg-pt-photo-<%= pt.side %>" style="--pt-c: <%= pt.cards[0].color %>; --pt-on: <%= pt.cards[0].on %>;"<%- pt.tabs ? ' data-sg-pt' : '' %>>
+        <div class="sg-pt-stage">
+          <span class="sg-pt-back" aria-hidden="true"></span>
+          <div class="sg-pt-pics">
+            <% pt.cards.forEach((c, i) => { if (c.photo) { %><img class="sg-pt-pic<%= i === 0 ? ' on' : '' %>" src="<%= c.photo %>" alt="" loading="lazy" decoding="async"><% } else { %><span class="sg-pt-pic sg-pt-nopic<%= i === 0 ? ' on' : '' %>"></span><% } }) %>
+          </div>
+        </div>
+        <div class="sg-pt-cards">
+          <% pt.cards.forEach((c, i) => { %>
+          <div class="sg-pt-card" id="<%= ptid %>-<%= i %>"<%- pt.tabs ? ' role="tabpanel" aria-labelledby="' + ptid + '-t' + i + '"' : '' %> data-c="<%= c.color %>" data-on="<%= c.on %>"<%- i ? ' hidden' : '' %>>
+            <% if (c.titleHtml) { %><<%= i === 0 ? 'h2' : 'h3' %> class="sg-pt-h"><%- c.titleHtml %></<%= i === 0 ? 'h2' : 'h3' %>><% } %>
+            <% if (c.text) { %><p><%= c.text %></p><% } %>
+            <% if (pt.button) { %><p class="sg-pt-cta"><a class="sg-pt-btn" href="<%= pt.button.url %>"><%= pt.button.text %></a></p><% } %>
+          </div>
+          <% }) %>
+        </div>
+        <% if (pt.tabs) { %>
+        <div class="sg-pt-tabs" role="tablist" aria-label="<%= blk.heading ? blk.heading.replace(/[\[\]]/g, '') : 'Pick a photo' %>">
+          <% pt.cards.forEach((c, i) => { %><button type="button" class="sg-pt-tab" role="tab" id="<%= ptid %>-t<%= i %>" aria-controls="<%= ptid %>-<%= i %>" aria-selected="<%= i === 0 ? 'true' : 'false' %>" tabindex="<%= i === 0 ? 0 : -1 %>" style="--pt-tc: <%= c.color %>;"><% if (c.photo) { %><img src="<%= c.photo %>" alt="" loading="lazy" decoding="async"><% } %><span><%= c.title || ('Photo ' + (i + 1)) %></span></button><% }) %>
+        </div>
+        <% } %>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'overlapcard') { %>
+    <% const oc = overlapCard.view(site, blk, _mbSvc); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-overlapcard blk-bg-<%= bg %><%= ec %><%= oc.bottom ? ' sg-oc-ownbottom' : '' %>"<%- oc.style ? ' style="' + oc.style + '"' : '' %>>
+      <% if (oc.fade) { %><span class="sg-oc-fade" aria-hidden="true"></span><% } %>
+      <div class="blk-inner sg-oc sg-oc-pat-<%= oc.pattern %> sg-oc-band-<%= oc.band %> sg-oc-photo-<%= oc.side %> sg-oc-card-<%= oc.card %> sg-oc-fin-<%= oc.finish %>">
+        <div class="sg-oc-art">
+          <% if (oc.pattern !== 'none' || oc.patFill) { %><span class="sg-oc-pat" aria-hidden="true"></span><% } %>
+          <% if (oc.photo) { %><img class="sg-oc-img" src="<%= oc.photo %>" alt="" loading="lazy" decoding="async"><% } %>
+        </div>
+        <div class="sg-oc-card" data-reveal>
+          <% if (blk.heading) { %><h2 class="sg-oc-h"><%- oc.headingHtml %></h2><% } %>
+          <% oc.text.forEach(t => { %><p><%= t %></p><% }) %>
+          <% if (oc.note) { %><p class="sg-oc-note"><%= oc.note %></p><% } %>
+          <% if (oc.button) { %><p class="sg-oc-cta"><a class="sg-oc-btn" href="<%= oc.button.url %>"><%= oc.button.text %></a></p><% } %>
+        </div>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'aboutphone') { %>
+    <% const ab = aboutBlob.view(site, blk, _mbSvc); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-aboutphone blk-bg-<%= bg %><%= ec %>">
+      <div class="blk-inner sg-ab sg-ab-<%= ab.colors %> sg-ab-photo-<%= ab.side %>">
+        <div class="sg-ab-art" aria-hidden="true">
+          <span class="sg-ab-s sg-ab-s1"></span><span class="sg-ab-s sg-ab-s2"></span><span class="sg-ab-s sg-ab-s3"></span>
+          <% if (ab.photo) { %><img class="sg-ab-img" src="<%= ab.photo %>" alt="" loading="lazy" decoding="async"><% } %>
+        </div>
+        <div class="sg-ab-text" data-reveal>
+          <% if (blk.heading) { %><h2 class="sg-ab-h"><%- ab.headingHtml %></h2><% } %>
+          <span class="sg-ab-line" aria-hidden="true"></span>
+          <% ab.text.forEach(t => { %><p><%= t %></p><% }) %>
+          <% if (ab.bold) { %><p class="sg-ab-bold"><%= ab.bold %></p><% } %>
+          <% if (ab.phone) { %><p class="sg-ab-phone"><a href="tel:<%= ab.phone.tel %>"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg><span><%= ab.phone.label %></span></a></p><% } %>
+          <% if (ab.button) { %><p class="sg-ab-cta"><a class="btn" href="<%= ab.button.url %>"><%= ab.button.text %></a></p><% } %>
+        </div>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'herocard') { %>
+    <% const hc = heroCard.view(site, blk, _mbSvc); %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-herocard blk-bg-<%= bg %><%= ec %>">
+      <div class="sg-hc sg-hc-<%= hc.look %>" style="<%= hc.style %>"<%- hc.media && hc.media.kind === 'video' ? ' data-sg-hc-reel' : '' %>>
+        <% if (hc.media) { %><div class="sg-hc-media"><% if (hc.media.kind === 'video') { %><video src="<%= hc.media.src %>" muted loop playsinline autoplay preload="metadata" aria-hidden="true"></video><% } else { %><img src="<%= hc.media.src %>" alt="" decoding="async"<%- hc.look === 'fill' ? '' : ' fetchpriority="high"' %>><% } %></div><% } %>
+        <% if (blk.heading) { %><h2 class="sg-hc-title"><%- hc.titleHtml %></h2><% } %>
+        <% if (hc.intro || hc.price) { %><div class="sg-hc-left">
+          <% if (hc.intro) { %><p class="sg-hc-intro"><%= hc.intro %></p><% } %>
+          <% if (hc.price || hc.priceNote) { %><p class="sg-hc-price"><% if (hc.price) { %><b><%= hc.price %></b><% } %><% if (hc.priceNote) { %> <small><%= hc.priceNote %></small><% } %></p><% } %>
+        </div><% } %>
+        <% if (hc.detail || hc.detailNote || hc.links.length) { %><div class="sg-hc-right">
+          <% if (hc.detail) { %><p class="sg-hc-detail"><b><%= hc.detail %></b></p><% } %>
+          <% if (hc.detailNote) { %><p class="sg-hc-note"><%= hc.detailNote %></p><% } %>
+          <% if (hc.links.length) { %><p class="sg-hc-links"><% hc.links.forEach(l => { %><a href="<%= l.url %>"><%= l.label %></a><% }) %></p><% } %>
+        </div><% } %>
+        <% if (hc.bar || hc.button) { %><div class="sg-hc-bar">
+          <% if (hc.bar && hc.bar.name) { %><b class="sg-hc-name"><%= hc.bar.name %></b><% } %>
+          <% if (hc.bar && hc.bar.option) { %><span class="sg-hc-opt"><i aria-hidden="true"></i><%= hc.bar.option %></span><% } %>
+          <% if (hc.button) { %><a class="sg-hc-go" href="<%= hc.button.url %>"><span><%= hc.button.text %></span><% if (hc.bar && hc.bar.price) { %><span><%= hc.bar.price %></span><% } %></a><% } else if (hc.bar && hc.bar.price) { %><b class="sg-hc-go"><span><%= hc.bar.price %></span></b><% } %>
+        </div><% } %>
+        <% if (hc.media && hc.media.kind === 'video') { %><button type="button" class="sg-hc-pause" aria-label="Pause the moving picture" aria-pressed="false"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button><% } %>
+      </div>
+    </section>
+  <% } %>
+  <% if (blk.type === 'shapes') { %>
+    <% const sh = shapeBlock.view(site, blk, _mbSvc); %>
+    <% if (sh) { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-shapes blk-bg-<%= bg %><%= ec %>">
+      <div class="sg-ps sg-ps-<%= sh.rim %>" data-sg-shapes-blk data-sg-wall>
+        <div class="blk-inner sg-ps-top">
+          <h2 class="sg-ps-h"><%- sh.headingHtml %><% if (sh.roll.length) { %> <span class="sg-ps-roll" data-sg-roll aria-hidden="true"><span class="sg-ps-rail"><% sh.roll.forEach(t => { %><span><%= t %></span><% }) %></span></span><span class="sg-ps-sr"><%= sh.roll.join(', ') %></span><% } %></h2>
+          <% if (sh.sub.length || sh.button) { %><div class="sg-ps-side">
+            <% sh.sub.forEach(t => { %><p><%= t %></p><% }) %>
+            <% if (sh.button) { %><p><a class="btn" href="<%= sh.button.url %>"><%= sh.button.text %></a></p><% } %>
+          </div><% } %>
+        </div>
+        <div class="sg-ps-stage" aria-hidden="true">
+          <% sh.shapes.forEach((pics, i) => { %><div class="sg-ps-shape sg-ps-s<%= i + 1 %>"><div class="sg-ps-pics"><% pics.forEach((src, j) => { %><img<%- j === 0 ? ' class="sg-on"' : '' %> src="<%= src %>" alt="" loading="lazy" decoding="async"><% }) %></div></div><% }) %>
+        </div>
+        <% if (sh.roll.length > 1 || sh.shapes.some(p => p.length > 1)) { %><button type="button" class="wall-pause sg-ps-pause" data-sg-wall-pause data-what="moving words and photos" aria-pressed="false" aria-label="Pause the moving words and photos"><svg class="wp-pause" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg><svg class="wp-play" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"></path></svg></button><% } %>
+      </div>
+    </section>
+    <% } else { %><%- _mbEmpty('Rolling words with photo shapes: type a heading; it needs a photo (yours or the site\'s)') %><% } %>
+  <% } %>
+  <% if (blk.type === 'collage') { %>
+    <% const cb = collageBlock.view(site, blk, typeof services !== 'undefined' ? services : (site.sections.services || {}).items, typeof basePath !== 'undefined' ? basePath : ''); %>
+    <% if (cb) { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-collage blk-bg-<%= bg %><%= ec %>">
+      <div class="sg-cl<%= blk.side === 'banner' ? ' sg-cl-banner' : '' %>" data-sg-collage<%- blk.side === 'banner' ? ' data-sg-cl-banner' : '' %>>
+        <% if (blk.heading) { %><h2 class="sg-cl-h1" data-sg-cl-h1><%- cb.headingHtml %></h2><% } %>
+        <div class="sg-cl-stage" data-sg-cl-stage data-photos="<%= JSON.stringify(cb.photos) %>">
+          <% cb.tiles.forEach((src, i) => { %><div class="sg-cl-tile sg-cl-t<%= i + 1 %>" aria-hidden="true"><img src="<%= src %>" alt="" loading="lazy" decoding="async" data-sg-cl-tile></div><% }) %>
+          <div class="sg-cl-card" aria-hidden="true"><img class="sg-cl-img sg-on" src="<%= cb.words[0].src %>" alt="" data-sg-cl-img><img class="sg-cl-img" src="<%= cb.words[0].src %>" alt="" data-sg-cl-img></div>
+          <ul class="sg-cl-row" aria-label="<%= blk.heading ? wordStyle.plain(blk.heading).replace(/[\[\]]/g, '') : 'What we do' %>" data-sg-cl-row>
+            <% cb.words.forEach((w, i) => { %><li><% if (w.href) { %><a class="sg-cl-word<%= i === 0 ? ' sg-on' : '' %>" href="<%= w.href %>" data-sg-cl-word data-photo="<%= w.src %>"><%= w.t %></a><% } else { %><span class="sg-cl-word<%= i === 0 ? ' sg-on' : '' %>" tabindex="0" data-sg-cl-word data-photo="<%= w.src %>"><%= w.t %></span><% } %></li><% }) %>
+          </ul>
+        </div>
+        <% if (cb.button) { %><p class="sg-cl-cta"><a class="btn" href="<%= cb.button.url %>"><%= cb.button.text %></a></p><% } %>
+      </div>
+    </section>
+    <% } else if (_pv) { %>
+    <section data-sg-blk="<%= blk._i %>" class="blk blk-bg-<%= bg %> blk-empty" style="padding:2.5rem 1rem;text-align:center;opacity:.7;border:2px dashed currentColor;margin:1rem">Word carousel collage: it needs 3 lines (or 3 services) and 3 photos on the site (only you see this)</section>
+    <% } %>
+  <% } %>
+  <% if (blk.type === 'photoBanner') { %>
+    <% const pb = photoBanner.view(site, blk); %>
+    <% if (pb) { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-pbanner blk-bg-<%= bg %><%= ec %>">
+      <div class="pb pb-<%= pb.text %>" style="--pb-h: <%= pb.height %>px; <%= pb.vars %>">
+        <% if (pb.image) { %><img class="pb-ph" src="<%= pb.image %>" alt="" loading="lazy" decoding="async"><% } %>
+        <div class="pb-fade" aria-hidden="true"></div>
+        <div class="pb-text" data-reveal>
+          <h2 class="pb-h"><%- pb.headingHtml %></h2>
+          <% pb.paras.forEach(t => { %><p><%= t %></p><% }) %>
+          <% if (pb.button) { %><a class="pb-btn" href="<%= pb.button.url %>"><%= pb.button.text %></a><% } %>
+        </div>
+      </div>
+    </section>
+    <% } else if (_pv) { %>
+    <section data-sg-blk="<%= blk._i %>" class="blk blk-bg-<%= bg %> blk-empty" style="padding:2.5rem 1rem;text-align:center;opacity:.7;border:2px dashed currentColor;margin:1rem">Photo banner: add a heading to show it (only you see this)</section>
+    <% } %>
+  <% } %>
+  <% if (blk.type === 'strip') { %>
+    <% const pics = (blk.body || '').split('\n').map(u => u.trim()).filter(Boolean).slice(0, 20); %>
+    <% if (pics.length) { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-strip blk-bg-<%= bg %><%= ec %>">
+      <% if (blk.heading) { %><div class="blk-inner"><h2 style="text-align:center;"><%= blk.heading %></h2></div><% } %>
+      <div class="strip-wrap">
+        <button type="button" class="strip-btn prev" aria-label="Scroll left">&lsaquo;</button>
+        <div class="strip" data-lightbox tabindex="0" aria-label="<%= blk.heading || 'Photos' %>">
+          <% pics.forEach(u => { %><img src="<%= u %>" alt="<%= blk.heading || site.name %>" loading="lazy" decoding="async"><% }) %>
+        </div>
+        <button type="button" class="strip-btn next" aria-label="Scroll right">&rsaquo;</button>
+      </div>
+      <% if (blk.buttonText && blk.buttonUrl) { %><p class="blk-cta"><a class="btn" href="<%= blk.buttonUrl %>"<%- /^https?:/i.test(blk.buttonUrl) ? ' target="_blank" rel="noopener"' : '' %>><%= blk.buttonText %></a></p><% } %>
+    </section>
+    <% } %>
+  <% } else if (blk.type === 'split') { %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-bg-<%= bg %><%= ec %>">
+      <div class="blk-inner blk-split" data-reveal>
+        <div class="split-head"><% if (blk.heading) { %><h2><%= blk.heading %></h2><% } %></div>
+        <div class="split-text">
+          <% (blk.body || '').split(/\n{2,}/).filter(Boolean).forEach(par => { %><p><%= par %></p><% }) %>
+          <% if (blk.buttonText && blk.buttonUrl) { %><a class="btn" href="<%= blk.buttonUrl %>"><%= blk.buttonText %></a><% } %>
+        </div>
+      </div>
+    </section>
+  <% } %>
+<% if (_ht.cls) { %></div><% } %>
+<% if (_ix.cls) { %></div><% } %>
+<% if (_film.cls) { %></div><% } %>
+<% if (_pin.cls) { %></div><% } %>
+<% }) %>

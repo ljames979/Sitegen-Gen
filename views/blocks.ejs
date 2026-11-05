@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blocks: <%= site.name %> — SiteGen</title>
+  <%# Like the Style Library page, this page has its own small stylesheet so the admin's rules don't reach the previews %>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; font: 15px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; background: #eef1f5; display: flex; flex-direction: column; }
+    .sl-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px; background: #fff; border-bottom: 1px solid #e2e8f0; }
+    .sl-bar h1 { font-size: 16px; margin: 0; } .sl-bar .sp { flex: 1; }
+    .sl-bar a.back { color: #64748b; text-decoration: none; }
+    .status { font-size: 13px; color: #64748b; }
+    .status.ok { color: #166534; } .status.err { color: #b91c1c; }
+    .ui-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 7px 13px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; color: #0f172a; font: 600 13.5px/1.2 inherit; font-family: inherit; cursor: pointer; text-decoration: none; }
+    .ui-btn:hover { border-color: #0f172a; }
+    .ui-btn.primary { background: #0f172a; border-color: #0f172a; color: #fff; }
+    .ui-btn[disabled] { opacity: .45; cursor: default; }
+    .ui-btn.sm { min-height: 30px; padding: 4px 10px; font-size: 12.5px; }
+    .seg { display: inline-flex; } .seg button { border: 1px solid #cbd5e1; background: #fff; padding: 7px 12px; font: 600 13px inherit; font-family: inherit; cursor: pointer; margin-left: -1px; min-height: 36px; }
+    .seg button:first-child { border-radius: 8px 0 0 8px; margin-left: 0; } .seg button:last-child { border-radius: 0 8px 8px 0; }
+    .seg button[aria-pressed=true] { background: #0f172a; color: #fff; border-color: #0f172a; }
+    .wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: 310px minmax(0, 1fr) 380px; }
+    .pane { min-height: 0; overflow-y: auto; background: #fff; }
+    .pane h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #64748b; margin: 0; padding: 14px 14px 8px; }
+    .pane .note { font-size: 12.5px; color: #64748b; margin: 0; padding: 0 14px 10px; }
+    #left { border-right: 1px solid #e2e8f0; }
+    #right { border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; }
+    /* the page's blocks */
+    .blist { list-style: none; margin: 0; padding: 0 8px 8px; counter-reset: b; }
+    .blk { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 4px 8px; padding: 8px; border: 2px solid transparent; border-radius: 10px; cursor: pointer; counter-increment: b; }
+    .blk::before { content: counter(b); font: 700 12px system-ui; color: #94a3b8; text-align: center; }
+    .blk:hover { background: #f8fafc; }
+    .blk.on { border-color: #2563eb; background: #eff6ff; }
+    .blk.dragging { opacity: .4; } .blk.drop-above { box-shadow: inset 0 3px 0 #2563eb; } .blk.drop-below { box-shadow: inset 0 -3px 0 #2563eb; }
+    .blk .t { min-width: 0; } .blk .t b { display: block; font-size: 14px; font-weight: 600; line-height: 1.3; }
+    .blk .t small { display: block; color: #64748b; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .blk .ctl { display: flex; gap: 2px; }
+    .blk .ctl button { width: 30px; height: 30px; border: 0; border-radius: 6px; background: transparent; color: #475569; cursor: pointer; font-size: 14px; }
+    .blk .ctl button:hover { background: #e2e8f0; color: #0f172a; }
+    .blk .own { grid-column: 2 / 4; font-size: 12px; color: #475569; display: flex; gap: 6px; align-items: center; }
+    .blk .pin select { font: inherit; font-size: 12px; padding: 2px 4px; max-width: 210px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; }
+    .blk .film { flex-wrap: wrap; }
+    .blk .film input[type=color] { width: 32px; height: 24px; padding: 0 2px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; }
+    .blk .fx { grid-column: 2 / 4; font-size: 12px; color: #475569; }
+    .blk .fx summary { cursor: pointer; display: inline-flex; gap: 6px; align-items: center; padding: 3px 9px; border: 1px solid #cbd5e1; border-radius: 999px; background: #fff; font-weight: 600; list-style: none; }
+    .blk .fx summary::-webkit-details-marker { display: none; }
+    .blk .fx summary::after { content: '\25BE'; font-size: 10px; }
+    .blk .fx[open] summary::after { content: '\25B4'; }
+    .blk .fx summary b { font-weight: 600; color: #0f766e; }
+    .blk .fx > .own { margin-top: 6px; white-space: nowrap; }
+    .blk .fx > .own select { flex: 1; min-width: 0; }
+    .blk .fx > .xfx { display: grid; gap: 4px; margin-top: 8px; white-space: normal; }
+    .blk .fx > .xfx .xfx-h { font-weight: 600; color: #0f172a; }
+    .blk .fx > .xfx label { display: grid; grid-template-columns: auto 1fr; column-gap: 6px; align-items: start; cursor: pointer; }
+    .blk .fx > .xfx input { margin: 2px 0 0; }
+    .blk .fx > .xfx i { font-style: normal; color: #64748b; }
+    .blk .fx > .xfx small { grid-column: 2; color: #64748b; font-size: 11px; line-height: 1.35; }
+    .blk .sz { flex-wrap: wrap; } .blk .sz b { font-weight: 600; color: #0f172a; }
+    .blk .sz input[type=range] { flex: 1; min-width: 90px; accent-color: #2563eb; cursor: ew-resize; }
+    .blk .sz output { min-width: 62px; font-variant-numeric: tabular-nums; color: #0f172a; }
+    .blk .sz .ui-btn.sm { min-height: 26px; padding: 2px 8px; }
+    .blk .warn { grid-column: 2 / 4; font-size: 12px; color: #92400e; }
+    .tools { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 14px 14px; }
+    .tools.looks { padding-bottom: 4px; }
+    .tools.looks select { font: inherit; font-size: 13px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; flex: 1; min-width: 0; }
+    .saved { list-style: none; margin: 0; padding: 0 8px 16px; }
+    .saved li { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 8px; font-size: 13.5px; }
+    .saved li:hover { background: #f8fafc; }
+    .saved li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .saved li small { color: #64748b; }
+    .empty-note { padding: 6px 14px 14px; font-size: 13px; color: #64748b; margin: 0; }
+    /* live preview */
+    .stage { min-height: 0; display: grid; padding: 14px; overflow: hidden; }
+    .stage iframe { grid-area: 1 / 1; width: 100%; max-width: 1440px; height: 100%; justify-self: center; border: 0; border-radius: 10px; background: #fff; box-shadow: 0 10px 30px rgba(15,23,42,.18); }
+    /* desktop: the page is drawn 1280 wide and scaled to fit, so it looks the way visitors on a computer see it */
+    .stage.fit iframe { width: 1280px; max-width: none; height: calc(100% / var(--z)); justify-self: start; transform: scale(var(--z)); transform-origin: 0 0; border-radius: 0; }
+    .stage.phone iframe { max-width: 390px; }
+    .stage iframe.next { visibility: hidden; }
+    /* the library */
+    .lib-head { padding: 0 14px 10px; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid #e2e8f0; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips button { border: 1px solid #cbd5e1; background: #fff; border-radius: 999px; padding: 4px 10px; font: 600 12.5px inherit; font-family: inherit; cursor: pointer; min-height: 30px; }
+    .chips button[aria-pressed=true] { background: #0f172a; color: #fff; border-color: #0f172a; }
+    .chips button small { font-weight: 500; opacity: .7; }
+    .lib-head select { padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 8px; font: 13px inherit; font-family: inherit; }
+    .lib-head label { font-size: 12.5px; color: #475569; display: flex; gap: 6px; align-items: center; }
+    .grid { flex: 1; overflow-y: auto; padding: 12px 14px 20px; display: flex; flex-direction: column; gap: 14px; }
+    .card { flex: none; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; }
+    .card[hidden] { display: none; }
+    .thumb { position: relative; height: 190px; overflow: hidden; background: #f1f5f9; }
+    .thumb iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 704px; border: 0; transform: scale(var(--s, .275)); transform-origin: 0 0; pointer-events: none; }
+    .thumb .ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 12.5px; }
+    .card .m { padding: 9px 11px 11px; display: flex; flex-direction: column; gap: 6px; }
+    .card .m b { font-size: 14px; }
+    .card .m .row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .tag { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: #f1f5f9; color: #475569; }
+    .tag.sl { background: #ede9fe; color: #5b21b6; } .tag.at { background: #0f172a; color: #fff; } .tag.need { background: #fef3c7; color: #92400e; }
+    .card .hint { font-size: 12px; color: #64748b; }
+    .card .acts { display: flex; gap: 6px; margin-left: auto; }
+    /* Arrange panel */
+    .arr { border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; background: #f8fafc; }
+    .arr .note { padding-top: 2px; }
+    .arr .what { padding: 0 14px 8px; font-size: 14px; } .arr .what small { color: #64748b; }
+    .arr .row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 4px 14px; font-size: 13px; }
+    .arr .row > span:first-child { width: 78px; color: #475569; }
+    .arr .row output { min-width: 52px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .arr .row select { padding: 5px 6px; border: 1px solid #cbd5e1; border-radius: 8px; font: 13px inherit; font-family: inherit; }
+    .arr .ui-btn.sm { min-width: 30px; }
+    .arr .ui-btn[aria-pressed=true] { background: #0f172a; color: #fff; border-color: #0f172a; }
+    .arr .sub { font-size: 12px; color: #64748b; padding: 0 14px; margin: 2px 0 0; }
+    .arr hr { border: 0; border-top: 1px solid #e2e8f0; margin: 8px 14px; }
+    @media (max-width: 1100px) {
+      body { height: auto; display: block; }
+      .wrap { display: flex; flex-direction: column; }
+      .pane { overflow: visible; } #right { overflow: visible; border-left: 0; }
+      .stage { height: 75vh; padding: 10px; }
+      .grid { overflow: visible; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sl-bar">
+    <a class="back" href="/sites/<%= site.id %>/edit#design">&larr; Editor</a>
+    <h1>Blocks</h1>
+    <span class="status" id="status" role="status"><%= live ? 'The home page uses these blocks.' : 'Starting from the current home page. Nothing changes on the site until you save.' %></span>
+    <span class="sp"></span>
+    <button type="button" class="ui-btn" id="undoBtn" disabled title="Undo (Ctrl+Z)">Undo</button>
+    <span class="seg" id="devSeg" role="group" aria-label="Screen"><button type="button" data-v="desktop" aria-pressed="true">Desktop</button><button type="button" data-v="phone" aria-pressed="false">Phone</button></span>
+    <span class="seg" id="modeSeg" role="group" aria-label="What a click in the preview does"><button type="button" data-v="pick" aria-pressed="true" title="Click a section to pick it">Pick</button><button type="button" data-v="arrange" aria-pressed="false" title="Click anything to size and move it">Arrange</button><button type="button" data-v="edit" aria-pressed="false" title="Click words to type on them, or a photo to change it">Edit</button></span>
+    <button type="button" class="ui-btn" id="openBtn">Open full page</button>
+    <button type="button" class="ui-btn primary" id="saveBtn">Use on the home page</button>
+  </div>
+
+  <div class="wrap">
+    <section class="pane" id="left" aria-labelledby="pageHead">
+      <div id="arrPanel" class="arr" hidden></div>
+      <h2 id="pageHead">This home page</h2>
+      <p class="note">Click a block to select it, here or in the preview. Drag to reorder. Words, photos and numbers always come from this site: switch to <b>Edit</b> at the top to type on the words or change a photo right in the preview.</p>
+      <div class="tools looks">
+        <select id="packSel" aria-label="Look pack" title="Give every block a matching set of effects (pins, color film, photo words, heights). Undo puts it back.">
+          <option value="">Look packs…</option>
+          <% lookPacks.PACKS.forEach(pk => { %><option value="<%= pk.id %>" title="<%= pk.hint %>"><%= pk.name %></option><% }) %>
+        </select>
+        <button type="button" class="ui-btn sm" id="surpriseBtn" title="Random effects that still go together. Press again for another mix; Undo goes back.">Surprise me</button>
+      </div>
+      <ol class="blist" id="blist"></ol>
+      <div class="tools">
+        <button type="button" class="ui-btn sm" id="saveRecipeBtn">Save page as a recipe</button>
+        <button type="button" class="ui-btn sm" id="saveBlockBtn" title="Saves the block with its effects">Save selected block</button>
+        <button type="button" class="ui-btn sm" id="resetBtn">Start over</button>
+      </div>
+      <h2>Saved blocks and recipes</h2>
+      <ul class="saved" id="saved"></ul>
+      <p class="empty-note" id="savedEmpty">Nothing saved yet. Saved blocks and recipes work on every site.</p>
+    </section>
+
+    <div class="stage" id="stage"><iframe id="frame" name="pv0" title="Home page preview"></iframe></div>
+
+    <section class="pane" id="right" aria-labelledby="libHead">
+      <h2 id="libHead">Add a block</h2>
+      <div class="lib-head">
+        <div class="chips" id="typeChips" role="group" aria-label="Kind of section"></div>
+        <div class="row" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <select id="srcSel" aria-label="Where the design comes from">
+            <option value="">Every source</option><option value="lib">Section library (your style)</option><option value="sl">Style Library</option><option value="at">Signature pieces</option>
+          </select>
+          <label><input type="checkbox" id="showEmpty"> Show designs this site has no content for</label>
+        </div>
+      </div>
+      <div class="grid" id="grid"></div>
+    </section>
+  </div>
+
+  <script>
+  (function () {
+    var siteId = <%= site.id %>, MAX = <%= max %>;
+    var D = <%- JSON.stringify({ blocks, catalog, types, saved, photos }).replace(/</g, '\\u003c') %>;
+    var SRC = { lib: 'Library', sl: 'Styles', at: 'Signature', blk: 'Content block' };
+    var CAT = {}; D.catalog.forEach(function (c) { CAT[c.k + '|' + c.f + '|' + c.v] = c; });
+    var key = function (b) { return b.k + '|' + b.f + '|' + b.v; };
+    var info = function (b) { return CAT[key(b)] || { label: b.v, type: '', source: '', empty: false }; };
+    var strip = function (b) { var o = { k: b.k, f: b.f, v: b.v }; if (b.k === 'sl' && b.own) o.own = true; if (b.pin) o.pin = b.pin; if (b.film) o.film = b.film; if (b.imgfx) o.imgfx = b.imgfx; if (b.height) o.height = b.height; if (b.glass) o.glass = b.glass; if (b.bg) o.bg = JSON.parse(JSON.stringify(b.bg)); if (b.xfx && b.xfx.length) o.xfx = b.xfx.slice(); if (b.lay) o.lay = JSON.parse(JSON.stringify(b.lay)); return o; };
+    var PINS = <%- JSON.stringify(pinOptions) %>, FILMS = <%- JSON.stringify(filmStrengths) %>, IMGS = <%- JSON.stringify(imgOptions) %>, HTS = <%- JSON.stringify(heightOptions) %>, XFX = <%- JSON.stringify(extraFx.blockMenu()) %>, XFX_SITE = <%- JSON.stringify(extraFx.list(site.theme)) %>, BRAND = <%- JSON.stringify(site.theme.primaryColor || '#2563eb') %>, GRADS = <%- JSON.stringify(gradients.menu(site.theme, true, true)).replace(/</g, '\\u003c') %>, GSTYLES = <%- JSON.stringify(Object.entries(gradients.STYLES)) %>, GLASS = <%- JSON.stringify(glassFx.OPTIONS) %>, INKS = <%- JSON.stringify(gradients.textures.INK_MODES) %>, ACCENT = <%- JSON.stringify(site.theme.accentColor || '#f59e0b') %>;
+    // a see-through color layer over the block: "brand:30" or "#1b2a4a:30"
+    // a block's effects (pin, color film, photo words, height) fold under one Effects button; the count says how many are on
+    var fxOpen = {};
+    function fxBox(b, i) {
+      var on = ['pin', 'film', 'imgfx', 'height', 'bg', 'glass'].filter(function (k) { return b[k]; }).length + ((b.xfx || []).length);
+      return '<details class="fx" data-fx="' + i + '"' + (fxOpen[i] ? ' open' : '') + '><summary>Effects' + (on ? ' <b>' + on + ' on</b>' : '') + '</summary>' +
+        '<label class="own pin">Pin and cards <select data-a="pin">' + PINS.map(function (o) { return '<option value="' + o[0] + '"' + ((b.pin || '') === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' + filmRow(b) +
+        '<label class="own pin">Photo words <select data-a="imgfx">' + IMGS.map(function (o) { return '<option value="' + o[0] + '"' + ((b.imgfx || '') === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
+        '<label class="own pin" title="Its words and cards sit on a pane of glass. Looks best over a photo or gradient background.">Glass panel <select data-a="glass">' + GLASS.map(function (o) { return '<option value="' + o[0] + '"' + ((b.glass || '') === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
+        gradRow(b) + xfxRows(b) +
+        '<span class="own fxcp"><button type="button" class="ui-btn sm" data-a="fx-copy" title="Remember these effects, to give them to other blocks (on any site)">Copy effects</button>' +
+        (fxClip() ? '<button type="button" class="ui-btn sm" data-a="fx-paste" title="Give this block the effects you copied">Paste</button><button type="button" class="ui-btn sm" data-a="fx-all" title="Give every block on the page the effects you copied (the hero is left out of pins)">Paste to all</button>' : '') + '</span>' +
+        '</details>';
+    }
+    // a gradient background from the gallery (library sections; content blocks pick theirs in the editor)
+    function gradRow(b) {
+      if (b.k !== 'lib') return '';
+      var g = b.bg || {}, css = '';
+      var opts = '<option value="">Normal background</option>' + GRADS.map(function (grp) { return '<optgroup label="' + esc(grp[0]) + '">' + grp[1].map(function (x) { if (x[0] === g.g) css = x[2]; return '<option value="' + x[0] + '"' + (x[0] === g.g ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('') + '</optgroup>'; }).join('');
+      return '<div class="own grad"><label class="own pin">Gradient background <select data-a="gbg-g">' + opts + '</select></label>' +
+        '<span class="gsw" aria-hidden="true" style="display:inline-block;width:42px;height:22px;border-radius:6px;vertical-align:middle;border:1px solid #ccd;background:' + (css || 'transparent') + '"></span>' +
+        (g.g ? '<label class="own pin">Style <select data-a="gbg-s"><option value="">Automatic</option>' + GSTYLES.map(function (o) { return '<option value="' + o[0] + '"' + (g.s === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
+          '<label class="own pin">Angle <input type="number" data-a="gbg-a" min="0" max="359" step="5" placeholder="135" style="width:70px" value="' + (g.a != null ? g.a : '') + '"></label>' +
+          '<label class="own"><input type="checkbox" data-a="gbg-m"' + (g.m ? ' checked' : '') + '> Slowly drifting</label> <label class="own"><input type="checkbox" data-a="gbg-n"' + (g.n ? ' checked' : '') + '> Grain</label> <label class="own"><input type="checkbox" data-a="gbg-b"' + (g.b ? ' checked' : '') + '> Blend into the section\'s own color</label>' + inkRow(g) : '') +
+        '</div>';
+    }
+    // a texture's colors: as drawn, brand, one to three colors of the owner's, or a rainbow (gradients' textures.cleanInk)
+    function inkRow(g) {
+      if (!/^txb?-/.test(g.g || '')) return '';
+      var v = g.c || '', cs = v.charAt(0) === '#' ? v.split(',') : [], mode = cs.length ? ['one', 'two', 'three'][cs.length - 1] : v, def = [BRAND, ACCENT, '#ec4899'];
+      return ' <label class="own pin">Texture colors <select data-a="gbg-cm">' + INKS.map(function (o) { return '<option value="' + o[0] + '"' + (mode === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
+        [0, 1, 2].map(function (i) { return '<input type="color" data-a="gbg-cc" aria-label="Texture color ' + (i + 1) + '" value="' + esc(cs[i] || def[i]) + '" style="width:40px;height:26px;padding:1px;vertical-align:middle;' + (i < cs.length ? '' : 'display:none') + '">'; }).join('');
+    }
+    // More effects for this block alone; one already on for the whole site (editor, Design) shows ticked and greyed
+    function xfxRows(b) {
+      var mine = b.xfx || [];
+      return '<div class="own xfx"><span class="xfx-h">More effects</span>' + XFX.filter(function (o) { return o[0] !== 'zoom' || b.f === 'hero'; }).map(function (o) {
+        var site = XFX_SITE.indexOf(o[0]) >= 0;
+        return '<label title="' + esc(o[2]) + '"><input type="checkbox" data-a="xfx" value="' + o[0] + '"' + (site || mine.indexOf(o[0]) >= 0 ? ' checked' : '') + (site ? ' disabled' : '') + '> ' + esc(o[1]) + (site ? ' <i>(whole site)</i>' : '') + '<small>' + esc(o[2]) + '</small></label>';
+      }).join('') + '</div>';
+    }
+    // copied effects are kept in this browser, so they can be pasted on another site too
+    var FX_KEYS = ['pin', 'film', 'imgfx', 'height', 'glass', 'xfx'];
+    function fxClip() { try { return JSON.parse(localStorage.getItem('sg-fx-clip') || 'null'); } catch (e) { return null; } }
+    function fxGive(b, c) {
+      FX_KEYS.forEach(function (k) { if (c[k] && !(k === 'pin' && b.f === 'hero')) b[k] = k === 'xfx' ? c[k].filter(function (id) { return id !== 'zoom' || b.f === 'hero'; }) : c[k]; else delete b[k]; });
+      if (b.xfx && !b.xfx.length) delete b.xfx;
+    }
+    function filmRow(b) {
+      var m = /^(brand|#[0-9a-f]{6}):(\d+)$/i.exec(b.film || ''), own = m && m[1] !== 'brand';
+      return '<label class="own pin film">Color film <select data-a="film-s"><option value="">None</option>' + FILMS.map(function (n) { return '<option value="' + n + '"' + (m && m[2] === String(n) ? ' selected' : '') + '>' + n + '% strong</option>'; }).join('') + '</select>' +
+        (m ? '<select data-a="film-m"><option value="brand">Brand color</option><option value="own"' + (own ? ' selected' : '') + '>My color</option></select>' : '') +
+        (own ? '<input type="color" data-a="film-c" value="' + esc(m[1]) + '" aria-label="Film color">' : '') + '</label>';
+    }
+
+    var blocks = D.blocks.map(strip), first = JSON.stringify(blocks), savedState = <%- live ? 'first' : 'null' %>;
+    var sel = blocks.length ? 0 : -1, hist = [];
+    var list = document.getElementById('blist'), statusEl = document.getElementById('status');
+    var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    function say(msg, cls) { statusEl.textContent = msg; statusEl.className = 'status' + (cls ? ' ' + cls : ''); }
+    var dirty = function () { return JSON.stringify(blocks) !== savedState; };
+
+    // every change goes through here, so Undo and the preview stay in step
+    function change(fn, keepScroll) {
+      hist.push({ b: JSON.stringify(blocks), s: sel });
+      if (hist.length > 60) hist.shift();
+      fn();
+      if (sel >= blocks.length) sel = blocks.length - 1;
+      drawList(); refresh(keepScroll);
+      say(dirty() ? 'Not saved yet.' : 'Saved.', dirty() ? '' : 'ok');
+    }
+    function undo() {
+      var h = hist.pop(); if (!h) return;
+      if (h.edit) {   // words or a photo changed in Edit mode: put the old ones back
+        drawList();
+        return post('/blocks/edit', h.edit).then(function (d) { if (d.photos) D.photos = d.photos; say(d.ok ? 'Put back.' : (d.error || 'Could not put it back.'), d.ok ? 'ok' : 'err'); refresh(true); });
+      }
+      blocks = JSON.parse(h.b); sel = h.s; drawList(); refresh(true);
+      say(dirty() ? 'Not saved yet.' : 'Saved.', dirty() ? '' : 'ok');
+    }
+    document.getElementById('undoBtn').addEventListener('click', undo);
+    document.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !/INPUT|SELECT|TEXTAREA/.test((e.target.tagName || ''))) { e.preventDefault(); undo(); }
+    });
+
+    function drawList() {
+      document.getElementById('undoBtn').disabled = !hist.length;
+      if (!blocks.length) { list.innerHTML = '<li class="empty-note">No blocks yet. Pick one on the right to start.</li>'; return; }
+      list.innerHTML = blocks.map(function (b, i) {
+        var c = info(b);
+        return '<li class="blk' + (i === sel ? ' on' : '') + '" draggable="true" data-i="' + i + '">' +
+          '<span class="t"><b>' + esc(c.label) + '</b><small>' + esc((D.types[c.type] || '') + ' · ' + SRC[b.k]) + '</small></span>' +
+          '<span class="ctl"><button type="button" data-a="up" aria-label="Move up" title="Move up">&uarr;</button><button type="button" data-a="down" aria-label="Move down" title="Move down">&darr;</button>' +
+          (b.k === 'blk' ? '' : '<button type="button" data-a="dup" aria-label="Duplicate" title="Duplicate">&#x2398;</button>') +
+          '<button type="button" data-a="del" aria-label="Remove" title="' + (b.k === 'blk' ? 'Take it off the home page (it stays in the editor, marked Hidden)' : 'Remove') + '">&times;</button></span>' +
+          sizeRow(i) + fxBox(b, i) +
+          (b.k === 'blk' ? '<a class="own" href="/sites/' + siteId + '/edit?open=blk:' + esc(b.v) + '" title="Edit its words, photos and settings">Edit this block\'s words and photos</a>' : '') +
+          (b.k === 'sl' ? '<label class="own"><input type="checkbox" data-a="own"' + (b.own ? ' checked' : '') + '> Use this style\'s accent color</label>' : '') +
+          (c.empty ? '<span class="warn">Shows nothing until the site has content for it.</span>' : '') +
+          '</li>';
+      }).join('');
+      syncSizes();
+    }
+    // one Size control per block: the height of its section, in px, changing the preview while it is dragged
+    function sizeRow(i) {
+      return '<span class="own sz" title="How tall this section is. Drag, or use − and +. Auto puts the block\'s own height back.">' +
+        '<b>Size</b><button type="button" class="ui-btn sm" data-a="sz-" aria-label="Shorter">&minus;</button>' +
+        '<input type="range" data-a="sz" min="' + SZ_MIN + '" max="' + SZ_MAX + '" step="10" value="400" aria-label="Section height">' +
+        '<button type="button" class="ui-btn sm" data-a="sz+" aria-label="Taller">+</button><output></output>' +
+        '<button type="button" class="ui-btn sm" data-a="sz0" title="Back to the block\'s own height">Auto</button></span>';
+    }
+    var SZ_MIN = 80, SZ_MAX = 1600;
+    function syncSizes() {
+      if (!arr) return;
+      list.querySelectorAll('.blk').forEach(function (li) {
+        var s = arr.sizeOf(+li.dataset.i), r = li.querySelector('[data-a="sz"]'); if (!r) return;
+        li.querySelectorAll('.sz input, .sz button').forEach(function (x) { x.disabled = !s; });
+        if (!s) { li.querySelector('.sz output').textContent = '—'; li.querySelector('.sz output').title = 'Nothing shows for this block yet'; return; }
+        r.max = Math.max(SZ_MAX, Math.ceil(Math.max(s.now, s.v) / 100) * 100 + 800);
+        r.value = Math.max(SZ_MIN, Math.min(+r.max, s.v || s.now));
+        li.querySelector('.sz output').textContent = s.v ? s.v + 'px' : s.preset ? s.preset : 'Auto';
+        li.querySelector('.sz output').title = s.now + 'px tall now';
+        li.querySelector('[data-a="sz0"]').disabled = !s.v && !s.preset;
+      });
+    }
+    list.addEventListener('click', function (e) {
+      var li = e.target.closest('.blk'); if (!li) return;
+      var i = +li.dataset.i, a = e.target.closest('[data-a]'); a = a && a.dataset.a;
+      if (!a && e.target.closest('.fx')) return;   // opening the Effects box or clicking inside it
+      if (a === 'fx-copy') { var c = {}; FX_KEYS.forEach(function (k) { if (blocks[i][k]) c[k] = blocks[i][k]; }); try { localStorage.setItem('sg-fx-clip', JSON.stringify(c)); } catch (x) {} fxOpen[i] = true; drawList(); say(Object.keys(c).length ? 'Effects copied. Open another block\'s Effects and press Paste.' : 'Copied "no effects": Paste clears a block\'s effects.', 'ok'); return; }
+      if (a === 'fx-paste' || a === 'fx-all') { var cl = fxClip(); if (!cl) return; change(function () { (a === 'fx-all' ? blocks : [blocks[i]]).forEach(function (b) { fxGive(b, cl); }); sel = i; }, true); return; }
+      if (a === 'up' && i > 0) change(function () { blocks.splice(i - 1, 0, blocks.splice(i, 1)[0]); sel = i - 1; });
+      else if (a === 'down' && i < blocks.length - 1) change(function () { blocks.splice(i + 1, 0, blocks.splice(i, 1)[0]); sel = i + 1; });
+      else if (a === 'dup' && blocks.length < MAX) change(function () { blocks.splice(i + 1, 0, JSON.parse(JSON.stringify(blocks[i]))); sel = i + 1; });
+      else if (a === 'del') change(function () { blocks.splice(i, 1); sel = Math.min(i, blocks.length - 1); });
+      else if (a === 'own') change(function () { blocks[i].own = e.target.checked; if (!blocks[i].own) delete blocks[i].own; sel = i; }, true);
+      else if (a === 'sz-' || a === 'sz+') arr.sizeStep(i, a === 'sz+' ? 40 : -40);
+      else if (a === 'sz0') arr.sizeAuto(i);
+      else if (a === 'pin' || a === 'imgfx' || a === 'height' || a === 'glass' || a === 'xfx' || a === 'sz' || /^film/.test(a) || /^gbg/.test(a)) return;
+      else if (!a) select(i, true);
+    });
+    // pin a block in place while the page scrolls
+    list.addEventListener('change', function (e) {
+      var s = e.target.closest('[data-a="pin"]'); if (!s) return;
+      var i = +s.closest('.blk').dataset.i;
+      change(function () { if (s.value) blocks[i].pin = s.value; else delete blocks[i].pin; sel = i; }, true);
+    });
+    list.addEventListener('change', function (e) {
+      var f = e.target.closest('[data-a^="film"]'); if (!f) return;
+      var li = f.closest('.blk'), i = +li.dataset.i;
+      var st = li.querySelector('[data-a="film-s"]').value, md = li.querySelector('[data-a="film-m"]'), co = li.querySelector('[data-a="film-c"]');
+      var color = md && md.value === 'own' ? (co ? co.value : BRAND) : 'brand';
+      change(function () { if (st) blocks[i].film = color + ':' + st; else delete blocks[i].film; sel = i; }, true);
+    });
+    list.addEventListener('change', function (e) {
+      var s = e.target.closest('[data-a="imgfx"]'); if (!s) return;
+      var i = +s.closest('.blk').dataset.i;
+      change(function () { if (s.value) blocks[i].imgfx = s.value; else delete blocks[i].imgfx; sel = i; }, true);
+    });
+    // a pane of glass under the block's content
+    list.addEventListener('change', function (e) {
+      var s = e.target.closest('[data-a="glass"]'); if (!s) return;
+      var i = +s.closest('.blk').dataset.i;
+      change(function () { if (s.value) blocks[i].glass = s.value; else delete blocks[i].glass; sel = i; fxOpen[i] = true; }, true);
+    });
+    // gradient background: the gallery pick and its style, angle, drift and grain
+    list.addEventListener('change', function (e) {
+      var s = e.target.closest('[data-a^="gbg"]'); if (!s) return;
+      var li = s.closest('.blk'), i = +li.dataset.i, k = s.getAttribute('data-a').slice(4);
+      change(function () {
+        var g = blocks[i].bg ? Object.assign({}, blocks[i].bg) : {};
+        if (k === 'g') { if (s.value) g.g = s.value; else g = null; }
+        else if (k === 's') { if (s.value) g.s = s.value; else delete g.s; }
+        else if (k === 'a') { if (s.value !== '') g.a = ((parseInt(s.value, 10) || 0) % 360 + 360) % 360; else delete g.a; }
+        else if (k === 'cm' || k === 'cc') {
+          var row = s.closest('.grad'), m = row.querySelector('[data-a="gbg-cm"]').value, n = { one: 1, two: 2, three: 3 }[m] || 0;
+          var v = n ? [].slice.call(row.querySelectorAll('[data-a="gbg-cc"]'), 0, n).map(function (c) { return c.value.toLowerCase(); }).join(',') : m;
+          if (v) g.c = v; else delete g.c;
+        }
+        else if (s.checked) g[k] = 1; else delete g[k];
+        if (g && g.g) blocks[i].bg = g; else delete blocks[i].bg;
+        sel = i; fxOpen[i] = true;
+      }, true);
+    });
+    // drawn shorter or taller
+    list.addEventListener('change', function (e) {
+      var s = e.target.closest('[data-a="height"]'); if (!s) return;
+      var i = +s.closest('.blk').dataset.i;
+      change(function () { if (s.value) blocks[i].height = s.value; else delete blocks[i].height; sel = i; }, true);
+    });
+    list.addEventListener('change', function (e) {
+      var c = e.target.closest('[data-a="xfx"]'); if (!c) return;
+      var i = +c.closest('.blk').dataset.i;
+      change(function () {
+        var x = (blocks[i].xfx || []).filter(function (id) { return id !== c.value; });
+        if (c.checked) x.push(c.value);
+        if (x.length) blocks[i].xfx = x; else delete blocks[i].xfx; sel = i;
+      }, true);
+    });
+    // the Size slider: the preview follows while it moves, one Undo step when it is let go
+    var szCur = null;
+    list.addEventListener('input', function (e) {
+      var r = e.target.closest('[data-a="sz"]'); if (!r) return;
+      var i = +r.closest('.blk').dataset.i;
+      if (!szCur || szCur.i !== i) { if (i !== sel) select(i, true); szCur = arr.sizer(i); if (!szCur) return; szCur.i = i; }
+      r.parentNode.querySelector('output').textContent = szCur.move(+r.value) + 'px';
+    });
+    list.addEventListener('change', function (e) { if (!e.target.closest('[data-a="sz"]') || !szCur) return; var c = szCur; szCur = null; c.end(); });
+    // pressing on the Size row never starts dragging the block
+    list.addEventListener('pointerdown', function (e) { var z = e.target.closest('.sz'); if (z) z.closest('.blk').draggable = false; });
+    document.addEventListener('pointerup', function () { list.querySelectorAll('.blk[draggable="false"]').forEach(function (x) { x.draggable = true; }); });
+    // the Effects box stays open while its settings redraw the list
+    list.addEventListener('toggle', function (e) { var d = e.target; if (d.classList && d.classList.contains('fx')) fxOpen[d.dataset.fx] = d.open; }, true);
+    // drag to reorder
+    var dragI = -1;
+    list.addEventListener('dragstart', function (e) { var li = e.target.closest('.blk'); if (!li) return; if (e.target.closest && e.target.closest('.sz')) { e.preventDefault(); return; } dragI = +li.dataset.i; li.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(dragI)); } catch (x) {} });
+    list.addEventListener('dragend', function () { dragI = -1; list.querySelectorAll('.blk').forEach(function (x) { x.classList.remove('dragging', 'drop-above', 'drop-below'); }); });
+    list.addEventListener('dragover', function (e) {
+      var li = e.target.closest('.blk'); if (!li || dragI < 0) return; e.preventDefault();
+      var r = li.getBoundingClientRect(), below = e.clientY > r.top + r.height / 2;
+      list.querySelectorAll('.blk').forEach(function (x) { x.classList.remove('drop-above', 'drop-below'); });
+      li.classList.add(below ? 'drop-below' : 'drop-above');
+    });
+    list.addEventListener('drop', function (e) {
+      var li = e.target.closest('.blk'); if (!li || dragI < 0) return; e.preventDefault();
+      var r = li.getBoundingClientRect(), to = +li.dataset.i + (e.clientY > r.top + r.height / 2 ? 1 : 0), from = dragI;
+      if (to > from) to--;
+      if (to !== from) change(function () { blocks.splice(to, 0, blocks.splice(from, 1)[0]); sel = to; });
+    });
+
+    function select(i, fromList) {
+      var changed = sel !== i;
+      sel = i;
+      if (changed || fromList) arr.blockChanged();
+      list.querySelectorAll('.blk').forEach(function (x) { x.classList.toggle('on', +x.dataset.i === i); });
+      mark(fromList);
+      var c = blocks[i] && info(blocks[i]);
+      if (c && c.type && fromList) setType(c.type);
+    }
+
+    // ---- live preview: the new page loads behind the old one, then they swap (no flash) ----
+    var stage = document.getElementById('stage'), frame = document.getElementById('frame'), timer = null;
+    var url = function (bl, bare) { return '/sites/' + siteId + '/preview?bar=0&calm=1' + (bare ? '&bare=1' : '') + '&mix=' + encodeURIComponent(JSON.stringify(bl)); };
+    // the page's blocks are posted (an arrangement can be too long for an address)
+    var nFrame = 0;
+    function load(target, q) {
+      if (!blocks.length) { if (target.tagName) target.src = '/sites/' + siteId + '/preview?' + q; return; }
+      var f = document.createElement('form'); f.method = 'POST'; f.action = '/sites/' + siteId + '/preview?' + q; f.style.display = 'none';
+      f.target = target.tagName ? target.name : target;   // a frame's name is set before it joins the page
+      var inp = document.createElement('input'); inp.type = 'hidden'; inp.name = 'mix'; inp.value = JSON.stringify(blocks); f.appendChild(inp);
+      document.body.appendChild(f); f.submit(); f.remove();
+    }
+    document.getElementById('openBtn').addEventListener('click', function () { load('_blank', 'bar=0'); });
+    function refresh(keepScroll) {
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        var y = 0; try { y = frame.contentWindow.scrollY; } catch (e) {}
+        var next = document.createElement('iframe'); next.className = 'next'; next.title = 'Home page preview'; next.name = 'pv' + (++nFrame);
+        var swapped = false;
+        next.addEventListener('load', function () {
+          try { if (!/\/preview/.test(next.contentWindow.location.pathname)) return; } catch (e) {}   // the empty page a new frame starts on
+          if (swapped) return; swapped = true;
+          try { next.contentWindow.scrollTo(0, keepScroll === false ? 0 : y); } catch (e) {}
+          requestAnimationFrame(function () { requestAnimationFrame(function () {
+            frame.remove(); next.classList.remove('next'); frame = next; next.id = 'frame'; hook(); mark(keepScroll === false);
+          }); });
+        });
+        stage.appendChild(next);
+        load(next, 'bar=0&calm=1');
+      }, 250);
+    }
+    // in the preview: hover outline, click selects the block (links don't navigate away)
+    function hook() {
+      var doc; try { doc = frame.contentDocument; } catch (e) { return; }
+      if (!doc) return;
+      var st = doc.createElement('style');
+      st.textContent = '.sg-mix{position:relative;cursor:pointer}.sg-mix:hover::after,.sg-mix.sg-mix-on::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:50;box-shadow:inset 0 0 0 3px rgba(37,99,235,.55)}.sg-mix.sg-mix-on::after{box-shadow:inset 0 0 0 4px #2563eb}';
+      doc.head.appendChild(st);
+      doc.addEventListener('click', function (e) {
+        if (e.target.closest && e.target.closest('.sg-ed-bar')) return;   // Edit mode's own buttons on the page
+        var m = e.target.closest && e.target.closest('.sg-mix'); if (!m) return;
+        if (ed.on && ed.typing(e.target)) { e.preventDefault(); return; }   // a click inside the words being typed places the caret (and follows no link)
+        e.preventDefault(); e.stopPropagation();
+        if (ed.on) { ed.click(e, m); return; }
+        if (arr.on) { arr.pick(e, m); return; }
+        select(+m.dataset.mixI, false);
+        var c = blocks[sel] && info(blocks[sel]); if (c && c.type) setType(c.type);
+        var li = list.querySelector('.blk.on'); if (li) li.scrollIntoView({ block: 'nearest' });
+      }, true);
+      doc.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); } });
+      arr.attach(doc);
+      ed.attach(doc);
+    }
+    function mark(scroll) {
+      var doc; try { doc = frame.contentDocument; } catch (e) { return; }
+      if (!doc) return;
+      doc.querySelectorAll('.sg-mix-on').forEach(function (x) { x.classList.remove('sg-mix-on'); });
+      var m = doc.querySelector('.sg-mix[data-mix-i="' + sel + '"]');
+      if (m) { m.classList.add('sg-mix-on'); if (scroll) m.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    }
+    frame.addEventListener('load', function first() {
+      try { if (!/\/preview/.test(frame.contentWindow.location.pathname)) return; } catch (e) {}
+      frame.removeEventListener('load', first); hook(); mark(false);
+    });
+    load(frame, 'bar=0&calm=1');
+    var phone = false;
+    function fit() {
+      var w = stage.clientWidth - 28, z = Math.min(1, w / 1280);
+      stage.classList.toggle('fit', !phone && z < 1);
+      stage.style.setProperty('--z', z.toFixed(4));
+    }
+    window.addEventListener('resize', fit); fit();
+    document.getElementById('devSeg').addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      this.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      phone = b.dataset.v === 'phone'; stage.classList.toggle('phone', phone); fit(); arr.panel(); setTimeout(function () { arr.redraw(); syncSizes(); }, 350);
+    });
+
+    // ---- Arrange: click anything in the preview, then drag its handles (a 12-column grid, 8px spacing steps) ----
+    var arr = (function () {
+      var A = { on: false, mode: 'pick', path: null, focal: false, doc: null };
+      var panelEl = document.getElementById('arrPanel');
+      var INLINE = /^(SPAN|EM|STRONG|B|I|SMALL|BR|U|MARK|SUP|SUB|S|CODE|ABBR|TIME|LABEL)$/;
+      var BLUE = '#2563eb';
+      var mixEl = function () { return A.doc && A.doc.querySelector('.sg-mix[data-mix-i="' + sel + '"]'); };
+      function pathOf(el, m) {
+        var steps = [];
+        while (el && el !== m) { var p = el.parentElement; steps.unshift(el.tagName.toLowerCase() + ':' + (Array.prototype.indexOf.call(p.children, el) + 1)); el = p; }
+        return steps.join('/');
+      }
+      function find(m, path) {
+        if (!m || !path) return null;
+        var el = m;
+        var ok = path.split('/').every(function (st) { var t = st.split(':'), c = el.children[+t[1] - 1]; if (!c || c.tagName.toLowerCase() !== t[0]) return false; el = c; return true; });
+        return ok ? el : null;
+      }
+      var cs = function (el) { return el.ownerDocument.defaultView.getComputedStyle(el); };
+      var isFlow = function (el) { return !/flex|grid/.test(cs(el).display); };
+      var hasImg = function (el) { return el.tagName === 'IMG' || !!el.querySelector('img'); };
+      var hasText = function (el) { return !!(el.textContent || '').trim() && el.tagName !== 'IMG'; };
+      function nameOf(el) {
+        var t = el.tagName;
+        if (/^H[1-6]$/.test(t)) return 'Heading';
+        if (t === 'P') return 'Text';
+        if (t === 'IMG' || t === 'PICTURE' || t === 'FIGURE') return 'Photo';
+        if (t === 'A' || t === 'BUTTON') return /btn|button/i.test(el.className) || t === 'BUTTON' ? 'Button' : 'Link';
+        if (t === 'UL' || t === 'OL') return 'List';
+        if (t === 'LI') return 'List item';
+        if (t === 'SECTION') return 'Whole section';
+        if (t === 'BLOCKQUOTE') return 'Quote';
+        return hasImg(el) && !hasText(el) ? 'Photo box' : 'Group';
+      }
+      // the element that carries the section's top and bottom padding: down the first-child line from the block
+      function padOf(m) {
+        var el = m;
+        for (var d = 0; d < 7 && el; d++) {
+          el = [].filter.call(el.children, function (c) { return !/^(STYLE|SCRIPT|LINK)$/.test(c.tagName); })[0];
+          if (!el) return null;
+          var c = cs(el);
+          if (parseFloat(c.paddingTop) > 0 || parseFloat(c.paddingBottom) > 0) return el;
+        }
+        return null;
+      }
+      var L = function () { var b = blocks[sel]; return b ? (b.lay || {}) : {}; };
+      var E = function () { var l = L(); return (l.els && l.els[A.path]) || {}; };
+      function tidy(b) {
+        var l = b.lay; if (!l) return;
+        ['els', 'ord', 'ordM'].forEach(function (k) { if (l[k] && !Object.keys(l[k]).length) delete l[k]; });
+        ['fx', 'fxM'].forEach(function (k) { if (l[k] && !l[k].length) delete l[k]; });
+        if (l.pad && l.pad.t === undefined && l.pad.b === undefined) delete l.pad;
+        if (!Object.keys(l).length) delete b.lay;
+      }
+      function setEl(vals, at) {
+        var path = at || A.path;
+        change(function () {
+          var b = blocks[sel], l = b.lay || (b.lay = {}); l.els = l.els || {};
+          var e = l.els[path] || (l.els[path] = {});
+          Object.keys(vals).forEach(function (k) { if (vals[k] === null || vals[k] === false) delete e[k]; else e[k] = vals[k]; });
+          if (!Object.keys(e).length) delete l.els[path];
+          tidy(b);
+        }, true);
+      }
+      function setLay(fn) { change(function () { var b = blocks[sel]; b.lay = b.lay || {}; fn(b.lay); tidy(b); }, true); }
+      function setPad(k, v, padPath) { setLay(function (l) { if (!l.pad || l.pad.p !== padPath) l.pad = { p: padPath }; if (v === null) delete l.pad[k]; else l.pad[k] = v; }); }
+      // move the selected element among its neighbours: to = the sibling to land before (null = last)
+      function moveTo(el, before) {
+        var m = mixEl(), par = el.parentElement; if (!m || par === m) return;
+        var kids = [].slice.call(par.children), flow = isFlow(par);
+        var ordered = kids.map(function (c, i) { return { c: c, n: i + 1, o: flow ? 0 : (parseInt(cs(c).order, 10) || 0) }; })
+          .sort(function (a, b) { return a.o - b.o || a.n - b.n; });
+        var me = ordered.filter(function (x) { return x.c === el; })[0];
+        ordered = ordered.filter(function (x) { return x.c !== el; });
+        var at = before ? ordered.map(function (x) { return x.c; }).indexOf(before) : ordered.length;
+        if (at < 0) at = ordered.length;
+        ordered.splice(at, 0, me);
+        var nums = ordered.map(function (x) { return x.n; }), pp = pathOf(par, m), key = phone ? 'ordM' : 'ord', fk = phone ? 'fxM' : 'fx';
+        setLay(function (l) {
+          l[key] = l[key] || {}; l[key][pp] = nums;
+          if (nums.every(function (n, i) { return n === i + 1; }) && !(phone && l.ord && l.ord[pp])) { delete l[key][pp]; l[fk] = (l[fk] || []).filter(function (x) { return x !== pp; }); return; }
+          if (flow || (l[fk] || []).indexOf(pp) >= 0) l[fk] = (l[fk] || []).filter(function (x) { return x !== pp; }).concat([pp]);
+        });
+      }
+      function visualSibs(el) {
+        var par = el.parentElement;
+        return [].filter.call(par.children, function (c) { var r = c.getBoundingClientRect(); return r.width > 0 && r.height > 0 && !/^(STYLE|SCRIPT)$/.test(c.tagName); });
+      }
+      function rowAxis(par) { var c = cs(par); return (/flex/.test(c.display) && !/column/.test(c.flexDirection)) || (/grid/.test(c.display) && c.gridTemplateColumns.split(' ').length > 1); }
+
+      // ---- overlay inside the preview ----
+      var ov = null;
+      function mk(tag, css, parent) { var e = A.doc.createElement(tag); e.style.cssText = css; (parent || ov).appendChild(e); return e; }
+      var H = 'position:fixed;box-sizing:border-box;pointer-events:auto;background:' + BLUE + ';color:#fff;font:600 11px/1 system-ui,sans-serif;display:flex;align-items:center;justify-content:center;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.3);touch-action:none;user-select:none;';
+      function build() {
+        ov = A.doc.createElement('sg-arr');
+        ov.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;z-index:2147483000;pointer-events:none;display:block;';
+        A.doc.body.appendChild(ov);
+        ov.hover = mk('sg-b', 'position:fixed;box-sizing:border-box;border:1px dashed ' + BLUE + ';pointer-events:none;display:none;');
+        ov.guides = mk('sg-b', 'position:fixed;pointer-events:none;display:none;background:repeating-linear-gradient(90deg,rgba(37,99,235,.10) 0 calc(100%/12 - 4px),transparent calc(100%/12 - 4px) calc(100%/12));');
+        ov.box = mk('sg-b', 'position:fixed;box-sizing:border-box;border:2px solid ' + BLUE + ';pointer-events:none;display:none;');
+        ov.tag = mk('sg-b', 'position:fixed;pointer-events:none;display:none;background:' + BLUE + ';color:#fff;font:600 11px/1 system-ui,sans-serif;padding:5px 7px;border-radius:5px;white-space:nowrap;');
+        ov.grip = mk('sg-b', H + 'width:26px;height:26px;cursor:grab;font-size:15px;display:none;'); ov.grip.textContent = '✥'; ov.grip.title = 'Drag to move among its neighbours';
+        ov.w = mk('sg-b', H + 'width:12px;height:40px;cursor:ew-resize;display:none;'); ov.w.title = 'Drag to change the width (snaps to 12 columns)';
+        ov.fs = mk('sg-b', H + 'width:24px;height:24px;border-radius:50%;cursor:ns-resize;display:none;'); ov.fs.textContent = 'A'; ov.fs.title = 'Drag up or down to change the text size';
+        ov.pt = mk('sg-b', H + 'height:12px;cursor:ns-resize;display:none;border-radius:4px;opacity:.85;'); ov.pt.title = 'Drag to change the space above';
+        ov.pb = mk('sg-b', H + 'height:12px;cursor:ns-resize;display:none;border-radius:4px;opacity:.85;'); ov.pb.title = 'Drag to change the space below';
+        ov.hh = mk('sg-b', H + 'width:34px;height:14px;cursor:ns-resize;display:none;font-size:12px;'); ov.hh.textContent = '⇕'; ov.hh.title = 'Drag to change its height';
+        ov.sh = mk('sg-b', H + 'height:20px;padding:0 9px;cursor:ns-resize;display:none;background:#0f172a;'); ov.sh.title = 'Drag to make the whole section taller or shorter';
+        ov.sz = mk('sg-b', H + 'height:24px;cursor:ns-resize;display:none;background:#0f172a;border:2px solid #fff;border-radius:999px;font-size:12px;'); ov.sz.title = 'Drag up or down to make this section shorter or taller';
+        ov.drop = mk('sg-b', 'position:fixed;pointer-events:none;display:none;background:#f97316;border-radius:3px;');
+        drag(ov.w, wStart); drag(ov.fs, fsStart); drag(ov.pt, padStart('t')); drag(ov.pb, padStart('b')); drag(ov.grip, moveStart); drag(ov.hh, hStart(false)); drag(ov.sh, secDrag); drag(ov.sz, secDrag);
+      }
+      var show = function (e, on) { e.style.display = on ? (e === ov.box || e === ov.hover || e === ov.guides || e === ov.drop || e === ov.tag ? 'block' : 'flex') : 'none'; };
+      function place(e, x, y, w, h) { e.style.left = x + 'px'; e.style.top = y + 'px'; if (w != null) e.style.width = w + 'px'; if (h != null) e.style.height = h + 'px'; }
+      function draw() {
+        if (!ov) return;
+        var m = mixEl(), el = A.on && find(m, A.path);
+        [ov.box, ov.tag, ov.grip, ov.w, ov.fs, ov.pt, ov.pb, ov.hh, ov.sh].forEach(function (x) { show(x, false); });
+        var pad = m && secOf(m);
+        show(ov.sz, false);
+        if (!A.on && A.mode !== 'edit' && pad) {
+          var sr = pad.getBoundingClientRect();
+          show(ov.sz, true); place(ov.sz, sr.left + sr.width / 2 - 55, sr.bottom - 13, 110); ov.sz.textContent = '⇕ ' + Math.round(sr.height) + 'px';
+        }
+        if (!A.on || !m) return;
+        if (pad) {
+          var pr = pad.getBoundingClientRect(), c = cs(pad);
+          show(ov.pt, true); place(ov.pt, pr.left + pr.width / 2 - 40, pr.top + Math.max(2, parseFloat(c.paddingTop) / 2 - 6), 80); ov.pt.textContent = '↕ ' + Math.round(parseFloat(c.paddingTop)) + 'px';
+          show(ov.pb, true); place(ov.pb, pr.left + pr.width / 2 - 40, pr.bottom - Math.max(14, parseFloat(c.paddingBottom) / 2 + 6), 80); ov.pb.textContent = '↕ ' + Math.round(parseFloat(c.paddingBottom)) + 'px';
+          ov.pt.style.height = ov.pb.style.height = '18px';
+          show(ov.sh, true); place(ov.sh, pr.left + 12, pr.bottom - 24); ov.sh.textContent = '⇕ Section ' + Math.round(pr.height) + 'px';
+        }
+        if (!el) return;
+        var r = el.getBoundingClientRect();
+        show(ov.box, true); place(ov.box, r.left - 2, r.top - 2, r.width + 4, r.height + 4);
+        show(ov.tag, true); place(ov.tag, r.left, Math.max(0, r.top - 26)); ov.tag.textContent = nameOf(el) + label();
+        if (el.parentElement !== m) { show(ov.grip, true); place(ov.grip, r.left - 30, r.top - 2); }
+        if (!phone) { show(ov.w, true); place(ov.w, r.right - 6, r.top + r.height / 2 - 20); }
+        if (hasText(el)) { show(ov.fs, true); place(ov.fs, r.right - 12, r.bottom - 12); }
+        if (el !== pad) { show(ov.hh, true); place(ov.hh, r.left + r.width / 2 - 17, r.bottom - 7); }
+      }
+      function label() { var e = E(), bits = [], hv = e[phone ? 'hM' : 'h']; if (e.w && !phone) bits.push(e.w + '/12 wide'); if (hv) bits.push(hv + 'px tall'); if (e.fs) bits.push(e.fs + 'px'); if (e.hm) bits.push('hidden on phones'); return bits.length ? ' · ' + bits.join(' · ') : ''; }
+      function hoverAt(t) {
+        if (!ov) return;
+        var m = t && t.closest && t.closest('.sg-mix');
+        if (!A.on || !m) { show(ov.hover, false); return; }
+        var el = target(t, m), r = el.getBoundingClientRect();
+        show(ov.hover, true); place(ov.hover, r.left, r.top, r.width, r.height);
+      }
+      function target(t, m) {
+        if (t.closest('svg')) t = t.closest('svg');
+        while (t.parentElement && t.parentElement !== m && INLINE.test(t.tagName)) t = t.parentElement;
+        if (t === m) t = m.firstElementChild || m;
+        return t;
+      }
+
+      // ---- dragging ----
+      function drag(h, start) {
+        h.addEventListener('pointerdown', function (e) {
+          e.preventDefault(); e.stopPropagation();
+          var api = start(e); if (!api) return;
+          h.setPointerCapture(e.pointerId);
+          var mv = function (ev) { api.move(ev); }, up = function (ev) { h.removeEventListener('pointermove', mv); h.removeEventListener('pointerup', up); h.removeEventListener('pointercancel', up); api.end(ev); };
+          h.addEventListener('pointermove', mv); h.addEventListener('pointerup', up); h.addEventListener('pointercancel', up);
+        });
+      }
+      function contentBox(par) { var r = par.getBoundingClientRect(), c = cs(par); return { left: r.left + parseFloat(c.paddingLeft) + parseFloat(c.borderLeftWidth), w: par.clientWidth - parseFloat(c.paddingLeft) - parseFloat(c.paddingRight), top: r.top, h: r.height }; }
+      function wStart(e) {
+        var el = find(mixEl(), A.path); if (!el) return null;
+        var par = el.parentElement, cb = contentBox(par), w0 = el.getBoundingClientRect().width, x0 = e.clientX, k = E().al === 'c' ? 2 : 1, cols = null;
+        show(ov.guides, true); place(ov.guides, cb.left, cb.top, cb.w, cb.h);
+        return {
+          move: function (ev) {
+            cols = Math.max(2, Math.min(12, Math.round((w0 + (ev.clientX - x0) * k) / cb.w * 12)));
+            el.style.setProperty('width', (cols / 12 * 100) + '%', 'important'); el.style.setProperty('max-width', (cols / 12 * 100) + '%', 'important'); el.style.setProperty('flex', '0 0 auto', 'important');
+            draw(); ov.tag.textContent = nameOf(el) + ' · ' + cols + ' of 12 columns';
+          },
+          end: function () { show(ov.guides, false); if (cols) setEl({ w: cols }); }
+        };
+      }
+      function fsStart(e) {
+        var el = find(mixEl(), A.path); if (!el) return null;
+        var f0 = parseFloat(cs(el).fontSize), y0 = e.clientY, fs = null;
+        return {
+          move: function (ev) {
+            fs = Math.max(12, Math.min(160, Math.round(f0 * Math.pow(2, (ev.clientY - y0) / 160))));
+            el.style.setProperty('font-size', fs + 'px', 'important'); draw(); ov.tag.textContent = nameOf(el) + ' · text ' + fs + 'px';
+          },
+          end: function () { if (fs) setEl({ fs: fs }); }
+        };
+      }
+      function padStart(k) {
+        return function (e) {
+          var m = mixEl(), pad = secOf(m); if (!pad) return null;
+          var prop = k === 't' ? 'paddingTop' : 'paddingBottom', v0 = parseFloat(cs(pad)[prop]), y0 = e.clientY, v = null, pp = pathOf(pad, m);
+          return {
+            move: function (ev) { v = Math.max(0, Math.min(320, Math.round((v0 + (ev.clientY - y0)) / 8) * 8)); pad.style.setProperty(k === 't' ? 'padding-top' : 'padding-bottom', v + 'px', 'important'); draw(); },
+            end: function () { if (v !== null) setPad(k, v, pp); }
+          };
+        };
+      }
+      // height: the selected item's (sec false) or the whole section's (sec true: the box that carries its padding).
+      // Taller sets a minimum height with the content centered; a section made shorter than its content also loses
+      // padding, evenly above and below. A photo gets exactly that height, cropped to fit.
+      var HK = function () { return phone ? 'hM' : 'h'; };
+      function hStart(sec) {
+        return function (e) {
+          var m = mixEl(), el = sec ? secOf(m) : find(m, A.path); if (!el) return null;
+          var img = el.tagName === 'IMG', y0 = e.clientY, v = null, path = pathOf(el, m), c = cs(el);
+          el.style.setProperty(img ? 'height' : 'min-height', img ? 'auto' : '0px', 'important');
+          var nat = el.getBoundingClientRect().height; el.style.removeProperty(img ? 'height' : 'min-height');
+          var h0 = el.getBoundingClientRect().height, pt = parseFloat(c.paddingTop), pb = parseFloat(c.paddingBottom), inner = Math.max(0, nat - pt - pb), pads = null;
+          return {
+            move: function (ev) {
+              v = Math.max(40, Math.min(2400, Math.round((h0 + ev.clientY - y0) / 8) * 8));
+              el.style.setProperty(img ? 'height' : 'min-height', v + 'px', 'important');
+              if (sec && v < nat) { var each = Math.max(0, Math.round((v - inner) / 2)); pads = each; el.style.setProperty('padding-top', each + 'px', 'important'); el.style.setProperty('padding-bottom', each + 'px', 'important'); }
+              else if (sec && pads !== null) { pads = null; el.style.removeProperty('padding-top'); el.style.removeProperty('padding-bottom'); }
+              draw(); ov.tag.textContent = (sec ? 'Section' : nameOf(el)) + ' · ' + v + 'px tall';
+            },
+            end: function () { if (v === null) return; setHeight(path, v, sec ? pads : undefined); }
+          };
+        };
+      }
+      // one Undo step: the height, and for a section shorter than its content its new padding
+      function setHeight(path, v, pads) {
+        setLay(function (l) {
+          l.els = l.els || {}; var e = l.els[path] || (l.els[path] = {});
+          if (v === null) delete e[HK()]; else e[HK()] = v;
+          if (!Object.keys(e).length) delete l.els[path];
+          if (pads !== undefined) { if (pads === null) { if (l.pad && l.pad.p === path) { delete l.pad.t; delete l.pad.b; } } else l.pad = { p: path, t: pads, b: pads }; }
+        });
+      }
+      function moveStart() {
+        var el = find(mixEl(), A.path); if (!el || el.parentElement === mixEl()) return null;
+        var sibs = visualSibs(el).filter(function (c) { return c !== el; }), row = rowAxis(el.parentElement), before = undefined;
+        el.style.opacity = '.45';
+        return {
+          move: function (ev) {
+            var p = row ? ev.clientX : ev.clientY;
+            before = null;
+            for (var i = 0; i < sibs.length; i++) { var r = sibs[i].getBoundingClientRect(); if (p < (row ? r.left + r.width / 2 : r.top + r.height / 2)) { before = sibs[i]; break; } }
+            var ref = before ? before.getBoundingClientRect() : sibs.length ? sibs[sibs.length - 1].getBoundingClientRect() : null;
+            if (!ref) return;
+            show(ov.drop, true);
+            if (row) place(ov.drop, (before ? ref.left : ref.right) - 2, ref.top, 4, ref.height);
+            else place(ov.drop, ref.left, (before ? ref.top : ref.bottom) - 2, ref.width, 4);
+          },
+          end: function () { el.style.opacity = ''; show(ov.drop, false); if (before !== undefined) moveTo(el, before); }
+        };
+      }
+
+      // ---- Size: one number per block, the height of the box that carries its section padding. Taller keeps the
+      // content centered; shorter takes the padding off evenly above and below. In phone view it sets phones only ----
+      var mixAt = function (i) { return A.doc && A.doc.querySelector('.sg-mix[data-mix-i="' + i + '"]'); };
+      var htCls = function (m) { return phone ? [] : [].filter.call(m.classList, function (c) { return /^sg-ht/.test(c); }); };
+      var SEC = '.sg-lib > div > div:first-child, section.blk, .sl-sec > section, .sg-mix-at > div > section';   // as heightfx.js BOX
+      // the section box and its own padding as the block draws it with no size set (no arrangement, no height preset)
+      function base(m) {
+        var sheet = A.doc.getElementById('sg-arrange'), hc = htCls(m);
+        if (sheet) sheet.disabled = true; hc.forEach(function (c) { m.classList.remove(c); });
+        var el = m.querySelector(SEC) || padOf(m) || m.querySelector('.sg-lib > div, section'), c = el && cs(el), r = el ? { el: el, pt: parseFloat(c.paddingTop), pb: parseFloat(c.paddingBottom) } : null;
+        if (sheet) sheet.disabled = false; hc.forEach(function (c) { m.classList.add(c); });
+        return r;
+      }
+      // the same box found once per page load (a section sized down to no padding is still found)
+      function secOf(m) { if (!m) return null; if (m.sgSec === undefined) { var bs = base(m); m.sgSec = bs ? bs.el : null; } return m.sgSec; }
+      // Once the section's own spacing is used up, Size squeezes what is inside: photos and photo boxes that hold their
+      // own height get an exact height (hx; hxM in phone view, cropped to fit), and boxes inside with big spacing above
+      // and below get less of it (py; pyM). Never less than the words need; a scroll scene stays at least a screen tall.
+      var XK = function () { return phone ? 'hxM' : 'hx'; }, PK = function () { return phone ? 'pyM' : 'py'; };
+      var MEDIA = /^(IMG|VIDEO|CANVAS|PICTURE)$/;
+      function inline(e, props, fn) {   // measure with some inline styles, then put the old ones back
+        var old = props.map(function (k) { return [k, e.style.getPropertyValue(k), e.style.getPropertyPriority(k)]; });
+        Object.keys(props.vals).forEach(function (k) { e.style.setProperty(k, props.vals[k], 'important'); });
+        var r = fn();
+        old.forEach(function (o) { if (o[1]) e.style.setProperty(o[0], o[1], o[2]); else e.style.removeProperty(o[0]); });
+        return r;
+      }
+      var AUTO = ['height', 'min-height']; AUTO.vals = { height: 'auto', 'min-height': '0px' };
+      var hasSticky = function (c) { return [].slice.call(c.querySelectorAll('*'), 0, 400).some(function (x) { return cs(x).position === 'sticky'; }); };
+      function squeezable(el) {
+        var out = [], vh = A.doc.defaultView.innerHeight, k0 = cs(el);
+        // in phone view the section's own spacing is squeezed here too (on computers Size sets it directly)
+        if (phone && parseFloat(k0.paddingTop) + parseFloat(k0.paddingBottom) >= 24) out.push({ e: el, p: true, pt: parseFloat(k0.paddingTop), pb: parseFloat(k0.paddingBottom) });
+        (function walk(x, d) {
+          [].forEach.call(x.children, function (c) {
+            if (/^(STYLE|SCRIPT|LINK)$/.test(c.tagName)) return;
+            var r = c.getBoundingClientRect(), k = cs(c);
+            if (r.height < 60 || /absolute|fixed/.test(k.position) || k.display === 'none') return;
+            if (MEDIA.test(c.tagName)) { if (r.height >= 120) out.push({ e: c, h: true, cur: r.height, min: 100 }); return; }
+            if (r.height >= 120 && c.querySelector('img,picture,video,canvas')) {
+              var nat = inline(c, AUTO, function () { return c.getBoundingClientRect().height; });
+              if (nat < r.height - 20) { out.push({ e: c, h: true, cur: r.height, min: Math.max(100, Math.ceil(nat), hasSticky(c) ? Math.ceil(vh * 1.2) : 0) }); return; }
+            }
+            var pt = parseFloat(k.paddingTop), pb = parseFloat(k.paddingBottom);
+            if (d < 4 && pt + pb >= 48) out.push({ e: c, p: true, pt: pt, pb: pb });
+            if (d < 8) walk(c, d + 1);
+          });
+        })(el, 0);
+        return out;
+      }
+      // k from 1 (as drawn) to 0 (as small as allowed); null puts it back as drawn
+      function squeezeAt(q, k) {
+        var e = q.e, set = function (n, x) { e.style.setProperty(n, x, 'important'); };
+        if (q.p) {
+          if (k === null) { e.style.removeProperty('padding-top'); e.style.removeProperty('padding-bottom'); if (q.pin == null) return; k = 1; }
+          var y = q.val = Math.round(Math.max(8, Math.min(q.pt, q.pb) * k));
+          set('padding-top', Math.min(q.pt, y) + 'px'); set('padding-bottom', Math.min(q.pb, y) + 'px'); return;
+        }
+        if (k === null) { ['height', 'min-height', 'overflow', 'object-fit'].forEach(function (n) { e.style.removeProperty(n); }); if (!q.pin) return; set('height', q.pin + 'px'); set('min-height', '0px'); return; }
+        var h = q.val = Math.round(Math.max(q.min, q.cur * k));
+        set('height', h + 'px'); set('min-height', '0px'); set('overflow', 'clip');
+        if (e.tagName === 'IMG') set('object-fit', 'cover');
+      }
+      function sizer(i) {
+        var m = mixAt(i), bs = m && base(m), b = blocks[i]; if (!bs) return null;
+        var el = bs.el, path = pathOf(el, m), now = Math.round(el.getBoundingClientRect().height), hc = htCls(m), v = null, pads = null, sq = null, qs = null;
+        var set = function (e, k, x) { e.style.setProperty(k, x, 'important'); };
+        // what was squeezed before is shown as drawn again while sizing
+        var els = (b.lay && b.lay.els) || {}, before = Object.keys(els).filter(function (k) { return els[k][XK()] || els[k][PK()] != null; }).map(function (k) { return find(m, k); }).filter(Boolean);
+        var sheet = A.doc.getElementById('sg-arrange');
+        if (sheet) sheet.disabled = true;
+        var drawn = before.map(function (e) { var c = cs(e); return { h: e.getBoundingClientRect().height, pt: c.paddingTop, pb: c.paddingBottom }; });
+        if (sheet) sheet.disabled = false;
+        before.forEach(function (e, k) {
+          var st = els[pathOf(e, m)];
+          if (st[XK()]) { set(e, 'height', drawn[k].h + 'px'); set(e, 'min-height', '0px'); e.sgPin = drawn[k].h; }
+          if (st[PK()] != null) { set(e, 'padding-top', drawn[k].pt); set(e, 'padding-bottom', drawn[k].pb); }
+        });
+        var c0 = cs(el), padNow = parseFloat(c0.paddingTop) + parseFloat(c0.paddingBottom);
+        hc.forEach(function (c) { m.classList.remove(c); });
+        set(el, 'min-height', '0px'); set(el, 'padding-top', '0px'); set(el, 'padding-bottom', '0px');
+        var inner = el.getBoundingClientRect().height, nat = inner + bs.pt + bs.pb;
+        var floor = Math.ceil(inner + (phone ? padNow : 0));   // as short as it goes with nothing inside squeezed
+        ['min-height', 'padding-top', 'padding-bottom'].forEach(function (k) { el.style.removeProperty(k); });
+        m.querySelectorAll('.sg-lib > div, .sl-sec > section, .sg-mix-at > div > section').forEach(function (x) { if (x !== el) set(x, 'min-height', '0px'); });
+        var top = Math.max(SZ_MAX, Math.ceil(nat / 100) * 100 + 400);
+        // what can be squeezed, found the first time it is needed (measured with the section at its shortest)
+        function list() {
+          if (qs) return qs;
+          set(el, 'min-height', '0px');
+          qs = squeezable(el); qs.forEach(function (q) { q.pin = q.p ? (before.indexOf(q.e) >= 0 ? 1 : null) : (q.e.sgPin || 0); });
+          return qs;
+        }
+        function squeeze(v) {
+          var all = list(); if (!all.length) return null;
+          set(el, 'min-height', '0px');
+          var H = function () { return el.getBoundingClientRect().height; };
+          var at = function (k) { all.forEach(function (q) { squeezeAt(q, k); }); return H(); };
+          var lo = 0, hi = 1;
+          if (at(0) > v) hi = 0;
+          else for (var n = 0; n < 9; n++) { var mid = (lo + hi) / 2; if (at(mid) > v) hi = mid; else lo = mid; }
+          var k = hi === 0 ? 0 : lo, out = {};
+          at(k);
+          all.forEach(function (q) {
+            var p = pathOf(q.e, m);
+            if (q.p) { if (q.val < Math.min(q.pt, q.pb) - 1) (out[p] = out[p] || {})[PK()] = q.val; else squeezeAt(q, null); }
+            else if (q.val < q.cur - 1) (out[p] = out[p] || {})[XK()] = Math.max(40, q.val); else squeezeAt(q, null);
+          });
+          return { got: Math.ceil(H()), sq: Object.keys(out).length ? out : null };
+        }
+        return {
+          now: now, top: top,
+          move: function (nv) {
+            v = Math.max(SZ_MIN, Math.min(top, Math.round(nv)));
+            if (!phone) { pads = v < nat ? Math.max(0, Math.round((v - inner) / 2)) : null; set(el, 'padding-top', (pads === null ? bs.pt : pads) + 'px'); set(el, 'padding-bottom', (pads === null ? bs.pb : pads) + 'px'); }
+            sq = null;
+            if (v < floor) { var r = squeeze(v); if (r) { sq = r.sq; v = Math.max(v, r.got); } else v = floor; }
+            else if (qs) qs.forEach(function (q) { squeezeAt(q, null); });
+            set(el, 'min-height', v + 'px'); set(el, 'box-sizing', 'border-box'); set(el, 'align-content', 'center');
+            draw();
+            return v;
+          },
+          end: function () { if (v === null) { hc.forEach(function (c) { m.classList.add(c); }); return; } setSize(i, path, v, pads, sq); }
+        };
+      }
+      // one Undo step. A size on a computer also replaces the block's height preset; Auto (v null) clears it all.
+      // sq: what was squeezed inside, by path ({ hx } or { py }), replacing what was squeezed before.
+      function setSize(i, path, v, pads, sq) {
+        change(function () {
+          var b = blocks[i], l = b.lay || (b.lay = {}); l.els = l.els || {};
+          Object.keys(l.els).forEach(function (k) { delete l.els[k][XK()]; delete l.els[k][PK()]; if (!Object.keys(l.els[k]).length) delete l.els[k]; });
+          Object.keys(sq || {}).forEach(function (k) { var e = l.els[k] || (l.els[k] = {}); Object.keys(sq[k]).forEach(function (x) { e[x] = sq[k][x]; }); });
+          var e = l.els[path] || (l.els[path] = {});
+          if (v === null) delete e[HK()]; else e[HK()] = v;
+          if (!Object.keys(e).length) delete l.els[path];
+          if (!phone) {
+            delete b.height;
+            if (v !== null && pads !== null) l.pad = { p: path, t: pads, b: pads };
+            else if (l.pad && l.pad.p === path) { delete l.pad.t; delete l.pad.b; }
+          }
+          tidy(b); sel = i;
+        }, true);
+      }
+      function secDrag(e) {
+        var s = sizer(sel); if (!s) return null;
+        var y0 = e.clientY;
+        return { move: function (ev) { s.move(Math.round((s.now + ev.clientY - y0) / 10) * 10); }, end: function () { s.end(); } };
+      }
+      // what the Size control shows: v the size set (or 0), preset the old height preset's name, now the height on screen
+      A.sizeOf = function (i) {
+        var m = mixAt(i), el = secOf(m), b = blocks[i]; if (!el || !b) return null;
+        var e = ((b.lay && b.lay.els) || {})[pathOf(el, m)] || {}, p = !phone && b.height && HTS.filter(function (o) { return o[0] === b.height; })[0];
+        return { v: e[HK()] || 0, preset: p ? p[1] : '', now: Math.round(el.getBoundingClientRect().height) };
+      };
+      A.sizer = sizer;
+      A.sizeStep = function (i, d) { var s = sizer(i), cur = A.sizeOf(i); if (!s) return; s.move(Math.round(((cur && cur.v) || s.now) / 10) * 10 + d); s.end(); };
+      A.sizeAuto = function (i) { var m = mixAt(i), el = secOf(m); if (el) setSize(i, pathOf(el, m), null, null, null); };
+
+      A.attach = function (doc) {
+        A.doc = doc; ov = null; build();
+        var win = doc.defaultView;
+        win.addEventListener('scroll', draw, { passive: true }); win.addEventListener('resize', draw);
+        doc.addEventListener('mouseover', function (e) { hoverAt(e.target); });
+        doc.addEventListener('keydown', function (e) { if (e.key === 'Escape' && A.path) { A.path = null; draw(); A.panel(); } });
+        setTimeout(function () { draw(); A.panel(); syncSizes(); }, 60); setTimeout(function () { draw(); syncSizes(); }, 700);
+      };
+      A.pick = function (e, m) {
+        var i = +m.dataset.mixI;
+        if (A.focal && i === sel) {
+          var el = find(m, A.path), img = el && (el.tagName === 'IMG' ? el : el.querySelector('img'));
+          if (img) { var r = img.getBoundingClientRect(); A.focal = false; setEl({ fx: Math.round(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * 100), fy: Math.round(Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)) * 100) }); return; }
+        }
+        A.focal = false;
+        if (i !== sel) { select(i, false); }
+        A.path = pathOf(target(e.target, m), m);
+        draw(); A.panel();
+        var li = list.querySelector('.blk.on'); if (li) li.scrollIntoView({ block: 'nearest' });
+      };
+      A.blockChanged = function () { A.path = null; A.focal = false; draw(); A.panel(); };
+      A.redraw = function () { draw(); A.panel(); };
+      A.setOn = function (on) { A.on = on; if (!on) { A.path = null; A.focal = false; } if (ov) show(ov.hover, false); draw(); A.panel(); };
+
+      // ---- the panel on the left: the same changes as the handles, with buttons (and for keyboards) ----
+      A.panel = function () {
+        panelEl.hidden = !A.on;
+        if (!A.on) return;
+        var m = mixEl(), el = find(m, A.path), b = blocks[sel], l = L(), h = '';
+        h += '<h2>Arrange</h2>';
+        if (!b) { panelEl.innerHTML = h + '<p class="note">Add a block first.</p>'; return; }
+        if (!el) {
+          h += '<p class="note">Click anything in the preview: a heading, text, photo, button, or a whole group. Then drag its blue handles: the right edge sets the width on a 12-column grid, the round A sets the text size, the cross moves it among its neighbours. The bars at the top and bottom of the section set its spacing, and the dark "Section" handle at its bottom edge makes the whole section taller or shorter. A selected item has its own ⇕ handle for its height.</p>';
+        } else {
+          var e = E(), cbw = contentBox(el.parentElement).w, wNow = e.w || Math.max(2, Math.min(12, Math.round(el.getBoundingClientRect().width / cbw * 12)));
+          var fsNow = e.fs || Math.round(parseFloat(cs(el).fontSize));
+          h += '<div class="what"><b>' + esc(nameOf(el)) + '</b> <small>in ' + esc(info(b).label) + '</small></div>';
+          if (el.parentElement !== m) h += '<div class="row"><span></span><button type="button" class="ui-btn sm" data-x="parent">Select the box around it</button></div>';
+          h += '<div class="row"><span>Width</span><button type="button" class="ui-btn sm" data-x="w-" aria-label="Narrower"' + (phone ? ' disabled' : '') + '>&minus;</button><output>' + (phone ? 'full' : wNow + '/12') + '</output><button type="button" class="ui-btn sm" data-x="w+" aria-label="Wider"' + (phone ? ' disabled' : '') + '>+</button>' + (e.w ? '<button type="button" class="ui-btn sm" data-x="w0">Auto</button>' : '') + '</div>';
+          if (phone) h += '<p class="sub">Widths apply on tablets and computers. On phones everything is full width.</p>';
+          h += '<div class="row"><span>Align</span>' + [['l', 'Left'], ['c', 'Center'], ['r', 'Right']].map(function (a) { return '<button type="button" class="ui-btn sm" data-x="al" data-v="' + a[0] + '" aria-pressed="' + (e.al === a[0]) + '">' + a[1] + '</button>'; }).join('') + '</div>';
+          if (hasText(el)) h += '<div class="row"><span>Text size</span><button type="button" class="ui-btn sm" data-x="fs-" aria-label="Smaller text">&minus;</button><output>' + fsNow + 'px</output><button type="button" class="ui-btn sm" data-x="fs+" aria-label="Bigger text">+</button>' + (e.fs ? '<button type="button" class="ui-btn sm" data-x="fs0">Auto</button>' : '') + '</div>';
+          var hv = e[HK()];
+          h += '<div class="row"><span>Height</span><button type="button" class="ui-btn sm" data-x="h-" aria-label="Shorter">&minus;</button><output>' + (hv ? hv + 'px' : 'auto') + '</output><button type="button" class="ui-btn sm" data-x="h+" aria-label="Taller">+</button>' + (hv ? '<button type="button" class="ui-btn sm" data-x="h0">Auto</button>' : '') + '</div>';
+          if (hasImg(el)) {
+            h += '<div class="row"><span>Photo</span><select data-x="sh" aria-label="Photo shape">' + [['', 'Original shape'], ['sq', 'Square'], ['tall', 'Tall'], ['wide', 'Wide'], ['circle', 'Circle']].map(function (o) { return '<option value="' + o[0] + '"' + ((e.sh || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
+            h += '<button type="button" class="ui-btn sm" data-x="focal" aria-pressed="' + A.focal + '">Set focus point</button>' + (e.fx != null ? '<button type="button" class="ui-btn sm" data-x="focal0">Centre</button>' : '') + '</div>';
+            if (A.focal) h += '<p class="sub">Now click the spot in the photo that must stay in view.</p>';
+          }
+          if (el.parentElement !== m) h += '<div class="row"><span>Order</span><button type="button" class="ui-btn sm" data-x="up">Move earlier</button><button type="button" class="ui-btn sm" data-x="down">Move later</button></div>' + (phone ? '<p class="sub">In phone view, moves change the order on phones only.</p>' : '');
+          h += '<div class="row"><span></span><label><input type="checkbox" data-x="hm"' + (e.hm ? ' checked' : '') + '> Hide on phones</label></div>';
+          if (Object.keys(e).length) h += '<div class="row"><span></span><button type="button" class="ui-btn sm" data-x="reset">Reset this item</button></div>';
+        }
+        var pad = m && secOf(m);
+        h += '<hr>';
+        if (pad) {
+          var pc = cs(pad);
+          h += '<div class="row"><span>Space above</span><button type="button" class="ui-btn sm" data-x="pt-" aria-label="Less space above">&minus;</button><output>' + Math.round(parseFloat(pc.paddingTop)) + 'px</output><button type="button" class="ui-btn sm" data-x="pt+" aria-label="More space above">+</button></div>';
+          var sv = (A.sizeOf(sel) || {}).v;
+          h += '<div class="row"><span>Section height</span><button type="button" class="ui-btn sm" data-x="sh-" aria-label="Shorter section">&minus;</button><output>' + (sv ? sv + 'px' : Math.round(pad.getBoundingClientRect().height) + 'px') + '</output><button type="button" class="ui-btn sm" data-x="sh+" aria-label="Taller section">+</button>' + (sv ? '<button type="button" class="ui-btn sm" data-x="sh0">Auto</button>' : '') + '</div>';
+          if (phone) h += '<p class="sub">In phone view, heights change phones only.</p>';
+          h += '<div class="row"><span>Space below</span><button type="button" class="ui-btn sm" data-x="pb-" aria-label="Less space below">&minus;</button><output>' + Math.round(parseFloat(pc.paddingBottom)) + 'px</output><button type="button" class="ui-btn sm" data-x="pb+" aria-label="More space below">+</button></div>';
+        }
+        h += '<div class="row"><span></span><label><input type="checkbox" data-x="bhm"' + (l.hm ? ' checked' : '') + '> Hide this whole block on phones</label></div>';
+        if (b.lay) h += '<div class="row"><span></span><button type="button" class="ui-btn sm" data-x="breset">Reset this block’s arrangement</button></div>';
+        panelEl.innerHTML = h;
+      };
+      panelEl.addEventListener('click', function (ev) {
+        var x = ev.target.closest('[data-x]'); if (!x || x.tagName === 'SELECT') return;
+        var a = x.dataset.x, m = mixEl(), el = find(m, A.path), e = E();
+        if (a === 'hm') return setEl({ hm: x.checked || null });
+        if (a === 'bhm') return setLay(function (l) { if (x.checked) l.hm = true; else delete l.hm; });
+        if (a === 'breset') return change(function () { delete blocks[sel].lay; }, true);
+        var pad = m && secOf(m);
+        if (/^sh[-+0]$/.test(a) && pad) {
+          if (a === 'sh0') return A.sizeAuto(sel);
+          return A.sizeStep(sel, a === 'sh+' ? 40 : -40);
+        }
+        if (/^p[tb][-+]$/.test(a) && pad) { var k = a[1], v = parseFloat(cs(pad)[k === 't' ? 'paddingTop' : 'paddingBottom']); return setPad(k, Math.max(0, Math.min(320, Math.round(v / 8) * 8 + (a[2] === '+' ? 8 : -8))), pathOf(pad, m)); }
+        if (!el) return;
+        if (a === 'parent' && el.parentElement !== m) { A.path = pathOf(el.parentElement, m); draw(); return A.panel(); }
+        if (a === 'w-' || a === 'w+') { var w = e.w || Math.round(el.getBoundingClientRect().width / contentBox(el.parentElement).w * 12); return setEl({ w: Math.max(2, Math.min(12, w + (a === 'w+' ? 1 : -1))) }); }
+        if (a === 'w0') return setEl({ w: null });
+        if (a === 'h-' || a === 'h+') { var hc = e[HK()] || Math.round(el.getBoundingClientRect().height); return setHeight(A.path, Math.max(40, Math.min(2400, Math.round(hc / 20) * 20 + (a === 'h+' ? 20 : -20)))); }
+        if (a === 'h0') return setHeight(A.path, null);
+        if (a === 'al') return setEl({ al: e.al === x.dataset.v ? null : x.dataset.v });
+        if (a === 'fs-' || a === 'fs+') { var f = e.fs || Math.round(parseFloat(cs(el).fontSize)); return setEl({ fs: Math.max(12, Math.min(160, Math.round(f * (a === 'fs+' ? 1.1 : 1 / 1.1)))) }); }
+        if (a === 'fs0') return setEl({ fs: null });
+        if (a === 'focal') { A.focal = !A.focal; return A.panel(); }
+        if (a === 'focal0') return setEl({ fx: null, fy: null });
+        if (a === 'up' || a === 'down') {
+          var sibs = visualSibs(el), i = sibs.indexOf(el);
+          if (a === 'up' && i > 0) moveTo(el, sibs[i - 1]);
+          if (a === 'down' && i < sibs.length - 1) moveTo(el, sibs[i + 2] || null);
+          return;
+        }
+        if (a === 'reset') { var all = {}; Object.keys(e).forEach(function (k) { all[k] = null; }); return setEl(all); }
+      });
+      panelEl.addEventListener('change', function (ev) { if (ev.target.dataset.x === 'sh') setEl({ sh: ev.target.value || null }); });
+      document.getElementById('modeSeg').addEventListener('click', function (ev) {
+        var b = ev.target.closest('button'); if (!b) return;
+        this.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+        A.mode = b.dataset.v; A.setOn(b.dataset.v === 'arrange');
+      });
+      return A;
+    })();
+
+    // ---- Edit mode: type on the words in the preview, or click a photo to change it. Saved straight to the site's
+    // own boxes (the block's design is unchanged); the server matches the words to the one box that holds them ----
+    var ed = (function () {
+      var E = { on: false }, cur = null, bar = null;
+      var INLINE = /^(EM|STRONG|B|I|SPAN|BR|SMALL|MARK|U)$/;
+      var css = '.sg-edmode .sg-mix:hover::after{display:none}.sg-edmode .sg-ed-hover{outline:2px dashed #2563eb !important;outline-offset:3px;cursor:text !important}' +
+        '.sg-edmode img.sg-ed-hover{cursor:pointer !important}.sg-ed-on{outline:2px solid #2563eb !important;outline-offset:4px;caret-color:#2563eb}' +
+        '.sg-ed-bar{position:absolute;z-index:2147483001;display:flex;flex-wrap:wrap;gap:4px;padding:4px;max-width:min(560px,calc(100vw - 16px));background:#0f172a;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.25);font:600 12.5px system-ui,sans-serif}' +
+        '.sg-ed-bar button{all:unset;cursor:pointer;color:#fff;padding:6px 10px;border-radius:7px;line-height:1}.sg-ed-bar button:hover,.sg-ed-bar button:focus-visible{background:#334155}.sg-ed-bar .hint{color:#94a3b8;padding:6px}' +
+        '.sg-ed-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;width:100%;max-height:240px;overflow:auto;padding:4px}.sg-ed-grid button{padding:0;border-radius:6px;overflow:hidden;aspect-ratio:4/3}.sg-ed-grid img{width:100%;height:100%;object-fit:cover;display:block}';
+      var file = document.createElement('input'); file.type = 'file'; file.accept = 'image/*'; file.hidden = true; document.body.appendChild(file);
+      var famOf = function (m) { var b = blocks[+m.dataset.mixI]; return (b && b.f) || m.dataset.mixF || ''; };
+      // words that one element shows on its own (only inline styling inside), so they can be typed on
+      function wordsEl(t) {
+        for (var n = t, d = 0; n && n.tagName !== 'BODY' && d < 4; n = n.parentElement, d++) {
+          if (n.classList && n.classList.contains('sg-mix')) return null;
+          if (!/^(H1|H2|H3|H4|H5|H6|P|LI|A|SPAN|FIGCAPTION|BLOCKQUOTE|DT|DD|SMALL|STRONG|LABEL|BUTTON|DIV)$/.test(n.tagName)) continue;
+          var txt = (n.textContent || '').trim(); if (!txt || txt.length > 1600) continue;
+          if (Array.prototype.every.call(n.querySelectorAll('*'), function (c) { return INLINE.test(c.tagName) && !c.hasAttribute('aria-hidden'); })) return n;
+          return null;
+        }
+        return null;
+      }
+      // the words as typed: a line break the page draws (<br>) counts as one
+      function textOf(node) {
+        var out = '';
+        (function walk(n) { n.childNodes.forEach(function (c) { if (c.nodeType === 3) out += c.nodeValue; else if (c.tagName === 'BR') out += '\n'; else walk(c); }); })(node);
+        return out.replace(/\u00a0/g, ' ');
+      }
+      function closeBar() { if (bar) { bar.remove(); bar = null; } }
+      function placeBar(doc, node) {
+        var r = node.getBoundingClientRect(), win = doc.defaultView;
+        bar.style.top = Math.max(win.scrollY + 4, r.top + win.scrollY - bar.offsetHeight - 10) + 'px';
+        bar.style.left = Math.max(4, Math.min(r.left + win.scrollX, win.scrollX + win.innerWidth - bar.offsetWidth - 8)) + 'px';
+      }
+      function save(change, back) {
+        say('Saving…');
+        return post('/blocks/edit', change).then(function (d) {
+          if (!d.ok) { say(d.error || 'Not saved.', 'err'); refresh(true); return false; }
+          if (d.photos) D.photos = d.photos;
+          hist.push({ b: JSON.stringify(blocks), s: sel, edit: back }); if (hist.length > 60) hist.shift();
+          document.getElementById('undoBtn').disabled = false;
+          say('Saved to the site. Undo puts it back.', 'ok');
+          refresh(true); return true;
+        });
+      }
+      function endWords(keep) {
+        if (!cur) return;
+        var c = cur; cur = null; closeBar();
+        c.node.removeAttribute('contenteditable'); c.node.classList.remove('sg-ed-on');
+        var now = textOf(c.node).trim();
+        if (!keep) { refresh(true); return; }
+        if (now === c.orig.trim()) return;
+        save({ kind: 'text', old: c.orig, new: now, fam: c.fam }, { kind: 'text', old: now, new: c.orig.trim(), fam: c.fam });
+      }
+      function startWords(doc, e, node, m) {
+        var orig = textOf(node);
+        node.contentEditable = 'plaintext-only'; if (node.contentEditable !== 'plaintext-only') node.contentEditable = 'true';
+        node.classList.remove('sg-ed-hover'); node.classList.add('sg-ed-on');
+        cur = { node: node, orig: orig, fam: famOf(m), doc: doc };
+        bar = doc.createElement('div'); bar.className = 'sg-ed-bar';
+        bar.innerHTML = '<span class="hint">Typing on the page. Enter to finish, Esc to cancel</span><button type="button" data-e="done">Done</button>';
+        doc.body.appendChild(bar); placeBar(doc, node);
+        bar.addEventListener('mousedown', function (ev) { ev.preventDefault(); });
+        bar.addEventListener('click', function (ev) { if (ev.target.closest('[data-e=done]')) { ev.preventDefault(); endWords(true); } });
+        node.focus();
+        var range = doc.caretRangeFromPoint ? doc.caretRangeFromPoint(e.clientX, e.clientY) : null;
+        if (range && node.contains(range.startContainer)) { var s2 = doc.defaultView.getSelection(); s2.removeAllRanges(); s2.addRange(range); }
+        node.addEventListener('keydown', function k(ev) {
+          if (!cur || cur.node !== node) return node.removeEventListener('keydown', k);
+          if (ev.key === 'Escape') { ev.preventDefault(); endWords(false); }
+          else if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); endWords(true); }
+        });
+        node.addEventListener('paste', function (ev) { ev.preventDefault(); doc.execCommand('insertText', false, (ev.clipboardData && ev.clipboardData.getData('text/plain')) || ''); });
+        node.addEventListener('blur', function () { setTimeout(function () { if (cur && cur.node === node && doc.activeElement !== node) endWords(true); }, 0); });
+      }
+      function startPhoto(doc, img, m) {
+        var old = img.getAttribute('src') || '', fam = famOf(m);
+        img.classList.add('sg-ed-on');
+        bar = doc.createElement('div'); bar.className = 'sg-ed-bar';
+        var others = D.photos.filter(function (u) { return u !== old; });
+        bar.innerHTML = '<span class="hint">Photo</span><button type="button" data-e="up">Upload a new photo</button>' +
+          (others.length ? '<button type="button" data-e="pick" aria-expanded="false">Use one of this site\'s photos</button>' : '') + '<button type="button" data-e="close">Done</button>';
+        doc.body.appendChild(bar); placeBar(doc, img);
+        var use = function (u) { closeBar(); img.classList.remove('sg-ed-on'); save({ kind: 'photo', old: old, new: u, fam: fam }, { kind: 'photo', old: u, new: old, fam: fam }); };
+        bar.addEventListener('click', function (ev) {
+          var b = ev.target.closest('button'); if (!b) return;
+          ev.preventDefault(); ev.stopPropagation();
+          if (b.dataset.u != null) return use(others[+b.dataset.u]);
+          if (b.dataset.e === 'close') { closeBar(); img.classList.remove('sg-ed-on'); return; }
+          if (b.dataset.e === 'pick') {
+            var g = bar.querySelector('.sg-ed-grid');
+            if (g) { g.remove(); b.setAttribute('aria-expanded', 'false'); return placeBar(doc, img); }
+            g = doc.createElement('div'); g.className = 'sg-ed-grid';
+            others.forEach(function (u, i) { var x = doc.createElement('button'); x.type = 'button'; x.dataset.u = i; x.title = 'Use this photo'; var im = doc.createElement('img'); im.src = u; im.alt = ''; im.loading = 'lazy'; x.appendChild(im); g.appendChild(x); });
+            bar.appendChild(g); b.setAttribute('aria-expanded', 'true'); return placeBar(doc, img);
+          }
+          if (b.dataset.e === 'up') {
+            file.onchange = function () {
+              var f = file.files[0]; if (!f) return;
+              b.textContent = 'Uploading…';
+              var fd = new FormData(); fd.append('image', f);
+              fetch('/sites/' + siteId + '/upload', { method: 'POST', body: fd }).then(function (r) { return r.json(); }).then(function (d) {
+                file.value = '';
+                if (d.ok) use(d.url); else { b.textContent = 'Upload a new photo'; say(d.error || 'Upload failed.', 'err'); }
+              }).catch(function () { b.textContent = 'Upload a new photo'; say('Upload failed.', 'err'); });
+            };
+            file.click();
+          }
+        });
+      }
+      E.typing = function (t) { return !!(cur && cur.node.contains(t)); };
+      E.click = function (e, m) {
+        var doc = e.target.ownerDocument;
+        if (cur) endWords(true);
+        if (bar) { closeBar(); doc.querySelectorAll('.sg-ed-on').forEach(function (x) { x.classList.remove('sg-ed-on'); }); }
+        var img = e.target.closest('img') || (e.target.closest('figure, picture') && e.target.closest('figure, picture').querySelector('img'));
+        if (img && m.contains(img)) return startPhoto(doc, img, m);
+        var n = wordsEl(e.target);
+        if (n) return startWords(doc, e, n, m);
+        say('That part has no words or photo of its own to change here.', '');
+      };
+      E.attach = function (doc) {
+        var st = doc.createElement('style'); st.textContent = css; doc.head.appendChild(st);
+        if (E.on) doc.body.classList.add('sg-edmode');
+        var last = null;
+        doc.addEventListener('mouseover', function (e) {
+          if (!E.on || cur) return;
+          if (last) last.classList.remove('sg-ed-hover');
+          last = e.target.closest('img') || wordsEl(e.target); if (last) last.classList.add('sg-ed-hover');
+        });
+        doc.addEventListener('mouseout', function () { if (last) last.classList.remove('sg-ed-hover'); last = null; });
+      };
+      E.set = function (on) {
+        E.on = on; if (!on) { endWords(true); closeBar(); }
+        try { frame.contentDocument.body.classList.toggle('sg-edmode', on); } catch (e) {}
+        if (on) say('Edit: click words to type on them, or a photo to change it. Changes save to the site right away.', '');
+      };
+      document.getElementById('modeSeg').addEventListener('click', function (ev) { var b = ev.target.closest('button'); if (b) E.set(b.dataset.v === 'edit'); });
+      return E;
+    })();
+
+    // ---- library ----
+    var grid = document.getElementById('grid'), chips = document.getElementById('typeChips'), srcSel = document.getElementById('srcSel'), showEmpty = document.getElementById('showEmpty');
+    var curType = (blocks[sel] && info(blocks[sel]).type) || 'hero';
+    var counts = {}; D.catalog.forEach(function (c) { if (!c.empty) counts[c.type] = (counts[c.type] || 0) + 1; });
+    chips.innerHTML = Object.keys(D.types).map(function (t) { return '<button type="button" data-t="' + t + '" aria-pressed="false">' + esc(D.types[t]) + ' <small>' + (counts[t] || 0) + '</small></button>'; }).join('');
+    chips.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) setType(b.dataset.t); });
+    srcSel.addEventListener('change', drawGrid); showEmpty.addEventListener('change', drawGrid);
+    function setType(t) { if (t === curType && grid.childElementCount) return; curType = t; drawGrid(); }
+    function drawGrid() {
+      chips.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x.dataset.t === curType)); });
+      var src = srcSel.value, shown = D.catalog.filter(function (c) { return c.type === curType && (!src || c.k === src) && (showEmpty.checked || !c.empty); });
+      grid.scrollTop = 0;
+      queue = []; busy = 0; gen++;   // thumbnails still loading in the old list never finish
+      grid.innerHTML = shown.length ? shown.map(function (c) {
+        return '<article class="card" data-key="' + esc(key(c)) + '">' +
+          '<div class="thumb"><span class="ph">Loading preview…</span></div>' +
+          '<div class="m"><b>' + esc(c.label) + '</b><div class="row"><span class="tag ' + c.k + '">' + esc(c.source) + '</span>' + (c.empty ? '<span class="tag need">Needs content</span>' : '') +
+          '<span class="acts"><button type="button" class="ui-btn sm" data-a="swap">Swap in</button><button type="button" class="ui-btn sm primary" data-a="add">Add below</button></span></div>' +
+          (c.hint ? '<span class="hint">' + esc(c.hint) + '</span>' : '') + '</div></article>';
+      }).join('') : curType === 'own' ? '<p class="empty-note">No content blocks yet. Add one in the <a href="/sites/' + siteId + '/edit">editor</a> (Content tab, Content blocks, set to the home page) and it shows up here.</p>'
+        : '<p class="empty-note">No designs of this kind from this source have content to show on this site yet.</p>';
+      grid.querySelectorAll('.thumb').forEach(function (t) { io.observe(t); });
+      syncButtons();
+    }
+    function syncButtons() {
+      grid.querySelectorAll('[data-a=swap]').forEach(function (b) { b.disabled = sel < 0; b.title = sel < 0 ? 'Select a block on the page first' : 'Replace the selected block'; });
+      grid.querySelectorAll('[data-a=add]').forEach(function (b) { b.disabled = blocks.length >= MAX; });
+    }
+    grid.addEventListener('click', function (e) {
+      var a = e.target.closest('[data-a]'); if (!a) return;
+      var p = a.closest('.card').dataset.key.split('|'), b = { k: p[0], f: p[1], v: p[2] };
+      // a content block is on the page once: adding it again selects it
+      var already = b.k === 'blk' ? blocks.findIndex(function (x) { return x.k === 'blk' && x.v === b.v; }) : -1;
+      if (already >= 0) { select(already, true); say('That block is already on the page (selected).'); return; }
+      if (a.dataset.a === 'add' && blocks.length < MAX) change(function () { var at = sel < 0 ? blocks.length : sel + 1; blocks.splice(at, 0, b); sel = at; });
+      if (a.dataset.a === 'swap' && sel >= 0) change(function () { if (blocks[sel].own && b.k === 'sl') b.own = true; blocks[sel] = b; });
+      setTimeout(function () { mark(true); }, 900);
+    });
+    // thumbnails load as they scroll into view, three at a time
+    var queue = [], busy = 0, gen = 0;
+    function pump() {
+      while (busy < 3 && queue.length) {
+        var t = queue.shift(); if (!t.isConnected) continue;
+        busy++;
+        var p = t.parentNode.dataset.key.split('|'), f = document.createElement('iframe');
+        f.setAttribute('tabindex', '-1'); f.setAttribute('aria-hidden', 'true'); f.title = '';
+        f.style.setProperty('--s', String(t.clientWidth / 1280));
+        var g = gen, once = false;
+        var done = function () { if (once) return; once = true; if (g === gen) { busy--; pump(); } };
+        f.addEventListener('load', function () { var ph = t.querySelector('.ph'); if (ph) ph.remove(); done(); });
+        setTimeout(done, 8000);
+        f.src = url([{ k: p[0], f: p[1], v: p[2] }], true);
+        t.appendChild(f);
+      }
+    }
+    var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { io.unobserve(en.target); queue.push(en.target); } }); pump(); }, { root: null, rootMargin: '300px' });
+
+    // ---- save ----
+    function post(path, body) {
+      return fetch('/sites/' + siteId + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body || {}) })
+        .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'Something went wrong.' }; }); });
+    }
+    document.getElementById('saveBtn').addEventListener('click', function () {
+      if (!blocks.length) return say('Add at least one block first.', 'err');
+      var btn = this; btn.disabled = true; say('Saving…');
+      post('/blocks/save', { blocks: blocks }).then(function (d) {
+        btn.disabled = false;
+        if (!d.ok) return say(d.error || 'Not saved.', 'err');
+        savedState = JSON.stringify(blocks);
+        say('Saved. The home page now uses these ' + d.count + ' blocks. The design before is in Version history.', 'ok');
+      }, function () { btn.disabled = false; say('Not saved: the connection dropped. Try again.', 'err'); });
+    });
+    window.addEventListener('beforeunload', function (e) { if (savedState !== null ? dirty() : hist.length) { e.preventDefault(); e.returnValue = ''; } });
+    document.getElementById('resetBtn').addEventListener('click', function () {
+      if (JSON.stringify(blocks) === first) return;
+      change(function () { blocks = JSON.parse(first); sel = blocks.length ? 0 : -1; }, false);
+    });
+
+    // ---- saved blocks and recipes ----
+    var savedEl = document.getElementById('saved');
+    function drawSaved() {
+      document.getElementById('savedEmpty').hidden = !!D.saved.length;
+      savedEl.innerHTML = D.saved.map(function (r) {
+        return '<li data-id="' + r.id + '"><span title="' + esc(r.blocks.map(function (b) { return info(b).label; }).join(', ')) + '">' + esc(r.name) + ' <small>' + r.blocks.length + (r.blocks.length === 1 ? ' block' : ' blocks') + '</small></span>' +
+          '<button type="button" class="ui-btn sm" data-a="add">Add</button>' + (r.blocks.length > 1 ? '<button type="button" class="ui-btn sm" data-a="use">Use</button>' : '') +
+          '<button type="button" class="ui-btn sm" data-a="del" aria-label="Delete ' + esc(r.name) + '">&times;</button></li>';
+      }).join('');
+    }
+    savedEl.addEventListener('click', function (e) {
+      var a = e.target.closest('[data-a]'); if (!a) return;
+      var id = +a.closest('li').dataset.id, r = D.saved.filter(function (x) { return x.id === id; })[0]; if (!r) return;
+      var bl = r.blocks.map(strip);
+      if (a.dataset.a === 'add') change(function () { var at = sel < 0 ? blocks.length : sel + 1; bl = bl.slice(0, MAX - blocks.length); blocks.splice.apply(blocks, [at, 0].concat(bl)); sel = at; });
+      if (a.dataset.a === 'use') change(function () { blocks = bl; sel = 0; }, false);
+      if (a.dataset.a === 'del') post('/blocks/recipes/' + id + '/delete').then(function () { D.saved = D.saved.filter(function (x) { return x.id !== id; }); drawSaved(); });
+    });
+    function saveRecipe(bl, dflt) {
+      if (!bl.length) return say('Nothing to save yet.', 'err');
+      var name = prompt('Name it', dflt); if (name === null) return;
+      post('/blocks/recipes', { blocks: bl, name: name }).then(function (d) {
+        if (!d.ok) return say(d.error || 'Not saved.', 'err');
+        D.saved.unshift({ id: d.id, name: d.name, blocks: bl }); drawSaved(); say('Saved "' + d.name + '". It is available on every site.', 'ok');
+      });
+    }
+    document.getElementById('saveRecipeBtn').addEventListener('click', function () { saveRecipe(blocks, '<%= site.name.replace(/[\\'"<>]/g, '') %> home'); });
+    document.getElementById('saveBlockBtn').addEventListener('click', function () { if (sel >= 0) saveRecipe([blocks[sel]], info(blocks[sel]).label); });
+
+    // ---- look packs and Surprise me (lookpacks.js): they only change the blocks' effects ----
+    var PACKS = <%- JSON.stringify(lookPacks.PACKS) %>;
+    var applyPack = <%- lookPacks.applyPack.toString() %>;
+    var surprise = <%- lookPacks.surprise.toString() %>;
+    document.getElementById('packSel').addEventListener('change', function () {
+      var pk = PACKS.filter(function (x) { return x.id === this.value; }, this)[0]; this.value = ''; if (!pk || !blocks.length) return;
+      change(function () { blocks = applyPack(blocks, pk); }, true);
+      say('Applied "' + pk.name + '": ' + pk.hint + '. Undo puts it back.', 'ok');
+    });
+    document.getElementById('surpriseBtn').addEventListener('click', function () {
+      if (!blocks.length) return;
+      change(function () { blocks = surprise(blocks, Math.random); }, true);
+      say('A new mix of effects. Press again for another, or Undo.', 'ok');
+    });
+
+    drawList(); drawSaved(); drawGrid();
+  })();
+  </script>
+</body>
+</html>

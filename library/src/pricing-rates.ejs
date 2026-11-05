@@ -1,0 +1,24 @@
+<%# Original layout (rate card with dotted leaders, drawn from scratch): a menu-style price list; only prices the client gave us. %>
+<section class="sg-lib" data-sg-section="pricing/rates">
+  <div class="bg-surface">
+    <div class="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+      <div class="mx-auto max-w-3xl text-center" data-animate="fade-up">
+        <h2 data-sg-head class="font-heading text-2xl font-semibold text-ink sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="mt-3 text-pretty text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <ul class="mt-10 list-none space-y-6 rounded-2xl border border-line bg-page p-6 shadow-[var(--shadow-sm)] sm:p-10" data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <li>
+            <div class="flex items-baseline gap-3">
+              <span class="font-heading text-lg font-semibold text-ink"><%= it.title %></span>
+              <span class="min-w-6 flex-1 border-b-2 border-dotted border-line" aria-hidden="true"></span>
+              <span class="font-heading text-lg font-bold text-primary"><%= it.price %></span>
+            </div>
+            <% if (it.description) { %><p class="mt-1 text-sm/relaxed text-pretty text-muted"><%= it.description %></p><% } %>
+          </li>
+        <% }) %>
+      </ul>
+      <% if (d.ctaHref) { %><p class="mt-8 text-center"><a class="inline-block rounded-md bg-primary px-5 py-3 font-medium text-on-primary shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90" href="<%= d.ctaHref %>">Ask about a service</a></p><% } %>
+    </div>
+  </div>
+</section>

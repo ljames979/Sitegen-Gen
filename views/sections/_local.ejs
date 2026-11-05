@@ -1,0 +1,19 @@
+<% const lm = site.sections.meta || {}; %>
+<label>Main city (e.g. Orlando, FL)</label>
+<input type="text" name="meta_city" value="<%= lm.city || '' %>" maxlength="80" placeholder="Orlando, FL">
+<p class="muted" style="font-size:13px;">Shown in the page titles, the headline tag on the home page, the Services page and each service page, and in the business details Google reads. List nearby towns under Trust &amp; credentials &rarr; service area.</p>
+
+<label>Send monthly website reports to (optional)</label>
+<input type="email" name="meta_reportEmail" value="<%= lm.reportEmail || '' %>" maxlength="254" placeholder="owner@example.com">
+<p class="muted" style="font-size:13px;">Needs email sending to be set up. Last month's page views, leads and reviews are emailed on the first run each month. You can always view the live report with the Report button.</p>
+
+<label>Google Analytics ID (optional)</label>
+<input type="text" name="meta_gaId" value="<%= lm.gaId || '' %>" maxlength="24" placeholder="G-XXXXXXXXXX">
+<label>Meta (Facebook) Pixel ID (optional)</label>
+<input type="text" name="meta_metaPixelId" value="<%= lm.metaPixelId || '' %>" maxlength="20" placeholder="1234567890123456">
+<label>When should tracking start?</label>
+<select name="meta_trackingMode">
+  <option value="ask" <%= (lm.trackingMode || 'ask') === 'ask' ? 'selected' : '' %>>Only after the visitor accepts a cookie notice (safest; works everywhere)</option>
+  <option value="always" <%= lm.trackingMode === 'always' ? 'selected' : '' %>>Immediately, with no banner (only for businesses whose visitors are all in the US)</option>
+</select>
+<p class="muted" style="font-size:13px;">Tracking only runs on the live site, never in the preview. A finished quote request is counted as a lead and a tap on the phone number as a call. Depending on where the visitors are (for example the EU or California), the business may need to show a cookie or privacy notice &mdash; that is the owner's responsibility.</p>

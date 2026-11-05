@@ -1,0 +1,18 @@
+<%# Original layout (sticky photo: the photo stays put while a longer story scrolls past it) %>
+<% var ims = (d.images || []).map(function (x) { return x && typeof x === 'object' ? x.src : x; }).filter(Boolean); if (!ims.length && d.image) ims = [d.image]; var alt = d.imageAlt || ((d.images || [])[0] || {}).alt || ''; %>
+<section class="sg-lib" data-sg-section="about/sticky">
+  <div class="bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+      <div class="sg-flip grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-start lg:gap-16">
+        <% if (ims.length) { %><div class="lg:sticky lg:top-24" data-animate="fade-up"><img class="aspect-[4/5] w-full rounded-xl object-cover shadow-[var(--shadow-md)]" src="<%= ims[0] %>" alt="<%= alt %>" loading="lazy"></div><% } %>
+        <div class="<%= ims.length ? '' : 'lg:col-span-2' %> lg:py-10" data-animate="fade-up">
+          <% if (d.eyebrow) { %><p class="text-sm font-medium tracking-wide text-primary uppercase"><%= d.eyebrow %></p><% } %>
+          <% if (d.heading) { %><h2 data-sg-head class="font-heading text-2xl font-semibold text-ink sm:text-3xl"><%= d.heading %></h2><% } %>
+          <% if ((d.bodyFull || d.body)) { %><p class="<%= d.heading ? 'mt-4' : '' %> text-lg/relaxed text-pretty whitespace-pre-line text-muted"><%= (d.bodyFull || d.body) %></p><% } %>
+          <% if (d.moreHref) { %><a class="mt-6 inline-block font-medium text-primary underline-offset-4 hover:underline" href="<%= d.moreHref %>">Learn more about us &rarr;</a><% } %>
+          <% if (d.buttonText && d.buttonHref) { %><p class="mt-6"><a class="inline-block rounded-md bg-primary px-5 py-3 font-medium text-on-primary shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90" href="<%= d.buttonHref %>"><%= d.buttonText %></a></p><% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

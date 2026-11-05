@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Log in — SiteGen</title>
+  <%- include('partials-head') %>
+</head>
+<body>
+  <div class="narrow card">
+    <h2>Log in</h2>
+    <% if (error) { %><div class="error"><%= error %></div><% } %>
+    <form method="POST" action="/login">
+      <label>Email</label>
+      <input type="email" name="email" required>
+      <label>Password</label>
+      <input type="password" name="password" required>
+      <button type="submit" style="margin-top:18px; width:100%;">Log in</button>
+    </form>
+    <p class="muted" style="margin-top:16px;">No account yet? <a href="/signup">Sign up</a></p>
+  </div>
+</body>
+</html>

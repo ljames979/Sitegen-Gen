@@ -1,0 +1,22 @@
+<%# Original layout (editorial): a large heading in a narrow column, numbered reasons in a wide one. %>
+<section class="sg-lib" data-sg-section="why/editorial">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="sg-flip tw:grid tw:grid-cols-1 tw:gap-10 tw:lg:grid-cols-3 tw:lg:gap-16">
+        <div class="tw:lg:sticky tw:lg:top-24 tw:lg:self-start" data-animate="fade-up">
+          <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+          <h2 data-sg-head class="tw:font-heading tw:text-4xl tw:font-bold tw:text-ink tw:sm:text-5xl"><%= d.heading %></h2>
+          <% if (d.intro) { %><p class="tw:mt-4 tw:text-lg tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+        </div>
+        <ol class="tw:list-none tw:p-0 tw:lg:col-span-2" data-animate="stagger">
+          <% d.items.forEach(function (it, i) { %>
+            <li class="tw:grid tw:grid-cols-[auto_1fr] tw:gap-6 tw:border-t tw:border-line tw:py-6 tw:first:border-t-0 tw:first:pt-0">
+              <span class="tw:font-heading tw:text-4xl tw:font-bold tw:text-primary" aria-hidden="true"><%= String(i + 1).padStart(2, '0') %></span>
+              <span class="tw:block"><span class="tw:block tw:font-heading tw:text-xl tw:font-semibold tw:text-ink"><%= it.title %></span><% if (it.text) { %><span class="tw:mt-2 tw:block tw:text-pretty tw:text-muted"><%= it.text %></span><% } %></span>
+            </li>
+          <% }) %>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>

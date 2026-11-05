@@ -1,0 +1,35 @@
+<%# Original layout ("Scroll-through photos"): the owner's own hero photos fill the screen and step forward one at a time as the visitor scrolls down, and back as they scroll up, while the headline stays put. Dots show which photo is up and jump to one. With motion off it is one still photo and the dots switch it. Dark colors come from scrimhero.js, so the words stay readable on any photo. %>
+<section class="sg-lib" data-sg-section="hero/scroll">
+  <% var ph = d.scrub || [], n = ph.length, trust = d.trust || []; %>
+  <div class="sg-scrub"<%- n > 1 ? ' data-sg-scrub' : '' %> style="<%= d.scrimVars || '' %>; --scrub-n: <%= n || 1 %>; --scrub-focal: <%= d.focal || '50% 50%' %>">
+    <div class="sg-scrub-pin relative isolate flex items-center overflow-hidden" data-sg-scrub-pin>
+      <% if (n) { ph.forEach(function (p, i) { %>
+        <div class="sg-scrub-ph absolute inset-0 -z-20<%= i === 0 ? ' on' : '' %>" data-sg-scrub-ph data-photo="<%= p.src %>"<% if (i === 0) { %> style="--hero-photo: url('<%= p.src %>')"<% } %> aria-hidden="true"></div>
+      <% }) } else { %>
+        <div class="sg-scrub-sky absolute inset-0 -z-20" aria-hidden="true"></div>
+      <% } %>
+      <div class="sg-scrub-shade absolute inset-0 -z-10" aria-hidden="true"></div>
+      <div class="mx-auto w-full max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+        <div class="sg-scrub-text max-w-2xl min-w-0">
+          <h1 class="sg-scrim-h1 font-heading text-4xl font-bold text-balance sm:text-5xl lg:text-6xl" data-animate="hero"><%- d.headlineHtml %></h1>
+          <% if (d.sub) { %><p class="mt-5 text-base text-pretty text-white sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+          <div class="mt-8 flex flex-wrap gap-4" data-animate="hero">
+            <a class="sg-scrim-cta inline-block px-6 py-3 font-semibold" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+            <% if (d.phone) { %><a class="sg-scrim-ghost inline-block border border-white/60 px-6 py-3 font-medium text-white transition-colors hover:bg-white/10" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+          </div>
+          <% if (trust.length) { %>
+            <ul class="mt-7 flex list-none flex-wrap gap-x-6 gap-y-2 p-0 text-sm text-white" data-animate="hero">
+              <% trust.forEach(function (t) { %><li class="flex items-center gap-2"><svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><%= t %></li><% }) %>
+            </ul>
+          <% } %>
+        </div>
+      </div>
+      <% if (n > 1) { %>
+        <div class="sg-scrub-dots absolute flex flex-col" role="group" aria-label="Hero photos">
+          <% ph.forEach(function (p, i) { %><button type="button" class="sg-scrub-dot" data-sg-scrub-dot aria-label="Photo <%= i + 1 %> of <%= n %>" aria-current="<%= i === 0 ? 'true' : 'false' %>"></button><% }) %>
+        </div>
+        <div class="sg-scrub-cue absolute bottom-6 left-1/2 flex flex-col items-center gap-1 text-xs font-semibold tracking-widest text-white uppercase" aria-hidden="true">Scroll<svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+      <% } %>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,17 @@
+<%# Original layout (your own section, several photos): a heading and words above a photo grid of two, three or four. %>
+<section class="sg-lib" data-sg-section="custom/photos">
+  <div class="bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+      <% if (d.heading || d.body) { %>
+        <div class="mx-auto mb-8 max-w-3xl text-center" data-animate="fade-up">
+          <% if (d.heading) { %><h2 data-sg-head class="font-heading text-2xl font-semibold text-ink sm:text-3xl"><%= d.heading %></h2><% } %>
+          <% if (d.body) { %><p class="<%= d.heading ? 'mt-4' : '' %> text-lg/relaxed text-pretty whitespace-pre-line text-muted"><%= d.body %></p><% } %>
+        </div>
+      <% } %>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 <%= d.images.length === 3 ? 'lg:grid-cols-3' : d.images.length === 4 ? 'lg:grid-cols-4' : '' %>" data-animate="stagger">
+        <% d.images.forEach(function (im) { %><img class="aspect-[4/3] w-full rounded-xl object-cover" src="<%= im.src %>" alt="<%= im.alt %>" loading="lazy"><% }) %>
+      </div>
+      <% if (d.buttonText && d.buttonHref) { %><p class="mt-6"><a class="inline-block rounded-md bg-primary px-5 py-3 font-medium text-on-primary shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90" href="<%= d.buttonHref %>"><%= d.buttonText %></a></p><% } %>
+    </div>
+  </div>
+</section>

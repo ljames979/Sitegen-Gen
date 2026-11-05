@@ -1,0 +1,22 @@
+<%# Original layout (Leo's link to a pet-food feature block, 2026-11-03; our own drawing of the idea): one big photo fills the section and a solid brand-color panel docks to one side over it, with the heading and each reason under a round line icon. %>
+<% var ic = '<polyline points="20 6 9 17 4 12"></polyline>'; %>
+<section class="sg-lib" data-sg-section="why/panel">
+  <div class="tw:relative tw:bg-surface">
+    <div class="sg-dock tw:relative tw:z-10 tw:mx-auto tw:flex tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:min-h-[38rem] tw:lg:items-center tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:w-full tw:max-w-sm tw:bg-primary tw:p-8 tw:text-on-primary tw:shadow-[var(--shadow-md)] tw:sm:p-10" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-xs tw:font-semibold tw:tracking-widest tw:uppercase tw:opacity-80"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-bold tw:sm:text-3xl"><%= d.heading %></h2>
+        <ul class="tw:mt-8 tw:space-y-8" data-sg-cards>
+          <% d.items.forEach(function (it) { %>
+            <li>
+              <span class="tw:inline-flex tw:size-11 tw:items-center tw:justify-center tw:rounded-full tw:border-2 tw:border-current" aria-hidden="true"><svg class="tw:size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><%- it.icon || ic %></svg></span>
+              <% if (it.title) { %><h3 class="tw:mt-3 tw:font-heading tw:text-lg tw:font-bold"><%= it.title %></h3><% } %>
+              <% if (it.text) { %><p class="tw:mt-1 tw:text-sm/relaxed tw:text-pretty tw:opacity-90"><%= it.text %></p><% } %>
+            </li>
+          <% }) %>
+        </ul>
+      </div>
+    </div>
+    <% if (d.image) { %><img class="sg-noshape tw:aspect-[4/3] tw:w-full tw:object-cover tw:lg:absolute tw:lg:inset-0 tw:lg:aspect-auto tw:lg:h-full" src="<%= d.image %>" alt="" loading="lazy" decoding="async"><% } %>
+  </div>
+</section>

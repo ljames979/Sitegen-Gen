@@ -1,0 +1,24 @@
+<%# Original layout (Leo's link to a pet-guide block, 2026-11-03; our own drawing of the idea): a wide photo stands on a soft brand-tint band (a cut-out photo of pets looks best), and numbered cards with the reasons overlap the band's lower edge. %>
+<section class="sg-lib" data-sg-section="why/peek">
+  <div class="tw:overflow-hidden tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-6xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-16">
+      <div class="tw:relative">
+        <span class="tw:absolute tw:-top-12 tw:bottom-0 tw:left-1/2 tw:w-screen tw:-translate-x-1/2 tw:bg-primary/15 tw:lg:-top-16" aria-hidden="true"></span>
+        <div class="tw:relative tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+          <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+          <h2 data-sg-head class="tw:font-heading tw:text-3xl tw:font-bold tw:text-ink tw:sm:text-4xl"><%= d.heading %></h2>
+        </div>
+        <% if (d.image) { %><img class="sg-noshape tw:relative tw:mx-auto tw:mt-8 tw:block tw:max-h-[26rem] tw:w-full tw:max-w-4xl tw:object-contain tw:object-bottom" src="<%= d.image %>" alt="" loading="lazy" decoding="async"><% } else { %><div class="tw:h-24" aria-hidden="true"></div><% } %>
+      </div>
+      <div class="tw:relative tw:-mt-16 tw:grid tw:grid-cols-1 tw:gap-5 tw:sm:grid-cols-2 <%= d.items.length === 3 ? 'tw:lg:grid-cols-3' : 'tw:lg:grid-cols-4' %>" data-sg-cards data-animate="stagger">
+        <% d.items.forEach(function (it, i) { %>
+          <div class="tw:rounded-2xl tw:bg-page tw:p-6 tw:shadow-[var(--shadow-md)]">
+            <p class="tw:font-heading tw:text-4xl tw:font-bold tw:text-primary/70" aria-hidden="true"><%= String(i + 1).padStart(2, '0') %></p>
+            <% if (it.title) { %><h3 class="tw:mt-3 tw:font-heading tw:text-lg tw:font-semibold tw:text-ink"><%= it.title %></h3><% } %>
+            <% if (it.text) { %><p class="tw:mt-2 tw:text-sm/relaxed tw:text-pretty tw:text-muted tw:italic"><%= it.text %></p><% } %>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</section>

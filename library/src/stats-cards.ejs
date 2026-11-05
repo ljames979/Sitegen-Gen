@@ -1,0 +1,15 @@
+<%# Adapted from HyperUI (MIT) marketing/stats: separate cards on a quiet background. %>
+<section class="sg-lib" data-sg-section="stats/cards">
+  <div class="bg-page">
+    <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+      <dl class="grid grid-cols-2 gap-4 <%= ({ 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4' })[Math.min(d.items.length, 4)] %>" data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <div class="rounded-xl border border-line bg-surface p-6 text-center">
+            <dd class="font-heading text-3xl font-bold text-primary sm:text-4xl"><span<%- it.countAttrs || '' %>><%= it.value %></span></dd>
+            <dt class="mt-1 text-sm text-muted"><%= it.label %></dt>
+          </div>
+        <% }) %>
+      </dl>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,21 @@
+<%# Adapted from Meraki UI (MIT) marketing/faq "Collapse": questions between thin lines with a plus that turns to a minus, the answer set off by a brand-color line. Native <details>, no JavaScript. %>
+<section class="sg-lib" data-sg-section="faq/lines">
+  <div class="bg-page">
+    <div class="mx-auto max-w-4xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+      <h2 data-sg-head class="font-heading text-3xl font-bold text-ink sm:text-4xl" data-animate="fade-up"><%= d.heading %></h2>
+      <hr class="mt-8 border-line">
+      <div class="divide-y divide-line border-b border-line" data-animate="stagger">
+        <% d.items.forEach(function (it, i) { %>
+          <details class="group py-6" <%= i === 0 ? 'open' : '' %>>
+            <summary class="flex cursor-pointer list-none items-center gap-4 font-heading text-lg text-ink">
+              <span class="relative size-5 shrink-0 text-primary" aria-hidden="true"><span class="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 rounded bg-current"></span><span class="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 rounded bg-current transition-transform group-open:scale-y-0"></span></span>
+              <%= it.question %>
+            </summary>
+            <p class="mt-4 ml-9 border-l-2 border-primary pl-5 text-pretty text-muted"><%= it.answer %></p>
+          </details>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="mt-8"><a class="font-medium text-primary underline-offset-4 hover:underline" href="<%= d.moreHref %>">More questions &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

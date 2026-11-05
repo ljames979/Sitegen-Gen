@@ -1,0 +1,1461 @@
+<% const blockItems = (site.sections.blocks && site.sections.blocks.items) || [];
+   const renderBlock = (b) => { %>
+  <div class="block-row">
+    <div class="block-bar">
+      <input type="hidden" name="block_type" value="<%= b.type %>">
+      <input type="hidden" name="block_id" value="<%= b.id || '' %>">
+      <strong class="block-kind"><%= ({ steps: 'Numbered steps', features: 'Feature cards', cta: 'Closing call-to-action band', chips: 'Area / location chips', strip: 'Side-scrolling photo strip', split: 'Heading + text (split)', pricing: 'Pricing / packages', team: 'Team / staff', stats: 'Numbers (count up)', video: 'Video', tabs: 'Tabs', accordion: 'Open-and-close list (accordion)', wall: 'Brand wall (moving cards)', cascade: 'Card cascade (cards deal into a stack)', photoBanner: 'Photo banner (rounded photo, words on a fade)', beforeAfter: 'Before / after sliders', collage: 'Word carousel collage', trail: 'Photo trail', wave: 'Photo wave', bigwords: 'Big words with a photo', story: 'Scroll story', path: 'Path travel', zoomword: 'Zoom through the word', morph: 'Shape morph', nodes: 'Connected photo cards', shapes: 'Rolling words with photo shapes', stack: 'Stacked cards (turn as you scroll)', herocard: 'Hero card (big title, picture or reel, bar along the bottom)', aboutphone: 'About with phone (photo in soft shapes, words and phone)', thirds: 'Photo, words and a big letter (three columns)', mosaic: 'Photo mosaic hero (big title, six stepped photos)', crossband: 'Card over a color band (photo, checklist, colored card)', advice: 'Photo with round-photo points', photoblend: 'Photo that blends in', patterns: 'Gradient pattern (checks, retro, facets, confetti, arrows, boards, panes)', overlapcard: 'Photo over a text card (patterned shape, white card, dark button)', phototabs: 'Photo picks the words (up to 4 photos, each with its own card and color)', reviewcard: 'Reviews on a card (big photo, up to 3 reviews, your colors)', twinphotos: 'Two photos and links (big colored heading, two square photos, links on a tall panel)', ringcard: 'Words and photo with rings (white words panel, big photo, striped circle and ring)', shapeform: 'Contact form with shapes (your form on a card over a photo, colored shapes)', framedphoto: 'Photo in frames with a card (wide photo, color blocks, white card)', roundphoto: 'Round photo with a color card (round photo, rings and dots, color card)', photopairs: 'Photo and words pairs (label, heading, photos each beside a words tile)', offsetphoto: 'Photo on two color blocks (label, big heading, words, button; every color your own)' })[b.type] || (aboutBlocks.SPECS[b.type] ? aboutBlocks.GROUP_NAMES[aboutBlocks.SPECS[b.type].group] + ': ' + aboutBlocks.SPECS[b.type].name : 'Photo + text') %></strong>
+      <span class="block-actions">
+        <button type="button" class="btn-secondary" data-block="up" title="Move up">&uarr;</button>
+        <button type="button" class="btn-secondary" data-block="down" title="Move down">&darr;</button>
+        <button type="button" class="btn-secondary" data-block="dup">Duplicate</button>
+        <button type="button" class="btn-secondary" data-block="save" title="Save this block to your library so you can reuse it on any site">Save to library</button>
+        <button type="button" class="btn-secondary" data-block="del">Delete</button>
+      </span>
+    </div>
+    <label>Heading</label>
+    <input type="text" name="block_heading" maxlength="120" value="<%= b.heading || '' %>">
+    <% const lineType = ['steps', 'features', 'chips', 'pricing', 'team', 'stats', 'tabs', 'accordion'].includes(b.type); %>
+<% if (b.type === 'strip') { %>
+      <label>Photos (scroll sideways on the page; up to 20)</label>
+      <textarea name="block_body" class="strip-body" hidden><%= b.body || '' %></textarea>
+      <div class="strip-rows">
+        <% const stripPics = (b.body || '').split('\n').filter(Boolean); (stripPics.length ? stripPics : ['', '', '']).forEach(u => { %>
+          <div class="gallery-row upload-row">
+            <input type="url" class="strip-url" value="<%= u %>" placeholder="https://... or upload">
+            <input type="file" accept="image/*" class="file-input" hidden>
+            <button type="button" class="btn-secondary upload-btn">Upload</button>
+            <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+            <button type="button" class="btn-secondary strip-remove">✕</button>
+          </div>
+        <% }) %>
+      </div>
+      <button type="button" class="btn-secondary" data-stripadd>+ Add photo</button>
+    <% } else if (b.type === 'wall' || b.type === 'cascade' || b.type === 'trail' || b.type === 'wave' || b.type === 'story' || b.type === 'path') { %>
+      <% const wOwn = brandWall.ownContent(b.body), wWhat = b.type === 'wall' ? 'wall' : b.type === 'cascade' ? 'cards' : b.type === 'trail' ? 'trail' : b.type === 'story' ? 'story' : b.type === 'path' ? 'path' : 'wave'; %>
+      <% if (b.type === 'story') wOwn.lines = String(b.body || '').split('\n').map(l => l.trim()).filter(l => l && !/^(https?:\/\/|\/)\S+$/i.test(l)); %>
+      <textarea name="block_body" class="strip-body" hidden><%= b.body || '' %></textarea>
+      <label><%= b.type === 'story' ? 'Steps, one per line: Title | a sentence or two (2 to 6 steps)' : b.type === 'path' ? 'Short lines that ride along with the photos (optional, up to 5, a few words each)' : b.type === 'trail' ? 'Words under the trail (optional, one line each)' : b.type === 'wave' ? 'The words the photos settle around (optional; empty uses your hero\'s sub-headline)' : 'Your own lines for the ' + wWhat + ' (one per line, e.g. a motto)' %></label>
+      <textarea class="wall-text" rows="<%= b.type === 'story' ? 6 : 3 %>" maxlength="<%= b.type === 'story' ? 1600 : 800 %>" placeholder="<%= b.type === 'story' ? 'We visit | We look at the job and give you a written price&#10;We build | Our own crew does the work&#10;We check | We walk through it with you' : 'Built to last&#10;No job too small' %>"><%= wOwn.lines.join('\n') %></textarea>
+      <label>Your own photos for the <%= wWhat %> (<%= b.type === 'wall' ? 'up to 12' : b.type === 'cascade' ? 'the cascade shows up to 10 cards' : 'up to 12, then your site\'s photos' %>; they come first)</label>
+      <div class="strip-rows">
+        <% (wOwn.photos.length ? wOwn.photos : ['']).forEach(u => { %>
+          <div class="gallery-row upload-row">
+            <input type="url" class="strip-url" value="<%= u %>" placeholder="https://... or upload">
+            <input type="file" accept="image/*" class="file-input" hidden>
+            <button type="button" class="btn-secondary upload-btn">Upload</button>
+            <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+            <button type="button" class="btn-secondary strip-remove">✕</button>
+          </div>
+        <% }) %>
+      </div>
+      <button type="button" class="btn-secondary" data-stripadd>+ Add photo</button>
+    <% } else if (b.type === 'shapes') { %>
+      <% const shOwn = shapeBlock.parse(b.body); %>
+      <textarea name="block_body" class="sh-body" hidden><%= b.body || '' %></textarea>
+      <label>Words that take turns on the heading's last line (optional, one per line, up to 6; each rolls up into place)</label>
+      <textarea class="sh-roll" rows="3" maxlength="200" placeholder="move.&#10;stand out.&#10;unforgettable."><%= shOwn.roll.join('\n') %></textarea>
+      <label>Small words on the right (optional, a new line starts a new paragraph)</label>
+      <textarea class="sh-sub" rows="3" maxlength="900" placeholder="A sentence or two about what you do."><%= shOwn.sub.join('\n') %></textarea>
+      <label>Photos for the shapes (up to 5 in all; they go round the three shapes like a carousel. Leave empty to use your site's photos)</label>
+      <div class="strip-rows">
+        <% (shOwn.photos.length ? shOwn.photos : ['']).forEach(u => { %>
+        <div class="gallery-row upload-row">
+          <input type="url" class="strip-url sh-url" value="<%= u %>" placeholder="Photo: https://... or upload">
+          <input type="file" accept="image/*" class="file-input" hidden>
+          <button type="button" class="btn-secondary upload-btn">Upload</button>
+          <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+          <button type="button" class="btn-secondary strip-remove">✕</button>
+        </div>
+        <% }) %>
+      </div>
+      <button type="button" class="btn-secondary" data-stripadd data-max="5">+ Add photo</button>
+    <% } else if (b.type === 'photoblend') { %>
+      <% const pbOwn = photoBlend.parse(b.body); %>
+      <textarea name="block_body" class="pb-body" hidden><%= b.body || '' %></textarea>
+      <p class="hint">Type the big heading above (e.g. Cyber [Monday]: words in [square brackets] show in your brand color).</p>
+      <label>Small line over the heading (optional)</label>
+      <input type="text" class="pb-top" maxlength="120" value="<%= pbOwn.top %>" placeholder="e.g. SUPER OFFER">
+      <label>Highlighted box under the heading (optional)</label>
+      <input type="text" class="pb-badge" maxlength="60" value="<%= pbOwn.badge %>" placeholder="e.g. USE CODE: HAPPY50">
+      <label>Short line under the box (optional)</label>
+      <input type="text" class="pb-note" maxlength="120" value="<%= pbOwn.note %>" placeholder="e.g. ONLY TODAY">
+      <label>Photo (add 2 to 4 and they take turns; one stays still. Empty = one of your site's photos. Photos on a plain backdrop blend best)</label>
+      <div class="strip-rows">
+        <% (pbOwn.photos.length ? pbOwn.photos : ['']).forEach(u => { %>
+        <div class="gallery-row upload-row">
+          <input type="url" class="strip-url pb-url" value="<%= u %>" placeholder="Photo: https://... or upload">
+          <input type="file" accept="image/*" class="file-input" hidden>
+          <button type="button" class="btn-secondary upload-btn">Upload</button>
+          <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+          <button type="button" class="btn-secondary strip-remove">✕</button>
+        </div>
+        <% }) %>
+      </div>
+      <button type="button" class="btn-secondary" data-stripadd data-max="<%= photoBlend.MAX_PHOTOS %>">+ Add photo</button>
+      <input type="hidden" class="pb-cuts" value="<%= Object.entries(pbOwn.cutouts).map(e => e[0] + '|' + e[1]).join(' ') %>">
+      <div class="upload-row" style="align-items: center; flex-wrap: wrap;">
+        <button type="button" class="btn-secondary pb-cutbtn">✂ Cut out the pets</button>
+        <span class="hint pb-cutmsg" style="margin: 0;"></span>
+      </div>
+      <p class="hint">Cut out the pets: SiteGen finds the pet (or person, or thing) in each photo and removes the backdrop, so they stand on any color with no edge at all. It runs on this computer and takes a few seconds per photo (the first time it also downloads its 170 MB tool). Then "how it blends in" below switches to "Pets cut out", and the block takes your own color (tick the box below) or a light shade of your brand color.</p>
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="pb-own"<%= pbOwn.color ? ' checked' : '' %>> Use my own color for the block (instead of matching the photo):</label>
+        <input type="color" class="pb-color" oninput="this.parentNode.querySelector('.pb-own').checked = true" value="<%= pbOwn.color || '#eeeeee' %>" style="width: 64px; height: 36px; padding: 2px;">
+      </div>
+      <p class="hint">The Button boxes below add a button under the words (optional).</p>
+    <% } else if (b.type === 'advice') { %>
+      <% const adOwn = adviceBlock.parse(b.body); %>
+      <textarea name="block_body" class="ad-body" hidden><%= b.body || '' %></textarea>
+      <p class="hint">Type the heading above (e.g. Dog care advice): it sits over a thin line, with your points under it.</p>
+      <label>Big photo (add 2 to 4 and they take turns; one stays still. Empty = one of your site's photos)</label>
+      <div class="strip-rows">
+        <% (adOwn.photos.length ? adOwn.photos : ['']).forEach(u => { %>
+        <div class="gallery-row upload-row">
+          <input type="url" class="strip-url ad-url" value="<%= u %>" placeholder="Photo: https://... or upload">
+          <input type="file" accept="image/*" class="file-input" hidden>
+          <button type="button" class="btn-secondary upload-btn">Upload</button>
+          <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+          <button type="button" class="btn-secondary strip-remove">✕</button>
+        </div>
+        <% }) %>
+      </div>
+      <button type="button" class="btn-secondary" data-stripadd data-max="<%= adviceBlock.MAX_PHOTOS %>">+ Add photo</button>
+      <% for (let i = 0; i < adviceBlock.MAX_ITEMS; i++) { const it = adOwn.items[i] || { photo: '', text: '' }; %>
+      <label>Point <%= i + 1 %> <%= i > 1 ? '(optional)' : '' %>: a small round photo and a few words</label>
+      <div class="upload-row ad-item">
+        <input type="url" class="ad-iu" value="<%= it.photo %>" placeholder="Round photo (optional): https://... or upload">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+      <textarea class="ad-it" rows="2" maxlength="400"><%= it.text %></textarea>
+      <% } %>
+      <p class="hint">The Button boxes below add a button under the points (optional).</p>
+    <% } else if (b.type === 'crossband') { %>
+      <% const cbOwn = crossBand.parse(b.body), cbCol = crossBand.colors(cbOwn, site.theme); %>
+      <textarea name="block_body" class="cb-body" hidden><%= b.body || '' %></textarea>
+      <p class="hint">Type the heading above: it is the card's title, in capitals (e.g. Why dogs make you happy). The Button boxes below make the card's button.</p>
+      <label>The card's words</label>
+      <textarea class="cb-text" rows="3" maxlength="900" placeholder="A few words about you or a service"><%= cbOwn.text %></textarea>
+      <label>Colored line under the photo (optional)</label>
+      <input type="text" class="cb-list" maxlength="120" value="<%= cbOwn.list %>" placeholder="e.g. Dogs improve your mood:">
+      <label>Checklist under it (one point per line, up to <%= crossBand.MAX_ITEMS %>; optional)</label>
+      <textarea class="cb-items" rows="4"><%= cbOwn.items.join('\n') %></textarea>
+      <label>Tall photo (up to 4; they take turns. Empty = one of your site's photos)</label>
+      <div class="strip-rows">
+        <% (cbOwn.left.length ? cbOwn.left : ['']).forEach(u => { %>
+        <div class="gallery-row upload-row">
+          <input type="url" class="strip-url cb-l-url" value="<%= u %>" placeholder="Photo: https://... or upload">
+          <input type="file" accept="image/*" class="file-input" hidden>
+          <button type="button" class="btn-secondary upload-btn">Upload</button>
+          <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+          <button type="button" class="btn-secondary strip-remove">✕</button>
+        </div>
+        <% }) %>
+      </div>
+      <button type="button" class="btn-secondary" data-stripadd data-max="<%= crossBand.MAX_PHOTOS %>">+ Add photo</button>
+      <label>Corner photo, low on the other side (up to 4; a photo with a plain or cut-out background looks best)</label>
+      <div class="strip-rows">
+        <% (cbOwn.right.length ? cbOwn.right : ['']).forEach(u => { %>
+        <div class="gallery-row upload-row">
+          <input type="url" class="strip-url cb-r-url" value="<%= u %>" placeholder="Photo: https://... or upload">
+          <input type="file" accept="image/*" class="file-input" hidden>
+          <button type="button" class="btn-secondary upload-btn">Upload</button>
+          <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+          <button type="button" class="btn-secondary strip-remove">✕</button>
+        </div>
+        <% }) %>
+      </div>
+      <button type="button" class="btn-secondary" data-stripadd data-max="<%= crossBand.MAX_PHOTOS %>">+ Add photo</button>
+      <label>Card color</label>
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="cb-own-card"<%= cbOwn.card ? ' checked' : '' %>> Use my own color:</label>
+        <input type="color" class="cb-card" oninput="this.parentNode.querySelector('.cb-own-card').checked = true" value="<%= cbCol.card %>" style="width: 64px; height: 36px; padding: 2px;">
+        <span class="hint" style="margin: 0;">Unticked, it's your brand color. The card's words turn light or dark on their own.</span>
+      </div>
+      <label>Color band behind the photo and card</label>
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="cb-own-band"<%= cbOwn.band ? ' checked' : '' %>> Use my own color:</label>
+        <input type="color" class="cb-band" oninput="this.parentNode.querySelector('.cb-own-band').checked = true" value="<%= cbCol.band %>" style="width: 64px; height: 36px; padding: 2px;">
+        <span class="hint" style="margin: 0;">Unticked, it's a light take on your accent color.</span>
+      </div>
+    <% } else if (b.type === 'mosaic') { %>
+      <% const mhOwn = mosaicHero.parse(b.body); %>
+      <textarea name="block_body" class="mh-body" hidden><%= b.body || '' %></textarea>
+      <p class="hint">Type the heading above: it shows huge (a few words read best, e.g. Your Dog). Put [square brackets] around a word to color it.</p>
+      <label>Line under the title (shows in capitals)</label>
+      <input type="text" class="mh-sub" maxlength="160" value="<%= mhOwn.sub %>" placeholder="e.g. In the focus!">
+      <label>Photos (up to 12. The first six fill the mosaic, or eight in four columns when you add 8 or more; any more take turns in it. Empty = your site's photos)</label>
+      <div class="strip-rows">
+        <% (mhOwn.photos.length ? mhOwn.photos : ['']).forEach(u => { %>
+        <div class="gallery-row upload-row">
+          <input type="url" class="strip-url mh-url" value="<%= u %>" placeholder="Photo: https://... or upload">
+          <input type="file" accept="image/*" class="file-input" hidden>
+          <button type="button" class="btn-secondary upload-btn">Upload</button>
+          <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+          <button type="button" class="btn-secondary strip-remove">✕</button>
+        </div>
+        <% }) %>
+      </div>
+      <button type="button" class="btn-secondary" data-stripadd data-max="<%= mosaicHero.MAX_PHOTOS %>">+ Add photo</button>
+      <p class="hint">The Button text and link boxes below add a button under the title (optional).</p>
+    <% } else if (b.type === 'thirds') { %>
+      <% const tbOwn = thirdsBlock.parse(b.body); %>
+      <textarea name="block_body" class="tb-body" hidden><%= b.body || '' %></textarea>
+      <p class="hint">Type the heading above: it is the first line in the middle panel (e.g. Good to ride in.). The line below shows under it in bold.</p>
+      <label>Bold line under the heading (optional)</label>
+      <input type="text" class="tb-bold" maxlength="120" value="<%= tbOwn.bold %>" placeholder="e.g. Made by hand.">
+      <label>Paragraph (low in the middle panel)</label>
+      <textarea class="tb-text" rows="3" maxlength="900" placeholder="A few words about you, a product or a service"><%= tbOwn.text %></textarea>
+      <label>A bold sentence at the end of the paragraph (optional)</label>
+      <input type="text" class="tb-strong" maxlength="300" value="<%= tbOwn.strong %>">
+      <label>The big box: one big letter or word, or a few words</label>
+      <input type="text" class="tb-big" maxlength="40" value="<%= tbOwn.big %>" placeholder="e.g. N, or OPEN, or OPEN 7 DAYS (empty = first letter of your business name)">
+      <label>Left photos (tall; up to 4, they take turns. Empty = one of your site's photos)</label>
+      <div class="strip-rows">
+        <% (tbOwn.left.length ? tbOwn.left : ['']).forEach(u => { %>
+        <div class="gallery-row upload-row">
+          <input type="url" class="strip-url tb-l-url" value="<%= u %>" placeholder="Photo: https://... or upload">
+          <input type="file" accept="image/*" class="file-input" hidden>
+          <button type="button" class="btn-secondary upload-btn">Upload</button>
+          <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+          <button type="button" class="btn-secondary strip-remove">✕</button>
+        </div>
+        <% }) %>
+      </div>
+      <button type="button" class="btn-secondary" data-stripadd data-max="<%= thirdsBlock.MAX_PHOTOS %>">+ Add photo</button>
+      <label>Right photos (above the big box; up to 4, they take turns)</label>
+      <div class="strip-rows">
+        <% (tbOwn.right.length ? tbOwn.right : ['']).forEach(u => { %>
+        <div class="gallery-row upload-row">
+          <input type="url" class="strip-url tb-r-url" value="<%= u %>" placeholder="Photo: https://... or upload">
+          <input type="file" accept="image/*" class="file-input" hidden>
+          <button type="button" class="btn-secondary upload-btn">Upload</button>
+          <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+          <button type="button" class="btn-secondary strip-remove">✕</button>
+        </div>
+        <% }) %>
+      </div>
+      <button type="button" class="btn-secondary" data-stripadd data-max="<%= thirdsBlock.MAX_PHOTOS %>">+ Add photo</button>
+      <p class="hint">The Button text and link boxes below make the underlined "Read more" link under the paragraph (e.g. READ MORE and your Services page).</p>
+    <% } else if (b.type === 'aboutphone') { %>
+      <% const abOwn = aboutBlob.parse(b.body); %>
+      <textarea name="block_body" class="ab-body" hidden><%= b.body || '' %></textarea>
+      <p class="hint">Type the heading above (e.g. About, or About us): it shows big, with a thin colored line under it.</p>
+      <% for (let i = 0; i < aboutBlob.MAX_TEXT; i++) { %>
+      <label><%= i ? 'Another paragraph (optional)' : 'Paragraph' %></label>
+      <textarea class="ab-text" rows="3" maxlength="800" placeholder="<%= i ? '' : 'A few words about you or the business' %>"><%= abOwn.text[i] || '' %></textarea>
+      <% } %>
+      <label>A line in bold (optional)</label>
+      <textarea class="ab-bold" rows="2" maxlength="300"><%= abOwn.bold %></textarea>
+      <label>Phone number</label>
+      <input type="text" class="ab-phone" maxlength="30" value="<%= abOwn.phone === 'none' ? '' : abOwn.phone %>" placeholder="Empty = the phone from your Contact section">
+      <label style="font-weight: 400;"><input type="checkbox" class="ab-nophone"<%= abOwn.phone === 'none' ? ' checked' : '' %>> Don't show a phone number</label>
+    <% } else if (b.type === 'herocard') { %>
+      <% const hcOwn = heroCard.parse(b.body); %>
+      <textarea name="block_body" class="hc-body" hidden><%= b.body || '' %></textarea>
+      <p class="hint">The heading above is the huge title across the top (a word or two reads best, e.g. your product or service name). Everything below is optional: leave a box empty and it doesn't show.</p>
+      <label>Words low on the left</label>
+      <textarea class="hc-intro" rows="3" maxlength="400" placeholder="A sentence or two about it"><%= hcOwn.intro %></textarea>
+      <label>Price under them (only your real price)</label>
+      <div class="upload-row">
+        <input type="text" class="hc-price" maxlength="30" value="<%= hcOwn.price %>" placeholder="e.g. $139.00" style="max-width: 10rem;">
+        <input type="text" class="hc-pnote" maxlength="90" value="<%= hcOwn.priceNote %>" placeholder="Small words beside it, e.g. or 4 payments">
+      </div>
+      <label>Detail low on the right</label>
+      <div class="upload-row">
+        <input type="text" class="hc-detail" maxlength="40" value="<%= hcOwn.detail %>" placeholder="e.g. 100 cm, or 2 hours" style="max-width: 12rem;">
+        <input type="text" class="hc-dnote" maxlength="240" value="<%= hcOwn.detailNote %>" placeholder="A line under it">
+      </div>
+      <label>Two buttons under the detail</label>
+      <% for (let i = 0; i < heroCard.MAX_LINKS; i++) { const l = hcOwn.links[i] || {}; %>
+      <div class="upload-row">
+        <input type="text" class="hc-lt" maxlength="30" value="<%= l.label || '' %>" placeholder="Button <%= i + 1 %> words, e.g. <%= i ? 'View gallery' : 'Size guide' %>" style="max-width: 14rem;">
+        <input type="url" class="hc-lu" value="<%= l.url || '' %>" placeholder="Its link, e.g. /site/name/gallery">
+      </div>
+      <% } %>
+      <label>White bar along the bottom: a name, an option with a color dot, and a price on the dark button</label>
+      <div class="upload-row">
+        <input type="text" class="hc-bname" maxlength="40" value="<%= hcOwn.bar ? hcOwn.bar.name : '' %>" placeholder="Name, e.g. Metro">
+        <input type="text" class="hc-bopt" maxlength="40" value="<%= hcOwn.bar ? hcOwn.bar.option : '' %>" placeholder="Option, e.g. Matcha">
+        <input type="text" class="hc-bprice" maxlength="30" value="<%= hcOwn.bar ? hcOwn.bar.price : '' %>" placeholder="Price, e.g. $139.00" style="max-width: 9rem;">
+      </div>
+      <p class="hint">The dark button's words and link are the Button boxes further down (e.g. Add to bag, Book now).</p>
+      <label>Card color</label>
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="hc-own"<%= hcOwn.color ? ' checked' : '' %>> Use my own color:</label>
+        <input type="color" class="hc-color" value="<%= hcOwn.color || '#8fae8b' %>" style="width: 64px; height: 36px; padding: 2px;">
+        <span class="hint" style="margin: 0;">Unticked, it's a soft take on your brand color. The words turn light or dark on their own.</span>
+      </div>
+    <% } else if (b.type === 'stack') { %>
+      <% const skOwn = stackCards.parse(b.body), skN = +stackCards.cleanSide(b.side); %>
+      <textarea name="block_body" class="sk-body" hidden><%= b.body || '' %></textarea>
+      <label>Small label above the heading (optional, e.g. Customer love)</label>
+      <input type="text" class="sk-label" maxlength="60" value="<%= skOwn.label %>" placeholder="Customer love">
+      <label>Rating line under the heading (optional: only fill this in with your real rating)</label>
+      <div class="upload-row">
+        <input type="number" class="sk-rating" min="0" max="5" step="0.1" value="<%= skOwn.rating || '' %>" placeholder="Stars, e.g. 4.8" style="max-width: 9rem;">
+        <input type="text" class="sk-rtext" maxlength="80" value="<%= skOwn.ratingText %>" placeholder="Words after the stars, e.g. from 120 Google reviews">
+      </div>
+      <label>How many cards</label>
+      <select name="block_side" class="sk-count">
+        <% for (let n = stackCards.MIN; n <= stackCards.MAX; n++) { %><option value="<%= n %>" <%= skN === n ? 'selected' : '' %>><%= n %> cards</option><% } %>
+      </select>
+      <label>Card colors</label>
+      <select class="sk-colors">
+        <% stackCards.COLORS.forEach(o => { %><option value="<%= o[0] %>" <%= skOwn.colors === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <p class="hint">Each card can have words (a quote or a note), a name with a small line under it, stars and a photo. Leave a card empty and it shows one of your site's photos (or just its color).</p>
+      <div class="sk-cards">
+        <% for (let i = 0; i < stackCards.MAX; i++) { const c = skOwn.cards[i] || {}; %>
+        <fieldset class="sk-card"<%= i >= skN ? ' hidden' : '' %> style="border: 1px solid #d6d9de; border-radius: 10px; padding: .6rem .8rem .8rem; margin: 0 0 .8rem;">
+          <legend style="font-size: .85rem; font-weight: 600; padding: 0 .3rem;">Card <%= i + 1 %></legend>
+          <textarea class="sk-words" rows="3" maxlength="500" placeholder="Words on the card (optional): a customer's own words, or a note"><%= c.words || '' %></textarea>
+          <div class="upload-row">
+            <input type="text" class="sk-name" maxlength="60" value="<%= c.name || '' %>" placeholder="Name (optional)">
+            <input type="text" class="sk-line" maxlength="90" value="<%= c.line || '' %>" placeholder="Small line under the name (optional)">
+            <select class="sk-stars" aria-label="Stars on this card"><option value="">No stars</option><% for (let s = 1; s <= 5; s++) { %><option value="<%= s %>" <%= c.stars === s ? 'selected' : '' %>><%= s %> star<%= s > 1 ? 's' : '' %></option><% } %></select>
+          </div>
+          <div class="gallery-row upload-row">
+            <input type="url" class="strip-url sk-url" value="<%= c.photo || '' %>" placeholder="Photo (optional): https://... or upload">
+            <input type="file" accept="image/*" class="file-input" hidden>
+            <button type="button" class="btn-secondary upload-btn">Upload</button>
+            <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+          </div>
+        </fieldset>
+        <% } %>
+      </div>
+    <% } else if (b.type === 'nodes') { %>
+      <% const ncOwn = nodeCards.parse(b.body); %>
+      <textarea name="block_body" class="nc-body" hidden><%= b.body || '' %></textarea>
+      <label>Words that take turns on the heading's last line (optional, one per line, up to 6; each rolls up into place). Type the fixed part as the heading, e.g. We make brands</label>
+      <textarea class="nc-roll" rows="3" maxlength="200" placeholder="move.&#10;stand out.&#10;unforgettable."><%= ncOwn.roll.join('\n') %></textarea>
+      <label>Small words under the big heading (optional, a sentence or two; a new line starts a new line)</label>
+      <textarea class="nc-sub" rows="3" maxlength="700" placeholder="A sentence or two about what you do."><%= ncOwn.sub.join('\n') %></textarea>
+      <label>Cards, left to right (3 to 6). Leave them all empty to use your services and their photos</label>
+      <div class="nc-cards">
+        <% (ncOwn.cards.length ? ncOwn.cards : [{}, {}, {}, {}, {}]).forEach(c => { %>
+        <fieldset class="nc-card" style="border: 1px solid #d6d9de; border-radius: 10px; padding: .6rem .8rem .8rem; margin: 0 0 .8rem;">
+          <legend style="font-size: .85rem; font-weight: 600; padding: 0 .3rem;">Card</legend>
+          <div class="upload-row">
+            <input type="text" class="nc-label" maxlength="30" value="<%= c.label || '' %>" placeholder="Bold label above the card, e.g. Roofs">
+            <input type="text" class="nc-tag" maxlength="40" value="<%= c.tag || '' %>" placeholder="Second label (spaced out), e.g. Since 1998">
+          </div>
+          <textarea class="nc-words" rows="2" maxlength="300" placeholder="Words on this card instead of photos (optional): a short note that sits between the photos"><%= c.words || '' %></textarea>
+          <div class="strip-rows">
+            <% ((c.pics && c.pics.length) ? c.pics : ['']).forEach(u => { %>
+            <div class="gallery-row upload-row">
+              <input type="url" class="strip-url nc-url" value="<%= u %>" placeholder="Photo: https://... or upload">
+              <input type="file" accept="image/*" class="file-input" hidden>
+              <button type="button" class="btn-secondary upload-btn">Upload</button>
+              <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+              <button type="button" class="btn-secondary strip-remove">✕</button>
+            </div>
+            <% }) %>
+          </div>
+          <button type="button" class="btn-secondary" data-stripadd>+ Add photo</button>
+          <button type="button" class="btn-secondary nc-remove">Remove card</button>
+        </fieldset>
+        <% }) %>
+      </div>
+      <button type="button" class="btn-secondary" data-ncadd>+ Add card</button>
+    <% } else if (b.type === 'photopairs') { %>
+      <% const ppOwn = photoPairs.parse(b.body); %>
+      <textarea name="block_body" class="pp-body" hidden><%= b.body || '' %></textarea>
+      <input type="text" class="pp-label" maxlength="60" value="<%= ppOwn.label %>" placeholder="Small line above the heading (optional), e.g. Puppy school">
+      <p class="hint">Up to 4 pairs. Each pair is a photo with a tile of words beside it; the last tile takes your color. Empty photos use your site's photos.</p>
+      <% for (let i = 0; i < photoPairs.MAX_PAIRS; i++) { const r = ppOwn.pairs[i] || { photo: '', title: '', text: '' }; %>
+      <fieldset class="pp-pair" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: .6rem .8rem; margin: .6rem 0;">
+        <legend style="font-size: .85rem; font-weight: 600; padding: 0 .3rem;">Pair <%= i + 1 %><%= i > 1 ? ' (optional)' : '' %></legend>
+        <div class="upload-row">
+          <input type="url" class="pp-url" value="<%= r.photo %>" placeholder="Photo: https://... or upload (empty = one of your site's photos)">
+          <input type="file" accept="image/*" class="file-input" hidden>
+          <button type="button" class="btn-secondary upload-btn">Upload</button>
+          <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+        </div>
+        <input type="text" class="pp-title" maxlength="80" value="<%= r.title %>" placeholder="Title, e.g. Puppy manners">
+        <textarea class="pp-text" rows="2" maxlength="500" placeholder="A sentence or two"><%= r.text %></textarea>
+      </fieldset>
+      <% } %>
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="pp-own-color"<%= ppOwn.color ? ' checked' : '' %>> Own color for the corners, the last tile and the line (unticked = your brand color):</label>
+        <input type="color" class="pp-color" oninput="this.parentNode.querySelector('.pp-own-color').checked = true" value="<%= ppOwn.color || '#12b5c4' %>" style="width: 64px; height: 36px; padding: 2px;">
+      </div>
+      <label style="font-weight: 400;"><input type="checkbox" class="pp-shapes"<%= ppOwn.shapes ? ' checked' : '' %>> Show the slanted color corners behind the tiles</label>
+    <% } else if (b.type === 'offsetphoto') { %>
+      <% const opOwn = offsetPhoto.parse(b.body); %>
+      <textarea name="block_body" class="op-body" hidden><%= b.body || '' %></textarea>
+      <input type="text" class="op-label" maxlength="60" value="<%= opOwn.label %>" placeholder="Small spaced line over the heading (optional), e.g. About us">
+      <label>Words beside the photo (each line is a paragraph, up to 3)</label>
+      <textarea class="op-text" rows="3" maxlength="2100" placeholder="A few words about who you are and how you help."><%= opOwn.text.join('\n') %></textarea>
+      <input type="text" class="op-note" maxlength="140" value="<%= opOwn.note %>" placeholder="Small line under the words (optional), e.g. Photo by our team">
+      <% [['color', 'Own color for the block at the top of the photo (unticked = soft blue)', '#a9c4e2'], ['accent', 'Own color for the block at the bottom of the photo (unticked = soft pink)', '#f2b0b5'], ['button', 'Own button color (unticked = a deeper shade of the top block)', '#6f98c6'], ['bg', 'Own background color for the block (unticked = the page color)', '#ffffff']].forEach(o => { %>
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="op-own-<%= o[0] %>"<%= opOwn[o[0]] ? ' checked' : '' %>> <%= o[1] %>:</label>
+        <input type="color" class="op-<%= o[0] %>" oninput="this.parentNode.querySelector('.op-own-<%= o[0] %>').checked = true" value="<%= opOwn[o[0]] || o[2] %>" style="width: 64px; height: 36px; padding: 2px;">
+      </div>
+      <% }) %>
+      <label style="font-weight: 400;"><input type="checkbox" class="op-shapes"<%= opOwn.shapes ? ' checked' : '' %>> Show the two color blocks behind the photo</label>
+    <% } else if (aboutBlocks.SPECS[b.type]) { %>
+      <% const abSpec = aboutBlocks.SPECS[b.type], abOwn = aboutBlocks.parse(b.type, b.body); %>
+      <textarea name="block_body" class="ab-body" hidden><%= b.body || '' %></textarea>
+      <% abSpec.fields.forEach(f => { %>
+        <% if (f.kind === 'line') { %>
+      <input type="text" class="ab-f" data-ab="<%= f.k %>" data-abf="line" maxlength="<%= f.max %>" value="<%= abOwn[f.k] %>" placeholder="<%= f.ph %>">
+        <% } else if (f.kind === 'url') { %>
+      <input type="url" class="ab-f" data-ab="<%= f.k %>" data-abf="line" maxlength="300" value="<%= abOwn[f.k] %>" placeholder="<%= f.ph %>">
+        <% } else if (f.kind === 'hint') { %>
+      <p class="hint"><%= f.text %></p>
+        <% } else if (f.kind === 'paras') { %>
+      <label><%= f.label || ('Words (each line is a paragraph, up to ' + f.max + ')') %></label>
+      <textarea class="ab-f" data-ab="<%= f.k %>" data-abf="paras" rows="3" maxlength="<%= 700 * f.max + f.max %>" placeholder="<%= f.ph %>"><%= abOwn[f.k].join('\n') %></textarea>
+        <% } else if (f.kind === 'rows') { %>
+          <% const abN = f.grow ? Math.max(abOwn[f.k].length, 1) : f.max; for (let i = 0; i < abN; i++) { const r = abOwn[f.k][i] || {}; %>
+      <fieldset class="ab-row" data-ab="<%= f.k %>" data-abf="row" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: .6rem .8rem; margin: .6rem 0;">
+        <legend style="font-size: .85rem; font-weight: 600; padding: 0 .3rem;"><%= f.label %><%= f.grow ? '' : (f.max > 1 ? ' ' + (i + 1) : '') + ' (optional)' %><% if (f.grow) { %> <button type="button" class="btn-secondary ab-del" style="margin-left: .5rem; padding: .1rem .6rem; font-size: .75rem;">Remove</button><% } %></legend>
+            <% f.cols.forEach(c => { %>
+              <% if (c.photo) { %>
+        <div class="upload-row">
+          <input type="url" class="ab-c" value="<%= r[c.k] || '' %>" placeholder="<%= c.ph %>">
+          <input type="file" accept="image/*" class="file-input" hidden>
+          <button type="button" class="btn-secondary upload-btn">Upload</button>
+          <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+        </div>
+              <% } else if (c.link) { %>
+        <input type="text" class="ab-c" maxlength="300" value="<%= r[c.k] || '' %>" placeholder="<%= c.ph %>">
+              <% } else if (c.choice) { %>
+        <select class="ab-c"><option value="">Choose a network</option><% c.choice.forEach(o => { %><option value="<%= o[0] %>"<%= r[c.k] === o[0] ? ' selected' : '' %>><%= o[1] %></option><% }) %></select>
+              <% } else { %>
+        <input type="text" class="ab-c" maxlength="<%= c.max %>" value="<%= r[c.k] || '' %>" placeholder="<%= c.ph %>">
+              <% } %>
+            <% }) %>
+      </fieldset>
+          <% } %>
+          <% if (f.grow) { %><button type="button" class="btn-secondary ab-add" data-ab="<%= f.k %>" data-max="<%= f.max %>">+ Add <%= f.label.toLowerCase() %></button><% } %>
+        <% } else if (f.kind === 'color') { %>
+      <div class="upload-row" data-ab="<%= f.k %>" data-abf="color" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="ab-own"<%= abOwn[f.k] ? ' checked' : '' %>> <%= f.label %>:</label>
+        <input type="color" class="ab-color" oninput="this.parentNode.querySelector('.ab-own').checked = true" value="<%= abOwn[f.k] || f.def %>" style="width: 64px; height: 36px; padding: 2px;">
+      </div>
+        <% } else if (f.kind === 'toggle') { %>
+      <label style="font-weight: 400;"><input type="checkbox" class="ab-tog" data-ab="<%= f.k %>" data-abf="toggle"<%= abOwn[f.k] ? ' checked' : '' %>> <%= f.label %></label>
+        <% } %>
+      <% }) %>
+    <% } else if (b.type === 'framedphoto') { %>
+      <% const fpOwn = framedPhoto.parse(b.body); %>
+      <textarea name="block_body" class="fp-body" hidden><%= b.body || '' %></textarea>
+      <label>Words on the card (each line is a paragraph, up to 3)</label>
+      <textarea class="fp-text" rows="3" maxlength="2100" placeholder="A few words about what you offer."><%= fpOwn.text.join('\n') %></textarea>
+      <input type="text" class="fp-note" maxlength="140" value="<%= fpOwn.note %>" placeholder="Small line under the words (optional), e.g. Photo by our team">
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="fp-own-color"<%= fpOwn.color ? ' checked' : '' %>> Own color for the frame blocks, heading and button (unticked = warm tan):</label>
+        <input type="color" class="fp-color" oninput="this.parentNode.querySelector('.fp-own-color').checked = true" value="<%= fpOwn.color || '#b9a383' %>" style="width: 64px; height: 36px; padding: 2px;">
+      </div>
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="fp-own-bg"<%= fpOwn.bg ? ' checked' : '' %>> Own background color for the band (unticked = charcoal):</label>
+        <input type="color" class="fp-bg" oninput="this.parentNode.querySelector('.fp-own-bg').checked = true" value="<%= fpOwn.bg || '#2b2b2b' %>" style="width: 64px; height: 36px; padding: 2px;">
+      </div>
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="fp-own-card"<%= fpOwn.card ? ' checked' : '' %>> Own card color (unticked = white):</label>
+        <input type="color" class="fp-card" oninput="this.parentNode.querySelector('.fp-own-card').checked = true" value="<%= fpOwn.card || '#ffffff' %>" style="width: 64px; height: 36px; padding: 2px;">
+      </div>
+    <% } else if (b.type === 'roundphoto') { %>
+      <% const rpOwn = roundPhoto.parse(b.body); %>
+      <textarea name="block_body" class="rp-body" hidden><%= b.body || '' %></textarea>
+      <label>Words on the card (each line is a paragraph, up to 3)</label>
+      <textarea class="rp-text" rows="3" maxlength="2100" placeholder="A few words about what you offer."><%= rpOwn.text.join('\n') %></textarea>
+      <input type="text" class="rp-note" maxlength="140" value="<%= rpOwn.note %>" placeholder="Small line under the words (optional), e.g. Photo by our team">
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="rp-own-color"<%= rpOwn.color ? ' checked' : '' %>> Own color for the card, the circle, rings and dots (unticked = your brand color):</label>
+        <input type="color" class="rp-color" oninput="this.parentNode.querySelector('.rp-own-color').checked = true" value="<%= rpOwn.color || '#2ec4b6' %>" style="width: 64px; height: 36px; padding: 2px;">
+      </div>
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="rp-own-bg"<%= rpOwn.bg ? ' checked' : '' %>> Own background color for the block (unticked = the page color):</label>
+        <input type="color" class="rp-bg" oninput="this.parentNode.querySelector('.rp-own-bg').checked = true" value="<%= rpOwn.bg || '#ffffff' %>" style="width: 64px; height: 36px; padding: 2px;">
+      </div>
+      <label style="font-weight: 400;"><input type="checkbox" class="rp-shapes"<%= rpOwn.shapes ? ' checked' : '' %>> Show the rings and dots around the photo</label>
+    <% } else if (b.type === 'shapeform') { %>
+      <% const sfOwn = shapeForm.parse(b.body); %>
+      <textarea name="block_body" class="sf-body" hidden><%= b.body || '' %></textarea>
+      <p class="hint">The card shows your contact form, the same one as on your Contact page (messages go to Leads). Turn on "Take messages" in the Contact section for the form; until then the card shows your phone and email. Type the heading above (e.g. Contact us).</p>
+      <input type="text" class="sf-text" maxlength="300" value="<%= sfOwn.text %>" placeholder="Line under the heading (optional), e.g. We answer within a day">
+      <% [['color', 'Own main color: heading, button, the block under the card and the stripes (unticked = your brand color)', '#2f3fd0'], ['accent', 'Own color for the round dot (unticked = orange)', '#f08a00'], ['panel', 'Own color for the panel behind the photo (unticked = warm yellow)', '#f5c518'], ['bg', 'Own background color for the block (unticked = light grey)', '#e6e6e6']].forEach(o => { %>
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="sf-own-<%= o[0] %>"<%= sfOwn[o[0]] ? ' checked' : '' %>> <%= o[1] %>:</label>
+        <input type="color" class="sf-<%= o[0] %>" oninput="this.parentNode.querySelector('.sf-own-<%= o[0] %>').checked = true" value="<%= sfOwn[o[0]] || o[2] %>" style="width: 64px; height: 36px; padding: 2px;">
+      </div>
+      <% }) %>
+      <label style="font-weight: 400;"><input type="checkbox" class="sf-shapes"<%= sfOwn.shapes ? ' checked' : '' %>> Show the round dot, the color block and the stripes</label>
+    <% } else if (b.type === 'ringcard') { %>
+      <% const rgOwn = ringCard.parse(b.body); %>
+      <textarea name="block_body" class="rg-body" hidden><%= b.body || '' %></textarea>
+      <label>Words on the white panel (each line is a paragraph, up to 3)</label>
+      <textarea class="rg-text" rows="3" maxlength="2100" placeholder="A few words about you, your pets or what you do."><%= rgOwn.text.join('\n') %></textarea>
+      <input type="text" class="rg-note" maxlength="140" value="<%= rgOwn.note %>" placeholder="Small line under the words (optional), e.g. Photo by our team">
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="rg-own-color"<%= rgOwn.color ? ' checked' : '' %>> Own color for the heading, the shapes and the button (unticked = your brand color):</label>
+        <input type="color" class="rg-color" oninput="this.parentNode.querySelector('.rg-own-color').checked = true" value="<%= rgOwn.color || '#d9505e' %>" style="width: 64px; height: 36px; padding: 2px;">
+      </div>
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="rg-own-bg"<%= rgOwn.bg ? ' checked' : '' %>> Own background color for the block (unticked = a soft tint of the color above):</label>
+        <input type="color" class="rg-bg" oninput="this.parentNode.querySelector('.rg-own-bg').checked = true" value="<%= rgOwn.bg || '#fbecec' %>" style="width: 64px; height: 36px; padding: 2px;">
+      </div>
+      <label style="font-weight: 400;"><input type="checkbox" class="rg-shapes"<%= rgOwn.shapes ? ' checked' : '' %>> Show the striped circle and the ring behind the panel and the photo</label>
+    <% } else if (b.type === 'twinphotos') { %>
+      <% const twOwn = twinPhotos.parse(b.body); %>
+      <textarea name="block_body" class="tw-body" hidden><%= b.body || '' %></textarea>
+      <label>Words under the heading (each line is a paragraph, up to 3)</label>
+      <textarea class="tw-text" rows="3" maxlength="2100" placeholder="A sentence or two about you and the pets you look after."><%= twOwn.text.join('\n') %></textarea>
+      <label>Two square photos (empty = your site's photos; ✂ Cut out makes the pet stand on the colored square)</label>
+      <% for (let i = 0; i < 2; i++) { %>
+      <div class="upload-row">
+        <input type="url" class="tw-url" value="<%= twOwn.photos[i] || '' %>" placeholder="Photo <%= i + 1 %>: https://... or upload">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+      <% } %>
+      <label>Links on the panel (up to <%= twinPhotos.MAX_LINKS %>; leave the address empty for plain words)</label>
+      <% for (let i = 0; i < twinPhotos.MAX_LINKS; i++) { const k = twOwn.links[i] || { label: '', url: '' }; %>
+      <div class="upload-row tw-link">
+        <input type="text" class="tw-label" maxlength="60" value="<%= k.label %>" placeholder="<%= i ? 'Another link (optional)' : 'e.g. Training tips' %>">
+        <input type="text" class="tw-href" maxlength="500" value="<%= k.url %>" placeholder="Address, e.g. /services or https://...">
+      </div>
+      <% } %>
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="tw-own-color"<%= twOwn.color ? ' checked' : '' %>> Own color for the heading and the photo squares (unticked = your brand color):</label>
+        <input type="color" class="tw-color" oninput="this.parentNode.querySelector('.tw-own-color').checked = true" value="<%= twOwn.color || '#f2b705' %>" style="width: 64px; height: 36px; padding: 2px;">
+      </div>
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="tw-own-panel"<%= twOwn.panel ? ' checked' : '' %>> Own color for the tall panel (unticked = light grey):</label>
+        <input type="color" class="tw-panel" oninput="this.parentNode.querySelector('.tw-own-panel').checked = true" value="<%= twOwn.panel || '#efefef' %>" style="width: 64px; height: 36px; padding: 2px;">
+      </div>
+    <% } else if (b.type === 'reviewcard') { %>
+      <% const rcOwn = reviewCard.parse(b.body); %>
+      <textarea name="block_body" class="rc-body" hidden><%= b.body || '' %></textarea>
+      <p class="hint">Up to 3 reviews on a wide card, each with a small round photo (or the person's first letter when there is no photo), their words and their name. Leave all three empty to show the first 3 from your Reviews section. Type the heading above (e.g. What pet parents say).</p>
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="rc-own-bg"<%= rcOwn.bg ? ' checked' : '' %>> Own background color for the block (unticked = a soft tint of your brand color):</label>
+        <input type="color" class="rc-bg" oninput="this.parentNode.querySelector('.rc-own-bg').checked = true" value="<%= rcOwn.bg || '#eef2f7' %>" style="width: 64px; height: 36px; padding: 2px;">
+      </div>
+      <div class="upload-row" style="align-items: center;">
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="rc-own-card"<%= rcOwn.card ? ' checked' : '' %>> Own card color (unticked = white; the words turn light on a dark card):</label>
+        <input type="color" class="rc-card" oninput="this.parentNode.querySelector('.rc-own-card').checked = true" value="<%= rcOwn.card || '#ffffff' %>" style="width: 64px; height: 36px; padding: 2px;">
+      </div>
+      <% for (let i = 0; i < reviewCard.MAX_REVIEWS; i++) { const r = rcOwn.reviews[i] || { photo: '', quote: '', name: '' }; %>
+      <fieldset class="rc-review" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: .6rem .8rem; margin: .6rem 0;">
+        <legend style="font-size: .85rem; font-weight: 600; padding: 0 .3rem;">Review <%= i + 1 %><%= i ? ' (optional)' : '' %></legend>
+        <div class="upload-row">
+          <input type="url" class="rc-url" value="<%= r.photo %>" placeholder="Small round photo: https://... or upload (optional)">
+          <input type="file" accept="image/*" class="file-input" hidden>
+          <button type="button" class="btn-secondary upload-btn">Upload</button>
+          <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+        </div>
+        <textarea class="rc-quote" rows="2" maxlength="400" placeholder="What they said, in their words"><%= r.quote %></textarea>
+        <input type="text" class="rc-name" maxlength="80" value="<%= r.name %>" placeholder="Their name, e.g. Sam, Max's owner">
+      </fieldset>
+      <% } %>
+    <% } else if (b.type === 'phototabs') { %>
+      <% const ptOwn = photoTabs.parse(b.body); %>
+      <textarea name="block_body" class="pt-body" hidden><%= b.body || '' %></textarea>
+      <p class="hint">Up to 4 cards. Each card is a photo with its own words and color: visitors pick a small photo under the big one, and the big photo, the words in the box at the front and the color all change to that card's. With one card it is a plain photo with a card. The heading above titles the first card if you leave its title empty.</p>
+      <% for (let i = 0; i < photoTabs.MAX_CARDS; i++) { const c = ptOwn.cards[i] || { photo: '', color: '', title: '', text: '' }; %>
+      <fieldset class="pt-card" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: .6rem .8rem; margin: .6rem 0;">
+        <legend style="font-size: .85rem; font-weight: 600; padding: 0 .3rem;">Card <%= i + 1 %><%= i ? ' (optional)' : '' %></legend>
+        <div class="upload-row">
+          <input type="url" class="pt-url" value="<%= c.photo %>" placeholder="Photo: https://... or upload (empty = one of your site's photos)">
+          <input type="file" accept="image/*" class="file-input" hidden>
+          <button type="button" class="btn-secondary upload-btn">Upload</button>
+          <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+        </div>
+        <input type="text" class="pt-title" maxlength="80" value="<%= c.title %>" placeholder="Title in the box, e.g. Puppy classes">
+        <textarea class="pt-text" rows="2" maxlength="600" placeholder="A sentence or two for this photo"><%= c.text %></textarea>
+        <div class="upload-row" style="align-items: center;">
+          <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="pt-own"<%= c.color ? ' checked' : '' %>> Own color for this card (border, button and the block behind the photo; unticked = your brand color):</label>
+          <input type="color" class="pt-color" oninput="this.parentNode.querySelector('.pt-own').checked = true" value="<%= c.color || '#1d6fa5' %>" style="width: 64px; height: 36px; padding: 2px;">
+        </div>
+      </fieldset>
+      <% } %>
+    <% } else if (b.type === 'overlapcard') { %>
+      <label>Words on the card (each line is a paragraph, up to 4)</label>
+      <textarea name="block_body" rows="4" maxlength="4000" placeholder="A few words about you, your pets or what you do.&#10;~ Photo by Jane Smith"><%= b.body || '' %></textarea>
+      <p class="hint">Type the heading above (e.g. Why do we love pets?). A line that starts with ~ shows small and in italics under the words, e.g. a photo credit. The Button boxes below add the dark rounded button (optional).</p>
+    <% } else if (b.type === 'patterns') { %>
+      <label>Words under the heading (optional; a blank line starts a new paragraph. Leave the heading and words empty for just the pattern)</label>
+      <textarea name="block_body" rows="3" maxlength="600" placeholder="A line or two about what you do."><%= b.body || '' %></textarea>
+    <% } else if (b.type === 'zoomword' || b.type === 'morph') { %>
+      <label><%= b.type === 'zoomword' ? 'Words that come up after the zoom (optional, a sentence or two)' : 'Text beside the photo (a new line starts a new paragraph)' %></label>
+      <textarea name="block_body" rows="4" maxlength="1600"><%= b.body || '' %></textarea>
+    <% } else if (b.type === 'bigwords') { %>
+      <label>Big words, one row per line (up to 4). Put [photo] where the photo goes</label>
+      <textarea name="block_body" rows="4" maxlength="600" placeholder="Building&#10;tomorrow&#10;for [photo] today"><%= b.body || '' %></textarea>
+      <p class="hint">Leave it empty to use the heading as the big words. With rows typed, the heading shows as a small line above them.</p>
+    <% } else if (b.type === 'collage') { %>
+      <label>Words that slide through the photo card (one per line; add " | photo link" to give a line its own photo)</label>
+      <textarea name="block_body" rows="5" maxlength="4000" placeholder="Roof repair | https://...&#10;New roofs&#10;Gutters"><%= b.body || '' %></textarea>
+      <p class="hint">Leave it empty to use your service names, each with its own photo. Lines without a photo, and the photos scattered around the card, use your site's photos (hero, services, About and gallery). It needs 3 lines and 3 photos. Put [square brackets] around heading words to color them.</p>
+    <% } else { %>
+        <label><%= b.type === 'photoBanner' ? 'Words under the heading (optional, a sentence or two)' : b.type === 'steps' ? 'Steps (one per line: Title | short description)' : b.type === 'features' ? 'Cards (one per line: Title | short description)' : b.type === 'team' ? 'People (one per line: Name | Role | Short bio | Photo link). Photo link is optional; upload photos in the Gallery section and paste the link.' : b.type === 'stats' ? 'Numbers (one per line: Number | Label). They count up when scrolled into view.' : b.type === 'beforeAfter' ? 'Words under the heading (optional)' : b.type === 'video' ? 'Video link (YouTube or Vimeo page link, or a direct .mp4 / .webm file link)' : (b.type === 'tabs' || b.type === 'accordion') ? 'Items (one per line: Title | text)' : b.type === 'pricing' ? 'Plans (one per line: Name | Price | what is included, separated by commas). Start a line with * to highlight that plan.' : b.type === 'chips' ? 'Places (one per line, e.g. Kissimmee, FL — add | /link to make one clickable)' : b.type === 'wall' ? 'Extra short lines for the wall (optional, one per line, e.g. a motto). The wall already uses the name or logo, headline, services, photos, short reviews, trust numbers and badges, and your colors.' : 'Text (a blank line starts a new paragraph)' %></label>
+    <textarea name="block_body" rows="5" maxlength="2000" placeholder="<%= b.type === 'photoBanner' ? 'A sentence or two about what you do. Let\'s talk.' : b.type === 'steps' ? 'Book online | Pick a time that works for you' : b.type === 'features' ? 'Local team | Describe this point' : b.type === 'team' ? 'Jordan Lee | Lead groomer | Short bio goes here | https://...' : b.type === 'stats' ? '12 | Years in business\n1,500+ | Pets groomed' : b.type === 'beforeAfter' ? 'Drag the line to see the difference.' : b.type === 'video' ? 'https://www.youtube.com/watch?v=...' : b.type === 'tabs' ? 'Dogs | What we offer for dogs\nCats | What we offer for cats' : b.type === 'accordion' ? 'How long does it take? | Most visits take about two hours.' : b.type === 'pricing' ? 'Bath | from $40 | Wash and dry, Brush out, Ear cleaning\n* Full groom | from $70 | Bath, Haircut, Nail trim' : b.type === 'chips' ? 'Kissimmee, FL' : b.type === 'wall' ? 'Built to last\nNo job too small' : '' %>"><%= b.body || '' %></textarea>
+    <% } %>
+    <% if (b.type === 'steps') { %>
+      <input type="hidden" name="block_image" value="">
+      <label>Look</label>
+      <select name="block_side"><option value="auto"<%= !['timeline', 'stack'].includes(b.side) ? ' selected' : '' %>>Cards in a grid</option><option value="timeline"<%= b.side === 'timeline' ? ' selected' : '' %>>Timeline (a line draws itself as visitors scroll)</option><option value="stack"<%= b.side === 'stack' ? ' selected' : '' %>>Stacking cards (each step slides over the last as visitors scroll)</option></select>
+    <% } else if (b.type === 'wall') { %>
+      <% const wset = brandWall.settings(b.side); %>
+      <input type="hidden" name="block_image" value=""><input type="hidden" name="block_side" class="wall-side" value="<%= brandWall.cleanSide(b.side) %>">
+      <label>Wall size, tilt, speed and what it shows</label>
+      <div class="upload-row wall-opts" style="flex-wrap: wrap;" onchange="var r=this.closest('.block-row'),v=Array.prototype.map.call(this.querySelectorAll('select'),function(x){return x.value}).join(':');r.querySelector('.wall-side').value=v;">
+        <select aria-label="Wall height"><% [['short', 'Short'], ['medium', 'Medium'], ['tall', 'Tall'], ['screen', 'Full screen']].forEach(o => { %><option value="<%= o[0] %>" <%= wset.size === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <select aria-label="Wall tilt"><% [['none', 'Straight'], ['gentle', 'Gentle tilt'], ['strong', 'Strong tilt']].forEach(o => { %><option value="<%= o[0] %>" <%= wset.tilt === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <select aria-label="Wall speed"><% [['slow', 'Slow'], ['normal', 'Normal speed'], ['fast', 'Fast']].forEach(o => { %><option value="<%= o[0] %>" <%= wset.speed === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <select aria-label="What the wall shows" style="flex: 1 1 100%;"><% [['all', 'Your photos and lines plus the site\'s content'], ['mine', 'Only your photos and lines (with the name and colors)']].forEach(o => { %><option value="<%= o[0] %>" <%= wset.content === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+      </div>
+      <p class="hint">The heading and button (optional) sit on a card in the middle of the wall. Leave both empty for the wall alone. "Plain background" shows a dark wall; pick a band below for light or brand-colored. Visitors can pause it, and it holds still for anyone who turns motion off.</p>
+    <% } else if (b.type === 'cascade') { %>
+      <% const cset = cardCascade.settings(b.side); %>
+      <input type="hidden" name="block_image" value=""><input type="hidden" name="block_side" class="wall-side" value="<%= cardCascade.cleanSide(b.side) %>">
+      <label>Size, speed and what the cards show</label>
+      <div class="upload-row wall-opts" style="flex-wrap: wrap;" onchange="var r=this.closest('.block-row'),v=Array.prototype.map.call(this.querySelectorAll('select'),function(x){return x.value}).join(':');r.querySelector('.wall-side').value=v;">
+        <select aria-label="Cascade height"><% [['short', 'Short'], ['medium', 'Medium'], ['tall', 'Tall'], ['screen', 'Full screen']].forEach(o => { %><option value="<%= o[0] %>" <%= cset.size === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <select aria-label="Cascade speed"><% [['slow', 'Slow'], ['normal', 'Normal speed'], ['fast', 'Fast']].forEach(o => { %><option value="<%= o[0] %>" <%= cset.speed === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <select aria-label="What the cards show" style="flex: 1 1 100%;"><% [['all', 'Your photos and lines plus the site\'s content'], ['mine', 'Only your photos and lines (with the name and colors)']].forEach(o => { %><option value="<%= o[0] %>" <%= cset.content === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+      </div>
+      <p class="hint">The cards deal in one after another into an overlapping stack, hold, then clear and deal again. With a heading or button (optional) they sit beside the cards; leave both empty for the cards alone. Pick a band below for a tinted, brand-colored or dark background. Visitors can pause it, and it shows the finished stack, still, for anyone who turns motion off.</p>
+    <% } else if (b.type === 'video') { %>
+      <input type="hidden" name="block_image" value="">
+      <label>Look</label>
+      <select name="block_side"><% videoMask.LOOKS.forEach(o => { %><option value="<%= o[0] %>" <%= videoMask.clean(b.side) === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+      <p class="hint">The shapes and "through the letters" need a video file link (.mp4 or .webm, e.g. one you uploaded); a YouTube or Vimeo link stays a plain player. A shaped video plays silently on a loop, like a moving picture. "Through the letters" uses the heading as the letters, so keep it to a word or two.</p>
+    <% } else if (b.type === 'wave') { %>
+      <input type="hidden" name="block_image" value="">
+      <label>Word the photos spell first (optional, e.g. your name or "Art"; up to 12 letters)</label>
+      <input type="text" name="block_side" maxlength="12" value="<%= motionBlocks.cleanShape(b.side) %>" placeholder="Leave empty for the wave">
+      <p class="hint">With a word here, the photo cards line up to spell it (short words read best, 1 to 6 letters), then scatter as visitors scroll and settle around your words. Empty: the photos make a wave between the two words of the heading (written like Tracing ~ Art). With motion off it shows your words with the photos under them.</p>
+    <% } else if (b.type === 'story' || b.type === 'path') { %>
+      <input type="hidden" name="block_image" value=""><input type="hidden" name="block_side" value="auto">
+      <p class="hint"><%= b.type === 'story' ? 'The block holds still while the steps play one after another as visitors scroll, each with its photo (your photos first, then your site\'s), and a bar fills as the story goes. On phones, and with motion off, it shows the steps as a list.' : 'The photos (yours first, then your site\'s) and your lines travel along a curve across the block as visitors scroll. With motion off they sit in a row.' %></p>
+    <% } else if (b.type === 'zoomword' || b.type === 'morph') { %>
+      <label><%= b.type === 'zoomword' ? 'Photo inside the word (leave empty to use your hero photo)' : 'Photo (leave empty to use your About photo)' %></label>
+      <div class="upload-row">
+        <input type="url" name="block_image" value="<%= b.imageUrl || '' %>" placeholder="https://... or upload">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+      <input type="hidden" name="block_side" value="auto">
+      <p class="hint"><%= b.type === 'zoomword' ? 'Type the word as the heading (one or two short words read best). It shows huge, filled with the photo; scrolling zooms through its letters into the photo, then your words come up.' : 'The photo sits in a soft shape that changes, pebble to circle to arch to leaf, as visitors scroll past.' %></p>
+    <% } else if (b.type === 'trail') { %>
+      <input type="hidden" name="block_image" value=""><input type="hidden" name="block_side" value="auto">
+      <p class="hint"><%= b.type === 'trail' ? 'Photos pop out along the mouse as it moves across this block, overlapping like steps, then fade. On phones a trail runs across by itself. With motion off it shows the photos as a still staircase.' : 'Write the heading as two words with a ~ between them, e.g. Tracing ~ Art: the photos make a wave between them. As visitors scroll, the photos scatter, then settle around your words. With motion off it shows your words with the photos under them.' %></p>
+    <% } else if (b.type === 'bigwords') { %>
+      <label>Photo inside the words (leave empty to use your first site photo)</label>
+      <div class="upload-row">
+        <input type="url" name="block_image" value="<%= b.imageUrl || '' %>" placeholder="https://... or upload">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+      <input type="hidden" name="block_side" value="auto">
+      <p class="hint">The words stretch into place one after another as the block comes into view, and the photo opens up inside the line.</p>
+    <% } else if (b.type === 'collage') { %>
+      <input type="hidden" name="block_image" value="">
+      <label>How the words move</label>
+      <select name="block_side">
+        <option value="auto"<%= b.side !== 'banner' ? ' selected' : '' %>>Step by step: the next line slides onto the card every few seconds</option>
+        <option value="banner"<%= b.side === 'banner' ? ' selected' : '' %>>Banner: the words run across the page nonstop, and the card's photo changes as each line passes it</option>
+      </select>
+      <p class="hint">The heading's words rise in one at a time. Each time a line reaches the card, its photo wipes in and two of the scattered photos swap; pointing at a photo grows it, and pointing at a line stops the banner. It holds still for anyone who turns motion off.</p>
+    <% } else if (b.type === 'shapes') { %>
+      <input type="hidden" name="block_image" value="">
+      <label>Shape rims</label>
+      <select name="block_side">
+        <% shapeBlock.RIMS.forEach(o => { %><option value="<%= o[0] %>" <%= shapeBlock.cleanSide(b.side) === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <p class="hint">The heading shows big and bold on the left; type its fixed part as the heading (e.g. We make brands), and the words above take turns on its last line, in your brand color. Your small words sit on the right. Three soft rounded shapes run along the bottom, each showing a different one of your photos; while visitors can see the block, the photos move round the shapes like a carousel. With no photos it uses your site's. Put [square brackets] around heading words to color them. Visitors can pause it, and it holds still for anyone who turns motion off.</p>
+    <% } else if (b.type === 'patterns') { %>
+      <input type="hidden" name="block_image" value="">
+      <% const gpSet = patternBlock.settings(b.side); %>
+      <input type="hidden" name="block_side" class="gp-side" value="<%= patternBlock.cleanSide(b.side) %>">
+      <label>Pattern, words and motion</label>
+      <div class="upload-row gp-pick" style="flex-wrap: wrap;" onchange="var r=this.closest('.block-row');r.querySelector('.gp-side').value=Array.prototype.map.call(this.querySelectorAll('select'),function(x){return x.value}).join(':');">
+        <select aria-label="Pattern"><% patternBlock.PATTERNS.forEach(o => { %><option value="<%= o[0] %>" <%= gpSet.pattern === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <select aria-label="Words look"><% patternBlock.LOOKS.forEach(o => { %><option value="<%= o[0] %>" <%= gpSet.look === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <select aria-label="Motion"><% patternBlock.MOTIONS.forEach(o => { %><option value="<%= o[0] %>" <%= gpSet.motion === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <select aria-label="Version"><% for (let v = 1; v <= patternBlock.VERSIONS; v++) { %><option value="<%= v %>" <%= gpSet.version === v ? 'selected' : '' %>>Version <%= v %> of <%= patternBlock.VERSIONS %></option><% } %></select>
+        <button type="button" class="btn-secondary" title="Try another version of this pattern" onclick="var s=this.previousElementSibling,n=s.options.length,v;do{v=1+Math.floor(Math.random()*n)}while(String(v)===s.value&&n>1);s.value=String(v);s.dispatchEvent(new Event('change',{bubbles:true}));">Shuffle</button>
+      </div>
+      <label>Pattern colors</label>
+      <%- include('_ink-pick', { name: 'block_bgink', value: b.bgink || '', theme: typeof site !== 'undefined' ? site.theme : {}, kind: 'pattern' }) %>
+      <p class="hint">The whole block is a pattern drawn only with color (no photos, so it loads instantly). Each pattern has 12 versions with different angles and bands; Shuffle tries another. Colors: your brand and accent colors unless you pick others, or a rainbow. When a visitor points at it, the pattern slowly zooms in a little and the words card lifts; on phones it breathes in and out slowly. It holds still for anyone who turns motion off.</p>
+    <% } else if (b.type === 'photoblend') { %>
+      <input type="hidden" name="block_image" value="">
+      <% const pbSide = photoBlend.cleanSide(b.side).split(':'); %>
+      <input type="hidden" name="block_side" class="pb-side" value="<%= pbSide.join(':') %>">
+      <label>Photo side and how it blends in</label>
+      <div class="upload-row pb-sidepick" style="flex-wrap: wrap;" onchange="var r=this.closest('.block-row');r.querySelector('.pb-side').value=Array.prototype.map.call(this.querySelectorAll('select'),function(x){return x.value}).join(':');">
+        <select><% photoBlend.SIDES.forEach(o => { %><option value="<%= o[0] %>" <%= pbSide[0] === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <select><% photoBlend.BLENDS.forEach(o => { %><option value="<%= o[0] %>" <%= pbSide[1] === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+      </div>
+      <p class="hint">Match: the block takes the color along the photo's edge, so a photo shot on a plain backdrop looks like it stands right in the block (with photos that take turns, the color follows each photo). Fade: the photo's edge next to the words fades softly into the block's color. Pets cut out: use "Cut out the pets" above; the pets stand on the block's color with no edge. On phones the photo sits on top and fades into the words under it.</p>
+    <% } else if (b.type === 'advice') { %>
+      <input type="hidden" name="block_image" value="">
+      <label>Which side</label>
+      <select name="block_side">
+        <% adviceBlock.SIDES.forEach(o => { %><option value="<%= o[0] %>" <%= adviceBlock.cleanSide(b.side) === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <p class="hint">A soft band in a light take on your brand color runs along the top and bottom, and the big photo reaches up into it. With 2 to 4 big photos they fade from one to the next every few seconds (still for anyone who turns motion off). On phones the words go under the photo.</p>
+    <% } else if (b.type === 'crossband') { %>
+      <input type="hidden" name="block_image" value="">
+      <label>Which side</label>
+      <select name="block_side">
+        <option value="auto"<%= b.side !== 'right' ? ' selected' : '' %>>Band, photo and checklist on the left; card on the right</option>
+        <option value="right"<%= b.side === 'right' ? ' selected' : '' %>>Mirrored: band, photo and checklist on the right</option>
+      </select>
+      <p class="hint">A wide color band runs in from the page edge behind the tall photo and the card. With more than one photo in a spot they fade from one to the next every few seconds (still for anyone who turns motion off). On phones it all stacks.</p>
+    <% } else if (b.type === 'mosaic') { %>
+      <input type="hidden" name="block_image" value="">
+      <label>Menu bar</label>
+      <select name="block_side">
+        <% mosaicHero.MENUS.forEach(o => { %><option value="<%= o[0] %>" <%= mosaicHero.cleanSide(b.side) === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <p class="hint">Put this block first on the page to use it as the hero. The menu bar shows your name or logo, your page links and a Call Now button (when you have a phone number); on phones the links fold into a menu button. If you use it, you may want to tick "Hide the menu links" in Look and feel so the links don't show twice.</p>
+    <% } else if (b.type === 'thirds') { %>
+      <input type="hidden" name="block_image" value="">
+      <label>Big box colors</label>
+      <select name="block_side">
+        <% thirdsBlock.BOXES.forEach(o => { %><option value="<%= o[0] %>" <%= thirdsBlock.cleanSide(b.side) === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <p class="hint">Three columns side by side: a tall photo, your words on a light panel, and a photo over the big box. The big box's words grow to fill it: one letter or word shows huge, a few words share the box. With more than one photo in a spot they fade from one to the next every few seconds (they hold still for anyone who turns motion off). On phones the columns stack.</p>
+    <% } else if (b.type === 'photopairs') { %>
+      <input type="hidden" name="block_image" value="">
+      <input type="hidden" name="block_side" value="center">
+      <p class="hint">Type the heading above (e.g. Train with us). The Button boxes below add one button under the tiles (optional). On phones each photo sits above its words.</p>
+    <% } else if (b.type === 'offsetphoto') { %>
+      <label>Photo (leave empty to use your About photo, or another of your site's photos)</label>
+      <div class="upload-row">
+        <input type="url" name="block_image" value="<%= b.imageUrl || '' %>" placeholder="https://... or upload">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+      <label>Which side</label>
+      <select name="block_side">
+        <% offsetPhoto.SIDES.forEach(o => { %><option value="<%= o[0] %>" <%= offsetPhoto.cleanSide(b.side) === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <p class="hint">The photo sits on two offset blocks of color. A photo with its background cut out (✂ Cut out) stands on a soft square of the top color. On phones the words go under the photo. Type the heading above. The Button boxes below add the button (optional).</p>
+    <% } else if (aboutBlocks.SPECS[b.type]) { %>
+      <% const abS = aboutBlocks.SPECS[b.type]; %>
+      <% if (abS.photoLabel) { %>
+      <label><%= abS.photoLabel %></label>
+      <div class="upload-row">
+        <input type="url" name="block_image" value="<%= b.imageUrl || '' %>" placeholder="https://... or upload">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+      <% } else { %><input type="hidden" name="block_image" value=""><% } %>
+      <% if (abS.sides.length > 1) { %>
+      <label>Which side</label>
+      <select name="block_side">
+        <% abS.sides.forEach(o => { %><option value="<%= o[0] %>" <%= aboutBlocks.cleanSide(b.type, b.side) === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <% } else { %><input type="hidden" name="block_side" value="<%= abS.sides[0][0] %>"><% } %>
+      <p class="hint"><%= abS.hint %> A photo with its background cut out (✂ Cut out) stands on a soft square of your color. The Button boxes below add the button (optional).</p>
+    <% } else if (b.type === 'framedphoto') { %>
+      <label>Photo (leave empty to use your About photo, or another of your site's photos)</label>
+      <div class="upload-row">
+        <input type="url" name="block_image" value="<%= b.imageUrl || '' %>" placeholder="https://... or upload">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+      <label>Which side</label>
+      <select name="block_side">
+        <% framedPhoto.SIDES.forEach(o => { %><option value="<%= o[0] %>" <%= framedPhoto.cleanSide(b.side) === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <p class="hint">The photo sits between two blocks of color that peek out at opposite corners, and the card overlaps its lower corner. A photo with its background cut out (✂ Cut out) stands on a soft square of the frame color. On phones the card goes under the photo. Type the heading above. The Button boxes below add the button (optional).</p>
+    <% } else if (b.type === 'roundphoto') { %>
+      <label>Photo (leave empty to use your About photo, or another of your site's photos)</label>
+      <div class="upload-row">
+        <input type="url" name="block_image" value="<%= b.imageUrl || '' %>" placeholder="https://... or upload">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+      <label>Which side</label>
+      <select name="block_side">
+        <% roundPhoto.SIDES.forEach(o => { %><option value="<%= o[0] %>" <%= roundPhoto.cleanSide(b.side) === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <p class="hint">The photo is cut into a big circle on a soft circle of your color, and the color card overlaps its lower corner. A photo with its background cut out (✂ Cut out) stands in the circle. On phones the card goes under the photo. Type the heading above. The Button boxes below add the button (optional).</p>
+    <% } else if (b.type === 'shapeform') { %>
+      <label>Photo (a person or pet with the background cut out looks best; empty = your About photo)</label>
+      <div class="upload-row">
+        <input type="url" name="block_image" value="<%= b.imageUrl || '' %>" placeholder="https://... or upload">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+      <label>Which side</label>
+      <select name="block_side">
+        <% shapeForm.SIDES.forEach(o => { %><option value="<%= o[0] %>" <%= shapeForm.cleanSide(b.side) === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <p class="hint">On phones the photo goes on top and the form card under it.</p>
+    <% } else if (b.type === 'ringcard') { %>
+      <label>Photo (leave empty to use your About photo, or another of your site's photos)</label>
+      <div class="upload-row">
+        <input type="url" name="block_image" value="<%= b.imageUrl || '' %>" placeholder="https://... or upload">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+      <label>Which side</label>
+      <select name="block_side">
+        <% ringCard.SIDES.forEach(o => { %><option value="<%= o[0] %>" <%= ringCard.cleanSide(b.side) === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <p class="hint">Type the heading above (e.g. Why dogs and people get along): it shows in your color. The photo sits on a soft square of that color, so a photo with its background cut out (✂ Cut out) stands on color. The Button boxes below add the button (optional). On phones the photo goes on top and the words under it.</p>
+    <% } else if (b.type === 'twinphotos') { %>
+      <input type="hidden" name="block_image" value="">
+      <label>Which side</label>
+      <select name="block_side">
+        <% twinPhotos.SIDES.forEach(o => { %><option value="<%= o[0] %>" <%= twinPhotos.cleanSide(b.side) === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <p class="hint">Type the heading above (e.g. A true friend): it shows big in your color. The Button boxes below add one button under the words (optional). On phones the photos sit side by side under the words and the links come last.</p>
+    <% } else if (b.type === 'reviewcard') { %>
+      <label>Big photo (leave empty to use your About photo, or another of your site's photos)</label>
+      <div class="upload-row">
+        <input type="url" name="block_image" value="<%= b.imageUrl || '' %>" placeholder="https://... or upload">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+      <% const rcSet = reviewCard.settings(b.side); %>
+      <input type="hidden" name="block_side" class="rc-side" value="<%= reviewCard.cleanSide(b.side) %>">
+      <div class="rc-photo-opts" oninput="this.onchange()" onchange="var q=function(c){return this.querySelector(c)}.bind(this);Array.prototype.forEach.call(this.querySelectorAll('output'),function(o){o.textContent=q('.'+o.dataset.for).value+'%'});this.closest('.block-row').querySelector('.rc-side').value=[q('.rc-ps').value,q('.rc-size').value,q('.rc-x').value,q('.rc-y').value,q('.rc-fit').value].join(':');">
+        <label>Which side</label>
+        <select class="rc-ps" aria-label="Which side"><% reviewCard.SIDES.forEach(o => { %><option value="<%= o[0] %>" <%= rcSet.side === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <label>Big photo size and position</label>
+        <div class="upload-row" style="flex-wrap: wrap; align-items: center; gap: .4rem 1rem;">
+          <label style="font-weight: 400; margin: 0;">Size <input type="range" class="rc-size" min="40" max="150" step="5" value="<%= rcSet.size %>" aria-label="Photo size"> <output data-for="rc-size"><%= rcSet.size %>%</output></label>
+          <label style="font-weight: 400; margin: 0;">Left / right <input type="range" class="rc-x" min="-40" max="40" step="1" value="<%= rcSet.x %>" aria-label="Move the photo left or right"> <output data-for="rc-x"><%= rcSet.x %>%</output></label>
+          <label style="font-weight: 400; margin: 0;">Up / down <input type="range" class="rc-y" min="-30" max="30" step="1" value="<%= rcSet.y %>" aria-label="Move the photo up or down"> <output data-for="rc-y"><%= rcSet.y %>%</output></label>
+          <select class="rc-fit" aria-label="Cut-out photo"><% reviewCard.FITS.forEach(o => { %><option value="<%= o[0] %>" <%= rcSet.fit === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+          <button type="button" class="btn-secondary" onclick="var w=this.closest('.rc-photo-opts');w.querySelector('.rc-size').value=100;w.querySelector('.rc-x').value=0;w.querySelector('.rc-y').value=0;w.onchange();">Reset</button>
+        </div>
+      </div>
+      <p class="hint">Size makes the big photo smaller or bigger (100% = the panel). The two sliders nudge it left, right, up or down. For a cut-out photo, "Show the whole cut-out" fits all of it on the panel; "Fill the panel" trims it to fill the space.</p>
+      <p class="hint">The big photo stands on a panel in your brand color and reaches above the card. A photo with its background cut out (✂ Cut out) stands on the panel like it does in a magazine. The Button boxes below add one button under the reviews (optional). On phones the card goes under the photo.</p>
+    <% } else if (b.type === 'phototabs') { %>
+      <input type="hidden" name="block_image" value="">
+      <label>Which side</label>
+      <select name="block_side">
+        <% photoTabs.SIDES.forEach(o => { %><option value="<%= o[0] %>" <%= photoTabs.cleanSide(b.side) === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <p class="hint">The Button boxes below add one button to every card (optional). On phones the card goes under the photo and the small photos sit in a row under it.</p>
+    <% } else if (b.type === 'overlapcard') { %>
+      <% const ocSet = overlapCard.settings(b.side); %>
+      <label>Photo (leave empty to use your About photo, or another of your site's photos)</label>
+      <div class="upload-row">
+        <input type="url" name="block_image" value="<%= b.imageUrl || '' %>" placeholder="https://... or upload">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+      <input type="hidden" name="block_side" class="oc-side" value="<%= overlapCard.cleanSide(b.side) %>">
+      <label>Pattern, band, photo side and card color</label>
+      <% const ocOwn = /^#/.test(ocSet.card) ? ocSet.card : '', ocBand = /^#/.test(ocSet.band) ? ocSet.band : ''; %>
+      <div class="upload-row oc-opts" style="flex-wrap: wrap; align-items: center;" oninput="this.onchange()" onchange="var r=this.closest('.block-row'),q=function(c){return this.querySelector(c)}.bind(this),k=q('.oc-card').value,bd=q('.oc-band').value;q('.oc-color').hidden=k!=='own';q('.oc-bandc').hidden=bd!=='own';q('.oc-under').hidden=!q('.oc-own-under').checked;q('.oc-patc').hidden=!q('.oc-own-pat').checked;q('.oc-pfill').hidden=q('.oc-pfin').hidden=!q('.oc-own-pfill').checked;r.querySelector('.oc-side').value=[q('.oc-pat').value,bd==='own'?q('.oc-bandc').value.toLowerCase():bd,q('.oc-ps').value,k==='own'?q('.oc-color').value.toLowerCase():k,q('.oc-fin').value,q('.oc-own-under').checked?q('.oc-under').value.toLowerCase():'',q('.oc-own-pat').checked?q('.oc-patc').value.toLowerCase():'',q('.oc-own-pfill').checked?q('.oc-pfill').value.toLowerCase():'',q('.oc-pfin').value].join(':');">
+        <select class="oc-pat" aria-label="Pattern"><% overlapCard.PATTERNS.forEach(o => { %><option value="<%= o[0] %>" <%= ocSet.pattern === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="oc-own-pat"<%= ocSet.patColor ? ' checked' : '' %>> Own pattern color</label>
+        <input type="color" class="oc-patc" aria-label="Pattern color (stripes, dots or grid)" value="<%= ocSet.patColor || '#111111' %>" style="width: 64px; height: 36px; padding: 2px;"<%= ocSet.patColor ? '' : ' hidden' %>>
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="oc-own-pfill"<%= ocSet.patFill ? ' checked' : '' %>> Own color behind the photo</label>
+        <input type="color" class="oc-pfill" aria-label="Color of the shape behind the photo" value="<%= ocSet.patFill || '#ffd6e0' %>" style="width: 64px; height: 36px; padding: 2px;"<%= ocSet.patFill ? '' : ' hidden' %>>
+        <select class="oc-pfin" aria-label="Shape behind the photo: flat or gradient"<%= ocSet.patFill ? '' : ' hidden' %>><option value="flat" <%= ocSet.patFinish !== 'gradient' ? 'selected' : '' %>>Flat color</option><option value="gradient" <%= ocSet.patFinish === 'gradient' ? 'selected' : '' %>>Gradient</option></select>
+        <select class="oc-band" aria-label="Top band"><% overlapCard.BANDS.forEach(o => { %><option value="<%= o[0] %>" <%= (o[0] === 'own' ? !!ocBand : ocSet.band === o[0]) ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <input type="color" class="oc-bandc" aria-label="Top band color" value="<%= ocBand || '#eeeeee' %>" style="width: 64px; height: 36px; padding: 2px;"<%= ocBand ? '' : ' hidden' %>>
+        <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="oc-own-under"<%= ocSet.bottom ? ' checked' : '' %>> Own bottom color</label>
+        <input type="color" class="oc-under" aria-label="Bottom section color" value="<%= ocSet.bottom || '#ffffff' %>" style="width: 64px; height: 36px; padding: 2px;"<%= ocSet.bottom ? '' : ' hidden' %>>
+        <select class="oc-ps" aria-label="Photo side"><% overlapCard.SIDES.forEach(o => { %><option value="<%= o[0] %>" <%= ocSet.side === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <select class="oc-card" aria-label="Card color"><% overlapCard.CARDS.forEach(o => { %><option value="<%= o[0] %>" <%= (o[0] === 'own' ? !!ocOwn : ocSet.card === o[0]) ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <input type="color" class="oc-color" aria-label="My own card color" value="<%= ocOwn || '#1d6fa5' %>" style="width: 64px; height: 36px; padding: 2px;"<%= ocOwn ? '' : ' hidden' %>>
+        <select class="oc-fin" aria-label="Card finish"><% overlapCard.FINISHES.forEach(o => { %><option value="<%= o[0] %>" <%= ocSet.finish === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+      </div>
+      <p class="hint">The photo sits on a patterned shape and overlaps a card (white, your brand color or a color you pick) that sits a little lower, with a light band across the top of the block. Gradient card shades the card through its color; the words and button switch to white or dark so they stay easy to read. With a gradient chosen under Background below, a colored card makes the gradient fade into the card color. "Top band in a color I pick" colors the top section (the light grey by default), "Own bottom color" the rest of the block (it replaces the Background below), "Own pattern color" colors the stripes, dots or grid, and "Own color behind the photo" fills that shape (flat or as a gradient) with the dots still showing on top. A photo with its background cut out (✂ Cut out) stands nicely on the band. On phones the card goes under the photo.</p>
+    <% } else if (b.type === 'aboutphone') { %>
+      <% const abSet = aboutBlob.settings(b.side); %>
+      <label>Photo (leave empty to use your About photo, or another of your site's photos; a portrait looks best)</label>
+      <div class="upload-row">
+        <input type="url" name="block_image" value="<%= b.imageUrl || '' %>" placeholder="https://... or upload">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+      <input type="hidden" name="block_side" class="ab-side" value="<%= aboutBlob.cleanSide(b.side) %>">
+      <div class="upload-row" onchange="var r=this.closest('.block-row');r.querySelector('.ab-side').value=Array.prototype.map.call(this.querySelectorAll('select'),function(x){return x.value}).join(':');">
+        <select aria-label="Shape colors"><% aboutBlob.COLORS.forEach(o => { %><option value="<%= o[0] %>" <%= abSet.colors === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <select aria-label="Photo side"><% aboutBlob.SIDES.forEach(o => { %><option value="<%= o[0] %>" <%= abSet.side === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+      </div>
+      <p class="hint">The photo sits in a soft rounded frame with a few gently moving color shapes around it. The phone number is a tap-to-call link.</p>
+    <% } else if (b.type === 'herocard') { %>
+      <label>Picture or video reel (a photo with its background cut out looks best in the middle; a reel plays silently on a loop)</label>
+      <div class="upload-row">
+        <input type="url" name="block_image" value="<%= b.imageUrl || '' %>" placeholder="Photo or .mp4 / .webm video: https://... or upload">
+        <input type="file" accept="image/*,video/mp4,video/webm" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+      <select name="block_side">
+        <% heroCard.LOOKS.forEach(o => { %><option value="<%= o[0] %>" <%= heroCard.cleanSide(b.side) === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <p class="hint">Videos up to 60 MB (.mp4 or .webm); short reels of 5 to 15 seconds load fastest. Leave it empty to use one of your site's photos. On a computer the card fills the screen; on a phone everything stacks.</p>
+    <% } else if (b.type === 'stack') { %>
+      <input type="hidden" name="block_image" value="">
+      <p class="hint">The small label, heading and rating line sit on the left with arrows and "1 of N" under them; the cards lie in a tilted pile on the right. As visitors scroll down through the block, the top card flies off and goes to the back, one card at a time (the arrows do the same). Put [square brackets] around heading words to color them. For anyone who turns motion off the page doesn't hold still while scrolling; the arrows still turn the cards.</p>
+    <% } else if (b.type === 'nodes') { %>
+      <input type="hidden" name="block_image" value="">
+      <label>How the pictures change</label>
+      <select name="block_side">
+        <% [['auto', 'Fade to the next picture'], ['slide', 'Wipe up to the next picture'], ['still', 'Don\'t change (first photo only)']].forEach(o => { %><option value="<%= o[0] %>" <%= nodeCards.cleanSide(b.side) === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <p class="hint">The heading shows big, with your small words under it; words in the box above take turns on its last line. On a computer the whole block fits one screen. The cards sit in staggered columns joined by thin lines, each with its two labels above it. A card with words shows them in place of photos. Each photo card's pictures take turns, one card at a time: its own photos first, then your site's (a card with fewer than 3 photos borrows some). Put [square brackets] around heading words to color them. Visitors can pause the pictures, and they hold still for anyone who turns motion off. On phones the cards sit two across, without the lines.</p>
+    <% } else if (b.type === 'beforeAfter') { %>
+      <input type="hidden" name="block_image" value=""><input type="hidden" name="block_side" value="auto">
+      <p class="hint">Shows the before and after photo pairs from your Gallery section (up to 6) as sliders visitors drag. Add or change the pairs under Gallery, "Before and after photos".</p>
+    <% } else if (['features', 'chips', 'strip', 'split', 'pricing', 'team', 'stats', 'tabs', 'accordion'].includes(b.type)) { %>
+      <input type="hidden" name="block_image" value=""><input type="hidden" name="block_side" value="auto">
+    <% } else { %>
+      <label><%= b.type === 'cta' ? 'Background photo (optional)' : b.type === 'photoBanner' ? 'Photo (leave empty to use your hero photo)' : 'Photo' %></label>
+      <div class="upload-row">
+        <input type="url" name="block_image" value="<%= b.imageUrl || '' %>" placeholder="https://... or upload">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+      <% if (b.type === 'cta') { %><input type="hidden" name="block_side" value="auto"><% } else if (b.type === 'photoBanner') { %>
+      <% const pset = photoBanner.settings(b.side); %>
+      <input type="hidden" name="block_side" class="wall-side" value="<%= photoBanner.cleanSide(b.side) %>">
+      <label>Words side, height and button color</label>
+      <div class="upload-row wall-opts" style="flex-wrap: wrap;" onchange="var r=this.closest('.block-row'),v=Array.prototype.map.call(this.querySelectorAll('select'),function(x){return x.value}).join(':');r.querySelector('.wall-side').value=v;">
+        <select aria-label="Words side"><% [['left', 'Words on the left'], ['right', 'Words on the right']].forEach(o => { %><option value="<%= o[0] %>" <%= pset.text === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <select aria-label="Banner height"><% [['short', 'Short'], ['medium', 'Medium'], ['tall', 'Tall']].forEach(o => { %><option value="<%= o[0] %>" <%= pset.size === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+        <select aria-label="Button color"><% [['brand', 'Button in your brand color'], ['accent', 'Button in your accent color'], ['lime', 'Lime button']].forEach(o => { %><option value="<%= o[0] %>" <%= pset.button === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+      </div>
+      <p class="hint">Put [square brackets] around words in the heading to set them in an italic serif, e.g. Now imagine this [creative power] behind your next project. The words sit on a soft fade in your brand's dark tone so they stay readable on any photo.</p>
+      <% } else { %>
+      <label>Photo side</label>
+      <select name="block_side">
+        <% [['auto','Alternate automatically'],['left','Photo on the left'],['right','Photo on the right']].forEach(o => { %><option value="<%= o[0] %>" <%= (b.side || 'auto') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <% } %>
+    <% } %>
+    <div class="upload-row">
+      <input type="text" name="block_buttonText" maxlength="40" value="<%= b.buttonText || '' %>" placeholder="Button text (optional)">
+      <input type="url" name="block_buttonUrl" value="<%= b.buttonUrl || '' %>" placeholder="Button link, e.g. /site/name/contact">
+    </div>
+    <% if (b.type === 'patterns') { %><input type="hidden" name="block_edge" value="none"><% } else { %>
+    <div class="upload-row">
+      <select name="block_edge">
+        <% [['none','Straight top edge'],['wave','Wavy top edge'],['scallop','Scalloped top edge']].forEach(o => { %><option value="<%= o[0] %>" <%= (b.edge || 'none') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+    </div><% } %>
+    <div class="upload-row">
+      <% if (b.type === 'patterns') { %><input type="hidden" name="block_bg" value="none"><input type="hidden" name="block_bgmix" value=""><input type="hidden" name="block_gx" value=""><% } else { %>
+      <select name="block_bg">
+        <% [['none','Plain background'],['white','Clear white'],['tint','Light tint band'],['brand','Brand color band'],['dark','Dark band']].forEach(o => { %><option value="<%= o[0] %>" <%= (b.bg || 'none') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+        <% gradients.menu(typeof site !== 'undefined' ? site.theme : {}, true, false, String(b.bg || '').slice(2)).forEach(g => { %><optgroup label="Gradient: <%= g[0].toLowerCase() %>"><% g[1].forEach(x => { %><option value="g-<%= x[0] %>" <%= b.bg === 'g-' + x[0] ? 'selected' : '' %>><%= x[1] %></option><% }) %></optgroup><% }) %>
+      </select>
+      <select name="block_bgmix" title="For a gradient or texture: replace the block's color, or blend into a plain color">
+        <% [['', 'Gradient replaces the color'], ['none', 'Blend into the page color'], ['tint', 'Blend into a light tint'], ['brand', 'Blend into the brand color'], ['dark', 'Blend into a dark band']].forEach(o => { %><option value="<%= o[0] %>" <%= (b.bgmix || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <%- include('_ink-pick', { name: 'block_bgink', value: b.bgink || '', theme: typeof site !== 'undefined' ? site.theme : {} }) %>
+      <button type="button" class="btn btn-secondary btn-sm" data-glib="block_bg" data-glib-pre="g-" title="Pick the block's background from the gradient library (284 gradients)">🎨 Gradient library…</button>
+      <%- include('_gx-pick', { name: 'block_gx', value: b.gx, what: 'Background intensity' }) %>
+      <% } %>
+      <select name="block_page" title="Which page shows this block">
+        <% [['home','On the home page'],['about','On the About page'],['services','On the Services page'],['testimonials','On the Reviews page'],['whyChoose','On the Why Choose Us page'],['gallery','On the Gallery page'],['faq','On the FAQ page'],['blog','On the News & Tips page'],['hours','On the Hours page'],['contact','On the Contact page']].forEach(o => { %><option value="<%= o[0] %>" <%= (b.page || 'home') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <select name="block_place">
+        <% [['bottom','Lower on the page'],['top','Near the top of the page']].forEach(o => { %><option value="<%= o[0] %>" <%= (b.place || 'bottom') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+    </div>
+    <div class="upload-row" data-sg-cardbg>
+      <select name="block_cardbg" title="A gradient behind each card inside this block (the words take the color that reads on it)">
+        <option value="">Cards: their own color</option>
+        <% gradients.menu(typeof site !== 'undefined' ? site.theme : {}, false, false, b.cardbg || '').forEach(g => { %><optgroup label="Cards: <%= g[0].toLowerCase() %>"><% g[1].forEach(x => { %><option value="<%= x[0] %>" <%= b.cardbg === x[0] ? 'selected' : '' %>><%= x[1] %></option><% }) %></optgroup><% }) %>
+      </select>
+      <button type="button" class="btn btn-secondary btn-sm" data-glib="block_cardbg" data-glib-pre="" title="Pick the cards' background from the gradient library">🎨 Gradient library…</button>
+      <%- include('_gx-pick', { name: 'block_cardgx', value: b.cardgx, what: 'Card intensity' }) %>
+    </div>
+    <div class="upload-row">
+      <select name="block_pin" title="Pin this block while the page scrolls, or make its cards stack, pile up or fan out">
+        <% pinFx.OPTIONS.forEach(o => { %><option value="<%= o[0] %>" <%= (b.pin || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+    </div>
+    <div class="upload-row">
+      <select name="block_imgfx" title="Put the block's words over its photos, with a movement">
+        <% imgFx.OPTIONS.forEach(o => { %><option value="<%= o[0] %>" <%= (b.imgfx || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+      <select name="block_height" title="Make the block shorter or taller (the space above and below its content)">
+        <% heightFx.OPTIONS.forEach(o => { %><option value="<%= o[0] %>" <%= (b.height || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+      </select>
+    </div>
+    <% const _fp = filmFx.parts(b.film); %>
+    <div class="upload-row film-row" title="A see-through layer of color over the whole block">
+      <input type="hidden" name="block_film" value="<%= b.film || '' %>">
+      <select data-film="s" aria-label="Color film">
+        <option value="">No color film</option>
+        <% filmFx.STRENGTHS.forEach(n => { %><option value="<%= n %>" <%= _fp.strength === String(n) ? 'selected' : '' %>>Color film, <%= n %>% strong</option><% }) %>
+      </select>
+      <select data-film="m" aria-label="Film color" <%- _fp.on ? '' : 'hidden' %>>
+        <option value="brand" <%= _fp.color ? '' : 'selected' %>>In the brand color (from the logo)</option>
+        <option value="own" <%= _fp.color ? 'selected' : '' %>>In a color I pick</option>
+      </select>
+      <input type="color" data-film="c" aria-label="Pick the film color" value="<%= _fp.color || site.theme.primaryColor || '#2563eb' %>" <%- _fp.color ? '' : 'hidden' %>>
+    </div>
+  </div>
+<% }; %>
+<p class="muted" style="font-size:13px; margin-top:0;">Pick a design below to add it. Each block then gets its own entry under Page sections, with a small picture of its layout and a colored tag for its group, where you edit it, move it and hide it. On a Blocks home page it is also a block on the Blocks screen. Pick the page it shows on in the last row of each block (home page by default). Blocks are never filled in automatically.</p>
+<% const _bcGroups = blockCatalog.groups(); %>
+<div class="blkpick" id="blkPick">
+  <div class="blkpick-head">
+    <strong>Add a content block</strong>
+    <input type="search" class="blkpick-find" id="blkPickFind" placeholder="Find a design, e.g. photo, steps, price, scroll" aria-label="Find a block design" autocomplete="off">
+  </div>
+  <div class="blkpick-tabs" role="group" aria-label="Show block designs by group">
+    <button type="button" class="blkpick-tab on" data-pickgroup="" aria-pressed="true">All <span><%= blockCatalog.LIST.length %></span></button>
+    <% _bcGroups.forEach(g => { %><button type="button" class="blkpick-tab" data-pickgroup="<%= g.id %>" aria-pressed="false" style="--g:<%= g.color %>" title="<%= g.label %>"><i></i><%= g.short %> <span><%= g.items.length %></span></button><% }) %>
+  </div>
+  <% _bcGroups.forEach(g => { %>
+  <div class="blkpick-group" data-group="<%= g.id %>" style="--g:<%= g.color %>">
+    <div class="blkpick-gtitle"><i></i><%= g.label %></div>
+    <div class="blkpick-grid">
+      <% g.items.forEach(it => { %><button type="button" class="blkpick-card" data-newblock="<%= it.type %>" data-find="<%= (it.name + ' ' + it.desc).toLowerCase() %>" title="Add a <%= it.name %> block"><%- it.pic %><span class="blkpick-txt"><span class="blkpick-name"><%= it.name %></span><span class="blkpick-desc"><%= it.desc %></span></span><span class="blkpick-plus" aria-hidden="true">+</span></button><% }) %>
+    </div>
+  </div>
+  <% }) %>
+  <p class="muted blkpick-none" id="blkPickNone" hidden>No design matches that. Try a simpler word, like "photo" or "cards".</p>
+</div>
+<script>
+// the picker: group buttons and the find box narrow the cards; a card adds that block (the shared [data-newblock] click)
+(function () {
+  var box = document.getElementById('blkPick'); if (!box) return;
+  var find = document.getElementById('blkPickFind'), group = '';
+  function show() {
+    var q = find.value.trim().toLowerCase(), any = false;
+    box.querySelectorAll('.blkpick-group').forEach(function (g) {
+      var n = 0;
+      g.querySelectorAll('.blkpick-card').forEach(function (c) {
+        var ok = (!group || g.dataset.group === group) && (!q || q.split(/\s+/).every(function (w) { return c.dataset.find.indexOf(w) > -1; }));
+        c.hidden = !ok; if (ok) n++;
+      });
+      g.hidden = !n; if (n) any = true;
+    });
+    document.getElementById('blkPickNone').hidden = any;
+  }
+  box.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-pickgroup]'); if (!t) return;
+    group = t.dataset.pickgroup;
+    box.querySelectorAll('[data-pickgroup]').forEach(function (b) { var on = b === t; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+    show();
+  });
+  find.addEventListener('input', show);
+  // Enter in the find box should not send the whole form
+  find.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); var c = box.querySelector('.blkpick-card:not([hidden])'); if (c && find.value.trim()) c.click(); } });
+})();
+</script>
+<style>
+  .blkpick { margin: 10px 0 14px; }
+  .blkpick-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 10px; }
+  .blkpick-head strong { font-size: 15px; }
+  .blkpick-find { flex: 1 1 220px; min-width: 0; margin: 0; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; font-size: 13.5px; background: #fff; }
+  .blkpick-find:focus { outline: 2px solid #93c5fd; outline-offset: 1px; border-color: #60a5fa; }
+  .blkpick-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .blkpick-tab { display: inline-flex; align-items: center; gap: 6px; background: #fff; color: #334155; border: 1px solid #e2e8f0; border-radius: 999px; padding: 5px 11px; font-size: 12.5px; font-weight: 600; min-height: 32px; cursor: pointer; }
+  .blkpick-tab i, .blkpick-gtitle i { width: 9px; height: 9px; border-radius: 50%; background: var(--g, #64748b); display: inline-block; flex: none; }
+  .blkpick-tab span { color: #94a3b8; font-weight: 500; }
+  .blkpick-tab:hover { border-color: #cbd5e1; background: #f8fafc; }
+  .blkpick-tab.on { background: #0f172a; border-color: #0f172a; color: #fff; }
+  .blkpick-tab.on span { color: #cbd5e1; }
+  .blkpick-group { margin-bottom: 14px; }
+  .blkpick-group[hidden] { display: none; }
+  .blkpick-gtitle { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #475569; margin: 0 0 7px; }
+  .blkpick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 8px; }
+  .blkpick-card { display: flex; align-items: center; gap: 10px; text-align: left; background: #fff; color: #0f172a; border: 1px solid #e2e8f0; border-left: 3px solid var(--g, #94a3b8); border-radius: 10px; padding: 8px 10px; min-height: 64px; cursor: pointer; font: inherit; transition: border-color .15s, box-shadow .15s, transform .15s; }
+  .blkpick-card[hidden] { display: none; }
+  .blkpick-card:hover, .blkpick-card:focus-visible { border-color: var(--g, #94a3b8); box-shadow: 0 4px 14px -6px color-mix(in srgb, var(--g, #64748b) 55%, transparent); transform: translateY(-1px); }
+  .blkpick-card .blk-pic { flex: none; width: 66px; height: 44px; border-radius: 6px; box-shadow: 0 0 0 1px #e2e8f0; }
+  .blkpick-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+  .blkpick-name { font-weight: 650; font-size: 13.5px; line-height: 1.25; }
+  .blkpick-desc { font-size: 12px; line-height: 1.35; color: #64748b; }
+  .blkpick-plus { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 16px; line-height: 1; color: var(--g, #475569); background: color-mix(in srgb, var(--g, #64748b) 12%, #fff); }
+  .blkpick-none { font-size: 13px; }
+  @media (prefers-reduced-motion: reduce) { .blkpick-card { transition: none; } .blkpick-card:hover { transform: none; } }
+</style>
+<% const libItems = (typeof library !== 'undefined' && library) || []; %>
+<div class="lib-box" id="libBox">
+  <strong>Block library</strong>
+  <span class="muted" style="font-size:12.5px;">Blocks you save here can be reused on any of your sites. Use "Save to library" on a block below.</span>
+  <div class="upload-row" style="margin-top:6px;">
+    <select id="libSelect"><option value="">Choose a saved block…</option><% libItems.forEach(l => { %><option value="<%= l.id %>"><%= l.name %> (<%= blockKinds[l.block.type] || l.block.type %>)</option><% }) %></select>
+    <button type="button" class="btn-secondary" id="libInsert">Insert into this page</button>
+    <button type="button" class="btn-secondary" id="libDelete">Delete from library</button>
+  </div>
+  <span class="muted" id="libMsg" style="font-size:12.5px;"></span>
+</div>
+<script>
+// Color film: the strength, brand/own and color controls write one hidden "color:strength" field
+(function () {
+  function sync(row) {
+    var s = row.querySelector('[data-film="s"]'), m = row.querySelector('[data-film="m"]'), c = row.querySelector('[data-film="c"]'), h = row.querySelector('[name="block_film"]');
+    if (!s || !h) return;
+    m.hidden = !s.value; c.hidden = !s.value || m.value !== 'own';
+    h.value = s.value ? (m.value === 'own' ? c.value : 'brand') + ':' + s.value : '';
+  }
+  // the controls shown from the hidden field (a block inserted from the library)
+  window.sgFilmUi = function (row) {
+    var h = row.querySelector('[name="block_film"]'); if (!h) return;
+    var p = /^(brand|#[0-9a-fA-F]{6}):(\d+)$/.exec(h.value || '');
+    row.querySelector('[data-film="s"]').value = p ? p[2] : '';
+    row.querySelector('[data-film="m"]').value = p && p[1] !== 'brand' ? 'own' : 'brand';
+    if (p && p[1] !== 'brand') row.querySelector('[data-film="c"]').value = p[1];
+    sync(row);
+  };
+  ['input', 'change'].forEach(function (t) {
+    document.addEventListener(t, function (e) { var f = e.target.closest && e.target.closest('[data-film]'); if (f) sync(f.closest('.film-row')); }, true);
+  });
+})();
+</script>
+<script type="application/json" id="libData"><%- JSON.stringify(libItems).replace(/</g, '\\u003c') %></script>
+<div id="blockList">
+  <% blockItems.forEach(b => renderBlock(b)); %>
+</div>
+<template id="tpl-block-photoText"><% renderBlock({ type: 'photoText' }); %></template>
+<template id="tpl-block-steps"><% renderBlock({ type: 'steps' }); %></template>
+<template id="tpl-block-features"><% renderBlock({ type: 'features' }); %></template>
+<template id="tpl-block-cta"><% renderBlock({ type: 'cta' }); %></template>
+<template id="tpl-block-chips"><% renderBlock({ type: 'chips' }); %></template>
+<template id="tpl-block-strip"><% renderBlock({ type: 'strip' }); %></template>
+<template id="tpl-block-split"><% renderBlock({ type: 'split' }); %></template>
+<template id="tpl-block-pricing"><% renderBlock({ type: 'pricing' }); %></template>
+<template id="tpl-block-team"><% renderBlock({ type: 'team' }); %></template>
+<template id="tpl-block-stats"><% renderBlock({ type: 'stats' }); %></template>
+<template id="tpl-block-video"><% renderBlock({ type: 'video' }); %></template>
+<template id="tpl-block-tabs"><% renderBlock({ type: 'tabs' }); %></template>
+<template id="tpl-block-accordion"><% renderBlock({ type: 'accordion' }); %></template>
+<template id="tpl-block-wall"><% renderBlock({ type: 'wall' }); %></template>
+<template id="tpl-block-cascade"><% renderBlock({ type: 'cascade' }); %></template>
+<template id="tpl-block-photoBanner"><% renderBlock({ type: 'photoBanner' }); %></template>
+<template id="tpl-block-trail"><% renderBlock({ type: 'trail' }); %></template>
+<template id="tpl-block-wave"><% renderBlock({ type: 'wave' }); %></template>
+<template id="tpl-block-bigwords"><% renderBlock({ type: 'bigwords' }); %></template>
+<template id="tpl-block-story"><% renderBlock({ type: 'story' }); %></template>
+<template id="tpl-block-path"><% renderBlock({ type: 'path' }); %></template>
+<template id="tpl-block-zoomword"><% renderBlock({ type: 'zoomword' }); %></template>
+<template id="tpl-block-morph"><% renderBlock({ type: 'morph' }); %></template>
+<template id="tpl-block-shapes"><% renderBlock({ type: 'shapes' }); %></template>
+<template id="tpl-block-stack"><% renderBlock({ type: 'stack' }); %></template>
+<template id="tpl-block-herocard"><% renderBlock({ type: 'herocard' }); %></template>
+<template id="tpl-block-aboutphone"><% renderBlock({ type: 'aboutphone' }); %></template>
+<template id="tpl-block-thirds"><% renderBlock({ type: 'thirds' }); %></template>
+<template id="tpl-block-mosaic"><% renderBlock({ type: 'mosaic' }); %></template>
+<template id="tpl-block-crossband"><% renderBlock({ type: 'crossband' }); %></template>
+<template id="tpl-block-phototabs"><% renderBlock({ type: 'phototabs' }); %></template>
+<template id="tpl-block-reviewcard"><% renderBlock({ type: 'reviewcard' }); %></template>
+<template id="tpl-block-twinphotos"><% renderBlock({ type: 'twinphotos' }); %></template>
+<template id="tpl-block-ringcard"><% renderBlock({ type: 'ringcard' }); %></template>
+<template id="tpl-block-shapeform"><% renderBlock({ type: 'shapeform' }); %></template>
+<template id="tpl-block-framedphoto"><% renderBlock({ type: 'framedphoto' }); %></template>
+<template id="tpl-block-roundphoto"><% renderBlock({ type: 'roundphoto' }); %></template>
+<template id="tpl-block-photopairs"><% renderBlock({ type: 'photopairs' }); %></template>
+<template id="tpl-block-offsetphoto"><% renderBlock({ type: 'offsetphoto' }); %></template>
+<% aboutBlocks.TYPES.forEach(t => { %><template id="tpl-block-<%= t %>"><% renderBlock({ type: t }); %></template>
+<% }) %>
+<template id="tpl-block-overlapcard"><% renderBlock({ type: 'overlapcard' }); %></template>
+<template id="tpl-block-advice"><% renderBlock({ type: 'advice' }); %></template>
+<template id="tpl-block-photoblend"><% renderBlock({ type: 'photoblend' }); %></template>
+<template id="tpl-block-patterns"><% renderBlock({ type: 'patterns' }); %></template>
+<template id="tpl-block-nodes"><% renderBlock({ type: 'nodes' }); %></template>
+<template id="tpl-block-collage"><% renderBlock({ type: 'collage' }); %></template>
+<template id="tpl-block-beforeAfter"><% renderBlock({ type: 'beforeAfter' }); %></template>
+<script>
+(function () {
+  const dataEl = document.getElementById('libData'), sel = document.getElementById('libSelect');
+  if (!dataEl || !sel) return;
+  let lib = JSON.parse(dataEl.textContent);
+  const msg = document.getElementById('libMsg');
+  const say = (t) => { msg.textContent = t; };
+  const FIELDS = [['type', 'block_type'], ['heading', 'block_heading'], ['body', 'block_body'], ['imageUrl', 'block_image'], ['side', 'block_side'], ['buttonText', 'block_buttonText'], ['buttonUrl', 'block_buttonUrl'], ['edge', 'block_edge'], ['bg', 'block_bg'], ['bgmix', 'block_bgmix'], ['place', 'block_place'], ['page', 'block_page'], ['pin', 'block_pin'], ['film', 'block_film'], ['imgfx', 'block_imgfx'], ['height', 'block_height'], ['bgink', 'block_bgink'], ['gx', 'block_gx'], ['cardbg', 'block_cardbg'], ['cardgx', 'block_cardgx']];
+  function refresh() {
+    sel.innerHTML = '<option value="">Choose a saved block…</option>' + lib.map(function (l) { const o = document.createElement('option'); o.value = l.id; o.textContent = l.name + ' (' + l.block.type + ')'; return o.outerHTML; }).join('');
+  }
+  const poke = () => { const f = document.getElementById('editorForm'); if (f) f.dispatchEvent(new Event('input', { bubbles: true })); };
+  document.addEventListener('click', async function (e) {
+    const btn = e.target.closest('[data-block="save"]');
+    if (!btn) return;
+    const row = btn.closest('.block-row');
+    if (window.syncStrips) window.syncStrips();
+    const body = {};
+    FIELDS.forEach(function (f) { const el = row.querySelector('[name=' + f[1] + ']'); body[f[1]] = el ? el.value : ''; });
+    const name = window.prompt('Name for this saved block:', body.block_heading || '');
+    if (!name) return;
+    body.name = name;
+    try {
+      const r = await fetch('/library/blocks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const j = await r.json();
+      if (!j.ok) return say(j.error || 'Could not save.');
+      lib.push({ id: j.id, name: j.name, block: j.block }); refresh(); say('Saved "' + j.name + '" to your library.');
+    } catch (err) { say('Could not save. Check your connection.'); }
+  });
+  document.getElementById('libInsert').addEventListener('click', function () {
+    const item = lib.find(function (l) { return String(l.id) === sel.value; });
+    if (!item) return say('Choose a saved block first.');
+    const tpl = document.getElementById('tpl-block-' + item.block.type);
+    if (!tpl) return say('This block type is not available.');
+    const node = tpl.content.cloneNode(true), row = node.querySelector('.block-row');
+    FIELDS.forEach(function (f) {
+      const el = row.querySelector('[name=' + f[1] + ']');
+      if (el && item.block[f[0]] != null && el.type !== 'file') el.value = item.block[f[0]];
+    });
+    if (window.sgFilmUi) window.sgFilmUi(row);
+    const wallSide = row.querySelector('.wall-side');
+    if (wallSide) { const parts = wallSide.value.split(':'); Array.prototype.forEach.call(row.querySelectorAll('.wall-opts select'), function (x, n) { if (parts[n]) x.value = parts[n]; }); }
+    const gpSide = row.querySelector('.gp-side');   // Gradient pattern: its pattern, look, motion and version
+    if (gpSide) { const parts = gpSide.value.split(':'); Array.prototype.forEach.call(row.querySelectorAll('.gp-pick select'), function (x, n) { if (parts[n]) x.value = parts[n]; }); }
+    Array.prototype.forEach.call(row.querySelectorAll('.sg-inkpick'), function (box) {   // the saved colors back into the picker
+      const v = box.querySelector('input[type=hidden]').value, list = /^#/.test(v) ? v.split(',') : [];
+      box.querySelector('.sg-ink-mode').value = list.length ? ['one', 'two', 'three'][list.length - 1] : v;
+      Array.prototype.forEach.call(box.querySelectorAll('.sg-ink-c'), function (c, i) { if (list[i]) c.value = list[i]; });
+      if (window.sgInkPick) window.sgInkPick(box);
+    });
+    const tbBody = row.querySelector('.tb-body');
+    if (tbBody) {
+      const tl = {}; String(item.block.body || '').split('\n').forEach(function (l) { const m = /^(bold|text|strong|big|left|right):\s?(.*)$/.exec(l.trim()); if (m) tl[m[1]] = m[2]; });
+      ['bold', 'text', 'strong', 'big'].forEach(function (k) { const el = row.querySelector('.tb-' + k); if (el) el.value = tl[k] || ''; });
+      [['left', '.tb-l-url'], ['right', '.tb-r-url']].forEach(function (p) {
+        const urls = String(tl[p[0]] || '').split(/\s+/).filter(Boolean), box = row.querySelector(p[1]).closest('.strip-rows'), first = box.querySelector('.upload-row');
+        while (box.children.length < urls.length) box.appendChild(first.cloneNode(true));
+        Array.prototype.forEach.call(box.querySelectorAll('.strip-url'), function (i, n) { i.value = urls[n] || ''; });
+      });
+    }
+    const mhBody = row.querySelector('.mh-body');
+    if (mhBody) {
+      const ml = {}; String(item.block.body || '').split('\n').forEach(function (l) { const m = /^(sub|photos):\s?(.*)$/.exec(l.trim()); if (m) ml[m[1]] = m[2]; });
+      row.querySelector('.mh-sub').value = ml.sub || '';
+      const urls = String(ml.photos || '').split(/\s+/).filter(Boolean), box = row.querySelector('.mh-url').closest('.strip-rows'), first = box.querySelector('.upload-row');
+      while (box.children.length < urls.length) box.appendChild(first.cloneNode(true));
+      Array.prototype.forEach.call(box.querySelectorAll('.strip-url'), function (i, n) { i.value = urls[n] || ''; });
+    }
+    const cbBody = row.querySelector('.cb-body');
+    if (cbBody) {
+      const cl = { item: [] }; String(item.block.body || '').split('\n').forEach(function (l) { const m = /^(text|list|item|left|right|card|band):\s?(.*)$/.exec(l.trim()); if (!m) return; if (m[1] === 'item') cl.item.push(m[2]); else cl[m[1]] = m[2]; });
+      row.querySelector('.cb-text').value = cl.text || ''; row.querySelector('.cb-list').value = cl.list || ''; row.querySelector('.cb-items').value = cl.item.join('\n');
+      ['card', 'band'].forEach(function (k) { if (cl[k]) { row.querySelector('.cb-own-' + k).checked = true; row.querySelector('.cb-' + k).value = cl[k]; } });
+      [['left', '.cb-l-url'], ['right', '.cb-r-url']].forEach(function (p) {
+        const urls = String(cl[p[0]] || '').split(/\s+/).filter(Boolean), box = row.querySelector(p[1]).closest('.strip-rows'), first = box.querySelector('.upload-row');
+        while (box.children.length < urls.length) box.appendChild(first.cloneNode(true));
+        Array.prototype.forEach.call(box.querySelectorAll('.strip-url'), function (i, n) { i.value = urls[n] || ''; });
+      });
+    }
+    const ptBody = row.querySelector('.pt-body');
+    if (ptBody) {
+      const pc = []; String(item.block.body || '').split('\n').forEach(function (l) { const m = /^card:\s?(.*)$/.exec(l.trim()); if (m) pc.push(m[1].split('|').map(function (x) { return x.trim(); })); });
+      Array.prototype.forEach.call(row.querySelectorAll('.pt-card'), function (f, n) {
+        const c = pc[n] || [];
+        f.querySelector('.pt-url').value = c[0] || ''; f.querySelector('.pt-title').value = c[2] || ''; f.querySelector('.pt-text').value = c.slice(3).join(' ');
+        f.querySelector('.pt-own').checked = !!c[1]; if (c[1]) f.querySelector('.pt-color').value = c[1];
+      });
+    }
+    const ppBody = row.querySelector('.pp-body');
+    if (ppBody) {
+      const pr = []; let pl = '', pc = '', ps = true;
+      String(item.block.body || '').split('\n').forEach(function (l) { const m = /^(label|pair|color|shapes):\s?(.*)$/.exec(l.trim()); if (!m) return; if (m[1] === 'label') pl = m[2]; else if (m[1] === 'color') pc = m[2].trim(); else if (m[1] === 'shapes') ps = m[2].trim() !== 'off'; else pr.push(m[2].split('|').map(function (x) { return x.trim(); })); });
+      row.querySelector('.pp-label').value = pl;
+      Array.prototype.forEach.call(row.querySelectorAll('.pp-pair'), function (f, n) { const r = pr[n] || []; f.querySelector('.pp-url').value = r[0] || ''; f.querySelector('.pp-title').value = r[1] || ''; f.querySelector('.pp-text').value = r.slice(2).join(' '); });
+      row.querySelector('.pp-own-color').checked = !!pc; if (pc) row.querySelector('.pp-color').value = pc;
+      row.querySelector('.pp-shapes').checked = ps;
+    }
+    const abBody = row.querySelector('.ab-body');   // About Us blocks: every field is marked with data-ab and data-abf
+    if (abBody) {
+      const am = String(item.block.body || '').split('\n').map(function (l) { return /^([a-z]+):\s?(.*)$/.exec(l.trim()); }).filter(Boolean);
+      const av = function (k) { return am.filter(function (m) { return m[1] === k; }).map(function (m) { return m[2]; }); };
+      const an = {};
+      Array.prototype.forEach.call(row.querySelectorAll('.ab-add'), function (btn) {   // lists that grow: as many rows as saved
+        const k = btn.getAttribute('data-ab'), want = Math.min(av(k).length, +btn.getAttribute('data-max') || 12);
+        let rows = row.querySelectorAll('.ab-row[data-ab="' + k + '"]');
+        while (rows.length && rows.length < want) { const c = rows[rows.length - 1].cloneNode(true); rows[rows.length - 1].after(c); rows = row.querySelectorAll('.ab-row[data-ab="' + k + '"]'); }
+      });
+      Array.prototype.forEach.call(row.querySelectorAll('[data-abf]'), function (el) {
+        const k = el.getAttribute('data-ab'), kind = el.getAttribute('data-abf'), v = av(k);
+        if (kind === 'line') el.value = v[0] || '';
+        else if (kind === 'paras') el.value = v.join('\n');
+        else if (kind === 'row') { an[k] = (an[k] || 0) + 1; const parts = String(v[an[k] - 1] || '').split('|'); Array.prototype.forEach.call(el.querySelectorAll('.ab-c'), function (c, n) { c.value = (parts[n] || '').trim(); }); }
+        else if (kind === 'color') { el.querySelector('.ab-own').checked = !!v[0]; if (v[0]) el.querySelector('.ab-color').value = v[0].trim(); }
+        else if (kind === 'toggle') el.checked = String(v[0] || '').trim() !== 'off';
+      });
+    }
+    const opBody = row.querySelector('.op-body');
+    if (opBody) {
+      const ov = { label: '', text: [], note: '', shapes: 'on' };
+      String(item.block.body || '').split('\n').forEach(function (l) { const m = /^(label|text|note|color|accent|button|bg|shapes):\s?(.*)$/.exec(l.trim()); if (!m) return; if (m[1] === 'text') ov.text.push(m[2]); else ov[m[1]] = m[2].trim(); });
+      row.querySelector('.op-label').value = ov.label; row.querySelector('.op-text').value = ov.text.join('\n'); row.querySelector('.op-note').value = ov.note;
+      ['color', 'accent', 'button', 'bg'].forEach(function (k) { row.querySelector('.op-own-' + k).checked = !!ov[k]; if (ov[k]) row.querySelector('.op-' + k).value = ov[k]; });
+      row.querySelector('.op-shapes').checked = ov.shapes !== 'off';
+    }
+    const fpBody = row.querySelector('.fp-body');
+    if (fpBody) {
+      const pv = { text: [], note: '', shapes: 'on' };
+      String(item.block.body || '').split('\n').forEach(function (l) { const m = /^(text|note|shapes|color|bg|card):\s?(.*)$/.exec(l.trim()); if (!m) return; if (m[1] === 'text') pv.text.push(m[2]); else pv[m[1]] = m[2].trim(); });
+      row.querySelector('.fp-text').value = pv.text.join('\n'); row.querySelector('.fp-note').value = pv.note;
+      ['color', 'bg', 'card'].forEach(function (k) { row.querySelector('.fp-own-' + k).checked = !!pv[k]; if (pv[k]) row.querySelector('.fp-' + k).value = pv[k]; });
+    }
+    const rpBody = row.querySelector('.rp-body');
+    if (rpBody) {
+      const pv = { text: [], note: '', shapes: 'on' };
+      String(item.block.body || '').split('\n').forEach(function (l) { const m = /^(text|note|shapes|color|bg):\s?(.*)$/.exec(l.trim()); if (!m) return; if (m[1] === 'text') pv.text.push(m[2]); else pv[m[1]] = m[2].trim(); });
+      row.querySelector('.rp-text').value = pv.text.join('\n'); row.querySelector('.rp-note').value = pv.note;
+      ['color', 'bg'].forEach(function (k) { row.querySelector('.rp-own-' + k).checked = !!pv[k]; if (pv[k]) row.querySelector('.rp-' + k).value = pv[k]; });
+      row.querySelector('.rp-shapes').checked = pv.shapes !== 'off';
+    }
+    const sfBody = row.querySelector('.sf-body');
+    if (sfBody) {
+      const sv = { text: '', color: '', accent: '', panel: '', bg: '', shapes: 'on' };
+      String(item.block.body || '').split('\n').forEach(function (l) { const m = /^(text|color|accent|panel|bg|shapes):\s?(.*)$/.exec(l.trim()); if (m) sv[m[1]] = m[2].trim(); });
+      row.querySelector('.sf-text').value = sv.text;
+      ['color', 'accent', 'panel', 'bg'].forEach(function (k) { row.querySelector('.sf-own-' + k).checked = !!sv[k]; if (sv[k]) row.querySelector('.sf-' + k).value = sv[k]; });
+      row.querySelector('.sf-shapes').checked = sv.shapes !== 'off';
+    }
+    const rgBody = row.querySelector('.rg-body');
+    if (rgBody) {
+      const rt = []; let rn = '', rcl = '', rb = '', rs = true;
+      String(item.block.body || '').split('\n').forEach(function (l) { const m = /^(text|note|color|bg|shapes):\s?(.*)$/.exec(l.trim()); if (!m) return; if (m[1] === 'text') rt.push(m[2]); else if (m[1] === 'note') rn = m[2]; else if (m[1] === 'color') rcl = m[2].trim(); else if (m[1] === 'bg') rb = m[2].trim(); else rs = m[2].trim() !== 'off'; });
+      row.querySelector('.rg-text').value = rt.join('\n'); row.querySelector('.rg-note').value = rn;
+      row.querySelector('.rg-own-color').checked = !!rcl; if (rcl) row.querySelector('.rg-color').value = rcl;
+      row.querySelector('.rg-own-bg').checked = !!rb; if (rb) row.querySelector('.rg-bg').value = rb;
+      row.querySelector('.rg-shapes').checked = rs;
+    }
+    const twBody = row.querySelector('.tw-body');
+    if (twBody) {
+      const tt = [], tp = [], tl = []; let tc = '', tpn = '';
+      String(item.block.body || '').split('\n').forEach(function (l) { const m = /^(text|photo|link|color|panel):\s?(.*)$/.exec(l.trim()); if (!m) return; if (m[1] === 'text') tt.push(m[2]); else if (m[1] === 'photo') tp.push(m[2].trim()); else if (m[1] === 'link') tl.push(m[2].split('|').map(function (x) { return x.trim(); })); else if (m[1] === 'color') tc = m[2].trim(); else tpn = m[2].trim(); });
+      row.querySelector('.tw-text').value = tt.join('\n');
+      Array.prototype.forEach.call(row.querySelectorAll('.tw-url'), function (i, n) { i.value = tp[n] || ''; });
+      Array.prototype.forEach.call(row.querySelectorAll('.tw-link'), function (f, n) { const k = tl[n] || []; f.querySelector('.tw-label').value = k[0] || ''; f.querySelector('.tw-href').value = k[1] || ''; });
+      row.querySelector('.tw-own-color').checked = !!tc; if (tc) row.querySelector('.tw-color').value = tc;
+      row.querySelector('.tw-own-panel').checked = !!tpn; if (tpn) row.querySelector('.tw-panel').value = tpn;
+    }
+    const rcBody = row.querySelector('.rc-body');
+    if (rcBody) {
+      const rr = []; let rbg = '', rcd = '';
+      String(item.block.body || '').split('\n').forEach(function (l) { const m = /^(bg|card|review):\s?(.*)$/.exec(l.trim()); if (!m) return; if (m[1] === 'bg') rbg = m[2].trim(); else if (m[1] === 'card') rcd = m[2].trim(); else rr.push(m[2].split('|').map(function (x) { return x.trim(); })); });
+      row.querySelector('.rc-own-bg').checked = !!rbg; if (rbg) row.querySelector('.rc-bg').value = rbg;
+      row.querySelector('.rc-own-card').checked = !!rcd; if (rcd) row.querySelector('.rc-card').value = rcd;
+      Array.prototype.forEach.call(row.querySelectorAll('.rc-review'), function (f, n) {
+        const r = rr[n] || [];
+        f.querySelector('.rc-url').value = r[0] || ''; f.querySelector('.rc-quote').value = r[1] || ''; f.querySelector('.rc-name').value = r.slice(2).join(' ');
+      });
+    }
+    const adBody = row.querySelector('.ad-body');
+    if (adBody) {
+      let ap = ''; const ai = [];
+      String(item.block.body || '').split('\n').forEach(function (l) { const m = /^(photos|item):\s?(.*)$/.exec(l.trim()); if (!m) return; if (m[1] === 'photos') ap = m[2]; else ai.push(m[2]); });
+      const urls = ap.split(/\s+/).filter(Boolean), box = row.querySelector('.ad-url').closest('.strip-rows'), first = box.querySelector('.upload-row');
+      while (box.children.length < urls.length) box.appendChild(first.cloneNode(true));
+      Array.prototype.forEach.call(box.querySelectorAll('.strip-url'), function (i, n) { i.value = urls[n] || ''; });
+      const ius = row.querySelectorAll('.ad-iu'), its = row.querySelectorAll('.ad-it');
+      ai.forEach(function (v, n) { if (!ius[n]) return; const k = v.indexOf('|'); ius[n].value = k < 0 ? '' : v.slice(0, k).trim(); its[n].value = (k < 0 ? v : v.slice(k + 1)).trim(); });
+    }
+    const pbBody = row.querySelector('.pb-body');
+    if (pbBody) {
+      const pl = {};
+      String(item.block.body || '').split('\n').forEach(function (l) { const m = /^(top|badge|note|photos|color|cutouts):\s?(.*)$/.exec(l.trim()); if (m) pl[m[1]] = m[2]; });
+      row.querySelector('.pb-cuts').value = pl.cutouts || '';
+      ['top', 'badge', 'note'].forEach(function (k) { row.querySelector('.pb-' + k).value = pl[k] || ''; });
+      if (pl.color) { row.querySelector('.pb-own').checked = true; row.querySelector('.pb-color').value = pl.color; }
+      const urls = String(pl.photos || '').split(/\s+/).filter(Boolean), box = row.querySelector('.pb-url').closest('.strip-rows'), first = box.querySelector('.upload-row');
+      while (box.children.length < urls.length) box.appendChild(first.cloneNode(true));
+      Array.prototype.forEach.call(box.querySelectorAll('.strip-url'), function (i, n) { i.value = urls[n] || ''; });
+    }
+    const strips = tbBody || mhBody || cbBody || adBody || pbBody ? null : row.querySelector('.strip-rows');
+    if (strips) {
+      const isPic = function (l) { return /^(https?:\/\/|\/)\S+$/i.test(l); };
+      const all = String(item.block.body || '').split('\n').filter(Boolean), words = row.querySelector('.wall-text');
+      const urls = words ? all.filter(isPic) : all;
+      if (words) words.value = all.filter(function (l) { return !isPic(l); }).join('\n');
+      const first = strips.querySelector('.upload-row');
+      while (strips.children.length < urls.length) strips.appendChild(first.cloneNode(true));
+      Array.prototype.forEach.call(strips.querySelectorAll('.strip-url'), function (i, n) { i.value = urls[n] || ''; });
+    }
+    if (window.sgAddBlockRow) window.sgAddBlockRow(row); else document.getElementById('blockList').appendChild(node);
+    if (window.syncStrips) window.syncStrips();
+    say('Inserted "' + item.name + '". Set which page it shows on in its last row.');
+    poke();
+  });
+  document.getElementById('libDelete').addEventListener('click', async function () {
+    const item = lib.find(function (l) { return String(l.id) === sel.value; });
+    if (!item) return say('Choose a saved block first.');
+    if (!window.confirm('Delete "' + item.name + '" from your library? Copies already on sites stay.')) return;
+    const r = await fetch('/library/blocks/' + item.id + '/delete', { method: 'POST' });
+    if ((await r.json()).ok) { lib = lib.filter(function (l) { return l.id !== item.id; }); refresh(); say('Deleted.'); }
+  });
+})();
+</script>
+<%# The gradient library picker (Leo 2026-11-05): one swatch grid for every "🎨 Gradient library…" button on the blocks %>
+<script type="application/json" id="gradLibData"><%- JSON.stringify(gradients.libMenu()).replace(/</g, '\\u003c') %></script>
+<dialog id="gradLib" style="width:min(920px, 96vw); max-height:88vh; padding:0; border:0; border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.35);">
+  <div style="position:sticky; top:0; background:#fff; padding:.9rem 1rem .6rem; border-bottom:1px solid #e5e7eb; z-index:1;">
+    <div style="display:flex; gap:.6rem; align-items:center; flex-wrap:wrap;">
+      <strong style="font-size:1.05rem; margin-right:auto;">Gradient library</strong>
+      <input type="search" id="gradLibQ" placeholder="Search by name, e.g. sky" style="flex:1; min-width:180px; max-width:280px;">
+      <button type="button" class="btn btn-secondary btn-sm" id="gradLibClose">Close</button>
+    </div>
+    <div id="gradLibFam" style="display:flex; gap:.35rem; flex-wrap:wrap; margin-top:.55rem;"></div>
+  </div>
+  <div id="gradLibGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:.7rem; padding:1rem;"></div>
+</dialog>
+<script>
+(function () {
+  const dlg = document.getElementById('gradLib'), dataEl = document.getElementById('gradLibData');
+  if (!dlg || !dataEl || !dlg.showModal) return;
+  document.body.appendChild(dlg);   // out of the blocks panel, so it shows whatever panel is open or folded
+  const fams = JSON.parse(dataEl.textContent), grid = document.getElementById('gradLibGrid'), q = document.getElementById('gradLibQ'), famBar = document.getElementById('gradLibFam');
+  let target = null, pre = '', fam = '';
+  const all = fams.flatMap(function (f) { return f[1].map(function (x) { return { id: x[0], name: x[1], css: x[2], fam: f[0] }; }); });
+  const famName = (f) => f.replace(/^Library: /, '');
+  famBar.innerHTML = ['<button type="button" class="btn btn-sm" data-fam="">All (' + all.length + ')</button>'].concat(fams.map(function (f) { return '<button type="button" class="btn btn-secondary btn-sm" data-fam="' + f[0] + '">' + famName(f[0]) + ' (' + f[1].length + ')</button>'; })).join('');
+  function draw() {
+    const words = q.value.trim().toLowerCase(), cur = target ? target.value.replace(/^g-/, '') : '';
+    famBar.querySelectorAll('[data-fam]').forEach(function (b) { b.className = 'btn btn-sm' + (b.dataset.fam === fam ? '' : ' btn-secondary'); });
+    grid.innerHTML = all.filter(function (x) { return (!fam || x.fam === fam) && (!words || x.name.toLowerCase().includes(words)); }).map(function (x) {
+      return '<button type="button" data-gid="' + x.id + '" title="' + x.name + '" style="all:unset; cursor:pointer; display:block; border-radius:10px; overflow:hidden; border:2px solid ' + (x.id === cur ? '#111' : 'transparent') + '; box-shadow:0 1px 3px rgba(0,0,0,.15);"><span style="display:block; height:74px; background:' + x.css + ';"></span><span style="display:block; padding:.35rem .5rem; font-size:.82rem; background:#fff; color:#222;">' + x.name + '</span></button>';
+    }).join('') || '<p style="grid-column:1/-1; color:#666;">No gradient by that name.</p>';
+  }
+  document.addEventListener('click', function (e) {
+    const open = e.target.closest('[data-glib]');
+    if (open) {
+      const row = open.closest('.block-row') || open.parentNode;
+      target = row.querySelector('select[name="' + open.dataset.glib + '"]'); pre = open.dataset.glibPre || '';
+      if (!target) return;
+      fam = ''; q.value = ''; draw(); dlg.showModal(); q.focus(); return;
+    }
+    const f = e.target.closest('#gradLibFam [data-fam]'); if (f) { fam = f.dataset.fam; draw(); return; }
+    const pick = e.target.closest('#gradLibGrid [data-gid]');
+    if (pick && target) {
+      const x = all.find(function (y) { return y.id === pick.dataset.gid; }), val = pre + x.id;
+      // the block's picker lists only the library gradient already chosen; add this one under "Gradient library"
+      if (!Array.from(target.options).some(function (o) { return o.value === val; })) {
+        let grp = Array.from(target.querySelectorAll('optgroup')).find(function (g) { return g.dataset.glib === '1'; });
+        if (!grp) { grp = document.createElement('optgroup'); grp.label = 'Gradient library'; grp.dataset.glib = '1'; target.appendChild(grp); }
+        const o = document.createElement('option'); o.value = val; o.textContent = x.name; grp.appendChild(o);
+      }
+      target.value = val;
+      target.dispatchEvent(new Event('input', { bubbles: true })); target.dispatchEvent(new Event('change', { bubbles: true }));
+      dlg.close();
+    }
+  });
+  q.addEventListener('input', draw);
+  document.getElementById('gradLibClose').addEventListener('click', function () { dlg.close(); });
+  dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
+})();
+</script>

@@ -1,0 +1,16 @@
+<%# Original layout using HyperUI (MIT) marketing/banners spacing: a text card over a full-width photo. %>
+<section class="sg-lib" data-sg-section="hero/card">
+  <div class="tw:relative tw:isolate tw:overflow-hidden <%= d.image ? '' : 'tw:bg-surface' %>">
+    <% if (d.image) { %><img class="tw:absolute tw:inset-0 tw:-z-10 tw:h-full tw:w-full tw:object-cover" src="<%= d.image %>" alt="" fetchpriority="high"><% } %>
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-16 tw:sm:px-6 tw:sm:py-24 tw:lg:px-8">
+      <div class="tw:mx-auto tw:max-w-xl tw:rounded-2xl tw:bg-page/95 tw:p-8 tw:text-center tw:shadow-[var(--shadow-md)] tw:sm:p-10" data-animate="hero">
+        <h1 class="tw:font-heading tw:text-3xl tw:font-bold tw:text-ink tw:sm:text-4xl"><%- d.headlineHtml %></h1>
+        <% if (d.sub) { %><p class="tw:mt-4 tw:text-pretty tw:text-muted"><%= d.sub %></p><% } %>
+        <div class="tw:mt-6 tw:flex tw:flex-wrap tw:justify-center tw:gap-4">
+          <a class="tw:inline-block tw:rounded-md tw:bg-primary tw:px-5 tw:py-3 tw:font-medium tw:text-on-primary tw:shadow-[var(--shadow-sm)] tw:transition-opacity tw:hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+          <% if (d.phone) { %><a class="tw:inline-block tw:rounded-md tw:border tw:border-line tw:bg-page tw:px-5 tw:py-3 tw:font-medium tw:text-ink tw:shadow-[var(--shadow-sm)] tw:transition-colors tw:hover:bg-surface" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

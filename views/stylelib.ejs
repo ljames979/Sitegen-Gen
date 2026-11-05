@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Style Library: <%= site.name %> — SiteGen</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="<%= fontsHref %>">
+  <link rel="stylesheet" href="/sg-stylelib.css">
+  <%# This page has its own small stylesheet (not the admin one) so the admin's form and button rules don't reach the thumbnails %>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 15px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; background: #eef1f5; }
+    .sl-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px; background: #fff; border-bottom: 1px solid #e2e8f0; }
+    .sl-bar h1 { font-size: 16px; margin: 0; } .sl-bar .sp { flex: 1; }
+    .sl-bar a.back { color: #64748b; text-decoration: none; }
+    .ui-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; color: #0f172a; font: 600 13.5px/1.2 inherit; font-family: inherit; cursor: pointer; text-decoration: none; }
+    .ui-btn.primary { background: #0f172a; border-color: #0f172a; color: #fff; }
+    .ui-sel { padding: 7px 8px; border: 1px solid #cbd5e1; border-radius: 8px; font: 13.5px inherit; font-family: inherit; background: #fff; }
+    .seg { display: inline-flex; } .seg button { border: 1px solid #cbd5e1; background: #fff; padding: 7px 12px; font: 600 13px inherit; font-family: inherit; cursor: pointer; margin-left: -1px; }
+    .seg button:first-child { border-radius: 8px 0 0 8px; margin-left: 0; } .seg button:last-child { border-radius: 0 8px 8px 0; }
+    .seg button[aria-pressed=true] { background: #0f172a; color: #fff; border-color: #0f172a; }
+    .sl-intro { max-width: 1400px; margin: 18px auto 0; padding: 0 16px; color: #475569; font-size: 14px; }
+    .sl-grid { max-width: 1400px; margin: 0 auto; padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 18px; }
+    .sl-card { position: relative; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(15,23,42,.07); border: 2px solid transparent; cursor: pointer; display: flex; flex-direction: column; }
+    .sl-card:hover, .sl-card:focus-visible { border-color: #0f172a; outline: none; }
+    .sl-card.on { border-color: #2563eb; }
+    .sl-card[hidden] { display: none; }
+    .thumb { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: #f1f5f9; }
+    .thumb-in { position: absolute; left: 0; top: 0; width: 1280px; transform: scale(var(--s, .26)); transform-origin: 0 0; pointer-events: none; }
+    .sl-meta { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .sl-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .sl-title h3 { margin: 0; font-size: 16px; }
+    .tag { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #f1f5f9; color: #475569; }
+    .tag.fit { background: #dcfce7; color: #166534; } .tag.now { background: #dbeafe; color: #1e40af; } .tag.new { background: #fef3c7; color: #92400e; }
+    .sl-meta p { margin: 0; color: #475569; font-size: 13.5px; }
+    .sl-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 6px; font-size: 12.5px; color: #64748b; }
+    .sw { display: flex; } .sw span { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; margin-left: -4px; box-shadow: 0 0 0 1px rgba(0,0,0,.08); } .sw span:first-child { margin-left: 0; }
+    .sl-empty { padding: 40px; text-align: center; color: #64748b; display: none; }
+    /* full-page preview */
+    .sl-detail { position: fixed; inset: 0; z-index: 50; background: rgba(15,23,42,.6); display: flex; flex-direction: column; }
+    .sl-detail[hidden] { display: none; }
+    .sl-dbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px; background: #fff; }
+    .sl-dbar h2 { margin: 0; font-size: 17px; } .sl-dbar .sp { flex: 1; }
+    .sl-dbar form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0; }
+    .sl-dbar label { font-size: 13px; color: #475569; display: flex; gap: 6px; align-items: center; }
+    .sl-stage { flex: 1; min-height: 0; display: flex; justify-content: center; padding: 14px; }
+    .sl-stage iframe { width: 100%; max-width: 1440px; height: 100%; border: 0; border-radius: 10px; background: #fff; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
+    .sl-stage.phone iframe { max-width: 390px; }
+    .sl-dnote { margin: 0; padding: 0 16px 8px; background: #fff; font-size: 12.5px; color: #64748b; }
+    @media (max-width: 700px) { .sl-grid { grid-template-columns: 1fr; padding: 10px; } .sl-dbar h2 { width: 100%; } }
+  </style>
+</head>
+<body>
+  <div class="sl-bar">
+    <a class="back" href="/sites/<%= site.id %>/edit#design">&larr; Editor</a>
+    <h1>Style Library</h1>
+    <span class="sp"></span>
+    <select class="ui-sel" id="bpSel" aria-label="Page blueprint">
+      <option value="all">All blueprints</option>
+      <% Object.keys(blueprints).forEach(k => { %><option value="<%= k %>"><%= blueprints[k].name %> (<%= cards.filter(c => c.st.bp === k).length %>)</option><% }) %>
+    </select>
+    <span class="seg" id="modeSeg" role="group" aria-label="Show">
+      <button type="button" data-v="all" aria-pressed="true">All</button><button type="button" data-v="Light" aria-pressed="false">Light</button><button type="button" data-v="Dark" aria-pressed="false">Dark</button><% if (cards.some(c => c.fits)) { %><button type="button" data-v="fit" aria-pressed="false">Suits this business</button><% } %>
+    </span>
+    <a class="ui-btn" href="/sites/<%= site.id %>/styles<%= clientColors ? '' : '?colors=client' %>" title="Switch the thumbnails between each style's own colors and the client's brand color"><%= clientColors ? "Show each style's colors" : "Show with the client's color" %></a>
+  </div>
+  <p class="sl-intro">44 original styles on 8 page blueprints. Every thumbnail is this site's own hero: the headline, buttons, numbers and photos already in the editor. Click a style to see the whole home page, try another blueprint, then use it. The current design is saved in Version history first.</p>
+  <div class="sl-grid" id="grid">
+    <% cards.forEach(c => { const col = c.st.c; %>
+    <article class="sl-card<%= current === c.id ? ' on' : '' %>" tabindex="0" role="button" data-id="<%= c.id %>" data-name="<%= c.st.name %>" data-bp="<%= c.st.bp %>" data-mode="<%= c.st.mode %>" data-fit="<%= c.fits ? 1 : 0 %>" aria-label="Preview <%= c.st.name %>">
+      <div class="thumb"><div class="thumb-in" inert style="--heading-font: <%= c.st.fonts.display %>; --body-font: <%= c.st.fonts.body %>;"><%- c.hero %></div></div>
+      <div class="sl-meta">
+        <div class="sl-title"><h3><%= c.st.name %></h3><span class="tag"><%= c.st.mode %></span><% if (c.fits) { %><span class="tag fit">Suits this business</span><% } %><% if (current === c.id) { %><span class="tag now">In use</span><% } %><% if (c.st.isNew) { %><span class="tag new">New</span><% } %></div>
+        <p><%= c.st.look %></p>
+        <div class="sl-foot"><span class="sw"><% [col.bg, col.surface, col.text, col.accent, col.accent2].forEach(h => { %><span style="background:<%= h %>"></span><% }) %></span><span><%= blueprints[c.st.bp].name %> · <%= c.st.industry %></span></div>
+      </div>
+    </article>
+    <% }) %>
+  </div>
+  <p class="sl-empty" id="empty">No styles match these filters.</p>
+
+  <div class="sl-detail" id="detail" hidden role="dialog" aria-modal="true" aria-labelledby="dTitle">
+    <div class="sl-dbar">
+      <button type="button" class="ui-btn" id="closeBtn">&larr; All styles</button>
+      <button type="button" class="ui-btn" id="prevBtn" aria-label="Previous style">&lsaquo;</button>
+      <button type="button" class="ui-btn" id="nextBtn" aria-label="Next style">&rsaquo;</button>
+      <h2 id="dTitle"></h2>
+      <span class="sp"></span>
+      <span class="seg" id="devSeg" role="group" aria-label="Screen"><button type="button" data-v="desktop" aria-pressed="true">Desktop</button><button type="button" data-v="phone" aria-pressed="false">Phone</button></span>
+      <form method="POST" action="/sites/<%= site.id %>/styles/use" id="useForm">
+        <input type="hidden" name="style" id="useStyle">
+        <label>Blueprint <select class="ui-sel" name="blueprint" id="useBp"><option value="">The style's own</option><% Object.keys(blueprints).forEach(k => { %><option value="<%= k %>"><%= blueprints[k].name %></option><% }) %></select></label>
+        <label>Colors <select class="ui-sel" name="colors" id="useColors"><option value="style">The style's own</option><option value="client"<%= clientColors ? ' selected' : '' %>>Keep the client's brand color</option></select></label>
+        <button type="submit" class="ui-btn primary">Use this style</button>
+      </form>
+    </div>
+    <p class="sl-dnote" id="dNote"></p>
+    <div class="sl-stage" id="stage"><iframe id="frame" title="Home page preview"></iframe></div>
+  </div>
+
+  <script>
+  (function () {
+    var siteId = <%= site.id %>, BP = <%- JSON.stringify(Object.fromEntries(Object.keys(blueprints).map(k => [k, blueprints[k]]))).replace(/</g, '\\u003c') %>;
+    var grid = document.getElementById('grid'), cards = [].slice.call(grid.querySelectorAll('.sl-card'));
+    // thumbnails are drawn at 1280px wide and scaled to the card
+    var ro = new ResizeObserver(function (es) { es.forEach(function (e) { e.target.querySelector('.thumb-in').style.setProperty('--s', (e.contentRect.width / 1280).toFixed(4)); }); });
+    cards.forEach(function (c) { ro.observe(c.querySelector('.thumb')); });
+    var bp = 'all', mode = 'all';
+    function filter() {
+      var n = 0;
+      cards.forEach(function (c) {
+        var ok = (bp === 'all' || c.dataset.bp === bp) && (mode === 'all' || (mode === 'fit' ? c.dataset.fit === '1' : c.dataset.mode === mode));
+        c.hidden = !ok; if (ok) n++;
+      });
+      document.getElementById('empty').style.display = n ? 'none' : 'block';
+    }
+    document.getElementById('bpSel').addEventListener('change', function (e) { bp = e.target.value; filter(); });
+    function seg(id, cb) {
+      var el = document.getElementById(id);
+      el.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; el.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); cb(b.dataset.v); });
+    }
+    seg('modeSeg', function (v) { mode = v; filter(); });
+    // preview
+    var detail = document.getElementById('detail'), frame = document.getElementById('frame'), stage = document.getElementById('stage');
+    var useBp = document.getElementById('useBp'), useColors = document.getElementById('useColors'), cur = null;
+    function src() {
+      return '/sites/' + siteId + '/preview?bar=0&style=' + encodeURIComponent(cur.dataset.id) + '&pal=' + (useColors.value === 'client' ? '0' : '1') + (useBp.value ? '&slbp=' + useBp.value : '');
+    }
+    function note() {
+      var k = useBp.value || cur.dataset.bp;
+      document.getElementById('dNote').textContent = BP[k].name + ' blueprint: ' + BP[k].note + ' Sections with nothing to show on this site are left out.';
+    }
+    function open(card) {
+      cur = card; useBp.value = '';
+      document.getElementById('dTitle').textContent = card.dataset.name;
+      document.getElementById('useStyle').value = card.dataset.id;
+      frame.src = src(); note();
+      detail.hidden = false; document.body.style.overflow = 'hidden';
+      document.getElementById('closeBtn').focus();
+    }
+    function close() { detail.hidden = true; document.body.style.overflow = ''; frame.src = 'about:blank'; if (cur) cur.focus(); }
+    function step(d) {
+      var vis = cards.filter(function (c) { return !c.hidden; }); var i = vis.indexOf(cur);
+      open(vis[(i + d + vis.length) % vis.length]);
+    }
+    grid.addEventListener('click', function (e) { var c = e.target.closest('.sl-card'); if (c) open(c); });
+    grid.addEventListener('keydown', function (e) { var c = e.target.closest('.sl-card'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open(c); } });
+    document.getElementById('closeBtn').addEventListener('click', close);
+    document.getElementById('prevBtn').addEventListener('click', function () { step(-1); });
+    document.getElementById('nextBtn').addEventListener('click', function () { step(1); });
+    useBp.addEventListener('change', function () { frame.src = src(); note(); });
+    useColors.addEventListener('change', function () { frame.src = src(); });
+    seg('devSeg', function (v) { stage.classList.toggle('phone', v === 'phone'); });
+    document.addEventListener('keydown', function (e) {
+      if (detail.hidden) return;
+      if (e.key === 'Escape') close();
+      if (/SELECT|INPUT/.test((e.target || {}).tagName || '')) return;
+      if (e.key === 'ArrowRight') step(1);
+      if (e.key === 'ArrowLeft') step(-1);
+    });
+  })();
+  </script>
+</body>
+</html>

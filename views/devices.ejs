@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Device wall: <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; background: #eef1f5; }
+    .dw-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--border); }
+    .dw-bar h1 { font-size: 16px; margin: 0; } .dw-bar .sp { flex: 1; }
+    .dw-bar select { width: auto; margin: 0; padding: 7px 8px; font-size: 13.5px; }
+    .dw-bar label.check { display: flex; gap: 6px; align-items: center; margin: 0; font-weight: 400; font-size: 14px; }
+    .seg button { border-radius: 0; padding: 7px 12px; font-size: 13px; } .seg button:first-child { border-radius: 8px 0 0 8px; } .seg button:last-child { border-radius: 0 8px 8px 0; }
+    .seg button.on { background: #0f172a; color: #fff; }
+    .dw-note { font-size: 12.5px; color: var(--muted); padding: 6px 16px; margin: 0; background: #fff; }
+    .dw-wrap { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+    .dw-wrap.row { overflow: auto; }
+    /* the stage is drawn at a fixed design size and scaled to fit */
+    .dw-stage { position: absolute; left: 0; top: 0; width: 1600px; height: 980px; transform-origin: 0 0; }
+    .dw-stage.bg-light { background: radial-gradient(1200px 700px at 50% 30%, #ffffff, #e7ebf1); }
+    .dw-stage.bg-dark { background: radial-gradient(1200px 700px at 50% 30%, #2a3240, #0b0f17); }
+    .dw-stage.bg-brand { background: radial-gradient(1200px 700px at 50% 30%, color-mix(in srgb, <%= site.theme.primaryColor || '#2563eb' %> 35%, #fff), <%= site.theme.primaryColor || '#2563eb' %>); }
+    .dev { position: absolute; }
+    .dev .scr { position: relative; overflow: hidden; background: #fff; }
+    .dev iframe { position: absolute; top: 0; left: 0; border: 0; transform-origin: 0 0; background: #fff; }
+    .dev .lbl { position: absolute; left: 0; right: 0; bottom: -30px; text-align: center; font: 600 13px system-ui, sans-serif; color: #475569; }
+    .bg-dark .dev .lbl { color: #cbd5e1; }
+    /* monitor */
+    .dev.wide .frame { padding: 16px; background: #111; border-radius: 18px; box-shadow: 0 30px 60px rgba(0,0,0,.28); }
+    .dev.wide .neck { width: 120px; height: 70px; margin: 0 auto; background: linear-gradient(#c9ced6, #9aa1ab); clip-path: polygon(18% 0, 82% 0, 100% 100%, 0 100%); }
+    .dev.wide .foot { width: 300px; height: 12px; margin: 0 auto; border-radius: 6px 6px 10px 10px; background: #a7aeb8; }
+    /* laptop */
+    .dev.laptop .frame { padding: 14px 14px 18px; background: #1b1d22; border-radius: 16px 16px 4px 4px; box-shadow: 0 24px 50px rgba(0,0,0,.3); }
+    .dev.laptop .deck { height: 18px; margin: 0 -60px; background: linear-gradient(#d7dbe1, #a9b0ba); border-radius: 2px 2px 14px 14px; position: relative; }
+    .dev.laptop .deck::after { content: ""; position: absolute; left: 50%; top: 0; width: 110px; height: 7px; transform: translateX(-50%); background: #9aa1ab; border-radius: 0 0 8px 8px; }
+    /* tablet and phone */
+    .dev.tablet .frame { padding: 18px; background: #16181d; border-radius: 30px; box-shadow: 0 24px 50px rgba(0,0,0,.3); }
+    .dev.tablet .scr { border-radius: 10px; }
+    .dev.phone .frame { padding: 10px; background: #0d0e11; border-radius: 34px; box-shadow: 0 24px 50px rgba(0,0,0,.35); }
+    .dev.phone .scr { border-radius: 25px; }
+    /* side by side: a plain row, same height */
+    .dw-wrap.row .dw-stage { position: relative; width: auto; height: auto; transform: none; display: flex; align-items: flex-end; gap: 48px; padding: 30px 30px 60px; min-width: max-content; min-height: 100%; box-sizing: border-box; }
+    .dw-wrap.row .dev { position: relative; left: auto !important; top: auto !important; }
+    @media print { .dw-bar, .dw-note { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="dw-bar">
+    <a href="/sites/<%= site.id %>/edit" class="muted">&larr; Editor</a>
+    <h1>Device wall: <%= site.name %></h1>
+    <span class="sp"></span>
+    <select id="dwPage" aria-label="Page">
+      <option value="home">Home</option>
+      <% const pageLabels = { about: 'About', services: 'Services', testimonials: 'Reviews', whyChoose: 'Why Choose Us', gallery: 'Gallery', faq: 'FAQ', blog: 'News & Tips', hours: 'Hours', contact: 'Contact' }; %>
+      <% site.layout.order.filter(k => k !== 'hero' && k !== 'extraPages' && !site.layout.hidden.includes(k)).forEach(k => { %>
+        <option value="<%= k %>"><%= (site.sections[k] && site.sections[k].heading) || pageLabels[k] || k %></option>
+      <% }) %>
+    </select>
+    <span class="seg" role="group" aria-label="Arrangement">
+      <button type="button" class="btn-secondary on" data-mode="show" aria-pressed="true">Showcase</button><button type="button" class="btn-secondary" data-mode="row" aria-pressed="false">Side by side</button>
+    </span>
+    <select id="dwBg" aria-label="Background"><option value="light">Light background</option><option value="dark">Dark background</option><option value="brand">Brand color background</option></select>
+    <label class="check"><input type="checkbox" id="dwSync" checked> Scroll together</label>
+    <button type="button" id="dwSnap">Download as image</button>
+  </div>
+  <p class="dw-note" id="dwNote">Every screen is live: scroll, tap and hover inside any of them. "Download as image" asks your browser to share this tab once (choose <strong>This tab</strong>), takes one picture of the wall and saves it as a PNG. Nothing is recorded or sent anywhere.</p>
+  <div class="dw-wrap" id="dwWrap">
+    <div class="dw-stage bg-light" id="dwStage">
+      <% [['wide', 'Wide screen', 1920, 1080], ['laptop', 'Laptop', 1366, 768], ['tablet', 'Tablet', 820, 1180], ['phone', 'Phone', 390, 844]].forEach(([id, label, w, h]) => { %>
+        <div class="dev <%= id %>" data-dev="<%= id %>" data-w="<%= w %>" data-h="<%= h %>">
+          <div class="frame"><div class="scr"><iframe title="<%= label %> view" src="/sites/<%= site.id %>/preview?bar=0" width="<%= w %>" height="<%= h %>"></iframe></div></div>
+          <% if (id === 'wide') { %><div class="neck"></div><div class="foot"></div><% } %>
+          <% if (id === 'laptop') { %><div class="deck"></div><% } %>
+          <div class="lbl"><%= label %> &middot; <%= w %>px</div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+  <script>
+  (function () {
+    var siteId = <%= site.id %>, wrap = document.getElementById('dwWrap'), stage = document.getElementById('dwStage');
+    // showcase positions on the 1600 x 980 stage: screen width in stage pixels, left, top
+    var SHOW = { wide: [880, 380, 40], laptop: [600, 70, 430], tablet: [290, 1180, 330], phone: [160, 1060, 520] };
+    var mode = 'show';
+    function size(dev, screenW) {
+      var w = +dev.dataset.w, h = +dev.dataset.h, s = screenW / w;
+      var scr = dev.querySelector('.scr'), f = dev.querySelector('iframe');
+      scr.style.width = screenW + 'px'; scr.style.height = Math.round(h * s) + 'px';
+      f.style.transform = 'scale(' + s + ')';
+    }
+    function layout() {
+      var devs = stage.querySelectorAll('.dev');
+      if (mode === 'show') {
+        devs.forEach(function (d) { var p = SHOW[d.dataset.dev]; size(d, p[0]); d.style.left = p[1] + 'px'; d.style.top = p[2] + 'px'; });
+        var k = Math.min(wrap.clientWidth / 1600, wrap.clientHeight / 980);
+        stage.style.transform = 'translate(' + Math.max(0, (wrap.clientWidth - 1600 * k) / 2) + 'px,0) scale(' + k + ')';
+      } else {
+        // same screen height for all four, so the layouts can be compared line by line
+        var H = Math.max(320, wrap.clientHeight - 150);
+        devs.forEach(function (d) { size(d, Math.round(H * (+d.dataset.w) / (+d.dataset.h))); });
+        stage.style.transform = '';
+      }
+    }
+    addEventListener('resize', layout); layout();
+    document.querySelectorAll('[data-mode]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        mode = b.dataset.mode; wrap.classList.toggle('row', mode === 'row');
+        document.querySelectorAll('[data-mode]').forEach(function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); });
+        layout();
+      });
+    });
+    document.getElementById('dwBg').addEventListener('change', function (e) { stage.className = 'dw-stage bg-' + e.target.value; });
+    var frames = Array.prototype.slice.call(stage.querySelectorAll('iframe'));
+    document.getElementById('dwPage').addEventListener('change', function (e) {
+      var p = e.target.value;
+      frames.forEach(function (f) { f.src = '/sites/' + siteId + '/preview' + (p === 'home' ? '' : '/' + p) + '?bar=0'; });
+    });
+    // scroll together: the screen under the pointer (or touched last) leads, the others follow at the same share of the page
+    var leader = null;
+    frames.forEach(function (f) {
+      var dev = f.closest('.dev');
+      dev.addEventListener('pointerenter', function () { leader = f; });
+      dev.addEventListener('touchstart', function () { leader = f; }, { passive: true });
+      f.addEventListener('load', function () {
+        var win; try { win = f.contentWindow; win.document; } catch (e) { return; }
+        win.addEventListener('scroll', function () {
+          if (!document.getElementById('dwSync').checked || (leader && leader !== f)) return;
+          var de = win.document.documentElement, max = de.scrollHeight - win.innerHeight, r = max > 0 ? win.scrollY / max : 0;
+          frames.forEach(function (o) { if (o === f) return; try { var w2 = o.contentWindow, d2 = w2.document.documentElement; w2.scrollTo({ top: r * (d2.scrollHeight - w2.innerHeight), behavior: 'instant' }); } catch (e) {} });
+        }, { passive: true });
+      });
+    });
+    // download: one frame of this tab through the browser's screen sharing, cropped to the wall
+    var note = document.getElementById('dwNote');
+    document.getElementById('dwSnap').addEventListener('click', async function () {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { note.textContent = 'This browser cannot take the picture. Use Chrome or Edge, or press Windows + Shift + S to snip the wall.'; return; }
+      var stream;
+      try { stream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: 'browser' }, audio: false, preferCurrentTab: true, selfBrowserSurface: 'include' }); }
+      catch (e) { note.textContent = 'No picture taken (sharing was cancelled).'; return; }
+      var track = stream.getVideoTracks()[0];
+      try {
+        var cropped = false;
+        if (window.CropTarget && track.cropTo) { try { await track.cropTo(await CropTarget.fromElement(wrap)); cropped = true; } catch (e) { cropped = false; } }
+        var v = document.createElement('video'); v.muted = true; v.srcObject = stream; await v.play();
+        await new Promise(function (r) { setTimeout(r, 500); });
+        var vw = v.videoWidth, vh = v.videoHeight, rect = wrap.getBoundingClientRect();
+        var sx = 0, sy = 0, sw = vw, sh = vh;
+        if (!cropped) { var kx = vw / innerWidth, ky = vh / innerHeight; sx = rect.left * kx; sy = rect.top * ky; sw = rect.width * kx; sh = rect.height * ky; }
+        var c = document.createElement('canvas'); c.width = Math.round(sw); c.height = Math.round(sh);
+        c.getContext('2d').drawImage(v, sx, sy, sw, sh, 0, 0, c.width, c.height);
+        c.toBlob(function (blob) {
+          var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+          a.download = <%- JSON.stringify(String(site.name || 'site').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'site') %> + '-devices.png';
+          document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+          note.textContent = 'Saved the picture to your downloads.';
+        }, 'image/png');
+      } finally { track.stop(); }
+    });
+  })();
+  </script>
+</body>
+</html>

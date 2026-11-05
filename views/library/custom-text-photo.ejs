@@ -1,0 +1,15 @@
+<%# Original layout (your own section, words and photo): text on the left, photo on the right. %>
+<section class="sg-lib" data-sg-section="custom/text-photo">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-16">
+      <div class="sg-flip tw:grid tw:grid-cols-1 tw:gap-8 tw:md:grid-cols-2 tw:md:items-center tw:md:gap-12">
+        <div class="tw:md:order-1" data-animate="fade-up">
+          <% if (d.heading) { %><h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2><% } %>
+          <% if (d.body) { %><p class="<%= d.heading ? 'tw:mt-4' : '' %> tw:text-lg/relaxed tw:text-pretty tw:whitespace-pre-line tw:text-muted"><%= d.body %></p><% } %>
+          <% if (d.buttonText && d.buttonHref) { %><p class="tw:mt-6"><a class="tw:inline-block tw:rounded-md tw:bg-primary tw:px-5 tw:py-3 tw:font-medium tw:text-on-primary tw:shadow-[var(--shadow-sm)] tw:transition-opacity tw:hover:opacity-90" href="<%= d.buttonHref %>"><%= d.buttonText %></a></p><% } %>
+        </div>
+        <div class="tw:md:order-2" data-animate="fade-up"><img class="tw:aspect-[4/3] tw:w-full tw:rounded-xl tw:object-cover" src="<%= d.images[0].src %>" alt="<%= d.images[0].alt %>" loading="lazy"></div>
+      </div>
+    </div>
+  </div>
+</section>

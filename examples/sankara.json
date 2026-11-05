@@ -1,0 +1,89 @@
+{
+  "_note": "Starter site for Sankara Insurance Group, Inc. Written only from facts that were provided (Kissimmee, FL; auto, home, life and health insurance). Add the phone, email, license number and anything else that is true before publishing.",
+  "name": "Sankara Insurance Group",
+  "theme": {
+    "primaryColor": "#1e4e8c",
+    "accentColor": "#0f2a47",
+    "font": "Inter, system-ui, sans-serif",
+    "style": "agency",
+    "logoUrl": ""
+  },
+  "layout": {
+    "hidden": [
+      "hours"
+    ]
+  },
+  "sections": {
+    "hero": {
+      "headline": "Insurance for your car, home, family and health",
+      "subheadline": "Sankara Insurance Group is a Kissimmee, Florida insurance agency. Talk with us about auto, home, life and health coverage.",
+      "imageUrl": "",
+      "ctaText": "Request a Quote",
+      "ctaLink": "#contact",
+      "trustText": ""
+    },
+    "about": {
+      "heading": "About Sankara Insurance Group",
+      "body": "Sankara Insurance Group, Inc. is an insurance agency based in Kissimmee, Florida. We help individuals and families look at their auto, home, life and health insurance options and explain how each type of coverage works, so you can choose what fits your situation and budget.\n\nTell us a little about what you need and we will follow up.",
+      "imageUrl": ""
+    },
+    "services": {
+      "heading": "Insurance We Offer",
+      "items": [
+        {
+          "title": "Auto Insurance",
+          "description": "Coverage for the cars you drive and the people who drive them.",
+          "detail": "Auto insurance helps pay for damage you cause to other people and their property and, depending on the coverages you choose, for damage to your own vehicle and injuries to you and your passengers. Florida sets its own minimum requirements, and many drivers choose higher limits or add coverages such as collision, comprehensive and uninsured motorist protection.\n\nThe right mix depends on your vehicle, how you use it, and what you would be comfortable paying out of pocket after an accident. Request a quote and we can walk through the options with you."
+        },
+        {
+          "title": "Home Insurance",
+          "description": "Protection for your house, your belongings and your liability.",
+          "detail": "Homeowners insurance typically covers damage to the structure of your home, your personal belongings, extra living expenses if you cannot stay in the home after a covered loss, and liability if someone is injured on your property.\n\nIn Florida, wind and hurricane coverage, deductibles and flood protection deserve special attention. Flood damage is generally not covered by a standard homeowners policy and is usually a separate policy. It is worth understanding how each of these works before you decide."
+        },
+        {
+          "title": "Life Insurance",
+          "description": "Financial protection for the people who depend on you.",
+          "detail": "Life insurance pays a benefit to the people you name if you pass away. Term life insurance covers a set number of years, while permanent life insurance is designed to last your lifetime and can build cash value.\n\nHow much coverage makes sense depends on your income, debts, family and goals. Tell us about your situation and we can talk through the common ways to approach it."
+        },
+        {
+          "title": "Health Insurance",
+          "description": "Help understanding your health coverage options.",
+          "detail": "Health insurance helps pay for medical care, and plans differ in monthly cost, deductibles, copays and which doctors and hospitals are in the network.\n\nChoosing a plan means weighing those trade-offs against how you and your family use care. Request a quote or send us your questions and we will talk through the options that apply to you."
+        }
+      ]
+    },
+    "faq": {
+      "heading": "Frequently Asked Questions",
+      "items": [
+        {
+          "question": "What types of insurance do you offer?",
+          "answer": "Sankara Insurance Group works with auto, home, life and health insurance."
+        },
+        {
+          "question": "How do I get a quote?",
+          "answer": "Use the Request a Quote form on this site or call us, and tell us what you want to insure. We will follow up with next steps."
+        },
+        {
+          "question": "Where is your agency located?",
+          "answer": "Sankara Insurance Group, Inc. is based in Kissimmee, Florida."
+        }
+      ]
+    },
+    "contact": {
+      "heading": "Contact Us",
+      "email": "",
+      "phone": "",
+      "address": "",
+      "acceptSubmissions": true
+    },
+    "meta": {
+      "businessType": "insurance agency",
+      "city": "Kissimmee, FL",
+      "trackingMode": "ask"
+    },
+    "seo": {
+      "title": "Sankara Insurance Group | Insurance Agency in Kissimmee, FL",
+      "description": "Sankara Insurance Group is a Kissimmee, Florida insurance agency for auto, home, life and health insurance. Request a quote."
+    }
+  }
+}

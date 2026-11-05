@@ -1,0 +1,22 @@
+<%# Original layout (editorial: a big number or heading in a narrow column, the words in a wide one) %>
+<% var ims = (d.images || []).map(function (x) { return x && typeof x === 'object' ? x.src : x; }).filter(Boolean); if (!ims.length && d.image) ims = [d.image]; var alt = d.imageAlt || ((d.images || [])[0] || {}).alt || ''; %>
+<section class="sg-lib" data-sg-section="about/editorial">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="sg-flip tw:grid tw:grid-cols-1 tw:gap-8 tw:lg:grid-cols-3 tw:lg:gap-16">
+        <div class="tw:lg:border-r tw:lg:border-line tw:lg:pr-10" data-animate="fade-up">
+          <% if (d.stat) { %>
+            <p class="tw:font-heading tw:text-6xl tw:font-bold tw:text-primary tw:sm:text-7xl" <%- d.stat.countAttrs || '' %>><%= d.stat.value %></p>
+            <p class="tw:mt-2 tw:text-sm tw:font-medium tw:tracking-wide tw:text-muted tw:uppercase"><%= d.stat.label %></p>
+          <% } else if (d.heading) { %><h2 data-sg-head class="tw:font-heading tw:text-4xl tw:font-bold tw:text-ink tw:sm:text-5xl"><%= d.heading %></h2><% } %>
+        </div>
+        <div class="tw:lg:col-span-2" data-animate="fade-up">
+          <% if (d.stat && d.heading) { %><h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2><% } %>
+          <% if (d.body) { %><p class="<%= d.stat && d.heading ? 'tw:mt-4' : '' %> tw:text-xl/relaxed tw:text-pretty tw:whitespace-pre-line tw:text-muted"><%= d.body %></p><% } %>
+          <% if (d.moreHref) { %><a class="tw:mt-6 tw:inline-block tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">Learn more about us &rarr;</a><% } %>
+          <% if (d.buttonText && d.buttonHref) { %><p class="tw:mt-6"><a class="tw:inline-block tw:rounded-md tw:bg-primary tw:px-5 tw:py-3 tw:font-medium tw:text-on-primary tw:shadow-[var(--shadow-sm)] tw:transition-opacity tw:hover:opacity-90" href="<%= d.buttonHref %>"><%= d.buttonText %></a></p><% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

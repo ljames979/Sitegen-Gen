@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Quality check — <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .q-sum { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 16px; }
+    .q-pill { border-radius: 999px; padding: 6px 14px; font-weight: 600; font-size: 14px; }
+    .q-pill.err { background: #fef2f2; color: #991b1b; } .q-pill.warn { background: #fffbeb; color: #92400e; } .q-pill.ok { background: #ecfdf5; color: #065f46; }
+    .q-item { border: 1px solid var(--border); border-left-width: 5px; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; background: #fff; }
+    .q-item.error { border-left-color: #dc2626; } .q-item.warn { border-left-color: #d97706; }
+    .q-item h3 { margin: 0 0 4px; font-size: 15px; } .q-item p { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+    .q-area { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+    .q-pass { columns: 2; margin: 6px 0 0; padding-left: 18px; color: #065f46; font-size: 14px; } @media (max-width: 600px) { .q-pass { columns: 1; } }
+    .q-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .sc-rings { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0 0 14px; }
+    @media (max-width: 700px) { .sc-rings { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .sc-ring { text-align: center; text-decoration: none; color: inherit; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px 8px 10px; }
+    .sc-ring svg { width: 92px; height: 92px; display: block; margin: 0 auto 6px; }
+    .sc-ring .bg { stroke: #e2e8f0; } .sc-ring .fg { stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; }
+    .sc-ring.good .fg { stroke: #059669; } .sc-ring.ok .fg { stroke: #d97706; } .sc-ring.poor .fg { stroke: #dc2626; }
+    .sc-ring.good text { fill: #065f46; } .sc-ring.ok text { fill: #92400e; } .sc-ring.poor text { fill: #991b1b; }
+    .sc-ring strong { font-size: 14px; }
+    .sc-cat { margin: 0 0 10px; } .sc-cat summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+    .sc-row { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--border); font-size: 14px; }
+    .sc-row .ic { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; color: #fff; margin-top: 1px; }
+    .sc-row.y .ic { background: #059669; } .sc-row.n .ic { background: #d97706; }
+    .sc-row p { margin: 2px 0 0; color: var(--muted); font-size: 13px; } .sc-row .tx { flex: 1; }
+    .sc-row form { margin: 0; } .sc-row .btn-secondary { padding: 6px 10px; font-size: 13px; white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <nav><div class="row"><a href="/sites/<%= site.id %>/edit" class="muted">&larr; Back to editor</a><strong>Quality check</strong></div></nav>
+  <div class="container">
+    <% const doneList = String(done || '').split('.').filter(Boolean); const doneWords = doneList.map(d => d === 'colors' ? 'brand color adjusted' : d === 'motion' ? 'Motion level switched to Premium' : d === 'icons' ? 'browser icon made from the logo' : d === 'share' ? 'share picture made' : /^images\d+$/.test(d) ? (d.slice(6) === '0' ? 'no photos needed changing' : d.slice(6) + ' photo' + (d.slice(6) === '1' ? '' : 's') + ' optimized (originals kept)') : '').filter(Boolean); %>
+    <% if (doneWords.length) { %><div class="card" style="margin-bottom:14px;background:#ecfdf5;">Done: <%= doneWords.join(', ') %>. The earlier version is in the editor's history.</div><% } %>
+
+    <% if (report.score) { const sc = report.score; %>
+    <div class="card">
+      <h2 style="margin:0 0 4px;">Speed and polish score</h2>
+      <p class="muted" style="margin:0 0 12px; font-size:13px;">An estimate worked out from the home page as it will be served, in the spirit of Google's Lighthouse. Real phones and networks vary, so treat it as a guide.</p>
+      <div class="sc-rings">
+        <% sc.cats.forEach(c => { const r = 40, len = 2 * Math.PI * r; %>
+          <a class="sc-ring <%= c.score >= 90 ? 'good' : c.score >= 50 ? 'ok' : 'poor' %>" href="#sc-<%= c.id %>">
+            <svg viewBox="0 0 100 100" role="img" aria-label="<%= c.label %> <%= c.score %> out of 100"><circle class="bg" cx="50" cy="50" r="<%= r %>" fill="none" stroke-width="9"/><circle class="fg" cx="50" cy="50" r="<%= r %>" fill="none" stroke-width="9" stroke-dasharray="<%= (len * c.score / 100).toFixed(1) %> <%= len.toFixed(1) %>"/><text x="50" y="58" text-anchor="middle" font-size="26" font-weight="700" font-family="system-ui, sans-serif"><%= c.score %></text></svg>
+            <strong><%= c.label %></strong>
+          </a>
+        <% }) %>
+      </div>
+      <% if (sc.fixes.length) { %>
+        <form method="POST" action="/sites/<%= site.id %>/quality/fix" style="margin:0 0 12px;"><input type="hidden" name="fix" value="all"><button type="submit">Fix everything that takes one click (<%= sc.fixes.length %>)</button>
+          <span class="muted" style="font-size:12.5px; margin-left:6px;">Saves the current version first. Words, prices and contact details are never changed.</span></form>
+      <% } %>
+      <% sc.cats.forEach(c => { const misses = c.checks.filter(x => !x.ok); %>
+        <details class="sc-cat" id="sc-<%= c.id %>" <%= misses.length ? 'open' : '' %>>
+          <summary><%= c.label %>: <%= c.score %> <span class="muted" style="font-weight:400;">(<%= misses.length ? misses.length + ' to improve' : 'all good' %>)</span></summary>
+          <% c.checks.slice().sort((a, b) => a.ok - b.ok).forEach(x => { %>
+            <div class="sc-row <%= x.ok ? 'y' : 'n' %>">
+              <span class="ic" aria-hidden="true"><%- x.ok ? '&#10003;' : '!' %></span>
+              <span class="tx"><strong><%= x.title %></strong><p><%= x.detail %></p></span>
+              <% if (!x.ok && x.fix && x.fix.type === 'link') { %><a class="btn btn-secondary" href="<%= x.fix.href %>"><%= x.fix.label %></a>
+              <% } else if (!x.ok && x.fix && (hasSharp || !['images', 'icons', 'share'].includes(x.fix.type))) { %>
+                <form method="POST" action="/sites/<%= site.id %>/quality/fix"><input type="hidden" name="fix" value="<%= x.fix.type %>"><button type="submit" class="btn-secondary"><%= x.fix.label %></button></form>
+              <% } %>
+            </div>
+          <% }) %>
+        </details>
+      <% }) %>
+    </div>
+    <% } %>
+
+    <div class="card">
+      <div class="q-sum">
+        <span class="q-pill <%= report.errors ? 'err' : 'ok' %>"><%= report.errors %> to fix</span>
+        <span class="q-pill <%= report.warnings ? 'warn' : 'ok' %>"><%= report.warnings %> to look at</span>
+        <span class="q-pill ok"><%= report.passed.length %> checks passed</span>
+      </div>
+      <% if (gate) { %><p style="margin:0 0 12px;"><strong>Publishing paused.</strong> Fix the red items below, or publish anyway if you are sure.</p><% } %>
+      <% if (report.ok && !report.warnings) { %><p style="margin:0;">Everything checks out. This site is ready to publish.</p><% } %>
+      <div class="q-actions">
+        <% if (gate === 'publish' || (!gate && !site.published)) { %>
+          <form method="POST" action="/sites/<%= site.id %>/publish"><input type="hidden" name="published" value="1"><input type="hidden" name="force" value="1"><button type="submit" class="<%= report.ok ? '' : 'btn-secondary' %>"><%= report.ok ? 'Publish' : 'Publish anyway' %></button></form>
+        <% } %>
+        <% if (gate === 'hosting') { %>
+          <form method="POST" action="/sites/<%= site.id %>/hosting/publish"><input type="hidden" name="force" value="1"><button type="submit" class="btn-secondary">Publish to Netlify anyway</button></form>
+        <% } %>
+        <a class="btn btn-secondary" href="/sites/<%= site.id %>/quality">Check again</a>
+      </div>
+    </div>
+
+    <% const fixed = {}; %>
+    <% report.items.forEach(i => { %>
+      <div class="q-item <%= i.severity %>">
+        <span class="q-area"><%= i.area === 'tap' ? 'phone tap targets' : i.area %> · <%= i.severity === 'error' ? 'fix before publishing' : 'worth fixing' %></span>
+        <h3><%= i.title %></h3>
+        <p><%= i.detail %></p>
+        <% if (i.fix && !fixed[i.fix.type]) { fixed[i.fix.type] = 1; %>
+          <form method="POST" action="/sites/<%= site.id %>/quality/fix"><input type="hidden" name="fix" value="<%= i.fix.type %>"><button type="submit" class="btn-secondary"><%= i.fix.label %></button></form>
+        <% } else if (i.fix) { %><span class="muted" style="font-size:13px;">Fixed by the button above.</span><% } %>
+      </div>
+    <% }) %>
+
+    <% if (report.passed.length) { %>
+    <div class="card"><strong>Passed</strong>
+      <ul class="q-pass"><% report.passed.forEach(p => { %><li><%= p %></li><% }) %></ul>
+    </div>
+    <% } %>
+    <p class="muted" style="font-size:12.5px;">Checks use WCAG AA contrast (4.5:1 for text), 44px minimum tap size on phones, and standard web performance guidance. Photos from other websites can't be measured here.</p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<%# Adapted from HyperUI (MIT) application/tabs, behavior in public/sg-lib.js (no framework). Without JS every panel shows. %>
+<section class="sg-lib" data-sg-section="services/tabs">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="tw:mt-8" data-sg-tabs>
+        <div class="tw:flex tw:flex-wrap tw:justify-center tw:gap-2" role="tablist" data-sg-tablist>
+          <% d.items.forEach(function (it, i) { %>
+            <button type="button" role="tab" class="tw:rounded-full tw:border tw:border-line tw:bg-surface tw:px-4 tw:py-2 tw:text-sm tw:font-medium tw:text-ink tw:transition-colors tw:hover:border-primary" aria-selected="<%= i === 0 ? 'true' : 'false' %>" data-sg-tab="<%= i %>"><%= it.title %></button>
+          <% }) %>
+        </div>
+        <% d.items.forEach(function (it, i) { %>
+          <div class="tw:mx-auto tw:mt-6 tw:max-w-4xl tw:rounded-xl tw:border tw:border-line tw:bg-surface tw:p-6 tw:sm:p-8" role="tabpanel" data-sg-panel="<%= i %>">
+            <div class="tw:grid tw:gap-6 tw:md:grid-cols-2 tw:md:items-center">
+              <div>
+                <h3 class="tw:font-heading tw:text-xl tw:font-semibold tw:text-ink"><%= it.title %></h3>
+                <% if (it.description) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= it.description %></p><% } %>
+                <% if (it.price) { %><p class="tw:mt-3 tw:font-medium tw:text-primary"><%= it.price %></p><% } %>
+                <a class="tw:mt-5 tw:inline-block tw:rounded-md tw:bg-primary tw:px-5 tw:py-3 tw:font-medium tw:text-on-primary tw:transition-opacity tw:hover:opacity-90" href="<%= it.href %>">Learn more</a>
+              </div>
+              <% if (it.imageUrl) { %><img class="tw:aspect-[3/2] tw:w-full tw:rounded-lg tw:object-cover" src="<%= it.imageUrl %>" alt="" loading="lazy"><% } %>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</section>

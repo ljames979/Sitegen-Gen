@@ -1,0 +1,47 @@
+<% const trust = site.sections.trust || { badges: [], stats: [], serviceAreas: [], googleReviewsUrl: '' };
+   const statRows = [0, 1, 2, 3].map(i => trust.stats[i] || { value: '', label: '' }); %>
+<p class="muted" style="font-size:13px; margin-top:0;">Only add what is true for this business — nothing here is filled in automatically, and empty items simply don't appear on the site.</p>
+
+<label>Badges (one per line, e.g. Licensed &amp; Insured, BBB A+, Veteran-owned)</label>
+<textarea name="trust_badges" rows="3" placeholder="Licensed &amp; Insured"><%= trust.badges.join('\n') %></textarea>
+
+<label>Highlight numbers (up to 4)</label>
+<% statRows.forEach(st => { %>
+  <div class="upload-row">
+    <input type="text" name="trust_stat_value" value="<%= st.value %>" maxlength="14" placeholder="15+" style="flex:0 0 90px;">
+    <input type="text" name="trust_stat_label" value="<%= st.label %>" maxlength="40" placeholder="Years in business">
+  </div>
+<% }) %>
+
+<label>Service area (towns or neighborhoods, one per line or comma-separated)</label>
+<textarea name="trust_serviceAreas" rows="3" placeholder="Kissimmee, St. Cloud, Celebration"><%= trust.serviceAreas.join(', ') %></textarea>
+
+<% if (trust.serviceAreas.length) { %>
+  <label>Page text for each town (optional)</label>
+  <p class="muted" style="font-size:13px; margin-top:0;">Each town above gets its own page (&ldquo;Roofing in Kissimmee&rdquo;). It is only listed on Google once you write something for it. Say something true and specific about how you work in that town. The same text copied into every town can hurt your rankings. New towns appear here after you save.</p>
+  <% const areaText = trust.areaText || {}; %>
+  <% trust.serviceAreas.forEach(a => { %>
+    <input type="hidden" name="area_name" value="<%= a %>">
+    <div style="font-size:13px; font-weight:600; margin:10px 0 4px;"><%= a %></div>
+    <textarea name="area_text" rows="3" maxlength="1500" placeholder="<%= a %>: what you do here, neighborhoods you know, typical jobs..."><%= areaText[a] || '' %></textarea>
+  <% }) %>
+<% } %>
+
+<label>Logo strip (optional: association, certification or partner logos)</label>
+<p class="muted" style="font-size:13px; margin:0 0 6px;">Only add logos you are entitled to show. They appear as a row on the home page.</p>
+<input type="text" name="trust_logosHeading" value="<%= trust.logosHeading || '' %>" maxlength="60" placeholder="Heading, e.g. Our memberships">
+<% const logoRows = trust.logos || []; [0, 1, 2, 3, 4, 5].forEach(i => { const lg = logoRows[i] || { imageUrl: '', label: '' }; %>
+  <div class="upload-row">
+    <input type="url" name="trust_logo_url" value="<%= lg.imageUrl %>" placeholder="Logo image: https://... or upload">
+    <input type="file" accept="image/*" class="file-input" hidden>
+    <button type="button" class="btn-secondary upload-btn">Upload</button>
+    <input type="text" name="trust_logo_label" value="<%= lg.label %>" maxlength="60" placeholder="Name (for screen readers)" style="flex:0 0 28%;">
+  </div>
+<% }) %>
+
+<label>License number or legal notice (optional, shown at the bottom of every page)</label>
+<input type="text" name="trust_legalNote" value="<%= trust.legalNote || '' %>" maxlength="300" placeholder="e.g. Florida licensed agency, license no. XXXXXX">
+<p class="muted" style="font-size:13px; margin-top:4px;">Regulated businesses such as insurance agencies and contractors often must show a license number. Only enter what is true and current.</p>
+
+<label>Link to your Google reviews (optional)</label>
+<input type="url" name="trust_googleReviewsUrl" value="<%= trust.googleReviewsUrl %>" placeholder="https://g.page/r/...">

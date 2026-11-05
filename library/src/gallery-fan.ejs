@@ -1,0 +1,18 @@
+<%# Original layout (card fan, drawn from scratch): the photos start as one neat stack and spread into a fanned row as the section scrolls into view. With motion off they sit fanned out and still. Optional floating tags show the client's own service names. %>
+<% var pics = ((d.all && d.all.length ? d.all : d.images) || []).slice(0, 5), mid = (pics.length - 1) / 2; %>
+<section class="sg-lib" data-sg-section="gallery/fan">
+  <div class="bg-page overflow-hidden">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+      <div class="mx-auto max-w-3xl text-center" data-animate="fade-up">
+        <h2 data-sg-head class="font-heading text-2xl font-semibold text-ink sm:text-3xl"><%= d.heading %></h2>
+      </div>
+      <div class="sg-fan relative mx-auto mt-10" data-sg-progress>
+        <% pics.forEach(function (im, i) { var o = i - mid, a = Math.abs(o); %>
+          <figure class="sg-fan-card m-0 overflow-hidden rounded-2xl border-4 border-surface bg-surface shadow-[var(--shadow-md)]" data-a="<%= Math.ceil(a) %>" style="--o:<%= o %>;--a:<%= a %>"><img class="block size-full object-cover" src="<%= im.src %>" alt="<%= im.alt %>" loading="lazy" decoding="async"></figure>
+        <% }) %>
+        <% (d.tags || []).slice(0, 3).forEach(function (t, i) { %><span class="sg-tag sg-tag-<%= i + 1 %>" aria-hidden="true"><%= t %></span><% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="mt-8 text-center"><a class="font-medium text-primary underline-offset-4 hover:underline" href="<%= d.moreHref %>">See the full gallery &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

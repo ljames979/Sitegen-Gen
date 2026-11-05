@@ -1,0 +1,13 @@
+<%# Adapted from Start Bootstrap Creative (MIT) dark call to action: a big light heading on the dark ink color with a round light button. %>
+<section class="sg-lib" data-sg-section="cta/dark">
+  <div class="bg-ink">
+    <div class="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 lg:px-8 lg:py-24" data-animate="fade-up">
+      <h2 data-sg-head class="font-heading text-3xl font-bold text-page sm:text-4xl"><%= d.heading %></h2>
+      <% if (d.text) { %><p class="mt-4 text-lg text-pretty text-page/80"><%= d.text %></p><% } %>
+      <div class="mt-8 flex flex-wrap justify-center gap-4">
+        <a class="inline-block rounded-full bg-page px-8 py-4 font-bold text-ink transition-opacity hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+        <% if (d.phone) { %><a class="inline-block rounded-full border-2 border-page/60 px-8 py-4 font-bold text-page transition-colors hover:bg-page/10" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+      </div>
+    </div>
+  </div>
+</section>

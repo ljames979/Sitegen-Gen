@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Report — <%= site.name %></title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <%- include('partials-head') %>
+  <style>
+    .wrap { max-width: 880px; margin: 0 auto; padding: 24px; }
+    .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin: 18px 0 22px; }
+    .tile { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+    .tile .n { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+    .tile .l { color: var(--muted); font-size: 13.5px; margin-top: 4px; }
+    .ranges a { padding: 6px 14px; border: 1px solid var(--border); border-radius: 999px; background: #fff; color: var(--text); font-size: 14px; margin-right: 6px; }
+    .ranges a.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+    table.simple { width: 100%; border-collapse: collapse; font-size: 15px; }
+    table.simple td { padding: 9px 0; border-bottom: 1px solid var(--border); }
+    table.simple td:last-child { text-align: right; font-weight: 700; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 700px) { .two { grid-template-columns: 1fr; } }
+    .flashbar { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; }
+    .flashbar.bad { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+    @media print { .noprint { display: none !important; } body { background: #fff; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="noprint" style="margin-bottom:12px;"><a href="<%= backHref %>" class="muted">&larr; Back</a></div>
+    <% const msgs = { sent: 'Report emailed.', sendfailed: 'Could not send the email. Check that email sending is set up (README, "Email alerts").', noemail: 'Add a report email address first (editor → Local SEO & tracking).' }; %>
+    <% if (flash) { %><div class="flashbar noprint <%= flash === 'sent' ? '' : 'bad' %>"><%= msgs[flash] %></div><% } %>
+    <h1 style="margin-bottom:2px;"><%= site.name %> — website report</h1>
+    <p class="muted" style="margin-top:0;"><%= report.from %> to <%= report.to %> (last <%= days %> days)</p>
+
+    <div class="ranges noprint">
+      <% [7, 30, 90].forEach(d => { %><a href="<%= base %>?days=<%= d %>" class="<%= d === days ? 'on' : '' %>">Last <%= d %> days</a><% }) %>
+      <a href="#" onclick="window.print(); return false;" style="float:right; margin:0;">Print / save as PDF</a>
+    </div>
+
+    <div class="tiles">
+      <div class="tile"><div class="n"><%= report.totals.views %></div><div class="l">Page views</div></div>
+      <div class="tile"><div class="n"><%= report.totals.leads %></div><div class="l">Messages &amp; quote requests</div></div>
+      <div class="tile"><div class="n"><%= report.totals.won %></div><div class="l">Marked as won</div></div>
+      <div class="tile"><div class="n"><%= report.totals.reviews %></div><div class="l">New reviews published</div></div>
+    </div>
+
+    <% const ev = report.events || {}; const acts = report.totals.actions || 0; %>
+    <div class="card" style="margin-bottom:14px;">
+      <h3 style="margin-bottom:4px;">What visitors did</h3>
+      <div class="tiles" style="margin:10px 0 6px;">
+        <div class="tile"><div class="n"><%= ev.call || 0 %></div><div class="l">Tapped the phone number</div></div>
+        <div class="tile"><div class="n"><%= ev.email || 0 %></div><div class="l">Tapped the email address</div></div>
+        <div class="tile"><div class="n"><%= ev.text || 0 %></div><div class="l">Tapped Text / WhatsApp</div></div>
+        <div class="tile"><div class="n"><%= report.bookings || 0 %></div><div class="l">Booking requests</div></div>
+        <div class="tile"><div class="n"><%= ev.cta || 0 %></div><div class="l">Clicked a "Contact / Book" button</div></div>
+        <div class="tile"><div class="n"><%= ev.directions || 0 %></div><div class="l">Opened directions</div></div>
+      </div>
+      <p class="muted" style="font-size:13px; margin:4px 0 0;">
+        <% if (report.totals.views >= 20) { %>About <strong><%= (acts / report.totals.views * 100).toFixed(1) %>%</strong> of page views led to a call tap, email tap, text tap, message or booking (<%= acts %> of <%= report.totals.views %>).<% } else { %>Rates show up once there are at least 20 page views in the period.<% } %>
+        Taps are counted when someone presses the link; they cannot tell whether a call was completed.
+      </p>
+    </div>
+
+    <% const maxV = Math.max(1, ...report.days.map(d => d.views)); const W = 860, H = 140, bw = W / report.days.length; %>
+    <div class="card" style="margin-bottom:14px;">
+      <h3 style="margin-bottom:8px;">Page views per day</h3>
+      <svg viewBox="0 0 <%= W %> <%= H + 22 %>" width="100%" role="img" aria-label="Page views per day">
+        <% report.days.forEach((d, i) => { const h = Math.round((d.views / maxV) * H); %>
+          <rect x="<%= (i * bw + bw * 0.12).toFixed(1) %>" y="<%= H - h %>" width="<%= (bw * 0.76).toFixed(1) %>" height="<%= h %>" rx="2" fill="var(--primary)" opacity="<%= d.leads ? 1 : 0.55 %>"><title><%= d.day %>: <%= d.views %> views<%= d.leads ? ', ' + d.leads + ' lead(s)' : '' %></title></rect>
+          <% if (d.leads) { %><circle cx="<%= (i * bw + bw / 2).toFixed(1) %>" cy="<%= H + 12 %>" r="4" fill="#16a34a"><title><%= d.day %>: <%= d.leads %> lead(s)</title></circle><% } %>
+        <% }) %>
+      </svg>
+      <p class="muted" style="font-size:13px; margin:4px 0 0;">Darker bars and green dots mark days that brought in a message or quote request.</p>
+    </div>
+
+    <div class="two">
+      <div class="card">
+        <h3>Most viewed pages</h3>
+        <% if (!report.topPages.length) { %><p class="muted">No page views recorded yet in this period.</p><% } else { %>
+          <table class="simple"><% report.topPages.forEach(p => { %><tr><td><%= p.label %></td><td><%= p.v %></td></tr><% }) %></table>
+        <% } %>
+      </div>
+      <div class="card">
+        <h3>What people asked about</h3>
+        <% if (!report.byService.length) { %><p class="muted">No quote requests with a chosen service in this period.</p><% } else { %>
+          <table class="simple"><% report.byService.forEach(s => { %><tr><td><%= s.service %></td><td><%= s.count %></td></tr><% }) %></table>
+        <% } %>
+      </div>
+    </div>
+
+    <p class="muted" style="font-size:13px; margin-top:18px;">Page views are counted without cookies or personal data and leave out most search-engine and monitoring bots, so they are a good trend indicator rather than an exact visitor count. Messages and quote requests come from the site's forms; phone calls made directly are not included.</p>
+
+    <% if (owner) { %>
+      <form method="POST" action="/sites/<%= site.id %>/report/send" class="noprint" style="margin-top:14px;">
+        <input type="hidden" name="days" value="<%= days %>">
+        <% if (mailConfigured && reportEmail) { %>
+          <button type="submit" class="btn-secondary">Email this report to <%= reportEmail %></button>
+          <span class="muted" style="font-size:13px;">The previous month's report is also emailed automatically on the first run each month.</span>
+        <% } else { %>
+          <span class="muted" style="font-size:13px;">To email reports, set a report address (editor → Local SEO &amp; tracking) and set up email sending in <code>.env</code>.</span>
+        <% } %>
+      </form>
+    <% } %>
+  </div>
+</body>
+</html>

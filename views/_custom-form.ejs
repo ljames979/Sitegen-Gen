@@ -1,0 +1,51 @@
+<%# The owner's own contact form (see forms.js). Questions can be grouped into
+    steps; a small script in public-site.ejs turns the groups into a wizard.
+    Expects: site, basePath, preview, services, selected, compact, cform %>
+<% const csteps = formsLib.stepsOf(cform); const multi = csteps.length > 1; %>
+<% const nl = typeof netlifyForms !== 'undefined' && netlifyForms; %>
+<form method="POST" action="<%= nl ? 'thank-you.html' : basePath + '/contact' %>" enctype="multipart/form-data" class="contact-form cform" data-steps="<%= csteps.length %>" <%- nl ? 'name="contact" data-netlify="true" netlify-honeypot="website"' : '' %> <%= preview ? 'onsubmit="return false;"' : '' %>>
+  <% if (nl) { %><input type="hidden" name="form-name" value="contact"><% } %>
+  <input type="text" name="website" class="hp-field" tabindex="-1" autocomplete="off">
+  <% if (multi) { %>
+    <div class="cf-progress" aria-hidden="true"><div class="cf-bar"></div></div>
+    <div class="cf-count" aria-live="polite"></div>
+  <% } %>
+  <% csteps.forEach((st, si) => { %>
+    <fieldset class="cf-step" data-step="<%= si %>">
+      <% st.fields.forEach(f => {
+           if (f.type === 'service' && !services.length) return;
+           const n = 'cf_' + f.index; const id = 'cf-' + f.index; %>
+        <div class="cf-field" data-type="<%= f.type %>" data-required="<%= f.required ? '1' : '0' %>">
+          <% if (['radio', 'checkbox'].includes(f.type)) { %>
+            <div class="cf-label" id="<%= id %>-l"><%= f.label %><% if (f.required) { %> <span class="cf-req" aria-hidden="true">*</span><% } %></div>
+            <div class="cf-choices" role="<%= f.type === 'radio' ? 'radiogroup' : 'group' %>" aria-labelledby="<%= id %>-l">
+              <% f.options.forEach(o => { %>
+                <label class="cf-choice"><input type="<%= f.type %>" name="<%= n %>" value="<%= o %>"><span><%= o %></span></label>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <label class="cf-label" for="<%= id %>"><%= f.label %><% if (f.required) { %> <span class="cf-req" aria-hidden="true">*</span><% } %></label>
+            <% if (f.type === 'name') { %><input id="<%= id %>" type="text" name="<%= n %>" maxlength="100" autocomplete="name">
+            <% } else if (f.type === 'email') { %><input id="<%= id %>" type="email" name="<%= n %>" maxlength="254" autocomplete="email">
+            <% } else if (f.type === 'phone') { %><input id="<%= id %>" type="tel" name="<%= n %>" maxlength="40" autocomplete="tel">
+            <% } else if (f.type === 'text') { %><input id="<%= id %>" type="text" name="<%= n %>" maxlength="200">
+            <% } else if (f.type === 'number') { %><input id="<%= id %>" type="number" name="<%= n %>" inputmode="decimal" step="any">
+            <% } else if (f.type === 'date') { %><input id="<%= id %>" type="date" name="<%= n %>">
+            <% } else if (f.type === 'message' || f.type === 'textarea') { %><textarea id="<%= id %>" name="<%= n %>" maxlength="2000" rows="4"></textarea>
+            <% } else if (f.type === 'photo') { %><input id="<%= id %>" type="file" name="photo" accept="image/*">
+            <% } else if (f.type === 'service') { %>
+              <select id="<%= id %>" name="<%= n %>"><option value="">Select a service</option><% services.forEach(sv => { %><option value="<%= sv.title %>" <%= selected === sv.title ? 'selected' : '' %>><%= sv.title %></option><% }) %></select>
+            <% } else if (f.type === 'select') { %>
+              <select id="<%= id %>" name="<%= n %>"><option value="">Choose…</option><% f.options.forEach(o => { %><option value="<%= o %>"><%= o %></option><% }) %></select>
+            <% } %>
+          <% } %>
+          <div class="cf-error" role="alert" hidden></div>
+        </div>
+      <% }) %>
+    </fieldset>
+  <% }) %>
+  <div class="cf-nav">
+    <% if (multi) { %><button type="button" class="btn-outline cf-back" hidden>Back</button><button type="button" class="btn cf-next">Next</button><% } %>
+    <button type="submit" class="btn cf-submit" <%= multi ? 'hidden' : '' %>><%= cform.submitText || (services.length ? 'Request a Quote' : 'Send') %></button>
+  </div>
+</form>

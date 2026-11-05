@@ -1,0 +1,21 @@
+<%# Original layout (card variant): cards with the reason's photo on top, or a check-mark badge when there is no photo. %>
+<section class="sg-lib" data-sg-section="why/photocards">
+  <div class="bg-page">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+      <div class="mx-auto max-w-3xl text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="text-sm font-medium tracking-wide text-primary uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="font-heading text-2xl font-semibold text-ink sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="mt-3 text-pretty text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 <%= d.items.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4' %>" data-sg-cards data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <div class="overflow-hidden rounded-xl border border-line bg-surface shadow-[var(--shadow-sm)]">
+            <% if (it.imageUrl) { %><img class="aspect-[3/2] w-full object-cover" src="<%= it.imageUrl %>" alt="" loading="lazy" decoding="async"><% } else { %>
+            <div class="px-5 pt-6"><span class="flex size-12 items-center justify-center rounded-full bg-primary text-on-primary" aria-hidden="true"><svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span></div><% } %>
+            <div class="p-5"><h3 class="font-heading text-lg font-semibold text-ink"><%= it.title %></h3><% if (it.text) { %><p class="mt-2 text-sm/relaxed text-pretty text-muted"><%= it.text %></p><% } %></div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</section>

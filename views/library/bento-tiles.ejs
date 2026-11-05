@@ -1,0 +1,52 @@
+<%# Original layout (bento grid, drawn from scratch): one overview made of mixed tiles built only from the client's real content: a big photo, their numbers, top services, one review, a second photo and how to call. Tiles with no content are left out. %>
+<section class="sg-lib" data-sg-section="bento/tiles">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <% if (d.heading) { %><div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up"><h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2></div><% } %>
+      <div class="sg-bento tw:mt-10 tw:grid tw:grid-flow-dense tw:grid-cols-2 tw:gap-4 tw:md:grid-cols-4 tw:md:auto-rows-[minmax(10.5rem,auto)]" data-animate="stagger">
+        <figure class="tw:relative tw:col-span-2 tw:row-span-2 tw:min-h-64 tw:overflow-hidden tw:rounded-2xl tw:bg-surface tw:shadow-[var(--shadow-sm)]">
+          <img class="tw:absolute tw:inset-0 tw:h-full tw:w-full tw:object-cover" src="<%= d.photos[0].src %>" alt="<%= d.photos[0].alt %>" loading="lazy" decoding="async">
+          <% if (d.place) { %><figcaption class="tw:absolute tw:bottom-4 tw:left-4 tw:rounded-full tw:bg-page tw:px-4 tw:py-2 tw:text-sm tw:font-semibold tw:text-ink tw:shadow-[var(--shadow-sm)]"><%= d.place %></figcaption><% } %>
+        </figure>
+        <% d.stats.forEach(function (st) { %>
+          <div class="tw:flex tw:flex-col tw:justify-end tw:rounded-2xl tw:bg-primary tw:p-6 tw:shadow-[var(--shadow-sm)]">
+            <span class="tw:font-heading tw:text-4xl tw:font-bold tw:text-on-primary"><span<%- st.countAttrs || '' %>><%= st.value %></span></span>
+            <span class="tw:mt-1 tw:text-sm tw:text-on-primary tw:opacity-90"><%= st.label %></span>
+          </div>
+        <% }) %>
+        <% if (d.services.length) { %>
+          <div class="tw:col-span-2 tw:flex tw:flex-col tw:justify-between tw:rounded-2xl tw:border tw:border-line tw:bg-surface tw:p-6 tw:shadow-[var(--shadow-sm)]">
+            <h3 class="tw:font-heading tw:text-lg tw:font-semibold tw:text-ink"><%= d.servicesHeading %></h3>
+            <ul class="tw:mt-4 tw:flex tw:flex-wrap tw:gap-2">
+              <% d.services.forEach(function (sv) { %><li><a class="tw:inline-block tw:rounded-full tw:border tw:border-line tw:bg-page tw:px-4 tw:py-2 tw:text-sm tw:font-medium tw:text-ink tw:transition-colors tw:hover:border-primary tw:hover:text-primary" href="<%= sv.href %>"><%= sv.title %></a></li><% }) %>
+            </ul>
+            <% if (d.servicesHref) { %><a class="tw:mt-4 tw:text-sm tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.servicesHref %>">See all services &rarr;</a><% } %>
+          </div>
+        <% } %>
+        <% if (d.review) { %>
+          <blockquote class="tw:col-span-2 tw:flex tw:flex-col tw:justify-between tw:rounded-2xl tw:border tw:border-line tw:bg-page tw:p-6 tw:shadow-[var(--shadow-sm)]">
+            <span class="tw:font-heading tw:text-5xl tw:leading-none tw:text-primary" aria-hidden="true">&ldquo;</span>
+            <p class="tw:mt-1 tw:text-pretty tw:text-ink"><%= d.review.text %></p>
+            <footer class="tw:mt-4 tw:flex tw:items-center tw:gap-2 tw:text-sm tw:text-muted">
+              <% if (d.review.rating) { %><span class="tw:text-primary" aria-label="<%= d.review.rating %> out of 5 stars"><%= '★'.repeat(Math.min(5, Math.round(d.review.rating))) %></span><% } %>
+              <% if (d.review.name) { %><cite class="tw:not-italic tw:font-medium"><%= d.review.name %></cite><% } %>
+            </footer>
+          </blockquote>
+        <% } %>
+        <% if (d.photos[1]) { %>
+          <figure class="tw:relative tw:min-h-40 tw:overflow-hidden tw:rounded-2xl tw:bg-surface tw:shadow-[var(--shadow-sm)]"><img class="tw:absolute tw:inset-0 tw:h-full tw:w-full tw:object-cover" src="<%= d.photos[1].src %>" alt="<%= d.photos[1].alt %>" loading="lazy" decoding="async"></figure>
+        <% } %>
+        <% if (d.phone) { %>
+          <a class="tw:group tw:flex tw:flex-col tw:justify-end tw:rounded-2xl tw:border tw:border-line tw:bg-surface tw:p-6 tw:shadow-[var(--shadow-sm)]" href="tel:<%= d.phoneHref %>">
+            <span class="tw:text-sm tw:text-muted">Call</span>
+            <span class="tw:font-heading tw:text-xl tw:font-semibold tw:text-ink tw:group-hover:text-primary"><%= d.phone %></span>
+          </a>
+        <% } else if (d.ctaHref) { %>
+          <a class="tw:group tw:flex tw:flex-col tw:justify-end tw:rounded-2xl tw:border tw:border-line tw:bg-surface tw:p-6 tw:shadow-[var(--shadow-sm)]" href="<%= d.ctaHref %>">
+            <span class="tw:font-heading tw:text-xl tw:font-semibold tw:text-ink tw:group-hover:text-primary"><%= d.ctaText %> &rarr;</span>
+          </a>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>

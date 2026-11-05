@@ -1,0 +1,17 @@
+<%# Original layout (your own section, several photos): a heading and words above a photo grid of two, three or four. %>
+<section class="sg-lib" data-sg-section="custom/photos">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-16">
+      <% if (d.heading || d.body) { %>
+        <div class="tw:mx-auto tw:mb-8 tw:max-w-3xl tw:text-center" data-animate="fade-up">
+          <% if (d.heading) { %><h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2><% } %>
+          <% if (d.body) { %><p class="<%= d.heading ? 'tw:mt-4' : '' %> tw:text-lg/relaxed tw:text-pretty tw:whitespace-pre-line tw:text-muted"><%= d.body %></p><% } %>
+        </div>
+      <% } %>
+      <div class="tw:grid tw:grid-cols-1 tw:gap-4 tw:sm:grid-cols-2 <%= d.images.length === 3 ? 'tw:lg:grid-cols-3' : d.images.length === 4 ? 'tw:lg:grid-cols-4' : '' %>" data-animate="stagger">
+        <% d.images.forEach(function (im) { %><img class="tw:aspect-[4/3] tw:w-full tw:rounded-xl tw:object-cover" src="<%= im.src %>" alt="<%= im.alt %>" loading="lazy"><% }) %>
+      </div>
+      <% if (d.buttonText && d.buttonHref) { %><p class="tw:mt-6"><a class="tw:inline-block tw:rounded-md tw:bg-primary tw:px-5 tw:py-3 tw:font-medium tw:text-on-primary tw:shadow-[var(--shadow-sm)] tw:transition-opacity tw:hover:opacity-90" href="<%= d.buttonHref %>"><%= d.buttonText %></a></p><% } %>
+    </div>
+  </div>
+</section>

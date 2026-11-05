@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bookings — <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .bk-card { margin-bottom: 14px; }
+    .bk-when { font-weight: 700; font-size: 16px; }
+    .bk-meta { font-size: 14px; margin: 6px 0 0; }
+    .bk-detail { font-size: 14px; margin: 2px 0 0; color: var(--text); }
+    .bk-detail span { color: var(--muted); }
+    .bk-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+    .bk-actions input[type=text] { flex: 1; min-width: 180px; margin: 0; }
+    .bk-pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #f1f5f9; color: #475569; }
+    .bk-pill.pending { background: #fef3c7; color: #92400e; } .bk-pill.confirmed { background: #dcfce7; color: #166534; }
+    .bk-pill.awaiting_payment { background: #e0e7ff; color: #3730a3; }
+    .bk-pill.declined, .bk-pill.cancelled { background: #fee2e2; color: #991b1b; }
+    .flashbar { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; }
+    .flashbar.bad { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+    .copy-row { display: flex; gap: 8px; } .copy-row input { margin: 0; flex: 1; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="row">
+      <a href="/sites/<%= site.id %>/edit" class="muted">&larr; <%= site.name %></a>
+      <strong>Bookings</strong>
+    </div>
+  </nav>
+  <div class="container">
+    <% const msgs = { confirmed: 'Booking confirmed.', declined: 'Request declined.', cancelled: 'Booking cancelled.', done: 'Marked as done.', bad: 'That change is not possible for this booking.' }; %>
+    <% if (flash && msgs[flash]) { %><div class="flashbar <%= flash === 'bad' ? 'bad' : '' %>"><%= msgs[flash] %></div><% } %>
+
+    <% if (!booking.enabled) { %>
+      <div class="card" style="margin-bottom:20px;"><p style="margin:0;">Online booking is switched off. Turn it on in the editor under <strong>Online booking</strong>.</p></div>
+    <% } else { %>
+      <div class="card" style="margin-bottom:20px;">
+        <label style="margin-top:0;">Your booking page</label>
+        <div class="copy-row"><input type="text" readonly value="<%= bookUrl %>" id="bookUrl"><button type="button" class="btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('bookUrl').value); this.textContent='Copied';">Copy</button></div>
+        <p class="muted" style="font-size:13px; margin:10px 0 0;">
+          <%= booking.autoConfirm ? 'Bookings are confirmed automatically when a customer picks an open time.' : 'Each request waits here until you confirm or decline it.' %>
+          Times shown are in your business time zone (<%= (bookingLib.TIMEZONES.find(t => t[0] === booking.timezone) || [0, booking.timezone])[1] %>).
+          <% if (!mailConfigured) { %>Customers and you are not emailed until email sending is set up (README, "Email alerts"), so check this page often.<% } %>
+        </p>
+      </div>
+    <% } %>
+
+    <% const card = (r, actions) => { %>
+      <div class="card bk-card">
+        <div class="bk-when"><%= r.whenText %> <span class="bk-pill <%= r.status %>"><%= r.status === 'awaiting_payment' ? 'waiting for deposit' : r.status %></span><% if (r.deposit && r.deposit.status === 'paid') { %> <span class="bk-pill confirmed">deposit <%= r.deposit.text %> paid</span><% } %></div>
+        <div class="bk-meta"><strong><%= r.name %></strong> · <%= r.service %><%= r.addonList.length ? ' + ' + r.addonList.join(', ') : '' %> · about <%= r.duration %> min</div>
+        <div class="bk-meta"><a href="mailto:<%= r.email %>"><%= r.email %></a><% if (r.phone) { %> · <a href="tel:<%= r.phone.replace(/[^0-9+]/g, '') %>"><%= r.phone %></a><% } %></div>
+        <% if (r.address) { %><div class="bk-detail"><span>Address:</span> <%= r.address %></div><% } %>
+        <% r.detailList.filter(d => d.value).forEach(d => { %><div class="bk-detail"><span><%= d.label %>:</span> <%= d.value %></div><% }) %>
+        <% if (r.notes) { %><div class="bk-detail"><span>Notes:</span> <%= r.notes %></div><% } %>
+        <% if (actions) { %>
+          <form method="POST" action="/sites/<%= site.id %>/bookings/<%= r.id %>" class="bk-actions">
+            <% if (actions === 'pending') { %>
+              <input type="text" name="message" maxlength="500" placeholder="Optional message to the customer">
+              <button type="submit" name="action" value="confirm">Confirm</button>
+              <button type="submit" name="action" value="decline" class="btn-secondary">Decline</button>
+            <% } else { %>
+              <button type="submit" name="action" value="done" class="btn-secondary">Mark done</button>
+              <button type="submit" name="action" value="cancel" class="btn-secondary" onclick="return confirm('Cancel this appointment? The customer is emailed if email is set up.');">Cancel appointment</button>
+            <% } %>
+          </form>
+        <% } %>
+      </div>
+    <% }; %>
+
+    <% if (waiting.length) { %>
+      <h3>Waiting for a deposit (<%= waiting.length %>)</h3>
+      <p class="muted" style="font-size:13px; margin-top:-6px;">The time is held for 30 minutes. If the deposit is not paid by then, the time is released.</p>
+      <% waiting.forEach(r => card(r, null)) %>
+    <% } %>
+    <h3>Waiting for you (<%= pending.length %>)</h3>
+    <% if (!pending.length) { %><div class="card"><p class="muted" style="margin:0;">No requests waiting.</p></div><% } %>
+    <% pending.forEach(r => card(r, 'pending')) %>
+
+    <h3 style="margin-top:28px;">Upcoming (<%= upcoming.length %>)</h3>
+    <% if (!upcoming.length) { %><div class="card"><p class="muted" style="margin:0;">No confirmed appointments coming up.</p></div><% } %>
+    <% upcoming.forEach(r => card(r, 'confirmed')) %>
+
+    <% if (past.length) { %>
+      <h3 style="margin-top:28px;">Past &amp; closed</h3>
+      <% past.forEach(r => card(r, '')) %>
+    <% } %>
+  </div>
+</body>
+</html>

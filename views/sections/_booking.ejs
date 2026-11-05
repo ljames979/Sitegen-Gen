@@ -1,0 +1,118 @@
+<%# Online booking settings. Lives in a <details> block inside the editor form; the preset button posts to its own form outside (form="bookingPresetForm"). %>
+<% const bk = site.sections.booking; const B = bookingLib; %>
+<p class="muted" style="font-size:13px; margin-top:0;">A page where customers pick a service, a date and a time. You confirm each request on the Bookings page unless you turn on automatic confirmation. There are no payments: put your deposit or cancellation rules in the policy text.</p>
+<label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" style="width:auto;" name="bk_enabled" value="1" <%= bk.enabled ? 'checked' : '' %>> Turn on online booking (adds a "Book Now" button and a /book page)</label>
+
+<label>Start from a ready-made setup</label>
+<div style="display:flex; gap:8px;">
+  <select name="kind" form="bookingPresetForm" style="margin:0;">
+    <% Object.keys(B.PRESETS).forEach(k => { %><option value="<%= k %>" <%= bk.kind === k ? 'selected' : '' %>><%= B.PRESETS[k].label %></option><% }) %>
+  </select>
+  <button type="submit" form="bookingPresetForm" class="btn-secondary" onclick="return confirm('Replace the services, add-ons and questions below with this setup? Your opening hours stay. The current version is saved to history first.');">Load</button>
+</div>
+<p class="muted" style="font-size:12px; margin:4px 0 0;">Loads the questions that suit the industry (for grooming: pet name, breed, size, coat…) and turns your site's services into bookable services. Durations and prices are placeholders, so set your own below. Saved changes in this form are kept when you load a setup, so save first.</p>
+<input type="hidden" name="bk_kind" value="<%= bk.kind %>">
+
+<label>Page heading</label>
+<input type="text" name="bk_heading" value="<%= bk.heading %>" maxlength="60">
+<label>Intro text</label>
+<textarea name="bk_intro" rows="2" maxlength="400"><%= bk.intro %></textarea>
+
+<h4 style="margin:18px 0 6px;">Opening hours for appointments</h4>
+<% B.DAYS.slice(1).concat(B.DAYS[0]).forEach(k => { const h = bk.hours[k]; %>
+  <div class="service-row" style="align-items:center;">
+    <span style="flex:0 0 96px; font-size:14px;"><%= B.DAY_LABELS[k] %></span>
+    <label style="margin:0; font-weight:400; font-size:13px; flex:0 0 70px;"><input type="checkbox" style="width:auto;" name="bk_closed_<%= k %>" value="1" <%= h.closed ? 'checked' : '' %>> Closed</label>
+    <input type="time" name="bk_open_<%= k %>" value="<%= h.open %>" style="margin:0;">
+    <span>to</span>
+    <input type="time" name="bk_close_<%= k %>" value="<%= h.close %>" style="margin:0;">
+  </div>
+<% }) %>
+
+<div class="row2" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+  <div><label>Time zone</label>
+    <select name="bk_timezone"><% B.TIMEZONES.forEach(t => { %><option value="<%= t[0] %>" <%= bk.timezone === t[0] ? 'selected' : '' %>><%= t[1] %></option><% }) %></select></div>
+  <div><label>Start times every</label>
+    <select name="bk_step"><% [10, 15, 20, 30, 45, 60].forEach(n => { %><option value="<%= n %>" <%= +bk.stepMinutes === n ? 'selected' : '' %>><%= n %> minutes</option><% }) %></select></div>
+  <div><label>Earliest booking (hours from now)</label><input type="number" name="bk_lead" min="0" max="720" value="<%= bk.leadHours %>"></div>
+  <div><label>How far ahead (days)</label><input type="number" name="bk_window" min="1" max="365" value="<%= bk.windowDays %>"></div>
+  <div><label>Appointments at the same time</label><input type="number" name="bk_capacity" min="1" max="20" value="<%= bk.capacity %>"></div>
+</div>
+<label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" style="width:auto;" name="bk_autoConfirm" value="1" <%= bk.autoConfirm ? 'checked' : '' %>> Confirm automatically (otherwise you approve each request)</label>
+<label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" style="width:auto;" name="bk_askAddress" value="1" <%= bk.askAddress ? 'checked' : '' %>> Ask for the customer's address (mobile or on-site work)</label>
+
+<h4 style="margin:18px 0 6px;">Bookable services</h4>
+<p class="muted" style="font-size:12px; margin:0 0 6px;">Name, length in minutes, optional price text (for example "from $65"), optional short description. With none listed, customers book a generic 60-minute appointment.</p>
+<div id="bkServiceList">
+  <% bk.services.forEach(s => { %>
+    <div class="service-row">
+      <input type="text" name="bk_service_name" value="<%= s.name %>" placeholder="Service" maxlength="80">
+      <input type="number" name="bk_service_minutes" value="<%= s.minutes %>" min="5" max="600" style="flex:0 0 80px;" title="Minutes">
+      <input type="text" name="bk_service_price" value="<%= s.price %>" placeholder="Price" maxlength="20" style="flex:0 0 90px;">
+      <input type="text" name="bk_service_desc" value="<%= s.description %>" placeholder="Short description" maxlength="200">
+      <button type="button" class="btn-secondary remove-row">✕</button>
+    </div>
+  <% }) %>
+</div>
+<button type="button" class="btn-secondary" data-add="bkService">+ Add service</button>
+
+<h4 style="margin:18px 0 6px;">Add-ons (optional extras)</h4>
+<div id="bkAddonList">
+  <% bk.addons.forEach(a => { %>
+    <div class="service-row">
+      <input type="text" name="bk_addon_name" value="<%= a.name %>" placeholder="Add-on" maxlength="80">
+      <input type="text" name="bk_addon_price" value="<%= a.price %>" placeholder="Price" maxlength="20" style="flex:0 0 90px;">
+      <input type="number" name="bk_addon_minutes" value="<%= a.minutes %>" min="0" max="240" style="flex:0 0 80px;" title="Extra minutes">
+      <button type="button" class="btn-secondary remove-row">✕</button>
+    </div>
+  <% }) %>
+</div>
+<button type="button" class="btn-secondary" data-add="bkAddon">+ Add add-on</button>
+
+<h4 style="margin:18px 0 6px;">Questions for the customer</h4>
+<p class="muted" style="font-size:12px; margin:0 0 6px;">Shown on the form after name and email. For a dropdown, list the choices separated by commas.</p>
+<div id="bkFieldList">
+  <% bk.fields.forEach(f => { %>
+    <div class="service-row">
+      <input type="text" name="bk_field_label" value="<%= f.label %>" placeholder="Question" maxlength="80">
+      <select name="bk_field_type" style="flex:0 0 110px;"><% [['text','Short text'],['select','Dropdown'],['textarea','Long text']].forEach(t => { %><option value="<%= t[0] %>" <%= f.type === t[0] ? 'selected' : '' %>><%= t[1] %></option><% }) %></select>
+      <input type="text" name="bk_field_options" value="<%= f.options.join(', ') %>" placeholder="Dropdown choices, comma separated">
+      <select name="bk_field_required" style="flex:0 0 100px;"><option value="0" <%= !f.required ? 'selected' : '' %>>Optional</option><option value="1" <%= f.required ? 'selected' : '' %>>Required</option></select>
+      <button type="button" class="btn-secondary remove-row">✕</button>
+    </div>
+  <% }) %>
+</div>
+<button type="button" class="btn-secondary" data-add="bkField">+ Add question</button>
+
+<label>Policy shown on the booking page (cancellations, deposits, arrival)</label>
+<textarea name="bk_policy" rows="3" maxlength="800"><%= bk.policy %></textarea>
+<label>Message added to the confirmation email and page (optional)</label>
+<textarea name="bk_confirmNote" rows="2" maxlength="400" placeholder="e.g. Please bring vaccination records."><%= bk.confirmNote %></textarea>
+<% if (bk.enabled) { %><p style="margin-top:12px;"><a href="/sites/<%= site.id %>/bookings" class="btn-secondary btn">Open the Bookings page</a></p><% } %>
+
+<template id="tpl-bkService">
+  <div class="service-row">
+    <input type="text" name="bk_service_name" placeholder="Service" maxlength="80">
+    <input type="number" name="bk_service_minutes" value="60" min="5" max="600" style="flex:0 0 80px;" title="Minutes">
+    <input type="text" name="bk_service_price" placeholder="Price" maxlength="20" style="flex:0 0 90px;">
+    <input type="text" name="bk_service_desc" placeholder="Short description" maxlength="200">
+    <button type="button" class="btn-secondary remove-row">✕</button>
+  </div>
+</template>
+<template id="tpl-bkAddon">
+  <div class="service-row">
+    <input type="text" name="bk_addon_name" placeholder="Add-on" maxlength="80">
+    <input type="text" name="bk_addon_price" placeholder="Price" maxlength="20" style="flex:0 0 90px;">
+    <input type="number" name="bk_addon_minutes" value="0" min="0" max="240" style="flex:0 0 80px;" title="Extra minutes">
+    <button type="button" class="btn-secondary remove-row">✕</button>
+  </div>
+</template>
+<template id="tpl-bkField">
+  <div class="service-row">
+    <input type="text" name="bk_field_label" placeholder="Question" maxlength="80">
+    <select name="bk_field_type" style="flex:0 0 110px;"><option value="text">Short text</option><option value="select">Dropdown</option><option value="textarea">Long text</option></select>
+    <input type="text" name="bk_field_options" placeholder="Dropdown choices, comma separated">
+    <select name="bk_field_required" style="flex:0 0 100px;"><option value="0">Optional</option><option value="1">Required</option></select>
+    <button type="button" class="btn-secondary remove-row">✕</button>
+  </div>
+</template>

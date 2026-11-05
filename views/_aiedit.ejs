@@ -1,0 +1,63 @@
+<%# Chat-to-edit box. Needs: aiBase (URL prefix for /ai-edit), aiOn (AI configured), aiTheme (true if style changes are allowed) %>
+<div class="aiedit" id="aiEdit" data-base="<%= aiBase %>">
+  <% if (!aiOn) { %>
+    <p class="muted" style="font-size:13px;">Not set up yet. Add <code>ANTHROPIC_API_KEY</code> to the server's <code>.env</code> file to turn this on.</p>
+  <% } else { %>
+    <p class="muted" style="font-size:13px;margin-top:0;">Tell me what to change, in your own words<%= aiTheme ? ' — wording, services, FAQs, colors or style' : ' — wording, services or FAQs' %>. You will see exactly what would change and decide before anything is saved.</p>
+    <textarea id="aiEditText" rows="2" maxlength="600" placeholder="<%= aiTheme ? 'e.g. Make the headline friendlier, add a service called Gutter Cleaning, and change the main color to dark green' : 'e.g. Make the headline friendlier and add a question about parking' %>"></textarea>
+    <button type="button" class="btn-secondary" id="aiEditAsk" style="margin-top:8px;">Suggest changes</button>
+    <div id="aiEditOut" aria-live="polite" style="margin-top:12px;"></div>
+  <% } %>
+</div>
+<style>
+  .aiedit textarea { width: 100%; }
+  .ai-change { border: 1px solid var(--border, #e2e8f0); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 14px; background: #fff; }
+  .ai-change b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #64748b; margin-bottom: 4px; }
+  .ai-change .was { color: #991b1b; text-decoration: line-through; }
+  .ai-change .now { color: #065f46; }
+  .ai-reply { background: #f1f5f9; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; font-size: 14px; }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('aiEdit'); const ask = document.getElementById('aiEditAsk');
+  if (!root || !ask) return;
+  const base = root.dataset.base, out = document.getElementById('aiEditOut'), text = document.getElementById('aiEditText');
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+  const post = async (path, body) => {
+    const r = await fetch(base + path, { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json' }, body: JSON.stringify(body) });
+    try { return await r.json(); } catch (_) { return { ok: false, error: 'Something went wrong. Please try again.' }; }
+  };
+  ask.addEventListener('click', async () => {
+    const instruction = text.value.trim();
+    if (!instruction) { text.focus(); return; }
+    ask.disabled = true; ask.textContent = 'Thinking…'; out.replaceChildren();
+    try {
+      if (window.aiEditHooks && window.aiEditHooks.before) await window.aiEditHooks.before();
+      const d = await post('/ai-edit', { instruction });
+      if (!d.ok) { out.append(el('div', 'ai-reply', d.error || 'That did not work.')); return; }
+      if (d.reply) out.append(el('div', 'ai-reply', d.reply));
+      if (!d.changes.length) return;
+      d.changes.forEach(c => {
+        const box = el('div', 'ai-change'); box.append(el('b', '', c.label));
+        if (c.before) box.append(el('div', 'was', c.before));
+        if (c.after) box.append(el('div', 'now', c.after));
+        out.append(box);
+      });
+      const row = el('div'); row.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
+      const yes = el('button', 'btn', 'Apply ' + d.changes.length + ' change' + (d.changes.length === 1 ? '' : 's'));
+      const no = el('button', 'btn-secondary', 'Not now');
+      yes.type = 'button'; no.type = 'button';
+      no.addEventListener('click', () => out.replaceChildren());
+      yes.addEventListener('click', async () => {
+        yes.disabled = true; yes.textContent = 'Applying…';
+        const a = await post('/ai-edit/apply', { token: d.token });
+        if (a.ok) { sessionStorage.setItem('aiEditDone', '1'); location.reload(); }
+        else { out.replaceChildren(el('div', 'ai-reply', a.error || 'Could not apply that.')); }
+      });
+      row.append(yes, no); out.append(row);
+      out.append(el('p', 'muted', 'Applying saves a copy of the current site to history first, so you can go back.'));
+    } finally { ask.disabled = false; ask.textContent = 'Suggest changes'; }
+  });
+  try { if (sessionStorage.getItem('aiEditDone')) { sessionStorage.removeItem('aiEditDone'); out.append(el('div', 'ai-reply', 'Done — the changes are on your site. They are also in your version history.')); const d = root.closest('details'); if (d) d.open = true; } } catch (_) {}
+})();
+</script>

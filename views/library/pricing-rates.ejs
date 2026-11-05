@@ -1,0 +1,24 @@
+<%# Original layout (rate card with dotted leaders, drawn from scratch): a menu-style price list; only prices the client gave us. %>
+<section class="sg-lib" data-sg-section="pricing/rates">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-3xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <ul class="tw:mt-10 tw:list-none tw:space-y-6 tw:rounded-2xl tw:border tw:border-line tw:bg-page tw:p-6 tw:shadow-[var(--shadow-sm)] tw:sm:p-10" data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <li>
+            <div class="tw:flex tw:items-baseline tw:gap-3">
+              <span class="tw:font-heading tw:text-lg tw:font-semibold tw:text-ink"><%= it.title %></span>
+              <span class="tw:min-w-6 tw:flex-1 tw:border-b-2 tw:border-dotted tw:border-line" aria-hidden="true"></span>
+              <span class="tw:font-heading tw:text-lg tw:font-bold tw:text-primary"><%= it.price %></span>
+            </div>
+            <% if (it.description) { %><p class="tw:mt-1 tw:text-sm/relaxed tw:text-pretty tw:text-muted"><%= it.description %></p><% } %>
+          </li>
+        <% }) %>
+      </ul>
+      <% if (d.ctaHref) { %><p class="tw:mt-8 tw:text-center"><a class="tw:inline-block tw:rounded-md tw:bg-primary tw:px-5 tw:py-3 tw:font-medium tw:text-on-primary tw:shadow-[var(--shadow-sm)] tw:transition-opacity tw:hover:opacity-90" href="<%= d.ctaHref %>">Ask about a service</a></p><% } %>
+    </div>
+  </div>
+</section>

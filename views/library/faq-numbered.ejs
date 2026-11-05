@@ -1,0 +1,21 @@
+<%# Original layout (numbered accordion, drawn from scratch): large numbers, hairline dividers, native <details>. %>
+<section class="sg-lib" data-sg-section="faq/numbered">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-4xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div data-animate="fade-up"><h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2></div>
+      <div class="tw:mt-8 tw:divide-y tw:divide-line tw:border-y tw:border-line" data-animate="stagger">
+        <% d.items.forEach(function (it, i) { %>
+          <details class="tw:group tw:py-5">
+            <summary class="tw:flex tw:cursor-pointer tw:list-none tw:items-center tw:gap-5 tw:text-ink">
+              <span class="tw:font-heading tw:text-2xl tw:font-bold tw:text-primary tw:opacity-70"><%= (i + 1 < 10 ? '0' : '') + (i + 1) %></span>
+              <span class="tw:flex-1 tw:font-heading tw:text-lg tw:font-medium"><%= it.question %></span>
+              <span class="tw:shrink-0 tw:text-primary tw:transition-transform tw:group-open:rotate-45" aria-hidden="true">+</span>
+            </summary>
+            <p class="tw:mt-3 tw:pl-12 tw:text-pretty tw:text-muted tw:sm:pl-14"><%= it.answer %></p>
+          </details>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="tw:mt-8"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">More questions &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

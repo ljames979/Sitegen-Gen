@@ -1,0 +1,3 @@
+<%# Hero stickers: up to three short phrases the owner typed (sections.hero.stickers). Nothing is shown when empty. %>
+<% const _st = (typeof list !== 'undefined' && Array.isArray(list)) ? list.filter(Boolean).slice(0, 3) : []; %>
+<% if (_st.length) { %><div class="sg-stickers"><% _st.forEach(t => { %><span class="sg-sticker"><%= t %></span><% }) %></div><% } %>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Payments — <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .flashbar { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; }
+    .flashbar.bad { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+    .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; } .stat { flex: 1; min-width: 160px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; }
+    .stat b { display: block; font-size: 24px; } .stat span { color: var(--muted); font-size: 13px; }
+    .card { margin-bottom: 18px; }
+    .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #f1f5f9; color: #475569; }
+    .pill.paid { background: #dcfce7; color: #166534; } .pill.pending { background: #fef3c7; color: #92400e; } .pill.expired, .pill.canceled { background: #fee2e2; color: #991b1b; }
+    table.pt { width: 100%; border-collapse: collapse; font-size: 14px; } table.pt th, table.pt td { text-align: left; padding: 9px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    .acts form { display: inline; } .acts button { padding: 3px 10px; font-size: 12.5px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; } @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <nav><div class="row"><a href="/sites/<%= site.id %>/edit" class="muted">&larr; <%= site.name %></a><strong>Payments</strong></div></nav>
+  <div class="container">
+    <% if (flash && msgs[flash]) { %><div class="flashbar <%= ['nokey','bad','nomail'].includes(flash) ? 'bad' : '' %>"><%= msgs[flash] %></div><% } %>
+
+    <% if (!ready) { %>
+      <div class="card"><h3 style="margin-top:0;">Connect Stripe to take payments</h3>
+        <p style="margin:0;">Open the site's editor, find <strong>Card payments (Stripe)</strong>, switch it on and paste the site owner's Stripe key. Money goes straight to that Stripe account. <a href="/sites/<%= site.id %>/edit#payBlock">Go to the editor</a></p></div>
+    <% } %>
+
+    <div class="stats"><div class="stat"><b><%= collected %></b><span>Collected</span></div><div class="stat"><b><%= outstanding %></b><span>Waiting to be paid</span></div></div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Ask a customer to pay</h3>
+      <p class="muted" style="margin-top:-6px; font-size:13.5px;">For a quote you accepted, an invoice, or any amount. You get a secure link to send. When they pay, it shows here and you get an email.</p>
+      <form method="POST" action="/sites/<%= site.id %>/payments/new">
+        <% if (lead) { %><input type="hidden" name="lead_id" value="<%= lead.id %>"><% } %>
+        <div class="grid">
+          <div><label>Amount (<%= cfg.currency.toUpperCase() %>)</label><input type="text" name="amount" placeholder="250.00" inputmode="decimal" maxlength="10" required></div>
+          <div><label>What is it for?</label><input type="text" name="description" placeholder="Kitchen deep clean, Invoice #1042" maxlength="200" value="<%= lead && lead.service ? lead.service : '' %>" required></div>
+          <div><label>Customer name</label><input type="text" name="name" maxlength="100" value="<%= lead ? lead.name : '' %>"></div>
+          <div><label>Customer email</label><input type="email" name="email" maxlength="254" value="<%= lead ? lead.email : '' %>"></div>
+        </div>
+        <label class="check" style="margin-top:10px;"><input type="checkbox" name="send" value="1" <%= mailOn ? 'checked' : 'disabled' %>> Email the link to the customer now<%= mailOn ? '' : ' (email sending is not set up)' %></label>
+        <button type="submit" style="margin-top:10px;" <%= ready ? '' : 'disabled' %>>Create payment request</button>
+      </form>
+    </div>
+
+    <h3>History</h3>
+    <% if (!rows.length) { %><p class="muted">No payments yet.</p><% } else { %>
+      <div class="card" style="overflow-x:auto;"><table class="pt"><thead><tr><th>Date</th><th>For</th><th>Customer</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>
+        <% rows.forEach(p => { %><tr>
+          <td><%= (p.paid_at || p.created_at || '').slice(0, 10) %></td>
+          <td><%= p.description %><br><span class="muted" style="font-size:12px;"><%= p.kind === 'deposit' ? 'Booking deposit' : p.kind === 'purchase' ? 'Online purchase' : 'Payment request' %><%= p.paid_via === 'manual' ? ' · marked paid by you' : '' %></span></td>
+          <td><%= p.customer_name || '' %><%= p.customer_email ? ' ' : '' %><span class="muted"><%= p.customer_email %></span></td>
+          <td><%= p.amount %></td>
+          <td><span class="pill <%= p.status %>"><%= p.status %></span></td>
+          <td class="acts">
+            <% if (p.status === 'pending') { %>
+              <button type="button" class="btn-secondary" onclick="navigator.clipboard.writeText('<%= p.link %>'); this.textContent='Copied';">Copy link</button>
+              <% if (p.kind !== 'deposit') { %>
+                <% if (p.customer_email) { %><form method="POST" action="/sites/<%= site.id %>/payments/<%= p.id %>/resend"><button type="submit" class="btn-secondary">Email again</button></form><% } %>
+                <form method="POST" action="/sites/<%= site.id %>/payments/<%= p.id %>/paid" onsubmit="return confirm('Mark this as paid (for example they paid by cash or check)?');"><button type="submit" class="btn-secondary">Mark paid</button></form>
+                <form method="POST" action="/sites/<%= site.id %>/payments/<%= p.id %>/cancel" onsubmit="return confirm('Cancel this payment request?');"><button type="submit" class="btn-secondary">Cancel</button></form>
+              <% } %>
+            <% } %>
+          </td></tr><% }) %>
+      </tbody></table></div>
+    <% } %>
+  </div>
+</body>
+</html>

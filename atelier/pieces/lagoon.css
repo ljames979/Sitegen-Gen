@@ -1,0 +1,51 @@
+
+.p-lagoon{--deep:#05467A;--aqua:#2CC6E0;--sun:#FFD54A;--ink:#06243D;--sand:#F5EEE2;--muted:#5B6F80;--line:#DCE3E6;--pad:max(clamp(20px, 5cqw, 72px), calc((100cqw - 1240px) / 2), env(safe-area-inset-left, 0px));background:var(--sand);color:var(--ink);font-family:'Sora',system-ui,sans-serif;font-size:17px;line-height:1.55;overflow:hidden;text-align:left}
+.p-lagoon *{box-sizing:border-box}
+.p-lagoon :where(a){color:inherit;text-decoration:none}
+.p-lagoon :where(h1,h2,h3,p){margin:0}
+.g-pad{padding-left:var(--pad);padding-right:var(--pad)}
+.g-hero{position:relative;min-height:860px;background:#0A6FA8;color:#FFFFFF;cursor:crosshair;touch-action:pan-y}
+.g-cv{position:absolute;inset:0;width:100%;height:100%;display:block}
+.g-coping{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 18px #F2E9DA,inset 0 0 0 21px #D3C6AF,inset 0 30px 60px rgba(0,30,60,.35)}
+.g-nav{position:relative;display:flex;align-items:center;gap:28px;padding-block:40px 20px;cursor:auto}
+.g-logo{font-weight:800;font-size:24px;letter-spacing:-.03em;text-shadow:0 2px 14px rgba(0,40,80,.4)}
+.g-nav nav{margin-left:auto;display:flex;gap:26px;font-size:15px;font-weight:600;text-shadow:0 2px 14px rgba(0,40,80,.5)}
+.g-btn{display:inline-flex;align-items:center;justify-content:center;height:54px;padding:0 26px;border-radius:999px;background:var(--sun);color:var(--ink);font-weight:700;font-size:15px;white-space:nowrap}
+.g-btn-sm{height:44px;padding:0 20px;font-size:14px}
+.g-btn-line{background:rgba(255,255,255,.14);color:#FFFFFF;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.75);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.g-btn-ink{background:var(--ink);color:#FFFFFF}
+.g-copy{position:relative;max-width:640px;display:flex;flex-direction:column;gap:22px;align-items:flex-start;padding-top:48px;text-shadow:0 2px 22px rgba(0,40,80,.55);pointer-events:none}
+.g-copy a{pointer-events:auto;text-shadow:none}
+.g-kick{font-size:12.5px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--sun)}
+.g-h1{font-weight:800;font-size:clamp(56px,8cqw,114px);line-height:.92;letter-spacing:-.045em;text-wrap:balance}
+.g-h1 em{font-style:normal;color:var(--sun)}
+.g-lead{font-size:19px;max-width:30em;color:#E6F7FF}
+.g-actions{display:flex;flex-wrap:wrap;gap:12px}
+.g-hint{font-size:13px;color:#D4F1FF}
+.g-sec{padding-block:112px}
+.g-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px 48px;margin-bottom:48px}
+.g-h2{font-weight:800;font-size:clamp(42px,5.4cqw,76px);line-height:.96;letter-spacing:-.045em;text-wrap:balance}
+.g-head p{color:var(--muted);max-width:32em}
+.g-ganttwrap{overflow-x:auto}
+.g-gantt{display:grid;grid-template-columns:190px repeat(11,minmax(0,1fr));gap:10px 4px;align-items:center;min-width:780px}
+.g-wk{font-size:12px;font-weight:600;color:var(--muted);text-align:center}
+.g-task{font-weight:600;font-size:15px}
+.g-bar{height:34px;border-radius:999px;background:linear-gradient(90deg,#2CC6E0,#0A6FA8);box-shadow:inset 0 -3px 0 rgba(0,0,0,.12)}
+.g-bar.last{background:linear-gradient(90deg,#FFD54A,#FFB23F)}
+.g-shapes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px}
+.g-shape{display:flex;flex-direction:column;gap:12px;padding:20px;border-radius:24px;background:#FFFFFF;border:1px solid var(--line)}
+.g-shape svg{display:block;width:100%;height:auto;border-radius:16px}
+.g-shape h3{font-weight:700;font-size:22px;letter-spacing:-.02em}
+.g-shape p{color:var(--muted);font-size:14.5px}
+.g-shape b{font-weight:800;font-size:24px;letter-spacing:-.03em}
+.g-foot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px 32px;padding-block:30px;background:var(--ink);color:#BFD9E8;font-size:14px}
+@container (max-width:760px){
+ .g-nav nav{display:none}
+ .g-nav > .g-btn{margin-left:auto}
+ .g-hero{min-height:820px}
+ .g-copy{padding-top:20px}
+ .g-lead{font-size:17px}
+ .g-shapes{grid-template-columns:1fr 1fr}
+ .g-sec{padding-block:72px}
+}
+@container (max-width:460px){ .g-shapes{grid-template-columns:1fr} }

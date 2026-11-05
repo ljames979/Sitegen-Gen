@@ -1,0 +1,18 @@
+<%# Adapted from HyperUI (MIT) marketing/sections/1: text beside a photo. %>
+<section class="sg-lib" data-sg-section="about/split">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="sg-flip tw:grid tw:grid-cols-1 tw:gap-8 tw:md:grid-cols-2 tw:md:items-center tw:md:gap-12">
+        <div>
+          <div class="tw:max-w-prose tw:md:max-w-none" data-animate="fade-up">
+            <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+            <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+            <p class="tw:mt-4 tw:text-pretty tw:whitespace-pre-line tw:text-muted"><%= d.body %></p>
+            <% if (d.moreHref) { %><a class="tw:mt-6 tw:inline-block tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">Learn more about us &rarr;</a><% } %>
+          </div>
+        </div>
+        <% if (d.image) { %><div data-animate="fade-up"><img class="tw:aspect-[4/3] tw:w-full tw:rounded-xl tw:object-cover" src="<%= d.image %>" alt="<%= d.imageAlt %>" loading="lazy"></div><% } %>
+      </div>
+    </div>
+  </div>
+</section>

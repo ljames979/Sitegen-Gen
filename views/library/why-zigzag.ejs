@@ -1,0 +1,21 @@
+<%# Original layout (zig-zag rows): each reason on its own row, photo and words swapping sides down the page. %>
+<section class="sg-lib" data-sg-section="why/zigzag">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-6xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="tw:mt-10 tw:space-y-10 tw:lg:mt-14 tw:lg:space-y-16">
+        <% d.items.forEach(function (it, i) { %>
+          <div class="sg-zz tw:grid tw:grid-cols-1 tw:gap-6 tw:md:grid-cols-2 tw:md:items-center tw:md:gap-12" data-animate="fade-up">
+            <% if (it.imageUrl) { %><img class="tw:aspect-[4/3] tw:w-full tw:rounded-xl tw:object-cover tw:shadow-[var(--shadow-sm)]" src="<%= it.imageUrl %>" alt="" loading="lazy" decoding="async"><% } else { %>
+            <div class="tw:flex tw:aspect-[16/9] tw:items-center tw:justify-center tw:rounded-xl tw:bg-surface tw:font-heading tw:text-7xl tw:font-bold tw:text-primary" aria-hidden="true"><%= String(i + 1).padStart(2, '0') %></div><% } %>
+            <div><h3 class="tw:font-heading tw:text-xl tw:font-semibold tw:text-ink tw:sm:text-2xl"><%= it.title %></h3><% if (it.text) { %><p class="tw:mt-3 tw:text-lg/relaxed tw:text-pretty tw:text-muted"><%= it.text %></p><% } %></div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</section>

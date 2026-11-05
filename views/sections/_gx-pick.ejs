@@ -1,0 +1,8 @@
+<%# A gradient's intensity (gradients.cleanStrength): 10 to 150 percent, 100 = as designed. Pass name, value, what. %>
+<% const _gxv = +value || 100; %>
+<label class="sg-gx" title="<%= what %>: turn the gradient down (fades into the page) or up (richer colors). 100% is as designed." style="display:inline-flex; align-items:center; gap:.4rem; font-weight:400; white-space:nowrap;">
+  <span><%= what %></span>
+  <input type="range" name="<%= name %>" min="10" max="150" step="5" value="<%= _gxv %>" oninput="this.nextElementSibling.textContent = this.value + '%'" style="width:120px;">
+  <output style="min-width:3.2em; font-variant-numeric:tabular-nums;"><%= _gxv %>%</output>
+  <button type="button" class="btn btn-secondary btn-sm" onclick="var r=this.parentNode.querySelector('input'); r.value=100; r.nextElementSibling.textContent='100%'; r.dispatchEvent(new Event('input',{bubbles:true})); r.dispatchEvent(new Event('change',{bubbles:true}));" title="Back to 100%">↺</button>
+</label>

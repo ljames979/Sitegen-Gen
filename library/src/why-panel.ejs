@@ -1,0 +1,22 @@
+<%# Original layout (Leo's link to a pet-food feature block, 2026-11-03; our own drawing of the idea): one big photo fills the section and a solid brand-color panel docks to one side over it, with the heading and each reason under a round line icon. %>
+<% var ic = '<polyline points="20 6 9 17 4 12"></polyline>'; %>
+<section class="sg-lib" data-sg-section="why/panel">
+  <div class="relative bg-surface">
+    <div class="sg-dock relative z-10 mx-auto flex max-w-7xl px-4 py-12 sm:px-6 lg:min-h-[38rem] lg:items-center lg:px-8 lg:py-20">
+      <div class="w-full max-w-sm bg-primary p-8 text-on-primary shadow-[var(--shadow-md)] sm:p-10" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="text-xs font-semibold tracking-widest uppercase opacity-80"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="font-heading text-2xl font-bold sm:text-3xl"><%= d.heading %></h2>
+        <ul class="mt-8 space-y-8" data-sg-cards>
+          <% d.items.forEach(function (it) { %>
+            <li>
+              <span class="inline-flex size-11 items-center justify-center rounded-full border-2 border-current" aria-hidden="true"><svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><%- it.icon || ic %></svg></span>
+              <% if (it.title) { %><h3 class="mt-3 font-heading text-lg font-bold"><%= it.title %></h3><% } %>
+              <% if (it.text) { %><p class="mt-1 text-sm/relaxed text-pretty opacity-90"><%= it.text %></p><% } %>
+            </li>
+          <% }) %>
+        </ul>
+      </div>
+    </div>
+    <% if (d.image) { %><img class="sg-noshape aspect-[4/3] w-full object-cover lg:absolute lg:inset-0 lg:aspect-auto lg:h-full" src="<%= d.image %>" alt="" loading="lazy" decoding="async"><% } %>
+  </div>
+</section>

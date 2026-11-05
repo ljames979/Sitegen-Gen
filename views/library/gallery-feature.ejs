@@ -1,0 +1,16 @@
+<%# Original layout (big plus small): one large featured photo beside a grid of smaller ones. %>
+<% var pics = ((d.all && d.all.length ? d.all : d.images) || []).slice(0, 5); %>
+<section class="sg-lib" data-sg-section="gallery/feature">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+      </div>
+      <div class="sg-flip tw:mt-8 tw:grid tw:grid-cols-2 tw:gap-3 tw:lg:grid-cols-4 tw:lg:gap-4" data-animate="stagger">
+        <% pics.forEach(function (im, i) { %><img class="<%= i === 0 ? 'tw:col-span-2 tw:row-span-2 tw:h-full tw:min-h-64' : 'tw:aspect-square' %> tw:w-full tw:rounded-xl tw:object-cover" src="<%= im.src %>" alt="<%= im.alt %>" loading="lazy"><% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="tw:mt-8 tw:text-center"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">See the full gallery &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

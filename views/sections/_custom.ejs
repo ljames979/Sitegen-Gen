@@ -1,0 +1,98 @@
+<%# Your own sections: words, photos, or both, placed after a section you choose. Expects: site, bpUi %>
+<% const csItems = ((site.sections.custom || {}).items) || [];
+   // on a Blocks home page the choices follow the blocks in their order on the page, so ↑ ↓ step through them
+   const csMix = site.theme.homeLayout === 'mix' && Array.isArray(site.theme.mix) && site.theme.mix.length;
+   const csFams = csMix ? [...new Set(site.theme.mix.filter(b => b.k !== 'blk').map(b => b.f))].filter(f => f && f !== 'hero') : bpUi.rows.filter(r => r.family !== 'hero').map(r => r.family);
+   csItems.forEach(c => { if (c.after && !['top', 'end'].includes(c.after) && !csFams.includes(c.after)) csFams.push(c.after); });
+   const csAfter = [['top', 'Right under the top banner'], ...csFams.map(f => [f, 'After: ' + (bpUi.families[f] || f)]), ['end', 'At the end of the home page']];
+   const csLayouts = [['', 'Automatic (picked from what you add)'], ['text', 'Words only'], ['photo-text', 'Photo on the left, words on the right'], ['text-photo', 'Words on the left, photo on the right'], ['photo', 'One big photo'], ['photos', 'Photo grid (2 to 4 photos)'], ['overlap', 'Overlap: words on a card over the photo edge'], ['offset', 'Offset photos (2 or 3 photos)'], ['collage', 'Collage: one big, two small (3 photos)'], ['sticky', 'Sticky photo beside longer words'], ['frosted', 'Frosted glass panel over the photo'], ['editorial', 'Editorial: big heading beside the words'], ['magazine', 'Magazine: words in columns, small photo'], ['strip', 'Photo strip, words below (2 to 4 photos)'], ['bleed', 'Full-width photo with a panel of words']];
+   const renderCustom = (c) => { %>
+  <div class="custom-row" style="border:1px solid var(--border,#e2e8f0); border-radius:10px; padding:12px 14px; margin:10px 0;">
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+      <strong>Your own section</strong>
+      <span>
+        <button type="button" class="btn-secondary" data-custom="up" title="Move up">&uarr;</button>
+        <button type="button" class="btn-secondary" data-custom="down" title="Move down">&darr;</button>
+        <button type="button" class="btn-secondary" data-custom="del">Delete</button>
+      </span>
+    </div>
+    <label>Where it goes</label>
+    <select name="cs_after"><% csAfter.forEach(o => { %><option value="<%= o[0] %>" <%= (c.after || 'end') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+    <label>Heading (optional)</label>
+    <input type="text" name="cs_heading" maxlength="120" value="<%= c.heading || '' %>" placeholder="e.g. Our story">
+    <label>Words (optional)</label>
+    <textarea name="cs_body" rows="4" maxlength="3000" placeholder="Write anything here. Leave a blank line between paragraphs."><%= c.body || '' %></textarea>
+    <label>Photos (optional, up to 4)</label>
+    <% [1, 2, 3, 4].forEach(n => { %>
+      <div class="upload-row">
+        <input type="url" name="cs_img<%= n %>" value="<%= (c.images || [])[n - 1] || '' %>" placeholder="Photo <%= n %>: https://... or upload">
+        <input type="file" accept="image/*" class="file-input" hidden>
+        <button type="button" class="btn-secondary upload-btn">Upload</button>
+        <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      </div>
+    <% }) %>
+    <label>Layout</label>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+      <select name="cs_layout" style="flex:1; min-width:200px;"><% csLayouts.forEach(o => { %><option value="<%= o[0] %>" <%= (c.layout || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+      <button type="button" class="btn-secondary" data-custom="next" title="Next layout">&rsaquo;</button>
+      <select name="cs_flip" style="width:auto;" title="Mirror the layout"><option value="">Normal</option><option value="1" <%= c.flip ? 'selected' : '' %>>Flipped</option></select>
+      <select name="cs_shape" style="width:auto;" title="Photo shape"><% [['', 'Normal photos'], ['arch', 'Arch photos'], ['circle', 'Circle photos'], ['blob', 'Soft blob photos']].forEach(o => { %><option value="<%= o[0] %>" <%= (c.shape || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+    </div>
+    <p class="muted" style="font-size:12px; margin:2px 0 6px;">A layout your photos can't fill (a collage needs 3) falls back to one that fits.</p>
+    <div class="upload-row">
+      <input type="text" name="cs_buttonText" maxlength="40" value="<%= c.buttonText || '' %>" placeholder="Button text (optional)">
+      <input type="url" name="cs_buttonUrl" value="<%= c.buttonUrl || '' %>" placeholder="Button link, e.g. /site/name/contact">
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <label style="flex:1; min-width:150px; font-weight:400;">Background
+        <select name="cs_bg"><% [['', 'Default'], ['alt', 'Alternate shade'], ['brand', 'Brand color'], ['themegrad', 'Brand gradient (brand to accent)'], ['color', 'Your color (pick below)'], ['gradient', 'Your gradient (pick below)'], ['preset', 'Gradient from the gallery (pick below)']].forEach(o => { %><option value="<%= o[0] %>" <%= (c.bg || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select></label>
+      <label style="width:110px; font-weight:400;">Emoji <input type="text" name="cs_emoji" maxlength="12" value="<%= c.emoji || '' %>" placeholder="e.g. 🌟"></label>
+    </div>
+    <%- include('_size-controls', { pre: 'cs_', o: c, photo: false }) %>
+  </div>
+<% }; %>
+<p class="muted" style="font-size:12.5px; margin:0 0 6px;">Add a section with words, photos, or both, and put it right after any section on the home page. The layout is picked for you from what you add, or choose one. It uses your site's colors and fonts.</p>
+<div id="customList"><% csItems.forEach(c => renderCustom(c)); %></div>
+<template id="tpl-custom"><% renderCustom({}); %></template>
+<button type="button" class="btn-secondary" id="customAdd">+ Add your own section</button>
+<script>
+(function () {
+  var list = document.getElementById('customList');
+  function changed() { list.dispatchEvent(new Event('input', { bubbles: true })); }
+  document.getElementById('customAdd').addEventListener('click', function () {
+    list.appendChild(document.getElementById('tpl-custom').content.cloneNode(true)); changed();
+  });
+  // ↑ ↓ move the section on the page: past another of your sections in the same spot, otherwise to the spot before
+  // or after ("Where it goes" steps one place)
+  function onPage(fam) {
+    var d = null; try { d = document.getElementById('previewFrame').contentDocument; } catch (e) { /* no preview */ }
+    if (!d || !d.querySelector('[data-mix-f], [data-sg-fam]:not([data-sg-fam="custom"])')) return true;   // not the home page's sections on show
+    return !!d.querySelector('[data-mix-f="' + fam + '"], [data-sg-fam="' + fam + '"]');
+  }
+  function move(row, dir) {
+    var at = row.querySelector('[name=cs_after]'), rows = [].slice.call(list.querySelectorAll('.custom-row'));
+    var other = null;
+    for (var i = rows.indexOf(row) + dir; i >= 0 && i < rows.length; i += dir) if (rows[i].querySelector('[name=cs_after]').value === at.value) { other = rows[i]; break; }
+    if (other) {
+      if (dir < 0) list.insertBefore(row, other); else list.insertBefore(other, row);
+      return;
+    }
+    var k = at.selectedIndex + dir;
+    while (k > 0 && k < at.options.length - 1 && !onPage(at.options[k].value)) k += dir;   // skip sections the page doesn't show
+    if (k < 0 || k >= at.options.length) return;
+    at.selectedIndex = k;
+    // it lands next to the sections already there: first when moving down into a spot, last when moving up
+    var same = rows.filter(function (r) { return r !== row && r.querySelector('[name=cs_after]').value === at.value; });
+    if (same.length) { if (dir > 0) list.insertBefore(row, same[0]); else same[same.length - 1].after(row); }
+  }
+  window.sgMoveCustom = function (ci, dir) { var row = list.querySelectorAll('.custom-row')[ci]; if (row) { move(row, dir); changed(); } };
+  list.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-custom]'); if (!b) return;
+    var row = b.closest('.custom-row'), act = b.dataset.custom;
+    if (act === 'up' || act === 'down') move(row, act === 'up' ? -1 : 1);
+    else if (act === 'del') row.remove();
+    else if (act === 'next') { var sel = row.querySelector('[name=cs_layout]'); sel.selectedIndex = sel.selectedIndex >= sel.options.length - 1 ? 1 : sel.selectedIndex + 1; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+    changed();
+  });
+})();
+</script>

@@ -1,0 +1,23 @@
+<%# Adapted from Start Bootstrap Agency (MIT) services: an icon in a big brand-color circle over each service, uppercase heading. %>
+<section class="sg-lib" data-sg-section="services/circles">
+  <div class="bg-page">
+    <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+      <div class="mx-auto max-w-3xl text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="text-sm font-medium tracking-wide text-primary uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="font-heading text-3xl font-bold tracking-wide text-ink uppercase sm:text-4xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="mt-3 text-lg text-pretty italic text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="mt-12 grid grid-cols-1 gap-x-8 gap-y-12 text-center sm:grid-cols-2 <%= d.items.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3' %>" data-sg-cards data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <a class="group block" href="<%= it.href %>">
+            <span class="mx-auto flex size-24 items-center justify-center rounded-full bg-primary text-on-primary transition-transform duration-300 group-hover:scale-105" aria-hidden="true"><svg class="size-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><%- it.icon || '<polyline points="20 6 9 17 4 12"></polyline>' %></svg></span>
+            <h3 class="mt-5 font-heading text-xl font-bold text-ink"><%= it.title %></h3>
+            <% if (it.description) { %><p class="mt-3 text-pretty text-muted"><%= it.description %></p><% } %>
+            <% if (it.price) { %><p class="mt-3 text-sm font-bold text-ink"><%= it.price %></p><% } %>
+          </a>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="mt-12 text-center"><a class="inline-block rounded-md bg-primary px-6 py-3 text-sm font-bold tracking-wider text-on-primary uppercase transition-opacity hover:opacity-90" href="<%= d.moreHref %>">See all services</a></p><% } %>
+    </div>
+  </div>
+</section>

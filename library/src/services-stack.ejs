@@ -1,0 +1,24 @@
+<%# Original layout (stacking cards, drawn from scratch): each service is a card that slides up and stacks on the one before as the visitor scrolls, like a deck being dealt. Plain CSS (position: sticky), so it works without scripts. %>
+<section class="sg-lib" data-sg-section="services/stack">
+  <div class="bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+      <div class="mx-auto max-w-3xl text-center" data-animate="fade-up">
+        <h2 data-sg-head class="font-heading text-2xl font-semibold text-ink sm:text-3xl"><%= d.heading %></h2>
+      </div>
+      <div class="mx-auto mt-10 max-w-4xl">
+        <% d.items.forEach(function (it, i) { %>
+          <a class="sg-stack-card group mb-6 grid items-center gap-6 overflow-hidden rounded-2xl border border-line bg-page p-6 shadow-[var(--shadow-md)] sm:p-8 <%= it.imageUrl ? 'sm:grid-cols-[1fr_15rem]' : '' %>" style="--i: <%= i %>" href="<%= it.href %>">
+            <span class="block">
+              <span class="font-heading text-sm font-semibold tracking-widest text-primary"><%= (i + 1 < 10 ? '0' : '') + (i + 1) %></span>
+              <span class="mt-1 block font-heading text-2xl font-semibold text-ink group-hover:text-primary"><%= it.title %></span>
+              <% if (it.description) { %><span class="mt-2 block text-pretty text-muted"><%= it.description %></span><% } %>
+              <% if (it.price) { %><span class="mt-3 block font-medium text-primary"><%= it.price %></span><% } %>
+            </span>
+            <% if (it.imageUrl) { %><img class="aspect-[4/3] w-full rounded-xl object-cover" src="<%= it.imageUrl %>"<% if (it.image2) { %> data-sg-hover="<%= it.image2 %>"<% } %> alt="" loading="lazy" decoding="async"><% } %>
+          </a>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="mt-4 text-center"><a class="font-medium text-primary underline-offset-4 hover:underline" href="<%= d.moreHref %>">See all services &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

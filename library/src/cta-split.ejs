@@ -1,0 +1,19 @@
+<%# Original layout (split call to action, drawn from scratch): brand panel with the phone number beside a quote card. %>
+<section class="sg-lib" data-sg-section="cta/split">
+  <div class="bg-page">
+    <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+      <div class="sg-flip grid grid-cols-1 overflow-hidden rounded-2xl border border-line shadow-[var(--shadow-md)] md:grid-cols-2" data-animate="fade-up">
+        <div class="bg-primary p-8 sm:p-10">
+          <h2 data-sg-head class="font-heading text-2xl font-bold text-on-primary sm:text-3xl"><%= d.heading %></h2>
+          <% if (d.text) { %><p class="mt-3 text-pretty text-on-primary opacity-90"><%= d.text %></p><% } %>
+          <% if (d.phone) { %><p class="mt-6 text-sm text-on-primary opacity-80">Prefer to talk?</p><a class="font-heading text-2xl font-bold text-on-primary underline-offset-4 hover:underline" href="tel:<%= d.phoneHref %>"><%= d.phone %></a><% } %>
+        </div>
+        <div class="flex flex-col items-start justify-center gap-4 bg-surface p-8 sm:p-10">
+          <p class="font-heading text-lg font-semibold text-ink">Tell us what you need</p>
+          <p class="text-sm text-pretty text-muted">A few details is enough. We will get back to you.</p>
+          <a class="inline-block rounded-md bg-primary px-5 py-3 font-medium text-on-primary shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

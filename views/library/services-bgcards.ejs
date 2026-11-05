@@ -1,0 +1,23 @@
+<%# Original layout (card variant): each service's photo fills its card behind the words; no photo uses the brand color. %>
+<section class="sg-lib" data-sg-section="services/bgcards">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="tw:mt-8 tw:grid tw:grid-cols-1 tw:gap-5 tw:sm:grid-cols-2 <%= d.items.length === 4 ? 'tw:lg:grid-cols-4' : 'tw:lg:grid-cols-3' %>" data-sg-cards data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <a class="tw:group tw:relative tw:flex tw:min-h-80 tw:flex-col tw:justify-end tw:overflow-hidden tw:rounded-xl tw:p-6 tw:shadow-[var(--shadow-md)] <%= it.imageUrl ? 'tw:text-white' : 'tw:bg-primary tw:text-on-primary' %>" href="<%= it.href %>">
+            <% if (it.imageUrl) { %><img class="sg-noshape tw:absolute tw:inset-0 tw:size-full tw:object-cover tw:transition-transform tw:duration-500 tw:group-hover:scale-105" src="<%= it.imageUrl %>"<% if (it.image2) { %> data-sg-hover="<%= it.image2 %>"<% } %> alt="" loading="lazy" decoding="async"><span class="sg-shade tw:absolute tw:inset-0" aria-hidden="true"></span><% } %>
+            <h3 class="tw:relative tw:font-heading tw:text-xl tw:font-semibold"><%= it.title %></h3>
+            <% if (it.description) { %><p class="tw:relative tw:mt-2 tw:text-sm/relaxed tw:text-pretty tw:opacity-90"><%= it.description %></p><% } %>
+            <% if (it.price) { %><p class="tw:relative tw:mt-3 tw:text-sm tw:font-semibold"><%= it.price %></p><% } %>
+          </a>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="tw:mt-8 tw:text-center"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">See all services &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

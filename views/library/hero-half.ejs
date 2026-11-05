@@ -1,0 +1,16 @@
+<%# Adapted from Meraki UI (MIT) marketing/heros "Side image": words on the left half, the photo filling the right half edge to edge and top to bottom, a dark button and a light one. %>
+<section class="sg-lib" data-sg-section="hero/half">
+  <div class="tw:relative tw:bg-page tw:lg:min-h-[36rem]">
+    <div class="tw:mx-auto tw:flex tw:max-w-7xl tw:items-center tw:px-4 tw:py-14 tw:sm:px-6 tw:lg:min-h-[36rem] tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:lg:w-1/2 tw:lg:pr-12">
+        <h1 class="tw:font-heading tw:text-4xl/tight tw:font-bold tw:text-ink tw:sm:text-5xl/tight" data-animate="hero"><%- d.headlineHtml %></h1>
+        <% if (d.sub) { %><p class="tw:mt-4 tw:max-w-xl tw:text-pretty tw:text-muted tw:sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+        <div class="tw:mt-8 tw:flex tw:flex-wrap tw:gap-3" data-animate="hero">
+          <a class="tw:inline-block tw:rounded-md tw:bg-ink tw:px-6 tw:py-3 tw:text-sm tw:font-medium tw:text-page tw:transition-opacity tw:hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+          <% if (d.phone) { %><a class="tw:inline-block tw:rounded-md tw:bg-surface tw:px-6 tw:py-3 tw:text-sm tw:font-medium tw:text-ink tw:transition-colors tw:hover:bg-line" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+        </div>
+      </div>
+    </div>
+    <% if (d.image) { %><img class="tw:h-72 tw:w-full tw:object-cover tw:sm:h-96 tw:lg:absolute tw:lg:inset-y-0 tw:lg:right-0 tw:lg:h-full tw:lg:w-1/2" src="<%= d.image %>" alt="" fetchpriority="high" style="object-position: <%= d.focal %>"><% } %>
+  </div>
+</section>

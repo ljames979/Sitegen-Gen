@@ -1,0 +1,20 @@
+<%# Original layout (card variant): the reason's photo fills the card behind the words; cards without a photo use the brand color. %>
+<section class="sg-lib" data-sg-section="why/bgcards">
+  <div class="bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+      <div class="mx-auto max-w-3xl text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="text-sm font-medium tracking-wide text-primary uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="font-heading text-2xl font-semibold text-ink sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="mt-3 text-pretty text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 <%= d.items.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4' %>" data-sg-cards data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <div class="relative flex min-h-72 flex-col justify-end overflow-hidden rounded-xl p-6 shadow-[var(--shadow-md)] <%= it.imageUrl ? 'text-white' : 'bg-primary text-on-primary' %>">
+            <% if (it.imageUrl) { %><img class="sg-noshape absolute inset-0 size-full object-cover" src="<%= it.imageUrl %>" alt="" loading="lazy" decoding="async"><span class="sg-shade absolute inset-0" aria-hidden="true"></span><% } %>
+            <h3 class="relative font-heading text-xl font-semibold"><%= it.title %></h3><% if (it.text) { %><p class="relative mt-2 text-sm/relaxed text-pretty opacity-90"><%= it.text %></p><% } %>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</section>

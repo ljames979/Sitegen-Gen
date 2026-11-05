@@ -1,0 +1,27 @@
+<%# Original layout ("Word carousel collage"), drawn for SiteGen from a portfolio hero Leo liked: the headline's words rise in one at a time; under it the service names sit in one row through a square photo card, and every few seconds the row slides to the next name, the card wipes to that service's photo and two of the photos scattered around it swap. Pointing at a photo grows it; pointing at or tabbing to a name shows it. With motion off the row stays still and pointing still switches the card. Behavior: public/sg-lib.js. %>
+<section class="sg-lib" data-sg-section="hero/collage">
+  <% var c = d.collage; %>
+  <div class="sg-cl relative overflow-hidden bg-page text-ink"<%- c ? ' data-sg-collage' : '' %>>
+    <div class="mx-auto max-w-5xl px-4 pt-14 text-center sm:px-6 sm:pt-20 lg:px-8">
+      <h1 class="sg-cl-h1 font-heading text-4xl font-light text-balance sm:text-6xl" data-sg-cl-h1><%- d.headlineHtml %></h1>
+      <% if (d.sub) { %><p class="mx-auto mt-5 max-w-2xl text-base text-pretty text-muted sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+    </div>
+    <% if (c) { %>
+      <div class="sg-cl-stage relative mx-auto max-w-7xl" data-sg-cl-stage data-photos="<%= JSON.stringify(c.photos) %>">
+        <% c.tiles.forEach(function (src, i) { %><div class="sg-cl-tile sg-cl-t<%= i + 1 %>" aria-hidden="true"><img class="h-full w-full object-cover" src="<%= src %>" alt="" loading="lazy" data-sg-cl-tile></div><% }) %>
+        <div class="sg-cl-card" aria-hidden="true">
+          <img class="sg-cl-img sg-on h-full w-full object-cover" src="<%= c.words[0].src %>" alt="" data-sg-cl-img>
+          <img class="sg-cl-img h-full w-full object-cover" src="<%= c.words[0].src %>" alt="" data-sg-cl-img>
+        </div>
+        <ul class="sg-cl-row m-0 list-none p-0" aria-label="What we do" data-sg-cl-row>
+          <% c.words.forEach(function (w, i) { %><li><a class="sg-cl-word font-heading<%= i === 0 ? ' sg-on' : '' %>" href="<%= w.href %>" data-sg-cl-word data-photo="<%= w.src %>"><%= w.t %></a></li><% }) %>
+        </ul>
+      </div>
+    <% } %>
+    <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-4 px-4 pt-8 pb-14 sm:px-6 sm:pb-20 lg:px-8" data-animate="hero">
+      <a class="inline-block rounded-md bg-primary px-6 py-3 font-semibold text-on-primary transition hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+      <% if (d.phone) { %><a class="inline-block rounded-md border border-line px-6 py-3 font-medium text-ink transition hover:border-primary" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+      <% if (c && c.moreHref) { %><a class="text-sm text-ink underline underline-offset-4 hover:text-primary" href="<%= c.moreHref %>">See all our services &#8599;</a><% } %>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,16 @@
+<%# Adapted from HyperUI (MIT) marketing/banners/1 with a full-width photo behind the text. %>
+<section class="sg-lib" data-sg-section="hero/overlay">
+  <div class="tw:relative tw:isolate tw:overflow-hidden <%= d.image ? '' : 'tw:bg-primary' %>">
+    <% if (d.image) { %><img class="tw:absolute tw:inset-0 tw:-z-10 tw:h-full tw:w-full tw:object-cover" src="<%= d.image %>" alt="" fetchpriority="high"><div class="tw:absolute tw:inset-0 tw:-z-10 tw:bg-overlay"></div><% } %>
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-20 tw:sm:px-6 tw:sm:py-28 tw:lg:px-8 tw:lg:py-40">
+      <div class="tw:max-w-2xl tw:text-left">
+        <h1 class="tw:font-heading tw:text-4xl tw:font-bold tw:sm:text-6xl <%= d.image ? 'tw:text-white' : 'tw:text-on-primary' %>" data-animate="hero"><%- d.headlineHtml %></h1>
+        <% if (d.sub) { %><p class="tw:mt-4 tw:text-base tw:text-pretty tw:sm:text-lg/relaxed <%= d.image ? 'tw:text-white/90' : 'tw:text-on-primary' %>" data-animate="hero"><%= d.sub %></p><% } %>
+        <div class="tw:mt-6 tw:flex tw:flex-wrap tw:gap-4" data-animate="hero">
+          <a class="tw:inline-block tw:rounded-md tw:bg-page tw:px-5 tw:py-3 tw:font-medium tw:text-ink tw:shadow-[var(--shadow-sm)] tw:transition-opacity tw:hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+          <% if (d.phone) { %><a class="tw:inline-block tw:rounded-md tw:border tw:border-white/70 tw:px-5 tw:py-3 tw:font-medium <%= d.image ? 'tw:text-white' : 'tw:text-on-primary' %> tw:transition-colors tw:hover:bg-white/10" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,22 @@
+<%# Original layout (fanned price cards, drawn from scratch): the priced services as cards laid out like a hand of cards, the middle one raised on the brand color and the side ones tilted. They fan out as the section scrolls into view; on phones they stack straight. %>
+<% var n = d.items.length, mid = (n - 1) / 2; %>
+<section class="sg-lib" data-sg-section="pricing/fan">
+  <div class="bg-page overflow-hidden">
+    <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+      <div class="mx-auto max-w-3xl text-center" data-animate="fade-up">
+        <h2 data-sg-head class="font-heading text-2xl font-semibold text-ink sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="mt-3 text-pretty text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <ul class="sg-pfan m-0 mt-12 grid list-none grid-cols-1 gap-6 p-0 md:gap-0 <%= n === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2' %>" data-sg-progress>
+        <% d.items.forEach(function (it, i) { var o = i - mid, top = n === 3 && i === 1; %>
+          <li class="sg-pfan-card flex flex-col rounded-2xl p-8 <%= top ? 'sg-pfan-top bg-primary text-on-primary shadow-[var(--shadow-md)]' : 'border border-line bg-surface text-ink shadow-[var(--shadow-md)]' %>" style="--o:<%= o %>">
+            <h3 class="font-heading text-xl font-semibold"><%= it.title %></h3>
+            <p class="mt-4 font-heading text-4xl font-bold <%= top ? '' : 'text-primary' %>"><%= it.price %></p>
+            <% if (it.description) { %><p class="mt-4 flex-1 text-pretty <%= top ? 'opacity-90' : 'text-muted' %>"><%= it.description %></p><% } else { %><span class="flex-1"></span><% } %>
+            <a class="mt-6 inline-block self-start rounded-md px-5 py-3 font-medium transition-opacity hover:opacity-90 <%= top ? 'bg-page text-ink' : 'bg-primary text-on-primary' %>" href="<%= it.href %>">Get started</a>
+          </li>
+        <% }) %>
+      </ul>
+    </div>
+  </div>
+</section>

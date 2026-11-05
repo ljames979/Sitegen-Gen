@@ -1,0 +1,16 @@
+<%# Adapted from Meraki UI (MIT) marketing/heros "Side image": words on the left half, the photo filling the right half edge to edge and top to bottom, a dark button and a light one. %>
+<section class="sg-lib" data-sg-section="hero/half">
+  <div class="relative bg-page lg:min-h-[36rem]">
+    <div class="mx-auto flex max-w-7xl items-center px-4 py-14 sm:px-6 lg:min-h-[36rem] lg:px-8 lg:py-20">
+      <div class="lg:w-1/2 lg:pr-12">
+        <h1 class="font-heading text-4xl/tight font-bold text-ink sm:text-5xl/tight" data-animate="hero"><%- d.headlineHtml %></h1>
+        <% if (d.sub) { %><p class="mt-4 max-w-xl text-pretty text-muted sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+        <div class="mt-8 flex flex-wrap gap-3" data-animate="hero">
+          <a class="inline-block rounded-md bg-ink px-6 py-3 text-sm font-medium text-page transition-opacity hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+          <% if (d.phone) { %><a class="inline-block rounded-md bg-surface px-6 py-3 text-sm font-medium text-ink transition-colors hover:bg-line" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+        </div>
+      </div>
+    </div>
+    <% if (d.image) { %><img class="h-72 w-full object-cover sm:h-96 lg:absolute lg:inset-y-0 lg:right-0 lg:h-full lg:w-1/2" src="<%= d.image %>" alt="" fetchpriority="high" style="object-position: <%= d.focal %>"><% } %>
+  </div>
+</section>

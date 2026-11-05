@@ -1,0 +1,18 @@
+<%# Adapted from Meraki UI (MIT) marketing/cta "Card": a card with a photo on one side and the heading and a dark button on the other. %>
+<section class="sg-lib" data-sg-section="cta/photocard">
+  <div class="bg-surface">
+    <div class="mx-auto max-w-5xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+      <div class="overflow-hidden rounded-xl bg-page shadow-[var(--shadow-md)] <%= d.image ? 'md:grid md:grid-cols-2' : '' %>" data-animate="fade-up">
+        <% if (d.image) { %><img class="h-64 w-full object-cover md:h-full" src="<%= d.image %>" alt="" loading="lazy"><% } %>
+        <div class="flex flex-col justify-center p-8 sm:p-10 <%= d.image ? '' : 'text-center' %>">
+          <h2 data-sg-head class="font-heading text-2xl font-bold text-ink sm:text-3xl"><%= d.heading %></h2>
+          <% if (d.text) { %><p class="mt-3 text-pretty text-muted"><%= d.text %></p><% } %>
+          <div class="mt-6 flex flex-wrap gap-3 <%= d.image ? '' : 'justify-center' %>">
+            <a class="inline-block rounded-md bg-ink px-6 py-3 text-sm font-medium text-page transition-opacity hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+            <% if (d.phone) { %><a class="inline-block rounded-md border border-line px-6 py-3 text-sm font-medium text-ink transition-colors hover:bg-surface" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

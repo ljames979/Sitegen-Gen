@@ -1,0 +1,25 @@
+<h3>Blog / News &amp; tips</h3>
+<p class="muted" style="font-size:13px; margin-top:-8px;">Optional. Each post is its own page, and the page appears once there is at least one post. Write real, useful articles in your own words (for example, how to tell when a roof needs replacing). Separate paragraphs with a blank line.</p>
+<label>Heading</label>
+<input type="text" name="blog_heading" value="<%= site.sections.blog.heading %>" maxlength="60">
+<label>Small label above the heading (optional, e.g. "Our care")</label>
+<input type="text" name="blog_eyebrow" value="<%= site.sections.blog.eyebrow || '' %>" maxlength="40">
+<div id="blogList">
+  <% site.sections.blog.items.forEach(item => { %>
+    <div class="service-row">
+      <input type="text" name="blog_title" value="<%= item.title %>" placeholder="Post title" maxlength="120">
+      <input type="text" name="blog_date" value="<%= item.date %>" placeholder="e.g. March 3, 2026" maxlength="40">
+      <textarea name="blog_body" rows="6" maxlength="8000" placeholder="Post text"><%= item.body %></textarea>
+      <button type="button" class="btn-secondary remove-row">✕</button>
+    </div>
+  <% }) %>
+</div>
+<button type="button" class="btn-secondary" data-add="blog">+ Add post</button>
+<template id="tpl-blog">
+  <div class="service-row">
+    <input type="text" name="blog_title" placeholder="Post title" maxlength="120">
+    <input type="text" name="blog_date" placeholder="e.g. March 3, 2026" maxlength="40">
+    <textarea name="blog_body" rows="6" maxlength="8000" placeholder="Post text"></textarea>
+    <button type="button" class="btn-secondary remove-row">✕</button>
+  </div>
+</template>

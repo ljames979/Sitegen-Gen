@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Tell us about your business</title>
+  <style>
+    :root { --ink: #0f172a; --muted: #64748b; --line: #e2e8f0; --brand: #2563eb; --bg: #f8fafc; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; color: var(--ink); background: var(--bg); line-height: 1.5; }
+    .shell { max-width: 720px; margin: 0 auto; padding: 24px 16px 80px; }
+    header.top { text-align: center; padding: 18px 0 8px; }
+    header.top h1 { font-size: clamp(1.6rem, 4vw, 2.1rem); margin: 0 0 6px; }
+    header.top p { color: var(--muted); margin: 0 auto; max-width: 520px; }
+    .bar { height: 6px; background: var(--line); border-radius: 99px; margin: 22px 0 6px; overflow: hidden; }
+    .bar > i { display: block; height: 100%; width: 0; background: var(--brand); border-radius: 99px; transition: width .3s; }
+    .steplabel { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+    .card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 24px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+    .step { display: none; } .step.on { display: block; }
+    h2 { margin: 0 0 4px; font-size: 1.35rem; } .sub { color: var(--muted); margin: 0 0 18px; }
+    label.q, .q-title { display: block; font-weight: 600; margin: 18px 0 4px; }
+    .hint { font-size: 13px; color: var(--muted); margin: 0 0 6px; font-weight: 400; }
+    input[type=text], input[type=email], input[type=tel], input[type=url], input[type=number], textarea, select { width: 100%; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 10px; font: inherit; background: #fff; color: var(--ink); }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+    textarea { min-height: 96px; resize: vertical; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    @media (max-width: 560px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+    .svc { display: grid; grid-template-columns: 1fr; gap: 6px; padding: 12px; border: 1.5px dashed var(--line); border-radius: 12px; margin-bottom: 10px; }
+    .svc.hide { display: none; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip { position: relative; } .chip input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+    .chip span { display: block; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: 999px; background: #fff; font-size: 14px; }
+    .chip input:checked + span { border-color: var(--brand); background: #eff6ff; color: #1d4ed8; font-weight: 600; }
+    .chip input:focus-visible + span { box-shadow: 0 0 0 3px rgba(37,99,235,.25); }
+    .moods { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+    .mood { position: relative; } .mood input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+    .mood div { border: 1.5px solid var(--line); border-radius: 12px; padding: 12px; background: #fff; height: 100%; }
+    .mood i { display: block; height: 8px; border-radius: 99px; margin-bottom: 8px; }
+    .mood b { display: block; font-size: 14px; } .mood small { color: var(--muted); font-size: 12.5px; }
+    .mood input:checked + div { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(37,99,235,.18); }
+    .drop { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 16px; text-align: center; background: #f8fafc; }
+    .drop button { margin-top: 8px; }
+    .thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; justify-content: center; }
+    .thumbs div { position: relative; } .thumbs img { width: 84px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
+    .thumbs button { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: #0f172a; color: #fff; cursor: pointer; line-height: 1; padding: 0; }
+    .nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 24px; }
+    button.btn { font: inherit; font-weight: 600; padding: 12px 22px; border-radius: 10px; border: 0; cursor: pointer; background: var(--brand); color: #fff; }
+    button.btn.alt { background: #fff; color: var(--ink); border: 1.5px solid var(--line); }
+    button.btn:disabled { opacity: .5; cursor: default; }
+    .err { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 12px 14px; border-radius: 10px; margin: 0 0 16px; }
+    .err ul { margin: 0; padding-left: 18px; }
+    .field-err { color: #b91c1c; font-size: 13px; margin: 4px 0 0; }
+    .check { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; margin-top: 14px; }
+    .check input { margin-top: 4px; width: 18px; height: 18px; }
+    .center { text-align: center; padding: 40px 10px; } .big { font-size: 48px; }
+    .small { font-size: 13px; color: var(--muted); }
+  </style>
+</head>
+<body>
+<div class="shell">
+<% if (mode === 'closed') { %>
+  <div class="card center"><h2>This link is not active</h2><p class="sub">Please ask the person who sent it for a new one.</p></div>
+<% } else if (mode === 'done') { %>
+  <div class="card center">
+    <div class="big" aria-hidden="true">&#10003;</div>
+    <h2>Thank you!</h2>
+    <p class="sub">We received your answers and will start building your website. We will be in touch soon with a first look.</p>
+  </div>
+  <script>try { localStorage.removeItem('intake-<%= token %>'); } catch (e) {}</script>
+<% } else { %>
+  <header class="top">
+    <h1>Tell us about your business</h1>
+    <p>A few friendly questions so we can build your website with your real information. It takes about 10 minutes, and you can skip anything you are unsure about.</p>
+  </header>
+  <div class="bar"><i id="barFill"></i></div>
+  <div class="steplabel" id="stepLabel"></div>
+  <% if (errors && errors.length) { %><div class="err" role="alert"><ul><% errors.forEach(e => { %><li><%= e %></li><% }) %></ul></div><% } %>
+  <form method="POST" action="/start/<%= token %>" id="qForm" novalidate class="card">
+    <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute; left:-9999px;" aria-hidden="true">
+
+    <section class="step" data-title="Your business">
+      <h2>Your business</h2><p class="sub">The basics.</p>
+      <label class="q" for="biz_name">Business name *</label>
+      <input type="text" id="biz_name" name="biz_name" maxlength="80" required autocomplete="organization">
+      <label class="q" for="biz_type">What kind of business is it? *</label>
+      <p class="hint">For example: roofing company, hair salon, bakery, insurance agency, home care agency.</p>
+      <input type="text" id="biz_type" name="biz_type" maxlength="100" required>
+      <div class="grid2">
+        <div><label class="q" for="city">City or area you serve</label><input type="text" id="city" name="city" maxlength="80" placeholder="Kissimmee, FL"></div>
+        <div><label class="q" for="years">Years in business</label><input type="number" id="years" name="years" min="0" max="199" inputmode="numeric"></div>
+      </div>
+      <label class="q" for="tagline">In one sentence, what do you do for customers?</label>
+      <p class="hint">This can appear under your main headline. Write it the way you would say it out loud.</p>
+      <input type="text" id="tagline" name="tagline" maxlength="160">
+    </section>
+
+    <section class="step" data-title="What you offer">
+      <h2>What you offer</h2><p class="sub">List your main services or products, with a line about each. Add a price only if you want it shown on the site; we never make one up.</p>
+      <div id="svcList">
+        <% for (let i = 0; i < 8; i++) { %>
+          <div class="svc <%= i >= 4 ? 'hide' : '' %>"><input type="text" name="svc_name" maxlength="60" placeholder="Service <%= i + 1 %> name<%= i === 0 ? ' (for example: Roof repair)' : '' %>" aria-label="Service <%= i + 1 %> name"><input type="text" name="svc_desc" maxlength="300" placeholder="A short description (optional)" aria-label="Service <%= i + 1 %> description"><input type="text" name="svc_price" maxlength="40" placeholder="Price, if you want it shown (for example: From $85)" aria-label="Service <%= i + 1 %> price"></div>
+        <% } %>
+      </div>
+      <button type="button" class="btn alt" id="moreSvc">+ Add another service</button>
+      <label class="q" for="areas">Towns or neighborhoods you serve</label>
+      <p class="hint">Separate with commas.</p>
+      <input type="text" id="areas" name="areas" maxlength="400" placeholder="Kissimmee, St. Cloud, Celebration">
+      <div class="q-title">What makes you different from others? (optional)</div>
+      <p class="hint">One short point per line, up to four. Only say things that are true and that you could back up. We will not add any of our own.</p>
+      <% for (let i = 0; i < 4; i++) { %><input type="text" name="diff_item" maxlength="160" placeholder="<%= ['For example: we answer the phone ourselves', 'Another point', 'Another point', 'Another point'][i] %>" aria-label="Difference <%= i + 1 %>" style="margin-bottom:8px;"><% } %>
+    </section>
+
+    <section class="step" data-title="Your story">
+      <h2>Your story</h2><p class="sub">Help visitors get to know you.</p>
+      <label class="q" for="about">Tell us about your business</label>
+      <p class="hint">How you started, who you help, what you care about. A few sentences is plenty. We use your own words.</p>
+      <textarea id="about" name="about" maxlength="1500" style="min-height:140px;"></textarea>
+      <label class="q" for="badges">Licenses, certifications, insurance or awards you can show (optional)</label>
+      <p class="hint">Separate with commas. Only list things you really hold. These appear on the site as facts.</p>
+      <input type="text" id="badges" name="badges" maxlength="400" placeholder="Licensed &amp; insured, BBB member">
+      <div class="q-title">Common questions customers ask (optional)</div>
+      <p class="hint">Up to six, with your answers in your own words. They appear in the FAQ section, exactly as you write them. If you leave this empty, there will be no FAQ until you add real answers.</p>
+      <% for (let i = 0; i < 6; i++) { %>
+        <div class="svc <%= i >= 2 ? 'hide' : '' %>" data-faq><input type="text" name="faq_q" maxlength="160" placeholder="Question <%= i + 1 %>" aria-label="Question <%= i + 1 %>"><textarea name="faq_a" maxlength="500" style="min-height:64px;" placeholder="Your answer" aria-label="Answer <%= i + 1 %>"></textarea></div>
+      <% } %>
+      <button type="button" class="btn alt" id="moreFaq">+ Add another question</button>
+      <div class="q-title" style="margin-top:20px;">How should the writing sound? (optional)</div>
+      <div class="moods" role="radiogroup" aria-label="Tone of voice" style="margin-top:6px;">
+        <% intakeLib.TONES.forEach(t => { %><label class="mood"><input type="radio" name="tone" value="<%= t[0] %>" <%= t[0] === '' ? 'checked' : '' %>><div><b><%= t[1] %></b></div></label><% }) %>
+      </div>
+    </section>
+
+    <section class="step" data-title="Contact and hours">
+      <h2>Contact and hours</h2><p class="sub">How customers reach you. This is shown on your site.</p>
+      <div class="grid2">
+        <div><label class="q" for="phone">Phone</label><input type="tel" id="phone" name="phone" maxlength="40" autocomplete="tel"></div>
+        <div><label class="q" for="email">Email for customers</label><input type="email" id="email" name="email" maxlength="254"></div>
+      </div>
+      <label class="q" for="address">Business address (leave empty if you travel to customers)</label>
+      <input type="text" id="address" name="address" maxlength="200" autocomplete="street-address">
+      <div class="q-title">Business hours</div>
+      <p class="hint">For example: 9am - 5pm. Write Closed if you are closed.</p>
+      <div class="grid3">
+        <div><label class="hint" for="hrs_weekday">Monday to Friday</label><input type="text" id="hrs_weekday" name="hrs_weekday" maxlength="40"></div>
+        <div><label class="hint" for="hrs_sat">Saturday</label><input type="text" id="hrs_sat" name="hrs_sat" maxlength="40"></div>
+        <div><label class="hint" for="hrs_sun">Sunday</label><input type="text" id="hrs_sun" name="hrs_sun" maxlength="40"></div>
+      </div>
+      <div class="q-title">Social media (optional)</div>
+      <div class="grid2">
+        <div><label class="hint" for="facebook">Facebook page link</label><input type="url" id="facebook" name="facebook" maxlength="300" placeholder="https://facebook.com/..."></div>
+        <div><label class="hint" for="instagram">Instagram link</label><input type="url" id="instagram" name="instagram" maxlength="300" placeholder="https://instagram.com/..."></div>
+      </div>
+    </section>
+
+    <section class="step" data-title="Look and feel">
+      <h2>Look and feel</h2><p class="sub">Pick the style that feels most like your business. You can change it later.</p>
+      <div class="moods" role="radiogroup" aria-label="Style">
+        <% intakeLib.MOODS.forEach((m, i) => { %>
+          <label class="mood"><input type="radio" name="mood" value="<%= m[0] %>" <%= m[0] === '' ? 'checked' : '' %>><div><i style="background:<%= m[3] %>"></i><b><%= m[1] %></b><small><%= m[2] %></small></div></label>
+        <% }) %>
+      </div>
+      <div class="q-title">Your brand color</div>
+      <p class="hint">If you have a color you always use, pick it. Otherwise leave this alone and we will choose.</p>
+      <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <input type="color" name="brand_color" id="brand_color" value="#2563eb" style="width:56px; height:44px; padding:2px; border:1.5px solid var(--line); border-radius:10px;">
+        <label class="check" style="margin:0;"><input type="checkbox" name="no_color" id="no_color" value="1" checked> No preference, choose for me</label>
+      </div>
+      <div class="q-title" style="margin-top:22px;">Your logo (optional)</div>
+      <div class="drop"><div id="logoThumb" class="thumbs"></div><div class="small">PNG or JPG, up to 8 MB</div><button type="button" class="btn alt" id="logoBtn">Choose logo</button><input type="file" id="logoFile" accept="image/*" hidden></div>
+      <div class="q-title" style="margin-top:22px;">Photos of your work, team or location (optional)</div>
+      <p class="hint">Up to 8. Real photos make a big difference. Only upload photos you own or have permission to use.</p>
+      <div class="drop"><div id="photoThumbs" class="thumbs"></div><div class="small" id="photoStatus">Up to 8 photos, 8 MB each</div><button type="button" class="btn alt" id="photoBtn">Choose photos</button><input type="file" id="photoFile" accept="image/*" multiple hidden></div>
+      <label class="check"><input type="checkbox" name="stock_ok" value="1" checked> If I do not have enough photos, it is fine to use stock photos for now</label>
+      <label class="q" for="inspo">Websites you like (optional)</label>
+      <p class="hint">Paste up to three links, one per line.</p>
+      <textarea id="inspo" name="inspo" maxlength="600" style="min-height:70px;"></textarea>
+      <label class="q" for="inspo_like">What do you like about them?</label>
+      <input type="text" id="inspo_like" name="inspo_like" maxlength="400">
+    </section>
+
+    <section class="step" data-title="Goals">
+      <h2>What should your website do?</h2><p class="sub">This helps us set it up the right way.</p>
+      <div class="q-title">The most important goal</div>
+      <div class="chips" role="radiogroup" aria-label="Main goal">
+        <% intakeLib.GOALS.forEach(g => { %><label class="chip"><input type="radio" name="goal" value="<%= g[0] %>"><span><%= g[1] %></span></label><% }) %>
+      </div>
+      <div class="q-title" style="margin-top:22px;">Anything extra you would like? (tick any)</div>
+      <div class="chips">
+        <% intakeLib.FEATURES.forEach(f => { %><label class="chip"><input type="checkbox" name="features" value="<%= f[0] %>"><span><%= f[1] %></span></label><% }) %>
+      </div>
+      <label class="q" for="notes">Anything else we should know? (optional)</label>
+      <textarea id="notes" name="notes" maxlength="1500"></textarea>
+    </section>
+
+    <section class="step" data-title="Finish">
+      <h2>Almost done</h2><p class="sub">Who should we contact about your website?</p>
+      <label class="q" for="contact_name">Your name *</label>
+      <input type="text" id="contact_name" name="contact_name" maxlength="100" required autocomplete="name">
+      <div class="grid2">
+        <div><label class="q" for="contact_email">Your email *</label><input type="email" id="contact_email" name="contact_email" maxlength="254" required autocomplete="email"></div>
+        <div><label class="q" for="contact_phone">Your phone</label><input type="tel" id="contact_phone" name="contact_phone" maxlength="40" autocomplete="tel"></div>
+      </div>
+      <label class="check"><input type="checkbox" name="agree" value="1" id="agree"> I confirm the information I gave is accurate, and I have the right to use the logo and photos I uploaded. *</label>
+      <p class="small" style="margin-top:14px;">Your answers go only to the person who sent you this link.</p>
+    </section>
+
+    <div id="stepErr" class="field-err" role="alert" style="margin-top:14px;"></div>
+    <div class="nav"><button type="button" class="btn alt" id="backBtn">Back</button><button type="button" class="btn" id="nextBtn">Next</button></div>
+  </form>
+
+  <script>
+    (function () {
+      var KEY = 'intake-<%= token %>', form = document.getElementById('qForm');
+      var steps = [].slice.call(form.querySelectorAll('.step')), cur = 0;
+      var back = document.getElementById('backBtn'), next = document.getElementById('nextBtn'), err = document.getElementById('stepErr');
+      function save() {
+        var o = {}; var seen = {};
+        [].forEach.call(form.elements, function (el) {
+          if (!el.name || el.name === 'website' || el.type === 'file') return;
+          var i = seen[el.name] = (seen[el.name] || 0) + 1; var k = el.name + '#' + i;
+          o[k] = (el.type === 'checkbox' || el.type === 'radio') ? el.checked : el.value;
+        });
+        try { localStorage.setItem(KEY, JSON.stringify({ v: o, step: cur })); } catch (e) {}
+      }
+      function restore() {
+        var s; try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {} if (!s) return;
+        var seen = {};
+        [].forEach.call(form.elements, function (el) {
+          if (!el.name || el.name === 'website' || el.type === 'file') return;
+          var i = seen[el.name] = (seen[el.name] || 0) + 1; var k = el.name + '#' + i; if (!(k in s.v)) return;
+          if (el.type === 'checkbox' || el.type === 'radio') el.checked = !!s.v[k]; else el.value = s.v[k];
+        });
+        [].forEach.call(form.querySelectorAll('.svc.hide'), function (row) { if ([].some.call(row.querySelectorAll('input,textarea'), function (i) { return i.value; })) row.classList.remove('hide'); });
+        (s.photos || []).forEach(function (u) { addPhoto(u); }); if (s.logo) setLogo(s.logo);
+      }
+      function show(n) {
+        cur = Math.max(0, Math.min(steps.length - 1, n));
+        steps.forEach(function (s, i) { s.classList.toggle('on', i === cur); });
+        document.getElementById('barFill').style.width = ((cur + 1) / steps.length * 100) + '%';
+        document.getElementById('stepLabel').textContent = 'Step ' + (cur + 1) + ' of ' + steps.length + ' · ' + steps[cur].dataset.title;
+        back.style.visibility = cur ? 'visible' : 'hidden';
+        next.textContent = cur === steps.length - 1 ? 'Send my answers' : 'Next';
+        err.textContent = ''; window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      function check() {
+        var bad = [].filter.call(steps[cur].querySelectorAll('[required]'), function (el) { return !el.value.trim() || (el.type === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(el.value)); });
+        if (cur === steps.length - 1 && !document.getElementById('agree').checked) { err.textContent = 'Please tick the box to confirm.'; return false; }
+        if (bad.length) { err.textContent = 'Please fill in: ' + bad.map(function (b) { var l = form.querySelector('label[for="' + b.id + '"]'); return l ? l.textContent.replace(' *', '') : b.name; }).join(', ') + '.'; bad[0].focus(); return false; }
+        return true;
+      }
+      next.onclick = function () { if (!check()) return; save(); if (cur === steps.length - 1) { next.disabled = true; next.textContent = 'Sending...'; form.submit(); } else show(cur + 1); };
+      back.onclick = function () { save(); show(cur - 1); };
+      form.addEventListener('input', save); form.addEventListener('change', save);
+      form.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); next.click(); } });
+      document.getElementById('moreSvc').onclick = function () { var h = form.querySelector('#svcList .svc.hide'); if (h) h.classList.remove('hide'); else this.disabled = true; };
+      document.getElementById('moreFaq').onclick = function () { var h = form.querySelector('[data-faq].hide'); if (h) h.classList.remove('hide'); else this.disabled = true; };
+      document.getElementById('brand_color').addEventListener('input', function () { document.getElementById('no_color').checked = false; });
+
+      // uploads
+      var photos = [], logo = '';
+      function upload(file) { var fd = new FormData(); fd.append('image', file); return fetch('/start/<%= token %>/upload', { method: 'POST', body: fd }).then(function (r) { return r.json(); }); }
+      function hidden(name, value) { var i = document.createElement('input'); i.type = 'hidden'; i.name = name; i.value = value; i.dataset.up = '1'; form.appendChild(i); return i; }
+      function saveUp() { try { var s = JSON.parse(localStorage.getItem(KEY) || '{}'); s.photos = photos; s.logo = logo; localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} }
+      function thumb(box, url, onRemove) { var d = document.createElement('div'); d.innerHTML = '<img alt=""><button type="button" aria-label="Remove">&times;</button>'; d.firstChild.src = url; d.lastChild.onclick = function () { d.remove(); onRemove(); }; box.appendChild(d); }
+      function setLogo(url) { logo = url; var box = document.getElementById('logoThumb'); box.innerHTML = ''; var h = form.querySelector('input[data-up][name=logo]'); if (h) h.remove(); if (!url) { saveUp(); return; } hidden('logo', url); thumb(box, url, function () { setLogo(''); }); saveUp(); }
+      function addPhoto(url) { if (photos.length >= 8) return; photos.push(url); var h = hidden('photos', url); thumb(document.getElementById('photoThumbs'), url, function () { photos = photos.filter(function (p) { return p !== url; }); h.remove(); saveUp(); }); saveUp(); }
+      document.getElementById('logoBtn').onclick = function () { document.getElementById('logoFile').click(); };
+      document.getElementById('photoBtn').onclick = function () { document.getElementById('photoFile').click(); };
+      document.getElementById('logoFile').onchange = function () { var f = this.files[0]; if (!f) return; var st = document.getElementById('logoBtn'); st.textContent = 'Uploading...'; upload(f).then(function (j) { if (j.ok) setLogo(j.url); else err.textContent = j.error || 'Upload failed.'; }).catch(function () { err.textContent = 'Upload failed.'; }).then(function () { st.textContent = 'Choose logo'; }); this.value = ''; };
+      document.getElementById('photoFile').onchange = function () {
+        var files = [].slice.call(this.files, 0, 8 - photos.length), st = document.getElementById('photoStatus'); this.value = '';
+        if (!files.length) return; st.textContent = 'Uploading ' + files.length + '...';
+        files.reduce(function (p, f) { return p.then(function () { return upload(f).then(function (j) { if (j.ok) addPhoto(j.url); else err.textContent = j.error || 'A photo failed to upload.'; }); }); }, Promise.resolve())
+          .catch(function () { err.textContent = 'A photo failed to upload.'; }).then(function () { st.textContent = photos.length + ' of 8 photos added'; });
+      };
+      restore(); var st0; try { st0 = (JSON.parse(localStorage.getItem(KEY) || 'null') || {}).step; } catch (e) {} show(st0 || 0);
+    })();
+  </script>
+<% } %>
+</div>
+</body>
+</html>

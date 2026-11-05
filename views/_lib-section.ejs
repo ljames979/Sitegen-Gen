@@ -1,0 +1,9 @@
+<%# One library section wrapped with its per-section options (emoji, hand-drawn underline, background, size, photo).
+    Expects: item = { file, d, opts }; optional icon (a Lottie icon name shown above the section) %>
+<% const _w = libWrap(item.opts || {}, typeof site !== 'undefined' ? site.theme : {}); const _sd = _w.side;
+   const _inner = '<div class="sg-sec-in">' + ((typeof icon !== 'undefined' && icon) ? '<div class="sg-lottie-row" data-animate="fade-up"><span class="sg-lottie sm" data-lottie="' + icon + '" aria-hidden="true"></span></div>' : ''); %>
+<div class="sg-sec"<% if (item.family) { %> data-sg-fam="<%= item.family %>"<% } %><% if (item.ci != null) { %> data-sg-ci="<%= item.ci %>"<% } %><%- _w.attrs %><%- _w.style %>><%
+  if (_sd && (_sd.pos === 'above')) { %><figure class="sg-side-photo sg-band"><img src="<%= _sd.url %>" alt="" loading="lazy" decoding="async"></figure><% }
+  if (_sd && (_sd.pos === 'left' || _sd.pos === 'right')) { %><div class="sg-side-wrap"><figure class="sg-side-photo"><img src="<%= _sd.url %>" alt="" loading="lazy" decoding="async"></figure><% } %><%- _inner %><%- include('library/' + item.file, { d: item.d }) %></div><% if (_sd && (_sd.pos === 'left' || _sd.pos === 'right')) { %></div><% }
+  if (item.family === 'hero' && typeof site !== 'undefined' && site.sections && site.sections.hero) { %><%- include('_stickers', { list: site.sections.hero.stickers }) %><% }
+  if (_sd && _sd.pos === 'below') { %><figure class="sg-side-photo sg-band"><img src="<%= _sd.url %>" alt="" loading="lazy" decoding="async"></figure><% } %></div>

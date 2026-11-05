@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Email preferences</title>
+  <meta name="robots" content="noindex, nofollow">
+  <%- include('partials-head') %>
+</head>
+<body>
+  <div class="narrow card" style="text-align:center;">
+    <% if (done) { %>
+      <h2>You're unsubscribed</h2>
+      <p class="muted">You won't get any more automatic follow-up emails from this business.</p>
+    <% } else { %>
+      <h2>Stop these emails?</h2>
+      <p class="muted">You won't get any more automatic follow-up emails.</p>
+      <form method="POST" action="/unsubscribe/<%= token %>"><button type="submit">Yes, stop emailing me</button></form>
+    <% } %>
+  </div>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<h3>Extra pages</h3>
+<p class="muted" style="font-size:13px; margin-top:-8px;">Add your own pages, such as Financing, Service plans, Careers or Service area details. Each one appears in the menu (use the arrows to change its place there) and gets its own address (pick it under Previewing to see it). Only write what is true for this business; separate paragraphs with a blank line.</p>
+<input type="hidden" name="extraPages_heading" value="<%= site.sections.extraPages.heading %>">
+<div id="extraList">
+  <% site.sections.extraPages.items.forEach(item => { %>
+    <div class="service-row">
+      <input type="text" name="extra_title" value="<%= item.title %>" placeholder="Page title (e.g. Financing)" maxlength="60">
+      <textarea name="extra_body" rows="6" maxlength="8000" placeholder="Page text"><%= item.body %></textarea>
+      <button type="button" class="btn-secondary remove-row">✕</button>
+      <p class="muted extra-need" style="font-size:12.5px; margin:2px 0 0; color:#92400e;"<%= item.title && item.body ? " hidden" : "" %>>Not on the site yet: a page needs a title and some text before it shows in the menu.</p>
+    </div>
+  <% }) %>
+</div>
+<button type="button" class="btn-secondary" data-add="extra">+ Add page</button>
+<template id="tpl-extra">
+  <div class="service-row">
+    <input type="text" name="extra_title" placeholder="Page title (e.g. Financing)" maxlength="60">
+    <textarea name="extra_body" rows="6" maxlength="8000" placeholder="Page text"></textarea>
+    <button type="button" class="btn-secondary remove-row">✕</button>
+    <p class="muted extra-need" style="font-size:12.5px; margin:2px 0 0; color:#92400e;">Not on the site yet: a page needs a title and some text before it shows in the menu.</p>
+  </div>
+</template>

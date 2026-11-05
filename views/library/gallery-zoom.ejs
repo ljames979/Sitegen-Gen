@@ -1,0 +1,21 @@
+<%# Original layout (grid zoom, drawn from scratch): a photo collage whose middle photo grows to fill the screen while the others slide away, as the visitor scrolls through it. With motion off it is a still collage. Uses 3, 5 or 7 photos, whole columns only. Optional floating tags show the client's own service names. %>
+<% var all = (d.all && d.all.length ? d.all : d.images) || [], pics = all.slice(0, all.length >= 7 ? 7 : all.length >= 5 ? 5 : 3), k = (pics.length - 1) / 2, feat = pics[0], side = pics.slice(1); %>
+<section class="sg-lib" data-sg-section="gallery/zoom">
+  <div class="tw:bg-page">
+  <div class="sg-zoom tw:mx-auto tw:max-w-[120rem] tw:py-0" data-sg-progress="pin" style="--rows:<%= k %>">
+    <div class="sg-zoom-pin tw:relative tw:overflow-hidden">
+      <div class="sg-zoom-head tw:relative tw:z-10 tw:mx-auto tw:max-w-3xl tw:px-4 tw:pt-12 tw:text-center tw:lg:pt-16" data-animate="fade-up">
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+      </div>
+      <div class="sg-zoom-grid tw:relative tw:mx-auto tw:mt-8 tw:grid tw:max-w-6xl tw:grid-cols-3 tw:gap-3 tw:px-4 tw:sm:gap-4 tw:sm:px-6 tw:lg:px-8">
+        <% side.forEach(function (im, i) { var left = i < k; %>
+          <img class="sg-zoom-side <%= left ? 'sg-zoom-l' : 'sg-zoom-r' %> tw:size-full tw:rounded-xl tw:object-cover" style="grid-column:<%= left ? 1 : 3 %>;grid-row:<%= (left ? i : i - k) + 1 %>" src="<%= im.src %>" alt="<%= im.alt %>" loading="lazy" decoding="async">
+        <% }) %>
+        <figure class="sg-zoom-feat tw:relative tw:m-0 tw:overflow-hidden tw:rounded-xl" style="grid-column:2;grid-row:1 / span <%= k %>"><img class="tw:block tw:size-full tw:object-cover" src="<%= feat.src %>" alt="<%= feat.alt %>" loading="lazy" decoding="async"></figure>
+        <% (d.tags || []).slice(0, 3).forEach(function (t, i) { %><span class="sg-tag sg-tag-<%= i + 1 %>" aria-hidden="true"><%= t %></span><% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="sg-zoom-more tw:relative tw:z-10 tw:mt-6 tw:px-4 tw:pb-10 tw:text-center"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">See the full gallery &rarr;</a></p><% } %>
+    </div>
+  </div>
+  </div>
+</section>

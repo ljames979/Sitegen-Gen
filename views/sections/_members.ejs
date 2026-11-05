@@ -1,0 +1,22 @@
+<%# Members area settings (inside the editor form). %>
+<% const mc = membersLib.clean(site.sections.members); %>
+<p class="muted" style="font-size:13px; margin-top:0;">A password-protected page for your customers or students: a log-in, and pages only signed-in people can see (files, links, notes). Only on the live address, not in a downloaded copy. Do not put anything here that must stay secret at a bank level; it is meant for ordinary members-only content.</p>
+<label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" style="width:auto;" name="members_enabled" value="1" <%= mc.enabled ? 'checked' : '' %>> Turn on the members area</label>
+<label>Page heading</label><input type="text" name="members_title" value="<%= mc.title %>" maxlength="60">
+<label>Menu label</label><input type="text" name="members_navLabel" value="<%= mc.navLabel %>" maxlength="20">
+<label>Intro (shown above the log-in)</label><textarea name="members_intro" rows="2" maxlength="400"><%= mc.intro %></textarea>
+<label>Who can sign up</label>
+<select name="members_signup">
+  <option value="approval" <%= mc.signup === 'approval' ? 'selected' : '' %>>Anyone can ask; I approve each person</option>
+  <option value="open" <%= mc.signup === 'open' ? 'selected' : '' %>>Anyone can sign up and get in straight away</option>
+  <option value="invite" <%= mc.signup === 'invite' ? 'selected' : '' %>>Only people I add myself</option>
+</select>
+<h4 style="margin:18px 0 6px;">Members-only pages</h4>
+<% for (let i = 0; i < 6; i++) { const p = mc.pages[i] || {}; %>
+  <div style="border:1px solid var(--border); border-radius:8px; padding:10px; margin-bottom:8px;">
+    <input type="text" name="members_page_title" value="<%= p.title || '' %>" placeholder="Title (leave empty to skip)" maxlength="80">
+    <textarea name="members_page_body" rows="2" placeholder="Text" maxlength="2000"><%= p.body || '' %></textarea>
+    <div style="display:flex; gap:8px;"><input type="text" name="members_page_linkLabel" value="<%= p.linkLabel || '' %>" placeholder="Button label" maxlength="40"><input type="text" name="members_page_linkUrl" value="<%= p.linkUrl || '' %>" placeholder="Button link (https://…)" maxlength="500"></div>
+  </div>
+<% } %>
+<p style="margin:8px 0 0;"><a href="/sites/<%= site.id %>/members">Manage members</a> (approve, add, disable)</p>

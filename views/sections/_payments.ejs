@@ -1,0 +1,15 @@
+<% const pc = payLib.normalize(site.sections.payments); %>
+<label class="check"><input type="checkbox" name="pay_enabled" value="1" <%= pc.enabled ? 'checked' : '' %>> Take card payments on this site (through your own Stripe account)</label>
+<p class="muted" style="font-size:12.5px;">Money goes straight into your Stripe account. SiteGen never touches it. Used for booking deposits, "pay now" buttons on services, and payment requests you send for quotes and invoices (see <a href="/sites/<%= site.id %>/payments">Payments</a>).</p>
+<label>Your Stripe secret or restricted key</label>
+<input type="password" name="stripe_key" value="" autocomplete="new-password" placeholder="<%= site.stripe_key_hint ? 'Saved: ' + site.stripe_key_hint + '. Paste a new one to replace it.' : 'sk_live_... or rk_live_...' %>" maxlength="200">
+<p class="muted" style="font-size:12.5px; margin:4px 0 0;">In Stripe: Developers, API keys. A restricted key that allows "Checkout Sessions: write" is safest. The key is stored encrypted and is never shown again.
+<% if (site.stripe_key_hint) { %><label class="check" style="margin-top:6px;"><input type="checkbox" name="stripe_key_remove" value="1"> Remove the saved key</label><% } %></p>
+<div class="row" style="margin-top:8px;">
+  <div style="flex:0 0 140px;"><label>Currency</label><select name="pay_currency"><% Object.keys(payLib.CURRENCIES).forEach(c => { %><option value="<%= c %>" <%= pc.currency === c ? 'selected' : '' %>><%= c.toUpperCase() %></option><% }) %></select></div>
+  <div style="flex:1;"><label>Booking deposit</label>
+    <select name="pay_depositMode"><option value="" <%= !pc.depositMode ? 'selected' : '' %>>No deposit</option><option value="fixed" <%= pc.depositMode === 'fixed' ? 'selected' : '' %>>A fixed amount per booking</option><option value="percent" <%= pc.depositMode === 'percent' ? 'selected' : '' %>>A percent of the service price (needs prices on services)</option></select></div>
+  <div style="flex:0 0 120px;"><label>Amount</label><input type="text" name="pay_depositAmount" value="<%= pc.depositAmount %>" placeholder="25" maxlength="10" inputmode="decimal"></div>
+</div>
+<label>Button wording (optional)</label>
+<input type="text" name="pay_buyLabel" value="<%= pc.buyLabel %>" placeholder="Pay online" maxlength="30">

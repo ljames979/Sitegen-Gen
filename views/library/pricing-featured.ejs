@@ -1,0 +1,31 @@
+<%# Original layout (one featured price beside the rest, drawn from scratch): the first priced service is the feature, on the brand color. %>
+<section class="sg-lib" data-sg-section="pricing/featured">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-5xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <% var first = d.items[0], rest = d.items.slice(1); %>
+      <div class="tw:mt-10 tw:grid tw:grid-cols-1 tw:gap-6 tw:md:grid-cols-5" data-animate="stagger">
+        <div class="tw:flex tw:flex-col tw:rounded-2xl tw:bg-primary tw:p-8 tw:shadow-[var(--shadow-md)] <%= rest.length ? 'tw:md:col-span-3' : 'tw:md:col-span-5' %>">
+          <h3 class="tw:font-heading tw:text-xl tw:font-semibold tw:text-on-primary"><%= first.title %></h3>
+          <p class="tw:mt-4 tw:font-heading tw:text-5xl tw:font-bold tw:text-on-primary"><%= first.price %></p>
+          <% if (first.description) { %><p class="tw:mt-4 tw:flex-1 tw:text-pretty tw:text-on-primary tw:opacity-90"><%= first.description %></p><% } %>
+          <a class="tw:mt-6 tw:inline-block tw:self-start tw:rounded-md tw:bg-page tw:px-5 tw:py-3 tw:font-medium tw:text-ink tw:transition-opacity tw:hover:opacity-90" href="<%= first.href %>">Get started</a>
+        </div>
+        <% if (rest.length) { %>
+          <ul class="tw:list-none tw:space-y-4 tw:p-0 tw:md:col-span-2">
+            <% rest.forEach(function (it) { %>
+              <li class="tw:rounded-xl tw:border tw:border-line tw:bg-surface tw:p-5">
+                <div class="tw:flex tw:items-baseline tw:justify-between tw:gap-3"><span class="tw:font-heading tw:font-semibold tw:text-ink"><%= it.title %></span><span class="tw:font-heading tw:text-xl tw:font-bold tw:text-primary"><%= it.price %></span></div>
+                <% if (it.description) { %><p class="tw:mt-1 tw:text-sm/relaxed tw:text-pretty tw:text-muted"><%= it.description %></p><% } %>
+                <a class="tw:mt-2 tw:inline-block tw:text-sm tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= it.href %>">Details &rarr;</a>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>

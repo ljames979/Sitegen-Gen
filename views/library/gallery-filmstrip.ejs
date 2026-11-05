@@ -1,0 +1,22 @@
+<%# Original layout (filmstrip): one row of photos that scrolls sideways (swipe on phones, arrows on desktop). %>
+<% var pics = (d.all && d.all.length ? d.all : d.images) || []; %>
+<section class="sg-lib" data-sg-section="gallery/filmstrip">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+      </div>
+      <div class="tw:relative tw:mt-8" data-sg-carousel>
+        <div class="tw:flex tw:snap-x tw:snap-mandatory tw:gap-4 tw:overflow-x-auto tw:pb-4" data-sg-track>
+          <% pics.forEach(function (im) { %><img class="tw:h-64 tw:w-auto tw:max-w-none tw:shrink-0 tw:snap-start tw:rounded-xl tw:object-cover tw:sm:h-80" src="<%= im.src %>" alt="<%= im.alt %>" loading="lazy"><% }) %>
+        </div>
+        <div data-sg-arrows hidden><div class="tw:mt-2 tw:flex tw:justify-center tw:gap-3">
+          <button type="button" class="tw:size-10 tw:rounded-full tw:border tw:border-line tw:bg-page tw:text-ink tw:transition-colors tw:hover:border-primary" aria-label="Previous photo" data-sg-prev>&larr;</button>
+          <button type="button" class="tw:size-10 tw:rounded-full tw:border tw:border-line tw:bg-page tw:text-ink tw:transition-colors tw:hover:border-primary" aria-label="Next photo" data-sg-next>&rarr;</button>
+        </div></div>
+      </div>
+      <% if (d.moreHref) { %><p class="tw:mt-8 tw:text-center"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">See the full gallery &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

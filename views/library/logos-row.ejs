@@ -1,0 +1,11 @@
+<%# Adapted from HyperUI (MIT) marketing/logo-clouds: partner or certification logos the client uploaded. %>
+<section class="sg-lib" data-sg-section="logos/row">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-10 tw:sm:px-6 tw:lg:px-8">
+      <% if (d.heading) { %><p class="tw:text-center tw:text-sm tw:font-medium tw:tracking-wide tw:text-muted tw:uppercase"><%= d.heading %></p><% } %>
+      <div class="tw:mt-6 tw:flex tw:flex-wrap tw:items-center tw:justify-center tw:gap-x-10 tw:gap-y-6" data-animate="fade-up">
+        <% d.items.forEach(function (l) { %><img class="tw:h-10 tw:w-auto tw:max-w-40 tw:object-contain tw:opacity-80" src="<%= l.src %>" alt="<%= l.alt %>" loading="lazy"><% }) %>
+      </div>
+    </div>
+  </div>
+</section>

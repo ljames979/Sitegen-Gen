@@ -1,0 +1,80 @@
+<%# Original layout ("Showcase strip"): the headline beside the site's own photos gliding past as tilted cards (a pause button, and still for visitors who turn motion off), with a proof bar under it: a real number, the site's badges or certification logos one after another, and its real reviews one after another. Dark colors come from scrimhero.js, so the words stay readable in every style. %>
+<section class="sg-lib" data-sg-section="hero/showcase">
+  <% var glide = d.glide || [], pf = d.proof, trust = d.trust || []; %>
+  <div class="sg-sh relative isolate overflow-hidden" style="<%= d.scrimVars || '' %>; --sh-n: <%= glide.length || 1 %>">
+    <div class="sg-sh-glow absolute inset-0 -z-10" aria-hidden="true"></div>
+    <div class="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-4 pt-20 pb-12 sm:px-6 lg:px-8 <%= glide.length ? 'lg:grid-cols-12 lg:pt-28' : 'lg:pt-32' %>">
+      <div class="sg-sh-text min-w-0 <%= glide.length ? 'lg:col-span-5' : 'mx-auto max-w-3xl text-center' %>">
+        <h1 class="sg-scrim-h1 font-heading text-4xl font-bold text-balance sm:text-5xl lg:text-6xl" data-animate="hero"><%- d.headlineHtml %></h1>
+        <% if (d.sub) { %><p class="mt-5 text-base text-pretty text-white sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+        <div class="mt-8 flex flex-wrap gap-4 <%= glide.length ? '' : 'justify-center' %>" data-animate="hero">
+          <a class="sg-scrim-cta inline-block px-6 py-3 font-semibold" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+          <% if (d.phone) { %><a class="sg-scrim-ghost inline-block border border-white/60 px-6 py-3 font-medium text-white transition-colors hover:bg-white/10" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+        </div>
+        <% if (trust.length) { %>
+          <ul class="mt-7 flex list-none flex-wrap gap-x-6 gap-y-2 p-0 text-sm text-white <%= glide.length ? '' : 'justify-center' %>" data-animate="hero">
+            <% trust.forEach(function (t) { %><li class="flex items-center gap-2"><svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><%= t %></li><% }) %>
+          </ul>
+        <% } %>
+      </div>
+      <% if (glide.length) { %>
+        <div class="sg-sh-stage relative min-w-0 lg:col-span-7" data-sg-glide>
+          <div class="sg-sh-view" role="region" aria-label="Photos" tabindex="0">
+            <ul class="sg-sh-track m-0 flex list-none p-0">
+              <% [0, 1].forEach(function (copy) { glide.forEach(function (g) { %>
+                <li class="sg-sh-card relative mr-5 shrink-0 overflow-hidden"<%- copy ? ' aria-hidden="true"' : '' %>>
+                  <img class="sg-noshape h-full w-full object-cover" src="<%= g.src %>" alt="<%= copy ? '' : g.alt %>" loading="<%= copy ? 'lazy' : 'eager' %>">
+                  <% if (g.label) { %><span class="sg-sh-label absolute bottom-3 left-3 px-3 py-1 text-sm font-semibold text-white"><%= g.label %></span><% } %>
+                </li>
+              <% }) }) %>
+            </ul>
+          </div>
+          <button type="button" class="sg-sh-pause absolute right-3 bottom-3 inline-flex items-center justify-center text-white" data-sg-glide-pause aria-pressed="false" aria-label="Pause the moving photos">
+            <svg class="sg-sh-i-pause size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>
+            <svg class="sg-sh-i-play size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"></path></svg>
+          </button>
+        </div>
+      <% } %>
+    </div>
+    <% if (pf) { %>
+      <div class="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8" data-animate="hero">
+        <div class="sg-sh-proof grid gap-px overflow-hidden sm:grid-cols-2 lg:grid-cols-3">
+          <% if (pf.stat) { %>
+            <div class="sg-sh-cell p-6">
+              <p class="m-0 font-heading text-3xl font-bold text-white"<%- pf.stat.countAttrs ? ' ' + pf.stat.countAttrs : '' %>><%= pf.stat.value %></p>
+              <p class="sg-sh-dim m-0 mt-1 text-sm"><%= pf.stat.label %></p>
+            </div>
+          <% } %>
+          <% if (pf.marks.length) { %>
+            <div class="sg-sh-cell p-6">
+              <div class="sg-sh-rot" data-sg-cycle="3200">
+                <% pf.marks.forEach(function (m, i) { %>
+                  <div class="sg-sh-item flex min-h-10 items-center gap-3"<%- i ? ' aria-hidden="true"' : '' %> data-on="<%= i ? 0 : 1 %>">
+                    <% if (m.src) { %><img class="sg-noshape h-10 w-auto max-w-40 object-contain" src="<%= m.src %>" alt="<%= m.alt %>" loading="lazy"><% } else { %><svg class="size-6 shrink-0 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"></path><polyline points="9 12 11 14 15 10"></polyline></svg><span class="font-heading text-lg font-semibold text-white"><%= m.label %></span><% } %>
+                  </div>
+                <% }) %>
+              </div>
+              <% if (pf.marks.length > 1) { %><p class="sg-sh-dim m-0 mt-2 text-sm"><%= pf.marks.length %> reasons to trust us</p><% } %>
+            </div>
+          <% } %>
+          <% if (pf.reviews.length) { %>
+            <div class="sg-sh-cell p-6 <%= (pf.stat && pf.marks.length) ? 'sm:col-span-2 lg:col-span-1' : '' %>">
+              <div class="sg-sh-rot" data-sg-cycle="5200">
+                <% pf.reviews.forEach(function (r, i) { %>
+                  <figure class="sg-sh-item m-0 flex gap-4"<%- i ? ' aria-hidden="true"' : '' %> data-on="<%= i ? 0 : 1 %>">
+                    <% if (r.photo) { %><img class="sg-noshape size-14 shrink-0 rounded-full object-cover" src="<%= r.photo %>" alt="" loading="lazy"><% } else if (r.name) { %><span class="sg-sh-avatar inline-flex size-14 shrink-0 items-center justify-center rounded-full font-heading text-lg font-bold" aria-hidden="true"><%= r.name.trim().charAt(0).toUpperCase() %></span><% } %>
+                    <div class="min-w-0">
+                      <% if (r.rating) { %><p class="sg-sh-stars m-0 text-sm" aria-label="<%= r.rating %> out of 5 stars"><%= '★'.repeat(Math.round(r.rating)) %></p><% } %>
+                      <blockquote class="m-0 text-sm/relaxed text-white">&ldquo;<%= r.quote %>&rdquo;</blockquote>
+                      <% if (r.name) { %><figcaption class="sg-sh-dim mt-1 text-sm"><%= r.name %></figcaption><% } %>
+                    </div>
+                  </figure>
+                <% }) %>
+              </div>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</section>

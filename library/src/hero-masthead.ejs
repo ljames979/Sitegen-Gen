@@ -1,0 +1,15 @@
+<%# Adapted from Start Bootstrap Agency (MIT) masthead: a photo behind an italic line, a huge uppercase headline and one big uppercase button. Colors, fonts and corners come from the site theme. %>
+<section class="sg-lib" data-sg-section="hero/masthead">
+  <div class="relative isolate overflow-hidden <%= d.image ? 'bg-black' : 'bg-primary' %>">
+    <div class="mx-auto max-w-5xl px-4 pt-28 pb-24 text-center sm:px-6 lg:px-8 lg:pt-44 lg:pb-36">
+      <% if (d.eyebrow) { %><p class="text-xl italic sm:text-3xl <%= d.image ? 'text-white/90' : 'text-on-primary' %>" data-animate="hero"><%= d.eyebrow %></p><% } %>
+      <h1 class="mt-4 font-heading text-4xl/tight font-bold tracking-wide uppercase sm:text-6xl/tight lg:text-7xl/tight <%= d.image ? 'text-white' : 'text-on-primary' %>" data-animate="hero"><%- d.headlineHtml %></h1>
+      <% if (d.sub) { %><p class="mx-auto mt-5 max-w-2xl text-base text-pretty sm:text-lg/relaxed <%= d.image ? 'text-white/85' : 'text-on-primary' %>" data-animate="hero"><%= d.sub %></p><% } %>
+      <div class="mt-9 flex flex-wrap justify-center gap-4" data-animate="hero">
+        <a class="inline-block rounded-md px-8 py-4 text-base font-bold tracking-wider uppercase transition-opacity hover:opacity-90 sm:text-lg <%= d.image ? 'bg-primary text-on-primary' : 'bg-page text-ink' %>" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+        <% if (d.phone) { %><a class="inline-block rounded-md border-2 px-8 py-4 text-base font-bold tracking-wider uppercase transition-colors hover:bg-white/10 sm:text-lg <%= d.image ? 'border-white/80 text-white' : 'border-current text-on-primary' %>" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+      </div>
+    </div>
+    <% if (d.image) { %><img class="absolute inset-0 -z-10 h-full w-full object-cover" src="<%= d.image %>" alt="" fetchpriority="high" style="object-position: <%= d.focal %>"><div class="absolute inset-0 -z-10 bg-black/55"></div><% } %>
+  </div>
+</section>

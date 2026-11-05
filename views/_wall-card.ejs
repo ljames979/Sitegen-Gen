@@ -1,0 +1,11 @@
+<%# One card of the brand wall or the card cascade. Expects: w (from brandwall.tiles), extra (attributes, optional) %>
+<% const xa = typeof extra !== 'undefined' ? extra : ''; %>
+<% if (w.kind === 'photo') { %><div<%- xa ? " " + xa : "" %> class="wt wt-photo"><img src="<%= w.src %>" alt="" loading="lazy" decoding="async"></div>
+<% } else if (w.kind === 'swatch') { %><div<%- xa ? " " + xa : "" %> class="wt wt-swatch" style="background: <%= w.color %>; color: <%= w.ink %>"><small><%= w.color.toUpperCase() %></small></div>
+<% } else if (w.kind === 'name') { %><div<%- xa ? " " + xa : "" %> class="wt wt-name tone-<%= w.tone %>"><% if (w.logo) { %><img src="<%= w.logo %>" alt=""><% } %><strong><%= w.text %></strong></div>
+<% } else if (w.kind === 'type') { %><div<%- xa ? " " + xa : "" %> class="wt wt-type tone-<%= w.tone %>"><strong>Aa</strong><span>123</span></div>
+<% } else if (w.kind === 'service') { %><div<%- xa ? " " + xa : "" %> class="wt wt-svc tone-<%= w.tone %>"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><%- icons.iconPath(w.text, '') %></svg><strong><%= w.text %></strong></div>
+<% } else if (w.kind === 'quote') { %><div<%- xa ? " " + xa : "" %> class="wt wt-quote tone-<%= w.tone %>"><p>&ldquo;<%= w.text %>&rdquo;</p><% if (w.by) { %><small><%= w.by %></small><% } %></div>
+<% } else if (w.kind === 'stat') { %><div<%- xa ? " " + xa : "" %> class="wt wt-stat tone-<%= w.tone %>"><strong><%= w.value %></strong><small><%= w.text %></small></div>
+<% } else if (w.kind === 'badge') { %><div<%- xa ? " " + xa : "" %> class="wt wt-badge tone-<%= w.tone %>"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><strong><%= w.text %></strong></div>
+<% } else { %><div<%- xa ? " " + xa : "" %> class="wt wt-line tone-<%= w.tone %>"><p><%= w.text %></p></div><% } %>

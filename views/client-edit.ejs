@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Edit your website — <%= site.name %></title>
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <%- include('partials-head') %>
+  <style>
+    .wrap { max-width: 760px; margin: 0 auto; padding: 24px; }
+    .block { margin-bottom: 18px; }
+    .row2 { display: flex; gap: 8px; margin-bottom: 8px; }
+    .row2 input[type=url], .row2 input[type=text] { flex: 1; }
+    .saved { background: #ecfdf5; color: #065f46; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+    .thumb { width: 56px; height: 42px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); background: #e2e8f0; flex: none; }
+    .sticky-save { position: sticky; bottom: 0; background: linear-gradient(to top, var(--bg) 70%, transparent); padding: 16px 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <% if (typeof portalUser !== 'undefined' && portalUser) { %>
+      <form method="POST" action="/client-logout" style="float:right;"><button type="submit" class="btn-secondary">Log out</button></form>
+    <% } %>
+    <h1 style="margin-bottom:4px;"><%= site.name %></h1>
+    <p class="muted" style="margin-top:0;">
+      Update your website's text, hours, contact details and photos here.
+      <% if (site.published) { %>Changes go live as soon as you save. <a href="/site/<%= site.slug %>" target="_blank" rel="noopener">View your site</a><% } else { %>Your site isn't published yet, so changes won't be visible to the public until it is.<% } %>
+    </p>
+    <p style="margin:0 0 14px;"><a href="<%= base %>/report">See how your website is doing &rarr;</a></p>
+    <% if (saved) { %><div class="saved">Saved. Your website has been updated.</div><% } %>
+
+    <div class="block card" style="padding:16px;">
+      <h3 style="margin-top:0;">Ask AI to change something</h3>
+      <%- include('_aiedit', { aiBase: base, aiOn: hasAi(), aiTheme: false }) %>
+    </div>
+    <form method="POST" action="<%= base %>" id="clientForm">
+      <div class="card block">
+        <h3>Top of the home page</h3>
+        <label>Main headline</label>
+        <input type="text" name="hero_headline" value="<%= site.sections.hero.headline %>" maxlength="100">
+        <label>Short description under it</label>
+        <input type="text" name="hero_subheadline" value="<%= site.sections.hero.subheadline %>" maxlength="160">
+      </div>
+
+      <div class="card block">
+        <h3>About us</h3>
+        <textarea name="about_body" rows="6" maxlength="2000"><%= site.sections.about.body %></textarea>
+      </div>
+
+      <div class="card block">
+        <h3>Services</h3>
+        <input type="hidden" name="services_present" value="1">
+        <div id="servicesList">
+          <% site.sections.services.items.forEach(item => { %>
+            <div class="svc" style="border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:10px;">
+              <input type="text" name="service_title" value="<%= item.title %>" maxlength="60" placeholder="Service name">
+              <textarea name="service_description" rows="2" maxlength="300" placeholder="Short description" style="margin-top:6px;"><%= item.description %></textarea>
+              <button type="button" class="btn-secondary remove-svc" style="margin-top:6px;">Remove</button>
+            </div>
+          <% }) %>
+        </div>
+        <button type="button" class="btn-secondary" id="addSvc">+ Add a service</button>
+      </div>
+
+      <div class="card block">
+        <h3>Hours</h3>
+        <input type="hidden" name="hours_present" value="1">
+        <% site.sections.hours.items.forEach(item => { %>
+          <div class="row2">
+            <input type="text" name="hours_day" value="<%= item.day %>" maxlength="20" style="flex:0 0 130px;">
+            <input type="text" name="hours_time" value="<%= item.time %>" maxlength="60" placeholder="e.g. 8:00 AM – 5:00 PM or Closed">
+          </div>
+        <% }) %>
+      </div>
+
+      <div class="card block">
+        <h3>Contact details</h3>
+        <label>Phone</label>
+        <input type="text" name="contact_phone" value="<%= site.sections.contact.phone %>" maxlength="40">
+        <label>Email</label>
+        <input type="email" name="contact_email" value="<%= site.sections.contact.email %>" maxlength="254">
+        <label>Address</label>
+        <input type="text" name="contact_address" value="<%= site.sections.contact.address %>" maxlength="200">
+      </div>
+
+      <div class="card block">
+        <h3>Photos</h3>
+        <p class="muted" style="margin-top:0; font-size:13px;">Upload photos of your work. They appear in your website's gallery.</p>
+        <input type="hidden" name="gallery_present" value="1">
+        <div id="galleryList">
+          <% site.sections.gallery.images.forEach(img => { %>
+            <div class="row2 g">
+              <img class="thumb" src="<%= img %>" alt="">
+              <input type="url" name="gallery_image" value="<%= img %>">
+              <button type="button" class="btn-secondary remove-g">Remove</button>
+            </div>
+          <% }) %>
+        </div>
+        <input type="file" id="photoFile" accept="image/*" hidden>
+        <button type="button" class="btn-secondary" id="addPhoto">+ Upload a photo</button>
+        <span class="muted" id="photoStatus" style="font-size:13px; margin-left:8px;"></span>
+      </div>
+
+      <div class="sticky-save">
+        <button type="submit" style="width:100%; padding:14px; font-size:16px;">Save changes</button>
+      </div>
+    </form>
+  </div>
+
+  <template id="tplSvc">
+    <div class="svc" style="border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:10px;">
+      <input type="text" name="service_title" maxlength="60" placeholder="Service name">
+      <textarea name="service_description" rows="2" maxlength="300" placeholder="Short description" style="margin-top:6px;"></textarea>
+      <button type="button" class="btn-secondary remove-svc" style="margin-top:6px;">Remove</button>
+    </div>
+  </template>
+
+  <script>
+    const base = <%- JSON.stringify(base) %>;
+    document.getElementById('addSvc').addEventListener('click', () => {
+      document.getElementById('servicesList').appendChild(document.getElementById('tplSvc').content.cloneNode(true));
+    });
+    document.addEventListener('click', (e) => {
+      const svc = e.target.closest('.remove-svc');
+      if (svc) svc.closest('.svc').remove();
+      const g = e.target.closest('.remove-g');
+      if (g) g.closest('.g').remove();
+    });
+    const fileInput = document.getElementById('photoFile');
+    const statusEl = document.getElementById('photoStatus');
+    document.getElementById('addPhoto').addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      statusEl.textContent = 'Uploading…';
+      try {
+        const fd = new FormData();
+        fd.append('image', file);
+        const res = await fetch(`${base}/upload`, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Upload failed');
+        const row = document.createElement('div');
+        row.className = 'row2 g';
+        row.innerHTML = '<img class="thumb" alt=""><input type="url" name="gallery_image"><button type="button" class="btn-secondary remove-g">Remove</button>';
+        row.querySelector('img').src = data.url;
+        row.querySelector('input').value = data.url;
+        document.getElementById('galleryList').appendChild(row);
+        statusEl.textContent = 'Added — remember to press Save changes.';
+      } catch (err) {
+        statusEl.textContent = err.message || 'Upload failed.';
+      } finally {
+        fileInput.value = '';
+      }
+    });
+  </script>
+</body>
+</html>

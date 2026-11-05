@@ -1,0 +1,24 @@
+<%# Adapted from HyperUI (MIT) marketing/faqs: native <details> accordion, no JavaScript needed. %>
+<section class="sg-lib" data-sg-section="faq/accordion">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-3xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="tw:mt-8 tw:space-y-3" data-animate="stagger">
+        <% d.items.forEach(function (it, i) { %>
+          <details class="tw:group tw:rounded-xl tw:border tw:border-line tw:bg-surface tw:p-5 tw:open:shadow-[var(--shadow-sm)]" <%= i === 0 ? 'open' : '' %>>
+            <summary class="tw:flex tw:cursor-pointer tw:list-none tw:items-center tw:justify-between tw:gap-4 tw:font-heading tw:text-base tw:font-medium tw:text-ink">
+              <%= it.question %>
+              <span class="tw:shrink-0 tw:text-primary tw:transition-transform tw:group-open:rotate-45" aria-hidden="true">+</span>
+            </summary>
+            <p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= it.answer %></p>
+          </details>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="tw:mt-8 tw:text-center"><a class="tw:font-medium tw:text-primary tw:underline-offset-4 tw:hover:underline" href="<%= d.moreHref %>">More questions &rarr;</a></p><% } %>
+    </div>
+  </div>
+</section>

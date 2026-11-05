@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="robots" content="noindex">
+  <title>Hosting payment</title>
+  <%- include('partials-head') %>
+</head>
+<body>
+  <div class="narrow" style="text-align:center; margin-top:12vh;">
+    <% if (canceled) { %>
+      <h1>No payment was made</h1>
+      <p class="muted">You closed checkout before paying. Use the link you were sent to try again.</p>
+    <% } else { %>
+      <h1>Thank you!</h1>
+      <p class="muted">Your payment went through and your website hosting is being set up. You can close this page.</p>
+    <% } %>
+  </div>
+</body>
+</html>

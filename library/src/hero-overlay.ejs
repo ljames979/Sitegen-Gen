@@ -1,0 +1,16 @@
+<%# Adapted from HyperUI (MIT) marketing/banners/1 with a full-width photo behind the text. %>
+<section class="sg-lib" data-sg-section="hero/overlay">
+  <div class="relative isolate overflow-hidden <%= d.image ? '' : 'bg-primary' %>">
+    <% if (d.image) { %><img class="absolute inset-0 -z-10 h-full w-full object-cover" src="<%= d.image %>" alt="" fetchpriority="high"><div class="absolute inset-0 -z-10 bg-overlay"></div><% } %>
+    <div class="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8 lg:py-40">
+      <div class="max-w-2xl text-left">
+        <h1 class="font-heading text-4xl font-bold sm:text-6xl <%= d.image ? 'text-white' : 'text-on-primary' %>" data-animate="hero"><%- d.headlineHtml %></h1>
+        <% if (d.sub) { %><p class="mt-4 text-base text-pretty sm:text-lg/relaxed <%= d.image ? 'text-white/90' : 'text-on-primary' %>" data-animate="hero"><%= d.sub %></p><% } %>
+        <div class="mt-6 flex flex-wrap gap-4" data-animate="hero">
+          <a class="inline-block rounded-md bg-page px-5 py-3 font-medium text-ink shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+          <% if (d.phone) { %><a class="inline-block rounded-md border border-white/70 px-5 py-3 font-medium <%= d.image ? 'text-white' : 'text-on-primary' %> transition-colors hover:bg-white/10" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

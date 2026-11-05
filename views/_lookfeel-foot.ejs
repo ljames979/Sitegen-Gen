@@ -1,0 +1,43 @@
+<%# Look and feel scripts: the visitor dark-mode button and the "morph" page transition. %>
+<% const _t = site.theme || {}; %>
+<% if (_t.darkMode === 'toggle') { %>
+<script>
+(function () {
+  var b = document.getElementById('lfDark'); if (!b) return;
+  var root = document.documentElement;
+  function sync() { var d = root.getAttribute('data-theme') === 'dark'; b.setAttribute('aria-pressed', String(d)); b.setAttribute('aria-label', d ? 'Switch to light mode' : 'Switch to dark mode'); }
+  sync();
+  b.addEventListener('click', function () {
+    var d = root.getAttribute('data-theme') !== 'dark';
+    root.classList.add('lf-switching');
+    if (d) root.setAttribute('data-theme', 'dark'); else root.removeAttribute('data-theme');
+    try { localStorage.setItem('sg-theme', d ? 'dark' : 'light'); } catch (e) {}
+    sync(); setTimeout(function () { root.classList.remove('lf-switching'); }, 400);
+  });
+})();
+</script>
+<% } else if (_t.darkMode === 'auto') { %>
+<script>
+(function () {
+  var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)'); if (!mq || !mq.addEventListener) return;
+  mq.addEventListener('change', function (e) { if (e.matches) document.documentElement.setAttribute('data-theme', 'dark'); else document.documentElement.removeAttribute('data-theme'); });
+})();
+</script>
+<% } %>
+<% if (_t.pageTransition === 'morph') { %>
+<script>
+// Morph: the photo (or title) of the link the visitor clicked grows into the next page's header photo or heading.
+(function () {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var last = null;
+  document.addEventListener('click', function (e) { var a = e.target.closest && e.target.closest('a[href]'); if (a) last = a; }, true);
+  window.addEventListener('pageswap', function (e) {
+    if (!e.viewTransition || !last) return;
+    var el = last.querySelector('img') || last.querySelector('h2, h3, strong') || (last.closest('.links') ? null : last);
+    if (!el) return;
+    el.style.viewTransitionName = 'sg-morph';
+    try { sessionStorage.setItem('sg-morph', el.tagName === 'IMG' ? 'img' : 'text'); } catch (err) {}
+  });
+})();
+</script>
+<% } %>

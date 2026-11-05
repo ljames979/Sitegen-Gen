@@ -1,0 +1,116 @@
+<h3>Hero</h3>
+<% const _hs = scrimHero.clean(site.sections.hero); const _bt = (site.sections.meta && site.sections.meta.businessType) || ''; const _fit = scrimHero.fits(_bt, libTemplateId(site)); %>
+<label>Hero design</label>
+<select name="hero_design" id="heroDesign" onchange="var h=document.getElementById('showcaseHint');if(h)h.hidden=this.value!=='showcase';var r=document.getElementById('scrollHint');if(r)r.hidden=this.value!=='scroll';var f=document.getElementById('shapesHint');if(f)f.hidden=this.value!=='shapes';var g=document.getElementById('blendOpts');if(g)g.hidden=this.value!=='blend'">
+  <option value="" <%= _hs.design === '' ? 'selected' : '' %>>Classic (from the style and home layout)</option>
+  <option value="auto" <%= _hs.design === 'auto' ? 'selected' : '' %>>Automatic: <%= _fit ? 'Image + Scrim for this kind of business' : 'classic for this kind of business' %></option>
+  <option value="scrim" <%= _hs.design === 'scrim' ? 'selected' : '' %>>Image + Scrim (cosmic)<%= _fit ? ' (suits this business)' : '' %></option>
+  <option value="showcase" <%= _hs.design === 'showcase' ? 'selected' : '' %>>Showcase strip: your photos glide past, proof bar underneath</option>
+  <option value="scroll" <%= _hs.design === 'scroll' ? 'selected' : '' %>>Scroll-through photos: your hero photos change as visitors scroll</option>
+  <option value="shapes" <%= _hs.design === 'shapes' ? 'selected' : '' %>>Floating 3D shapes: glassy shapes in your colors drift behind the headline</option>
+  <option value="blend" <%= _hs.design === 'blend' ? 'selected' : '' %>>Photo with the header blended in: your photo fills the top, the name and menu sit on it</option>
+</select>
+<div id="blendOpts"<%= _hs.design === 'blend' ? '' : ' hidden' %>>
+  <p class="hint">Photo with the header blended in: your background photo fills the top of the page and the header (name or logo and menu) sits right on it, see-through, turning solid as visitors scroll. A dark fade on the left keeps the words readable. Put words of the headline in [square brackets] to set them in an italic serif, e.g. Roofs built to [outlast] the storm.</p>
+  <label>Small label over the headline (optional)</label>
+  <input type="text" name="hero_eyebrow" value="<%= site.sections.hero.eyebrow || '' %>" maxlength="60" placeholder="Leave empty for your kind of business and city">
+  <label>Button color</label>
+  <select name="hero_pill"><% [['', 'Brand color'], ['accent', 'Accent color'], ['lime', 'Bright lime']].forEach(o => { %><option value="<%= o[0] %>" <%= (site.sections.hero.pill || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+</div>
+<p class="hint" id="shapesHint"<%= _hs.design === 'shapes' ? '' : ' hidden' %>>Floating 3D shapes draws glassy shapes (a sphere, a cube, a ring and a few shards) in your brand colors behind a big headline. They drift and turn, lean toward the mouse and spread apart as visitors scroll, with no video or photo needed. A typing cursor blinks after the headline, and a ring of text spins around a round button: it plays your background video when you have a .mp4 below, otherwise it goes to your main button's link. Visitors who turn motion off see the shapes still.</p>
+<p class="hint" id="showcaseHint"<%= _hs.design === 'showcase' ? '' : ' hidden' %>>Showcase strip uses your own photos (hero, services, About and gallery; at least 3) as cards gliding past beside the headline, with a pause button. Underneath, a proof bar shows your first trust number (or your star rating from 3 or more reviews), your badges or certification logos one after another, and your reviews one after another. Parts with nothing to show are left out, and the motion stops for visitors who turn motion off.</p>
+<p class="hint" id="scrollHint"<%= _hs.design === 'scroll' ? '' : ' hidden' %>>Scroll-through photos fills the screen with your hero photo and the extra hero photos below (add at least one more). As visitors scroll down the photos step forward one at a time and go back as they scroll up, while your headline and button stay in place. Dots on the right show which photo is up and jump to it. Visitors who turn motion off see one photo and can switch with the dots.</p>
+<p class="hint">Image + Scrim puts the background photo (or a night-sky gradient in your colors when there is no photo) behind a dark scrim, with a gradient headline, a glowing button and the feature cards below as frosted glass. It suits tech, education, creative and event businesses. Automatic keeps the classic hero when the hero has a video or photo slides.</p>
+<div class="row2" id="scrimOpts" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+  <div><label>Scrim darkness</label>
+    <select name="hero_scrim"><% [['light', 'Light (still readable)'], ['medium', 'Medium'], ['heavy', 'Heavy']].forEach(o => { %><option value="<%= o[0] %>" <%= _hs.scrim === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select></div>
+  <div><label>Scrim layout</label>
+    <select name="hero_scrimLayout"><% [['full', 'Full width, fades into the next section'], ['boxed', 'Boxed (rounded card)']].forEach(o => { %><option value="<%= o[0] %>" <%= _hs.scrimLayout === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select></div>
+</div>
+<label>Headline</label>
+<input type="text" name="hero_headline" value="<%= site.sections.hero.headline %>" maxlength="100">
+<label>Subheadline</label>
+<input type="text" name="hero_subheadline" value="<%= site.sections.hero.subheadline %>" maxlength="160">
+<label>Background image</label>
+<div class="upload-row">
+  <input type="url" name="hero_imageUrl" value="<%= site.sections.hero.imageUrl %>" placeholder="https://... or upload">
+  <input type="file" accept="image/*" class="file-input" hidden>
+  <button type="button" class="btn-secondary upload-btn">Upload</button>
+  <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+</div>
+<% const hh = site.sections.hero; %>
+<label>Which part of the photo stays in view</label>
+<p class="muted" style="font-size:12.5px; margin:0 0 6px;">Photos are cropped to fit different screens. Click the part that matters most (a face, a storefront) and it stays visible.</p>
+<div class="focal-pick" id="focalPick" style="<%= hh.imageUrl ? '' : 'display:none;' %>">
+  <div class="focal-box" id="focalBox" style="background-image:url('<%= hh.imageUrl %>')"><span class="focal-dot" id="focalDot" style="left:<%= hh.focalX == null ? 50 : hh.focalX %>%; top:<%= hh.focalY == null ? 50 : hh.focalY %>%;"></span></div>
+  <button type="button" class="btn-secondary" id="focalReset">Center</button>
+</div>
+<input type="hidden" name="hero_focalX" id="focalX" value="<%= hh.focalX == null ? 50 : hh.focalX %>">
+<input type="hidden" name="hero_focalY" id="focalY" value="<%= hh.focalY == null ? 50 : hh.focalY %>">
+<div class="row2" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+  <div><label>Photo darkness (so text is easy to read)</label>
+    <select name="hero_overlay"><% [['', 'Let the style decide'], ['15', 'Light'], ['30', 'Soft'], ['45', 'Medium'], ['60', 'Dark'], ['75', 'Very dark']].forEach(o => { %><option value="<%= o[0] %>" <%= String(hh.overlay || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select></div>
+  <div><label>Text position</label>
+    <select name="hero_align"><% [['', 'Let the style decide'], ['left', 'Left'], ['center', 'Centered'], ['right', 'Right']].forEach(o => { %><option value="<%= o[0] %>" <%= (hh.align || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select></div>
+</div>
+<label>Background video (optional)</label>
+<input type="text" name="hero_videoUrl" value="<%= hh.videoUrl || '' %>" placeholder="Direct link to a short .mp4 or .webm file">
+<p class="muted" style="font-size:12.5px; margin:4px 0 0;">Plays silently on a loop behind the headline. Keep it short and small (a few MB). Phones and visitors who prefer less motion see the photo instead. The background photo above is still needed.</p>
+<label>More hero photos (optional: with 2 or more photos the home page hero becomes a slideshow, or with Scroll-through photos they change as visitors scroll)</label>
+<div id="slideList">
+  <% (site.sections.hero.slides || []).forEach(u => { %>
+    <div class="gallery-row upload-row">
+      <input type="url" name="hero_slide" value="<%= u %>" placeholder="https://... or upload">
+      <input type="file" accept="image/*" class="file-input" hidden>
+      <button type="button" class="btn-secondary upload-btn">Upload</button>
+      <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      <button type="button" class="btn-secondary remove-row">✕</button>
+    </div>
+  <% }) %>
+</div>
+<button type="button" class="btn-secondary" data-add="slide">+ Add hero photo</button>
+<template id="tpl-slide">
+  <div class="gallery-row upload-row">
+    <input type="url" name="hero_slide" placeholder="https://... or upload">
+    <input type="file" accept="image/*" class="file-input" hidden>
+    <button type="button" class="btn-secondary upload-btn">Upload</button>
+    <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+    <button type="button" class="btn-secondary remove-row">✕</button>
+  </div>
+</template>
+<label>Button text</label>
+<input type="text" name="hero_ctaText" value="<%= site.sections.hero.ctaText %>" maxlength="40">
+<label>Button link</label>
+<input type="text" name="hero_ctaLink" value="<%= site.sections.hero.ctaLink %>" placeholder="#contact">
+<label>Trust line (optional — short facts separated by •, shown under the subheadline)</label>
+<input type="text" name="hero_trustText" value="<%= site.sections.hero.trustText %>" placeholder="e.g. Locally owned • Free estimates • 24/7 availability">
+<label class="check"><input type="checkbox" name="hero_rotate" value="1" <%= site.sections.hero.rotate ? 'checked' : '' %>> Rotating word under the headline, cycling through your service names</label>
+<input type="text" name="hero_rotatePrefix" value="<%= site.sections.hero.rotatePrefix || '' %>" maxlength="40" placeholder="Words before it (optional), e.g. We do">
+<label>Highlight a word or phrase in the headline (optional)</label>
+<input type="text" name="hero_highlight" value="<%= site.sections.hero.highlight || '' %>" maxlength="40" placeholder="Type it exactly as it is in the headline">
+<p class="hint">A marker swipe draws under it when the page opens.</p>
+<label>Stickers on the hero (optional: up to 3 short phrases, like a tilted "Family owned" badge)</label>
+<% const heroStk = site.sections.hero.stickers || []; %>
+<div class="sticker-row" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
+  <% [0, 1, 2].forEach(i => { %><input type="text" name="hero_sticker" value="<%= heroStk[i] || '' %>" maxlength="28" placeholder="<%= ['e.g. Family owned', 'e.g. Since 1998', 'e.g. Free quotes'][i] %>"><% }) %>
+</div>
+<p class="hint">Only phrases that are true for this business. Leave them empty for no stickers.</p>
+<label>Floating shapes over the hero</label>
+<select name="hero_float"><% [['', 'None'], ['emoji', 'Your emoji drifting upward (set them under Colors and fonts)'], ['sparkles', 'Twinkling sparkles'], ['bubbles', 'Rising bubbles'], ['confetti', 'Falling confetti']].forEach(o => { %><option value="<%= o[0] %>" <%= (site.sections.hero.float || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+<p class="hint">Floating shapes are switched off automatically for visitors who have "reduce motion" turned on. Movement for the headline and photo comes from the Motion style (Colors and fonts).</p>
+<label class="check"><input type="checkbox" name="hero_quickLinks" value="1" <%= site.sections.hero.quickLinks ? 'checked' : '' %>> Show a row of quick-jump buttons under the hero (Book, Services, Reviews, Location, Contact)</label>
+
+<label>Feature cards over the bottom of the hero (optional: up to 4, each a short title and line)</label>
+<p class="muted" style="font-size:13px; margin:0 0 6px;">Only say things that are true for this business. Empty rows are left out.</p>
+<% const heroCards = site.sections.hero.cards || []; %>
+<% [0, 1, 2, 3].forEach(i => { const hc = heroCards[i] || { title: '', text: '' }; %>
+  <div class="upload-row">
+    <input type="text" name="hero_card_title" value="<%= hc.title %>" maxlength="40" placeholder="Title, e.g. Local team" style="flex:0 0 38%;">
+    <input type="text" name="hero_card_text" value="<%= hc.text %>" maxlength="140" placeholder="One short line">
+  </div>
+<% }) %>
+
+<label>Bottom edge of the hero</label>
+<select name="hero_edge">
+  <% [['', 'Straight'], ['wave', 'Wavy'], ['scallop', 'Scalloped']].forEach(o => { %><option value="<%= o[0] %>" <%= (site.sections.hero.edge || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+</select>

@@ -1,0 +1,24 @@
+<%# Original layout (offset photos: text beside two or three photos at staggered heights) %>
+<% var ims = (d.images || []).map(function (x) { return x && typeof x === 'object' ? x.src : x; }).filter(Boolean); if (!ims.length && d.image) ims = [d.image]; var alt = d.imageAlt || ((d.images || [])[0] || {}).alt || ''; %>
+<section class="sg-lib" data-sg-section="about/offset">
+  <div class="bg-surface">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+      <div class="sg-flip grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
+        <div data-animate="fade-up">
+          <% if (d.eyebrow) { %><p class="text-sm font-medium tracking-wide text-primary uppercase"><%= d.eyebrow %></p><% } %>
+          <% if (d.heading) { %><h2 data-sg-head class="font-heading text-2xl font-semibold text-ink sm:text-3xl"><%= d.heading %></h2><% } %>
+          <% if (d.body) { %><p class="<%= d.heading ? 'mt-4' : '' %> text-lg/relaxed text-pretty whitespace-pre-line text-muted"><%= d.body %></p><% } %>
+          <% if (d.moreHref) { %><a class="mt-6 inline-block font-medium text-primary underline-offset-4 hover:underline" href="<%= d.moreHref %>">Learn more about us &rarr;</a><% } %>
+          <% if (d.buttonText && d.buttonHref) { %><p class="mt-6"><a class="inline-block rounded-md bg-primary px-5 py-3 font-medium text-on-primary shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90" href="<%= d.buttonHref %>"><%= d.buttonText %></a></p><% } %>
+        </div>
+        <% if (ims.length >= 2) { %>
+          <div class="grid grid-cols-2 gap-4" data-animate="stagger">
+            <img class="aspect-[3/4] w-full rounded-xl object-cover shadow-[var(--shadow-md)]" src="<%= ims[0] %>" alt="<%= alt %>" loading="lazy">
+            <img class="mt-12 aspect-[3/4] w-full rounded-xl object-cover shadow-[var(--shadow-md)]" src="<%= ims[1] %>" alt="" loading="lazy">
+            <% if (ims[2]) { %><img class="col-span-2 -mt-6 aspect-[16/9] w-4/5 justify-self-center rounded-xl object-cover shadow-[var(--shadow-md)]" src="<%= ims[2] %>" alt="" loading="lazy"><% } %>
+          </div>
+        <% } else if (ims.length) { %><div data-animate="fade-up"><img class="aspect-[4/3] w-full rounded-xl object-cover shadow-[var(--shadow-md)]" src="<%= ims[0] %>" alt="<%= alt %>" loading="lazy"></div><% } %>
+      </div>
+    </div>
+  </div>
+</section>

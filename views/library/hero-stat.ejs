@@ -1,0 +1,31 @@
+<%# Original layout (headline beside big numbers, drawn from scratch): uses only numbers the client gave us; falls back to a photo. %>
+<section class="sg-lib" data-sg-section="hero/stat">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-24">
+      <div class="tw:grid tw:grid-cols-1 tw:gap-10 tw:lg:grid-cols-5 tw:lg:items-center tw:lg:gap-14">
+        <div class="tw:lg:col-span-3">
+          <h1 class="tw:font-heading tw:text-4xl tw:font-bold tw:text-ink tw:sm:text-5xl tw:lg:text-6xl" data-animate="hero"><%- d.headlineHtml %></h1>
+          <% if (d.sub) { %><p class="tw:mt-4 tw:max-w-xl tw:text-base tw:text-pretty tw:text-muted tw:sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+          <div class="tw:mt-6 tw:flex tw:flex-wrap tw:gap-4" data-animate="hero">
+            <a class="tw:inline-block tw:rounded-md tw:bg-primary tw:px-5 tw:py-3 tw:font-medium tw:text-on-primary tw:shadow-[var(--shadow-sm)] tw:transition-opacity tw:hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+            <% if (d.phone) { %><a class="tw:inline-block tw:rounded-md tw:border tw:border-line tw:bg-page tw:px-5 tw:py-3 tw:font-medium tw:text-ink tw:shadow-[var(--shadow-sm)] tw:transition-colors tw:hover:bg-surface" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+          </div>
+        </div>
+        <div class="tw:lg:col-span-2">
+          <% if (d.stats.length) { %>
+            <dl class="tw:grid tw:grid-cols-1 tw:gap-4" data-animate="stagger">
+              <% d.stats.forEach(function (st) { %>
+                <div class="tw:flex tw:items-baseline tw:gap-4 tw:rounded-xl tw:border tw:border-line tw:bg-surface tw:p-5">
+                  <dd class="tw:font-heading tw:text-4xl tw:font-bold tw:text-primary"><span<%- st.countAttrs || '' %>><%= st.value %></span></dd>
+                  <dt class="tw:text-sm tw:text-muted"><%= st.label %></dt>
+                </div>
+              <% }) %>
+            </dl>
+          <% } else if (d.image) { %>
+            <img class="tw:aspect-[4/3] tw:w-full tw:rounded-xl tw:object-cover tw:shadow-[var(--shadow-md)]" src="<%= d.image %>" alt="" fetchpriority="high" data-animate="scene">
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,19 @@
+<%# Original layout (icon contact cards, drawn from scratch): call, text, email and visit, only the ones the client gave us. %>
+<section class="sg-lib" data-sg-section="contact/cards">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-6xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-16">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="tw:mt-8 tw:grid tw:grid-cols-1 tw:gap-4 tw:sm:grid-cols-2 <%= d.items.length >= 4 ? 'tw:lg:grid-cols-4' : '' %>" data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <a class="tw:flex tw:items-center tw:gap-4 tw:rounded-xl tw:border tw:border-line tw:bg-page tw:p-5 tw:shadow-[var(--shadow-sm)] tw:transition-shadow tw:hover:shadow-[var(--shadow-md)]" href="<%= it.href %>"<%- it.kind === 'visit' ? ' target="_blank" rel="noopener"' : '' %>>
+            <span class="tw:flex tw:size-11 tw:items-center tw:justify-center tw:rounded-full tw:bg-primary tw:text-on-primary" aria-hidden="true"><svg class="tw:size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><% if (it.kind === "call") { %><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/><% } else if (it.kind === "text") { %><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><% } else if (it.kind === "email") { %><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/><% } else { %><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/><% } %></svg></span>
+            <span class="tw:min-w-0"><span class="tw:block tw:text-xs tw:font-medium tw:tracking-wide tw:text-muted tw:uppercase"><%= it.label %></span><span class="tw:block tw:font-heading tw:font-semibold tw:break-words tw:text-ink"><%= it.value %></span></span>
+          </a>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</section>

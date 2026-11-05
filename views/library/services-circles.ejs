@@ -1,0 +1,23 @@
+<%# Adapted from Start Bootstrap Agency (MIT) services: an icon in a big brand-color circle over each service, uppercase heading. %>
+<section class="sg-lib" data-sg-section="services/circles">
+  <div class="tw:bg-page">
+    <div class="tw:mx-auto tw:max-w-6xl tw:px-4 tw:py-16 tw:sm:px-6 tw:lg:px-8 tw:lg:py-24">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-3xl tw:font-bold tw:tracking-wide tw:text-ink tw:uppercase tw:sm:text-4xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-lg tw:text-pretty tw:italic tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="tw:mt-12 tw:grid tw:grid-cols-1 tw:gap-x-8 tw:gap-y-12 tw:text-center tw:sm:grid-cols-2 <%= d.items.length === 4 ? 'tw:lg:grid-cols-4' : 'tw:lg:grid-cols-3' %>" data-sg-cards data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <a class="tw:group tw:block" href="<%= it.href %>">
+            <span class="tw:mx-auto tw:flex tw:size-24 tw:items-center tw:justify-center tw:rounded-full tw:bg-primary tw:text-on-primary tw:transition-transform tw:duration-300 tw:group-hover:scale-105" aria-hidden="true"><svg class="tw:size-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><%- it.icon || '<polyline points="20 6 9 17 4 12"></polyline>' %></svg></span>
+            <h3 class="tw:mt-5 tw:font-heading tw:text-xl tw:font-bold tw:text-ink"><%= it.title %></h3>
+            <% if (it.description) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= it.description %></p><% } %>
+            <% if (it.price) { %><p class="tw:mt-3 tw:text-sm tw:font-bold tw:text-ink"><%= it.price %></p><% } %>
+          </a>
+        <% }) %>
+      </div>
+      <% if (d.moreHref) { %><p class="tw:mt-12 tw:text-center"><a class="tw:inline-block tw:rounded-md tw:bg-primary tw:px-6 tw:py-3 tw:text-sm tw:font-bold tw:tracking-wider tw:text-on-primary tw:uppercase tw:transition-opacity tw:hover:opacity-90" href="<%= d.moreHref %>">See all services</a></p><% } %>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,29 @@
+<h3>Hours</h3>
+<label>Heading</label>
+<input type="text" name="hours_heading" value="<%= site.sections.hours.heading %>" maxlength="60">
+<label>Small label above the heading (optional, e.g. "Our care")</label>
+<input type="text" name="hours_eyebrow" value="<%= site.sections.hours.eyebrow || '' %>" maxlength="40">
+<div id="hoursList">
+  <% site.sections.hours.items.forEach(item => { %>
+    <div class="service-row">
+      <input type="text" name="hours_day" value="<%= item.day %>" placeholder="Day" maxlength="20" style="flex:0 0 130px;">
+      <input type="text" name="hours_time" value="<%= item.time %>" placeholder="e.g. 9:00 AM – 5:00 PM" maxlength="60">
+      <button type="button" class="btn-secondary remove-row">✕</button>
+    </div>
+  <% }) %>
+</div>
+<button type="button" class="btn-secondary" data-add="hours">+ Add row</button>
+<% const tzNow = site.sections.hours.timezone || site.sections.booking.timezone || 'America/New_York'; %>
+<label class="check" style="margin-top:12px;"><input type="checkbox" name="hours_openBadge" value="1" <%= site.sections.hours.openBadge ? 'checked' : '' %>> Show a live "Open now / Closed now" badge in the menu bar</label>
+<p class="muted" style="font-size:12.5px; margin:4px 0;">Worked out from the hours above in the business's time zone. If any row can't be read for sure (for example "By appointment"), the badge stays hidden instead of guessing. Write rows like "Mon–Fri" and "9:00 AM – 5:00 PM", or "Closed".</p>
+<label>Business time zone</label>
+<select name="hours_timezone"><% bookingLib.TIMEZONES.forEach(t => { %><option value="<%= t[0] %>" <%= tzNow === t[0] ? 'selected' : '' %>><%= t[1] %> (<%= t[0] %>)</option><% }) %></select>
+<% const ohWeek = openHours.parse(site.sections.hours.items); if (site.sections.hours.openBadge && !ohWeek) { %><p class="hint" style="color:#b45309;">The badge is on but these hours can't be read for sure, so it is hidden on the site.</p><% } %>
+
+<template id="tpl-hours">
+  <div class="service-row">
+    <input type="text" name="hours_day" placeholder="Day" maxlength="20" style="flex:0 0 130px;">
+    <input type="text" name="hours_time" placeholder="e.g. 9:00 AM – 5:00 PM" maxlength="60">
+    <button type="button" class="btn-secondary remove-row">✕</button>
+  </div>
+</template>

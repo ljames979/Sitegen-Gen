@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Brand kit — <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .bk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+    .bk-opt { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin: 0 0 8px; font-weight: 400; cursor: pointer; }
+    .bk-opt input { margin: 3px 0 0; width: auto; }
+    .bk-opt small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+    .bk-dots { display: inline-flex; gap: 4px; vertical-align: middle; margin-right: 6px; } .bk-dots i { width: 22px; height: 22px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.1); }
+    .bk-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; margin: 0 8px 6px 0; } .bk-chip i { width: 16px; height: 16px; border-radius: 4px; display: inline-block; border: 1px solid rgba(0,0,0,.1); }
+    .bk-logo { max-width: 220px; max-height: 120px; display: block; background: repeating-conic-gradient(#f1f5f9 0 25%, #fff 0 50%) 0 0 / 16px 16px; border: 1px solid var(--border); border-radius: 8px; padding: 8px; }
+    .bk-tab { display: inline-flex; align-items: center; gap: 8px; background: #e2e8f0; border-radius: 10px 10px 0 0; padding: 8px 14px; font-size: 13px; }
+    .bk-tab img { width: 16px; height: 16px; }
+    .bk-share { width: 100%; max-width: 480px; border-radius: 10px; border: 1px solid var(--border); display: block; }
+    .bk-btn { display: inline-block; background: var(--c, #2563eb); color: #fff; padding: 8px 16px; font-size: 13px; font-weight: 600; margin-top: 6px; }
+    .bk-kit { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--border); padding: 10px 0; }
+    .bk-kit:last-child { border-bottom: 0; }
+    .bk-kit form { margin: 0; }
+    .bk-kit img { max-height: 36px; max-width: 90px; }
+    .bk-flash { margin-bottom: 14px; background: #ecfdf5; }
+    .bk-err { margin-bottom: 14px; background: #fef2f2; color: #991b1b; }
+  </style>
+</head>
+<body>
+  <nav><div class="row"><a href="/sites/<%= site.id %>/edit" class="muted">&larr; Back to editor</a><strong>Brand kit</strong></div></nav>
+  <div class="container">
+    <% const flash = { applied: 'Brand kit applied. The earlier look is in the editor\'s Version history.', 'applied-saved': 'Brand kit applied and saved for reuse.', saved: 'Saved this site\'s look as a brand kit.', kit: 'Saved brand kit applied. The earlier look is in Version history.', deleted: 'Brand kit deleted.' }[done]; %>
+    <% if (flash) { %><div class="card bk-flash"><%= flash %> <a href="/sites/<%= site.id %>/edit">Open the editor</a></div><% } %>
+    <% if (error) { %><div class="card bk-err"><%= error %></div><% } %>
+
+    <div class="card">
+      <h2 style="margin-top:0;">Build a brand kit from the logo</h2>
+      <p class="muted" style="margin-top:0;">Reads the logo's colors and outline, then suggests a palette, a font pairing and a button shape, and makes a browser icon and a share picture. Nothing changes until you choose what to use and press Apply.</p>
+      <form method="POST" action="/sites/<%= site.id %>/brand/build" enctype="multipart/form-data">
+        <% if (site.theme.logoUrl) { %>
+          <p style="margin:0 0 6px;">Current logo:</p><img class="bk-logo" src="<%= site.theme.logoUrl %>" alt="Current logo">
+          <label style="margin-top:12px;">Or use a different logo file (optional)</label>
+        <% } else { %>
+          <label>Logo file</label>
+        <% } %>
+        <input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+        <button type="submit" style="margin-top:10px;"><%= draft ? 'Build again' : 'Build the brand kit' %></button>
+      </form>
+    </div>
+
+    <% if (draft) { %>
+    <form method="POST" action="/sites/<%= site.id %>/brand/apply" class="card">
+      <h2 style="margin-top:0;">Choose what to use</h2>
+      <% if (draft.newLogo) { %>
+        <label class="bk-opt"><input type="checkbox" name="logo" value="1" checked><span><img class="bk-logo" src="<%= draft.logoUrl %>" alt="New logo"><small>Use this as the site's logo.</small></span></label>
+        <input type="hidden" name="logoUrl" value="<%= draft.logoUrl %>">
+      <% } %>
+      <div class="bk-grid">
+        <div>
+          <h3>Colors</h3>
+          <% if (draft.colors.length) { %><p style="margin:0 0 8px;"><% draft.colors.forEach(c => { %><span class="bk-chip"><i style="background:<%= c %>"></i><%= c %></span><% }) %></p><% } %>
+          <% if (draft.pair) { %>
+            <label class="bk-opt"><input type="radio" name="colors" value="<%= draft.pair.primary %>|<%= draft.pair.accent %>" checked><span><span class="bk-dots"><i style="background:<%= draft.pair.primary %>"></i><i style="background:<%= draft.pair.accent %>"></i></span>Logo colors<small>Buttons and links <%= draft.pair.primary %>, dark areas <%= draft.pair.accent %>. Both are adjusted so white text on them is easy to read.</small></span></label>
+          <% } else { %><p class="muted">No clear colors found (the logo may be all black, white or transparent).</p><% } %>
+          <label class="bk-opt"><input type="radio" name="colors" value="keep" <%= draft.pair ? '' : 'checked' %>><span><span class="bk-dots"><i style="background:<%= now.primaryColor %>"></i><i style="background:<%= now.accentColor %>"></i></span>Keep the current colors</span></label>
+        </div>
+        <div>
+          <h3>Fonts</h3>
+          <% draft.fonts.forEach((f, i) => { %>
+            <label class="bk-opt"><input type="radio" name="font" value="<%= f.heading %>|<%= f.body %>" <%= i === 0 ? 'checked' : '' %>><span><strong><%= f.heading %></strong> + <%= f.body %><small><%= f.why %></small></span></label>
+          <% }) %>
+          <label class="bk-opt"><input type="radio" name="font" value="keep" <%= draft.fonts.length ? '' : 'checked' %>><span>Keep the current fonts<small><%= now.headingFont || now.bodyFont ? (now.headingFont || 'style font') + ' + ' + (now.bodyFont || 'style font') : "The style's own fonts" %></small></span></label>
+        </div>
+        <div>
+          <h3>Buttons and corners</h3>
+          <% const sug = shapes.find(x => x.id === draft.shape.id); %>
+          <label class="bk-opt"><input type="radio" name="shape" value="<%= sug.id %>" checked><span><%= sug.label %><small><%= draft.shape.why %></small>
+            <span class="bk-btn" style="--c:<%= (draft.pair || {}).primary || now.primaryColor %>; border-radius:<%= { square: '0', rounded: '8px', pill: '999px' }[sug.buttonShape] || '8px' %>;">Button</span></span></label>
+          <label class="bk-opt"><input type="radio" name="shape" value="keep"><span>Keep the current shape</span></label>
+        </div>
+        <div>
+          <h3>Browser icon</h3>
+          <label class="bk-opt"><input type="checkbox" name="icons" value="1" checked><span>
+            <span class="bk-tab"><img src="<%= draft.icons.faviconUrl %>" alt=""><%= site.name %></span>
+            <img src="<%= draft.icons.touchIconUrl %>" alt="" style="width:60px; height:60px; border-radius:14px; display:block; margin-top:8px; box-shadow:0 2px 8px rgba(0,0,0,.15);">
+            <small>Shown in browser tabs and when someone adds the site to their phone's home screen.</small></span></label>
+          <input type="hidden" name="faviconUrl" value="<%= draft.icons.faviconUrl %>"><input type="hidden" name="touchIconUrl" value="<%= draft.icons.touchIconUrl %>">
+        </div>
+      </div>
+      <h3>Share picture</h3>
+      <label class="bk-opt"><input type="checkbox" name="share" value="1" <%= draft.hasShare ? '' : 'checked' %>><span><img class="bk-share" src="<%= draft.share %>" alt="Share picture preview">
+        <small>Shown when the site link is texted or posted (1200 x 630). <%= draft.hasShare ? 'This site already has a share picture; tick this to replace it.' : 'Made from the home photo and the logo.' %></small></span></label>
+      <input type="hidden" name="shareUrl" value="<%= draft.share %>">
+      <label class="bk-opt"><input type="checkbox" name="save_kit" value="1" checked><span>Also save as a reusable brand kit called
+        <input type="text" name="kit_name" value="<%= site.name %>" maxlength="60" style="margin:6px 0 0;"></span></label>
+      <button type="submit">Apply to this site</button>
+      <p class="muted" style="font-size:12.5px;">The current look is saved in Version history first, so this can be undone.</p>
+    </form>
+    <% } %>
+
+    <div class="card">
+      <h2 style="margin-top:0;">Saved brand kits</h2>
+      <% if (!kits.length) { %><p class="muted">None yet. Build one above, or save this site's current look.</p><% } %>
+      <% kits.forEach(k => { %>
+        <div class="bk-kit">
+          <% if (k.kit.logoUrl) { %><img src="<%= k.kit.logoUrl %>" alt=""><% } %>
+          <span style="flex:1; min-width:180px;"><strong><%= k.name %></strong><br>
+            <% if (k.kit.primaryColor) { %><span class="bk-dots"><i style="background:<%= k.kit.primaryColor %>"></i><i style="background:<%= k.kit.accentColor %>"></i></span><% } %>
+            <span class="muted" style="font-size:12.5px;"><%= k.kit.headingFont ? k.kit.headingFont + ' + ' + (k.kit.bodyFont || 'style font') : "style's fonts" %><%= k.kit.shape ? ' · ' + k.kit.shape + ' buttons' : '' %></span></span>
+          <form method="POST" action="/sites/<%= site.id %>/brand/kits/<%= k.id %>/apply"><button type="submit" class="btn-secondary">Apply to this site</button></form>
+          <form method="POST" action="/sites/<%= site.id %>/brand/kits/<%= k.id %>/delete"><button type="submit" class="btn-secondary" aria-label="Delete <%= k.name %>">Delete</button></form>
+        </div>
+      <% }) %>
+      <form method="POST" action="/sites/<%= site.id %>/brand/save" style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; margin-top:12px;">
+        <label style="margin:0; flex:1; min-width:200px;">Save this site's current look as a kit
+          <input type="text" name="kit_name" value="<%= site.name %>" maxlength="60" style="margin:4px 0 0;"></label>
+        <button type="submit" class="btn-secondary">Save as brand kit</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<%# Original layout ("Photo with the header blended in"): the owner's hero photo fills the top of the page and the header (name or logo and menu) sits right on it, see-through. A dark fade on the left keeps the words readable on any photo. A small letter-spaced label sits over a big headline whose [bracketed] words turn to an italic serif, then the subheadline and a round pill button. With no photo, a deep gradient in the brand colors takes its place. %>
+<section class="sg-lib" data-sg-section="hero/blend">
+  <% var trust = d.trust || []; %>
+  <div class="sg-blend relative isolate flex items-end overflow-hidden" style="<%= d.scrimVars || '' %>; --blend-focal: <%= d.focal || '50% 50%' %>; <%= d.pillVars || '' %>">
+    <% if (d.image) { %>
+      <img class="sg-blend-ph absolute inset-0 -z-20 size-full object-cover" src="<%= d.image %>" alt="" fetchpriority="high" decoding="async">
+    <% } else { %>
+      <div class="sg-blend-sky absolute inset-0 -z-20" aria-hidden="true"></div>
+    <% } %>
+    <div class="sg-blend-fade absolute inset-0 -z-10" aria-hidden="true"></div>
+    <div class="mx-auto w-full max-w-7xl px-4 pt-40 pb-20 sm:px-6 lg:px-8 lg:pb-24">
+      <div class="sg-blend-text max-w-3xl min-w-0 text-white">
+        <% if (d.eyebrow) { %><p class="sg-blend-eyebrow m-0 text-sm text-white" data-animate="hero"><%= d.eyebrow %></p><% } %>
+        <h1 class="sg-blend-h1 mt-5 font-heading text-balance text-white" data-animate="hero"><%- d.headlineHtml %></h1>
+        <% if (d.sub) { %><p class="mt-6 max-w-xl text-base text-pretty text-white sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+        <div class="mt-9 flex flex-wrap items-center gap-4" data-animate="hero">
+          <a class="sg-blend-pill inline-block rounded-full px-7 py-4 font-semibold" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+          <% if (d.phone) { %><a class="inline-block rounded-full border border-white/60 px-6 py-3.5 font-medium text-white transition-colors hover:bg-white/10" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+        </div>
+        <% if (trust.length) { %>
+          <ul class="mt-8 flex list-none flex-wrap gap-x-6 gap-y-2 p-0 text-sm text-white" data-animate="hero">
+            <% trust.forEach(function (t) { %><li class="flex items-center gap-2"><svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><%= t %></li><% }) %>
+          </ul>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,14 @@
+<%# Original layout (quiet scrolling banner, drawn from scratch): outlined text on the page color between two hairlines. %>
+<section class="sg-lib" data-sg-section="banner/quiet">
+  <div class="tw:border-y tw:border-line tw:bg-page tw:py-4">
+    <div class="sg-marquee" tabindex="0" aria-label="<%= d.items.join(', ') %>">
+      <div class="sg-marquee-track" style="animation-duration: <%= Math.max(36, d.items.length * 11) %>s">
+        <% [0, 1].forEach(function (copy) { %>
+          <div class="tw:flex tw:shrink-0 tw:items-center tw:gap-8 <%= copy ? 'sg-marquee-dup' : '' %>" <%- copy ? 'aria-hidden="true"' : '' %>>
+            <% d.items.forEach(function (t) { %><span class="tw:font-heading tw:text-lg tw:font-semibold tw:tracking-wide tw:whitespace-nowrap tw:text-ink tw:uppercase"><%= t %></span><span class="tw:text-primary" aria-hidden="true">&#9679;</span><% }) %>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</section>

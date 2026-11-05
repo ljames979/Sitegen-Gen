@@ -1,0 +1,16 @@
+<h3>About</h3>
+<label>Heading</label>
+<input type="text" name="about_heading" value="<%= site.sections.about.heading %>" maxlength="60">
+<label>Small label above the heading (optional, e.g. "Our care")</label>
+<input type="text" name="about_eyebrow" value="<%= site.sections.about.eyebrow || '' %>" maxlength="40">
+<label>Body</label>
+<textarea name="about_body" maxlength="2000"><%= site.sections.about.body %></textarea>
+<label>Photo (optional — shown alongside the text in a two-column layout)</label>
+<div class="upload-row">
+  <input type="url" name="about_imageUrl" value="<%= site.sections.about.imageUrl %>" placeholder="https://... or upload">
+  <input type="file" accept="image/*" class="file-input" hidden>
+  <button type="button" class="btn-secondary upload-btn">Upload</button>
+  <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+</div>
+<label>Describe this photo (helps Google and screen readers)</label>
+<input type="text" name="about_imageAlt" value="<%= site.sections.about.imageAlt || '' %>" maxlength="140" placeholder="e.g. Our team outside the Kissimmee office">

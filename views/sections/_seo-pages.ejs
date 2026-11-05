@@ -1,0 +1,44 @@
+<% const seoS = site.sections.seo || {}; const sp = seoS.pages || {};
+   const PAGE_ROWS = [['about', 'About'], ['services', 'Services'], ['testimonials', 'Reviews'], ['whyChoose', 'Why Choose Us'], ['gallery', 'Gallery'], ['faq', 'FAQ'], ['blog', 'News & Tips'], ['hours', 'Hours'], ['contact', 'Contact']].concat(site.sections.booking && site.sections.booking.enabled ? [['book', 'Booking']] : []); %>
+<p class="muted" style="font-size:12.5px; margin:0 0 8px;">Write your own Google title and description for any page. Leave a box empty to keep the automatic one. The home page uses the Site &amp; SEO box above; each service has its own boxes in the Services section. A title is shown by Google as the blue link, so lead with what the page is and where.</p>
+<% PAGE_ROWS.forEach(([k, label]) => { const e = sp[k] || {}; %>
+  <details class="seo-page-row" <%= (e.title || e.description || e.shareImage || e.noindex) ? 'open' : '' %>>
+    <summary><strong><%= label %></strong><% if (e.noindex) { %> <span class="muted">(hidden from Google)</span><% } else if (e.title || e.description) { %> <span class="muted">(custom)</span><% } %></summary>
+    <label>Title</label>
+    <input type="text" name="seopage_<%= k %>_title" value="<%= e.title || '' %>" maxlength="70" placeholder="Automatic: <%= label %> — <%= site.name %>">
+    <label>Description</label>
+    <textarea name="seopage_<%= k %>_description" rows="2" maxlength="160"><%= e.description || '' %></textarea>
+    <label>Share picture (optional)</label>
+    <input type="text" name="seopage_<%= k %>_shareImage" value="<%= e.shareImage || '' %>" placeholder="Empty = the site's share picture">
+    <label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" name="seopage_<%= k %>_noindex" value="1" style="width:auto;" <%= e.noindex ? 'checked' : '' %>> Ask Google not to list this page (it still works for people who have the link)</label>
+  </details>
+<% }) %>
+
+<h4 style="margin:18px 0 4px;">Redirects (old addresses to new pages)</h4>
+<p class="muted" style="font-size:12.5px; margin:0 0 8px;">Rebuilding a client's old website? Send each old address to its new page so visitors and Google do not hit a dead end. <strong>From</strong> is the old path, like <code>/about-us.html</code>. End it with <code>/*</code> to cover everything under a folder (<code>/old-blog/*</code>); put <code>*</code> in the target to carry the rest across (<code>/news/*</code>). <strong>To</strong> is a page on this site (<code>/services</code>) or a full web address. "Permanent (301)" tells Google the move is for good.</p>
+<div id="rdList">
+  <% (seoS.redirects || []).forEach(r => { %>
+    <div class="service-row rd-row">
+      <input type="text" name="rd_from" value="<%= r.from %>" placeholder="/old-page.html" maxlength="200">
+      <input type="text" name="rd_to" value="<%= r.to %>" placeholder="/services or https://..." maxlength="500">
+      <select name="rd_code"><option value="301" <%= r.code === 301 ? 'selected' : '' %>>Permanent (301)</option><option value="302" <%= r.code === 302 ? 'selected' : '' %>>Temporary (302)</option></select>
+      <button type="button" class="btn-secondary remove-row">✕</button>
+    </div>
+  <% }) %>
+</div>
+<button type="button" class="btn-secondary" data-add="rd">+ Add redirect</button>
+<template id="tpl-rd">
+  <div class="service-row rd-row">
+    <input type="text" name="rd_from" placeholder="/old-page.html" maxlength="200">
+    <input type="text" name="rd_to" placeholder="/services or https://..." maxlength="500">
+    <select name="rd_code"><option value="301">Permanent (301)</option><option value="302">Temporary (302)</option></select>
+    <button type="button" class="btn-secondary remove-row">✕</button>
+  </div>
+</template>
+
+<h4 style="margin:18px 0 4px;">"Page not found" page</h4>
+<p class="muted" style="font-size:12.5px; margin:0 0 8px;">Shown (in your site's own style) when someone opens an address that does not exist. Leave blank for a friendly default.</p>
+<label>Heading</label>
+<input type="text" name="nf_heading" value="<%= (seoS.notFound || {}).heading || '' %>" maxlength="80" placeholder="We can't find that page">
+<label>Message</label>
+<input type="text" name="nf_text" value="<%= (seoS.notFound || {}).text || '' %>" maxlength="300" placeholder="The link may be old or mistyped. Here are some places to go instead.">

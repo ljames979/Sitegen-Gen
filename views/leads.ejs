@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Leads — <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .lead-card { display: flex; gap: 16px; align-items: flex-start; }
+    .lead-photo { width: 72px; height: 72px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; }
+    .pill { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border); background: #fff; font-size: 14px; color: var(--text); }
+    .pill.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .lead-status-form { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .lead-status-form select { width: auto; margin: 0; }
+    .lead-status-form input[type=text] { flex: 1; min-width: 180px; margin: 0; }
+    .lead-answers { display: grid; grid-template-columns: max-content 1fr; gap: 3px 14px; margin: 8px 0 0; font-size: 14px; }
+    .lead-answers dt { color: var(--muted); } .lead-answers dd { margin: 0; font-weight: 500; }
+    .due-badge { background:#fef3c7; color:#92400e; padding:2px 10px; border-radius:999px; font-size:12px; font-weight:700; margin-left:6px; }
+    .src-badge { background:#f1f5f9; color:#475569; padding:2px 8px; border-radius:999px; font-size:12px; margin-left:6px; }
+    .lead-status-form input[type=date] { width:auto; margin:0; }
+    .lead-meta { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="row">
+      <a href="/sites/<%= site.id %>/edit" class="muted">&larr; <%= site.name %></a>
+      <strong>Leads</strong>
+    </div>
+  </nav>
+
+  <div class="container">
+    <p class="muted">Messages visitors have sent through your published site's forms. Mark where each one stands so nothing gets forgotten.</p>
+
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
+      <% [['all','All'], ['due', 'Follow up today']].concat(statuses.map(st => [st, st.charAt(0).toUpperCase() + st.slice(1)])).forEach(([key, label]) => { %>
+        <a href="/sites/<%= site.id %>/leads<%= key === 'all' ? '' : '?status=' + key %>" class="pill <%= filter === key ? 'on' : '' %>"><%= label %> (<%= (counts[key] || 0) %>)</a>
+      <% }) %>
+      <span style="flex:1;"></span>
+      <a href="/sites/<%= site.id %>/leads.csv" class="muted" style="font-size:14px;">Download CSV</a>
+    </div>
+
+    <% if (!leads.length) { %>
+      <div class="card">
+        <p class="muted" style="margin:0;"><%= counts.all ? 'Nothing in this view.' : "No messages yet. Once your site is published and someone fills in the contact form, it'll show up here." %></p>
+      </div>
+    <% } else { %>
+      <% leads.forEach(lead => { %>
+        <div class="card lead-card" id="lead-<%= lead.id %>" style="margin-bottom: 14px;">
+          <% if (lead.image_url) { %>
+            <img class="lead-photo" src="<%= lead.image_url %>" alt="">
+          <% } %>
+          <div style="flex:1; min-width:0;">
+            <div class="lead-meta"><%= lead.created_at %><% if (lead.due) { %><span class="due-badge">Follow up today</span><% } %><% if (lead.source && lead.source !== 'form') { %><span class="src-badge"><%= {chat: 'From chat', estimate: 'From estimate'}[lead.source] || lead.source %></span><% } %><% if (lead.pendingFollowUps) { %><span class="src-badge"><%= lead.pendingFollowUps %> automatic email<%= lead.pendingFollowUps === 1 ? '' : 's' %> queued</span><% } %><% if (lead.opted_out) { %><span class="src-badge">Opted out of emails</span><% } %></div>
+            <div style="font-weight:600;">
+              <%= lead.name || 'Someone' %>
+              <% if (lead.email) { %> · <a href="mailto:<%= lead.email %>"><%= lead.email %></a><% } %>
+              <% if (site.sections.payments && site.sections.payments.enabled) { %> · <a href="/sites/<%= site.id %>/payments?lead=<%= lead.id %>">Request payment</a><% } %>
+              <% if (lead.phone) { %> · <a href="tel:<%= lead.phone.replace(/[^0-9+]/g, '') %>"><%= lead.phone %></a><% } %>
+            </div>
+            <% if (lead.service) { %><div style="margin-top:4px;"><span style="background:#eef2ff; color:#3730a3; padding:2px 10px; border-radius:999px; font-size:13px; font-weight:600;"><%= lead.service %></span></div><% } %>
+            <% if (lead.answerList && lead.answerList.length) { %><dl class="lead-answers"><% lead.answerList.forEach(a => { %><dt><%= a.label %></dt><dd><%= a.value %></dd><% }) %></dl><% } %>
+            <% if (lead.message) { %><p style="margin: 6px 0 0;"><%= lead.message %></p><% } %>
+            <form method="POST" action="/sites/<%= site.id %>/leads/<%= lead.id %>" class="lead-status-form">
+              <input type="hidden" name="filter" value="<%= filter %>">
+              <select name="status">
+                <% statuses.forEach(st => { %><option value="<%= st %>" <%= lead.status === st ? 'selected' : '' %>><%= st.charAt(0).toUpperCase() + st.slice(1) %></option><% }) %>
+              </select>
+              <label style="margin:0; align-self:center; font-size:13px;" class="muted">Follow up</label>
+              <input type="date" name="follow_up_at" value="<%= lead.follow_up_at || '' %>">
+              <input type="text" name="notes" value="<%= lead.notes || '' %>" maxlength="1000" placeholder="Private note (e.g. quoted $4,200, call back Friday)">
+              <button type="submit" class="btn-secondary">Save</button>
+            </form>
+          </div>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<%# Original layout ("Showcase strip"): the headline beside the site's own photos gliding past as tilted cards (a pause button, and still for visitors who turn motion off), with a proof bar under it: a real number, the site's badges or certification logos one after another, and its real reviews one after another. Dark colors come from scrimhero.js, so the words stay readable in every style. %>
+<section class="sg-lib" data-sg-section="hero/showcase">
+  <% var glide = d.glide || [], pf = d.proof, trust = d.trust || []; %>
+  <div class="sg-sh tw:relative tw:isolate tw:overflow-hidden" style="<%= d.scrimVars || '' %>; --sh-n: <%= glide.length || 1 %>">
+    <div class="sg-sh-glow tw:absolute tw:inset-0 tw:-z-10" aria-hidden="true"></div>
+    <div class="tw:mx-auto tw:grid tw:max-w-7xl tw:grid-cols-1 tw:items-center tw:gap-10 tw:px-4 tw:pt-20 tw:pb-12 tw:sm:px-6 tw:lg:px-8 <%= glide.length ? 'tw:lg:grid-cols-12 tw:lg:pt-28' : 'tw:lg:pt-32' %>">
+      <div class="sg-sh-text tw:min-w-0 <%= glide.length ? 'tw:lg:col-span-5' : 'tw:mx-auto tw:max-w-3xl tw:text-center' %>">
+        <h1 class="sg-scrim-h1 tw:font-heading tw:text-4xl tw:font-bold tw:text-balance tw:sm:text-5xl tw:lg:text-6xl" data-animate="hero"><%- d.headlineHtml %></h1>
+        <% if (d.sub) { %><p class="tw:mt-5 tw:text-base tw:text-pretty tw:text-white tw:sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+        <div class="tw:mt-8 tw:flex tw:flex-wrap tw:gap-4 <%= glide.length ? '' : 'tw:justify-center' %>" data-animate="hero">
+          <a class="sg-scrim-cta tw:inline-block tw:px-6 tw:py-3 tw:font-semibold" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+          <% if (d.phone) { %><a class="sg-scrim-ghost tw:inline-block tw:border tw:border-white/60 tw:px-6 tw:py-3 tw:font-medium tw:text-white tw:transition-colors tw:hover:bg-white/10" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+        </div>
+        <% if (trust.length) { %>
+          <ul class="tw:mt-7 tw:flex tw:list-none tw:flex-wrap tw:gap-x-6 tw:gap-y-2 tw:p-0 tw:text-sm tw:text-white <%= glide.length ? '' : 'tw:justify-center' %>" data-animate="hero">
+            <% trust.forEach(function (t) { %><li class="tw:flex tw:items-center tw:gap-2"><svg class="tw:size-4 tw:shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><%= t %></li><% }) %>
+          </ul>
+        <% } %>
+      </div>
+      <% if (glide.length) { %>
+        <div class="sg-sh-stage tw:relative tw:min-w-0 tw:lg:col-span-7" data-sg-glide>
+          <div class="sg-sh-view" role="region" aria-label="Photos" tabindex="0">
+            <ul class="sg-sh-track tw:m-0 tw:flex tw:list-none tw:p-0">
+              <% [0, 1].forEach(function (copy) { glide.forEach(function (g) { %>
+                <li class="sg-sh-card tw:relative tw:mr-5 tw:shrink-0 tw:overflow-hidden"<%- copy ? ' aria-hidden="true"' : '' %>>
+                  <img class="sg-noshape tw:h-full tw:w-full tw:object-cover" src="<%= g.src %>" alt="<%= copy ? '' : g.alt %>" loading="<%= copy ? 'lazy' : 'eager' %>">
+                  <% if (g.label) { %><span class="sg-sh-label tw:absolute tw:bottom-3 tw:left-3 tw:px-3 tw:py-1 tw:text-sm tw:font-semibold tw:text-white"><%= g.label %></span><% } %>
+                </li>
+              <% }) }) %>
+            </ul>
+          </div>
+          <button type="button" class="sg-sh-pause tw:absolute tw:right-3 tw:bottom-3 tw:inline-flex tw:items-center tw:justify-center tw:text-white" data-sg-glide-pause aria-pressed="false" aria-label="Pause the moving photos">
+            <svg class="sg-sh-i-pause tw:size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>
+            <svg class="sg-sh-i-play tw:size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"></path></svg>
+          </button>
+        </div>
+      <% } %>
+    </div>
+    <% if (pf) { %>
+      <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:pb-10 tw:sm:px-6 tw:lg:px-8" data-animate="hero">
+        <div class="sg-sh-proof tw:grid tw:gap-px tw:overflow-hidden tw:sm:grid-cols-2 tw:lg:grid-cols-3">
+          <% if (pf.stat) { %>
+            <div class="sg-sh-cell tw:p-6">
+              <p class="tw:m-0 tw:font-heading tw:text-3xl tw:font-bold tw:text-white"<%- pf.stat.countAttrs ? ' ' + pf.stat.countAttrs : '' %>><%= pf.stat.value %></p>
+              <p class="sg-sh-dim tw:m-0 tw:mt-1 tw:text-sm"><%= pf.stat.label %></p>
+            </div>
+          <% } %>
+          <% if (pf.marks.length) { %>
+            <div class="sg-sh-cell tw:p-6">
+              <div class="sg-sh-rot" data-sg-cycle="3200">
+                <% pf.marks.forEach(function (m, i) { %>
+                  <div class="sg-sh-item tw:flex tw:min-h-10 tw:items-center tw:gap-3"<%- i ? ' aria-hidden="true"' : '' %> data-on="<%= i ? 0 : 1 %>">
+                    <% if (m.src) { %><img class="sg-noshape tw:h-10 tw:w-auto tw:max-w-40 tw:object-contain" src="<%= m.src %>" alt="<%= m.alt %>" loading="lazy"><% } else { %><svg class="tw:size-6 tw:shrink-0 tw:text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"></path><polyline points="9 12 11 14 15 10"></polyline></svg><span class="tw:font-heading tw:text-lg tw:font-semibold tw:text-white"><%= m.label %></span><% } %>
+                  </div>
+                <% }) %>
+              </div>
+              <% if (pf.marks.length > 1) { %><p class="sg-sh-dim tw:m-0 tw:mt-2 tw:text-sm"><%= pf.marks.length %> reasons to trust us</p><% } %>
+            </div>
+          <% } %>
+          <% if (pf.reviews.length) { %>
+            <div class="sg-sh-cell tw:p-6 <%= (pf.stat && pf.marks.length) ? 'tw:sm:col-span-2 tw:lg:col-span-1' : '' %>">
+              <div class="sg-sh-rot" data-sg-cycle="5200">
+                <% pf.reviews.forEach(function (r, i) { %>
+                  <figure class="sg-sh-item tw:m-0 tw:flex tw:gap-4"<%- i ? ' aria-hidden="true"' : '' %> data-on="<%= i ? 0 : 1 %>">
+                    <% if (r.photo) { %><img class="sg-noshape tw:size-14 tw:shrink-0 tw:rounded-full tw:object-cover" src="<%= r.photo %>" alt="" loading="lazy"><% } else if (r.name) { %><span class="sg-sh-avatar tw:inline-flex tw:size-14 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-full tw:font-heading tw:text-lg tw:font-bold" aria-hidden="true"><%= r.name.trim().charAt(0).toUpperCase() %></span><% } %>
+                    <div class="tw:min-w-0">
+                      <% if (r.rating) { %><p class="sg-sh-stars tw:m-0 tw:text-sm" aria-label="<%= r.rating %> out of 5 stars"><%= '★'.repeat(Math.round(r.rating)) %></p><% } %>
+                      <blockquote class="tw:m-0 tw:text-sm/relaxed tw:text-white">&ldquo;<%= r.quote %>&rdquo;</blockquote>
+                      <% if (r.name) { %><figcaption class="sg-sh-dim tw:mt-1 tw:text-sm"><%= r.name %></figcaption><% } %>
+                    </div>
+                  </figure>
+                <% }) %>
+              </div>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</section>

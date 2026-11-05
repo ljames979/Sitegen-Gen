@@ -1,0 +1,15 @@
+<%# Adapted from Start Bootstrap Grayscale (MIT) masthead: a full-screen photo fading to black, a huge widely spaced uppercase headline that fades out at the bottom, quiet words and an uppercase button. %>
+<section class="sg-lib" data-sg-section="hero/fade">
+  <div class="relative isolate flex min-h-[min(100svh,64rem)] items-center overflow-hidden bg-black">
+    <div class="mx-auto w-full max-w-5xl px-4 py-28 text-center sm:px-6 lg:px-8">
+      <h1 class="sg-gs-h1 font-heading font-bold uppercase" data-animate="hero"><%- d.headlineHtml %></h1>
+      <% if (d.sub) { %><p class="mx-auto mt-6 max-w-2xl text-lg text-pretty text-white/60 sm:text-xl/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+      <div class="mt-10 flex flex-wrap justify-center gap-4" data-animate="hero">
+        <a class="inline-block rounded-md bg-primary px-8 py-4 text-sm font-bold tracking-[.15em] text-on-primary uppercase transition-opacity hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+        <% if (d.phone) { %><a class="inline-block rounded-md border border-white/40 px-8 py-4 text-sm font-bold tracking-[.15em] text-white uppercase transition-colors hover:bg-white/10" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+      </div>
+    </div>
+    <% if (d.image) { %><img class="absolute inset-0 -z-10 h-full w-full object-cover" src="<%= d.image %>" alt="" fetchpriority="high" style="object-position: <%= d.focal %>"><% } %>
+    <div class="sg-gs-fade absolute inset-0 -z-10"></div>
+  </div>
+</section>

@@ -1,0 +1,48 @@
+<%# Original layout ("Floating 3D shapes", drawn from scratch): glassy shapes in the site's brand colors (a sphere, a turning cube, a tilted ring, a few shards and a cable) drift behind a big headline. They lean toward the mouse and spread apart as the visitor scrolls. A typing cursor blinks after the headline and a ring of text spins around a round button that plays the owner's own video (or goes to the main button's link). Everything is still for visitors who turn motion off. %>
+<% var pf = d.proof, trust = d.trust || [], ringLabel = d.video ? 'Watch our work' : (d.ctaText || 'Contact us'), reps = Math.max(1, Math.round(38 / (ringLabel.length + 3))), ringText = Array(reps).fill(ringLabel.toUpperCase()).join('  •  ') + '  •  '; %>
+<section class="sg-lib" data-sg-section="hero/shapes">
+  <div class="sg-3d-hero relative isolate overflow-hidden" data-sg-shapes>
+    <div class="sg-3d-stage absolute inset-0 -z-10" aria-hidden="true">
+      <svg class="sg-3d-cable" viewBox="0 0 1000 600" preserveAspectRatio="none"><path d="M560 -20 C 520 160, 760 140, 700 300 S 520 520, 640 640"></path><path d="M980 80 C 860 120, 900 260, 800 330 S 760 560, 900 620"></path></svg>
+      <i class="sg-3d sg-3d-sphere" style="--d:.7;--ox:1"></i>
+      <i class="sg-3d sg-3d-cubewrap" style="--d:1.2;--ox:1"><b class="sg-3d-cube"><b class="sg-3d-f sg-3d-f1"></b><b class="sg-3d-f sg-3d-f2"></b><b class="sg-3d-f sg-3d-f3"></b><b class="sg-3d-f sg-3d-f4"></b><b class="sg-3d-f sg-3d-f5"></b><b class="sg-3d-f sg-3d-f6"></b></b></i>
+      <i class="sg-3d sg-3d-ringwrap" style="--d:.9;--ox:-1"><b class="sg-3d-ring"></b></i>
+      <i class="sg-3d sg-3d-shard sg-3d-shard1" style="--d:1.6;--ox:1"></i>
+      <i class="sg-3d sg-3d-shard sg-3d-shard2" style="--d:1.3;--ox:-1"></i>
+      <i class="sg-3d sg-3d-shard sg-3d-shard3" style="--d:2;--ox:1"></i>
+      <i class="sg-3d sg-3d-dot" style="--d:1.8;--ox:-1"></i>
+    </div>
+    <div class="mx-auto w-full max-w-7xl px-4 py-24 sm:px-6 lg:px-8 lg:py-28">
+      <div class="sg-3d-text max-w-3xl min-w-0">
+        <h1 class="sg-3d-h1 font-heading font-bold text-balance text-ink" data-animate="hero"><%- d.headlineHtml %><span class="sg-caret" aria-hidden="true"></span></h1>
+        <% if (d.sub) { %><p class="mt-6 max-w-xl text-base text-pretty text-ink opacity-80 sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+        <div class="mt-8 flex flex-wrap items-center gap-4" data-animate="hero">
+          <a class="inline-block rounded-full bg-primary px-6 py-3 font-semibold text-on-primary shadow-[var(--shadow-md)] transition-opacity hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+          <% if (d.phone) { %><a class="sg-3d-ghost inline-block rounded-full px-6 py-3 font-medium text-ink" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+        </div>
+        <div class="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4" data-animate="hero">
+          <% if (d.video) { %>
+            <button type="button" class="sg-3d-ringbtn" data-sg-vid-open aria-label="Play our video">
+          <% } else { %>
+            <a class="sg-3d-ringbtn" href="<%= d.ctaHref %>" aria-label="<%= d.ctaText %>">
+          <% } %>
+              <svg class="sg-3d-ringtext" viewBox="0 0 120 120" aria-hidden="true"><defs><path id="sgRingPath" d="M60,60 m-47,0 a47,47 0 1,1 94,0 a47,47 0 1,1 -94,0"></path></defs><text><textPath href="#sgRingPath" textLength="294" lengthAdjust="spacing"><%= ringText %></textPath></text></svg>
+              <span class="sg-3d-play" aria-hidden="true"><% if (d.video) { %><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"></path></svg><% } else { %><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="18" x2="18" y2="6"></line><polyline points="9 6 18 6 18 15"></polyline></svg><% } %></span>
+          <% if (d.video) { %></button><% } else { %></a><% } %>
+          <% if (pf && pf.stat) { %><p class="sg-3d-pill m-0 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-ink"><strong class="font-heading text-base"><span<%- pf.stat.countAttrs || '' %>><%= pf.stat.value %></span></strong><span class="opacity-80"><%= pf.stat.label %></span></p><% } %>
+          <% if (trust.length) { %>
+            <ul class="m-0 flex list-none flex-wrap gap-x-5 gap-y-2 p-0 text-sm text-ink">
+              <% trust.forEach(function (t) { %><li class="flex items-center gap-2"><svg class="size-4 shrink-0 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><%= t %></li><% }) %>
+            </ul>
+          <% } %>
+        </div>
+      </div>
+    </div>
+    <% if (d.video) { %>
+      <dialog class="sg-3d-dlg" data-sg-vid aria-label="Our video">
+        <video controls playsinline preload="none" src="<%= d.video %>"></video>
+        <button type="button" class="sg-3d-close" data-sg-vid-close aria-label="Close the video">&times;</button>
+      </dialog>
+    <% } %>
+  </div>
+</section>

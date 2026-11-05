@@ -1,0 +1,98 @@
+<%# Motion extras CSS (motionfx.js). Everything that moves is inside a no-preference media query, so visitors who
+    ask for reduced motion see the finished, still page. %>
+<% const _mt = motionFx.tune(site.theme); %>
+<style>
+  body { --mp-ease: <%= motionFx.easeCss(_mt.ease) %>; --mp-k: <%= _mt.k %>; }
+  /* the one selector for "main buttons": the site's own buttons and the library's brand-colored links */
+  @media (prefers-reduced-motion: no-preference) {
+    /* button micro-interactions */
+    body.bfx-shine :is(.btn, nav.site-nav .nav-cta, a.tw\:bg-primary) { background-image: linear-gradient(110deg, transparent 38%, rgba(255,255,255,.42) 50%, transparent 62%); background-size: 260% 100%; background-repeat: no-repeat; animation: bfx-shine 5s ease-in-out 1.2s infinite; }
+    @keyframes bfx-shine { 0% { background-position: 150% 0; } 30%, 100% { background-position: -60% 0; } }
+    body.bfx-nudge :is(.btn, a.tw\:bg-primary)::after { content: "\2192" / ""; display: inline-block; margin-left: .45em; transition: transform .28s var(--mp-ease); }
+    body.bfx-nudge :is(.btn, a.tw\:bg-primary):hover::after { transform: translateX(5px); }
+    body.bfx-press :is(.btn, .btn-outline, nav.site-nav .nav-cta, a.tw\:bg-primary) { transition: transform .15s ease, box-shadow .2s ease; }
+    body.bfx-press :is(.btn, .btn-outline, nav.site-nav .nav-cta, a.tw\:bg-primary):active { transform: scale(.95); }
+    body.bfx-magnetic :is(.btn, a.tw\:bg-primary) { transition: translate .25s var(--mp-ease); }
+
+    /* kinetic headlines (work best with a font from the Variable group) */
+    body.kx-weight :is(.hero h1, [data-sg-fam="hero"] h1) { animation: kx-weight calc(1.3s * var(--mp-k)) var(--mp-ease) .15s both; }
+    body.kx-width :is(.hero h1, [data-sg-fam="hero"] h1) { animation: kx-width calc(1.3s * var(--mp-k)) var(--mp-ease) .15s both; }
+    @keyframes kx-weight { from { font-weight: 150; } }
+    @keyframes kx-width { from { font-stretch: 62%; letter-spacing: .14em; } }
+    @supports (animation-timeline: view()) {
+      body.kx-weight main h2 { animation: kx-weight linear both; animation-timeline: view(); animation-range: entry 5% cover 38%; }
+      body.kx-width main h2 { animation: kx-width linear both; animation-timeline: view(); animation-range: entry 5% cover 38%; }
+    }
+    .kx-word { display: inline-block; white-space: nowrap; }
+    .kx-l { display: inline-block; opacity: 0; transform: translateY(.5em) rotate(5deg); filter: blur(3px); transition: opacity calc(.5s * var(--mp-k)) var(--mp-ease), transform calc(.6s * var(--mp-k)) var(--mp-ease), filter calc(.5s * var(--mp-k)) ease; transition-delay: calc(var(--i) * 22ms * var(--mp-k)); }
+    .kx-in .kx-l { opacity: 1; transform: none; filter: none; }
+
+    /* scroll-driven reveals: photos unmask and settle as they scroll in (no script) */
+    @supports (animation-timeline: view()) {
+      body.fx-scroll main :is(img.tw\:object-cover, .blk-img img, .about-split-photo img, .gallery-grid img, .svc-tile img):not([data-sg-fam="hero"] img) { animation: fx-unmask linear both; animation-timeline: view(); animation-range: entry 0% cover 35%; }
+      @keyframes fx-unmask { from { clip-path: inset(16% 12% 16% 12% round 28px); opacity: .35; } to { clip-path: inset(0 0 0 0 round 0); opacity: 1; } }
+    }
+
+    /* photo hovers (mouse only) */
+    @media (hover: hover) and (pointer: fine) {
+      body.pfx-color main :is(img.tw\:object-cover, .gallery-grid img, .svc-tile img) { filter: grayscale(1); transition: filter .6s ease; }
+      body.pfx-color main :is(a, figure, div):hover > :is(img.tw\:object-cover, img), body.pfx-color main img:hover { filter: none; }
+      body.pfx-zoom main :is(img.tw\:object-cover, .gallery-grid img, .svc-tile img) { transition: scale .7s var(--mp-ease); }
+      body.pfx-zoom main :is(a, figure, div):hover > img.tw\:object-cover, body.pfx-zoom main img:hover { scale: 1.06; }
+      body.pfx-tilt [data-sg-tilt] { transition: transform .35s var(--mp-ease); transform-style: preserve-3d; will-change: transform; }
+    }
+    img.sg-hover2 { opacity: 0; transition: opacity .45s ease; pointer-events: none; }
+    :hover > img.sg-hover2, img.sg-hover2.on { opacity: 1; }
+
+    /* Ken Burns: slow pan and zoom on the hero photos */
+    body.fx-kenburns :is(#heroBg, .hero-slide) { animation: fx-kb calc(14s * var(--mp-k)) ease-in-out infinite alternate; }
+    body.fx-kenburns .hero-slide:nth-of-type(even) { animation-name: fx-kb2; }
+    body.fx-kenburns [data-sg-fam="hero"] :is([data-sg-section^="hero/overlay"], [data-sg-section^="hero/card"]) img { animation: fx-kb calc(16s * var(--mp-k)) ease-in-out infinite alternate; }
+    @keyframes fx-kb { from { scale: 1; translate: 0 0; } to { scale: 1.14; translate: -2% -1.5%; } }
+    @keyframes fx-kb2 { from { scale: 1.12; translate: 2% 1%; } to { scale: 1; translate: 0 0; } }
+
+    /* success moments */
+    body.fx-success .thanks .check { animation: fx-pop .55s cubic-bezier(.3,1.6,.5,1) both; }
+    body.fx-success .thanks .check polyline { stroke-dasharray: 26; stroke-dashoffset: 26; animation: fx-draw .5s ease-out .35s forwards; }
+    body.fx-success .form-flash.success { animation: fx-pop .5s cubic-bezier(.3,1.5,.5,1) both; }
+    @keyframes fx-pop { from { opacity: 0; scale: .7; } }
+    @keyframes fx-draw { to { stroke-dashoffset: 0; } }
+
+    /* service-area chips pop in one by one with a soft pulse as they scroll in (no script) */
+    @supports (animation-timeline: view()) {
+      body.fx-areas :is(.area-chips, [data-sg-section^="areas/"] ul) > * { animation: fx-chip linear both; animation-timeline: view(); animation-range: entry calc(var(--ci, 0) * 3%) entry calc(45% + var(--ci, 0) * 3%); }
+      <% for (let i = 1; i <= 24; i++) { %>body.fx-areas :is(.area-chips, [data-sg-section^="areas/"] ul) > :nth-child(<%= i %>) { --ci: <%= i - 1 %>; }
+      <% } %>
+      @keyframes fx-chip { 0% { opacity: 0; scale: .5; box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 55%, transparent); } 60% { opacity: 1; scale: 1.06; box-shadow: 0 0 0 10px color-mix(in srgb, var(--primary) 0%, transparent); } 100% { scale: 1; } }
+    }
+
+    /* hero spotlight (mouse only): a soft light follows the pointer */
+    .fx-spot-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .5s ease; mix-blend-mode: soft-light;
+      background: radial-gradient(420px circle at var(--sx, 50%) var(--sy, 40%), rgba(255,255,255,.55), transparent 65%); }
+    .fx-spot-on .fx-spot-layer { opacity: 1; }
+  }
+  /* "Steps" block, stacking cards look */
+  .steps-stack { list-style: none; margin: 0 auto; padding: 0; max-width: 720px; }
+  .steps-stack li { position: sticky; top: calc(88px + var(--i, 0) * 14px); display: flex; gap: 16px; align-items: flex-start; margin-bottom: 18px; background: var(--page-bg); color: var(--ink); border: 1px solid var(--border); border-radius: calc(var(--radius) * 1.3); padding: 24px; box-shadow: var(--shadow-md); }
+  .steps-stack strong { font-family: var(--heading-font); font-size: 19px; }
+  .steps-stack p { margin: 6px 0 0; color: var(--muted); }
+  /* highlighter and circle marks (drawn by sg-fx.js; still and complete for reduced motion) */
+  .sg-hl { color: inherit; padding: 0 .08em; border-radius: .12em; background: linear-gradient(transparent 56%, color-mix(in srgb, var(--primary) 45%, transparent) 56%, color-mix(in srgb, var(--primary) 45%, transparent) 92%, transparent 92%) no-repeat 0 0 / 0% 100%; transition: background-size calc(1s * var(--mp-k)) var(--mp-ease) .45s; }
+  .sg-hl.on { background-size: 100% 100%; }
+  .sg-circ { position: relative; display: inline-block; }
+  .sg-circ svg { position: absolute; left: -22%; top: -24%; width: 144%; height: 148%; max-width: none; max-height: none; display: block; overflow: visible; pointer-events: none; }
+  .sg-circ path { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset calc(1.1s * var(--mp-k)) var(--mp-ease) .2s; }
+  .bg-primary .sg-circ path, .stats-band .sg-circ path, [data-sg-bg="brand"] .sg-circ path { stroke: currentColor; }
+  .sg-circ.on path { stroke-dashoffset: 0; }
+  /* rotating headline word: the client's own service names */
+  .sg-rotate { margin: .35em 0 0; font: 600 clamp(1.1rem, 2.4vw, 1.6rem)/1.25 var(--heading-font); color: inherit; }
+  .sg-rot { display: inline-grid; vertical-align: bottom; overflow: hidden; color: var(--brand-text, var(--primary-ink, var(--primary))); text-decoration: underline; text-decoration-color: var(--primary); text-decoration-thickness: .12em; text-underline-offset: .18em; }
+  .hero .sg-rot, [data-sg-bg="photo"] .sg-rot, [data-sg-section^="hero/overlay"] .sg-rot, [data-sg-section^="hero/card"] .sg-rot, .sg-blend .sg-rot { color: inherit; }
+  .sg-rot > span { grid-area: 1 / 1; transition: transform calc(.55s * var(--mp-k)) var(--mp-ease), opacity .4s ease; }
+  .sg-rot > span:not(.on) { transform: translateY(105%); opacity: 0; }
+  .sg-rot > span.out { transform: translateY(-105%); opacity: 0; }
+  /* ink-in headings: words are only wrapped (by sg-fx.js) when motion is on, so a still page shows them solid */
+  .ink-on .ink-w { opacity: .2; transition: opacity calc(.35s * var(--mp-k)) ease; }
+  .ink-on .ink-w.lit { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .sg-hl, .sg-circ path, .sg-rot > span { transition: none; } .ink-on .ink-w { opacity: 1; } }
+</style>

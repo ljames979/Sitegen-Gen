@@ -1,0 +1,18 @@
+<%# Adapted from HyperUI (MIT) marketing/banners/2 and marketing/sections/1: text on one side, photo on the other. %>
+<section class="sg-lib" data-sg-section="hero/split">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="sg-flip tw:grid tw:grid-cols-1 tw:gap-8 tw:md:grid-cols-2 tw:md:items-center tw:md:gap-12">
+        <div class="tw:max-w-prose tw:text-left tw:md:max-w-none">
+          <h1 class="tw:font-heading tw:text-4xl tw:font-bold tw:text-ink tw:sm:text-5xl" data-animate="hero"><%- d.headlineHtml %></h1>
+          <% if (d.sub) { %><p class="tw:mt-4 tw:text-base tw:text-pretty tw:text-muted tw:sm:text-lg/relaxed" data-animate="hero"><%= d.sub %></p><% } %>
+          <div class="tw:mt-4 tw:flex tw:flex-wrap tw:gap-4 tw:sm:mt-6" data-animate="hero">
+            <a class="tw:inline-block tw:rounded-md tw:bg-primary tw:px-5 tw:py-3 tw:font-medium tw:text-on-primary tw:shadow-[var(--shadow-sm)] tw:transition-opacity tw:hover:opacity-90" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+            <% if (d.phone) { %><a class="tw:inline-block tw:rounded-md tw:border tw:border-line tw:bg-page tw:px-5 tw:py-3 tw:font-medium tw:text-ink tw:shadow-[var(--shadow-sm)] tw:transition-colors tw:hover:bg-surface" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+          </div>
+        </div>
+        <% if (d.image) { %><div data-animate="scene"><img class="tw:aspect-[4/3] tw:w-full tw:rounded-xl tw:object-cover tw:shadow-[var(--shadow-md)]" src="<%= d.image %>" alt="" fetchpriority="high"></div><% } %>
+      </div>
+    </div>
+  </div>
+</section>

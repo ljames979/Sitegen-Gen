@@ -1,0 +1,15 @@
+<%# Adapted from Start Bootstrap Agency (MIT) masthead: a photo behind an italic line, a huge uppercase headline and one big uppercase button. Colors, fonts and corners come from the site theme. %>
+<section class="sg-lib" data-sg-section="hero/masthead">
+  <div class="tw:relative tw:isolate tw:overflow-hidden <%= d.image ? 'tw:bg-black' : 'tw:bg-primary' %>">
+    <div class="tw:mx-auto tw:max-w-5xl tw:px-4 tw:pt-28 tw:pb-24 tw:text-center tw:sm:px-6 tw:lg:px-8 tw:lg:pt-44 tw:lg:pb-36">
+      <% if (d.eyebrow) { %><p class="tw:text-xl tw:italic tw:sm:text-3xl <%= d.image ? 'tw:text-white/90' : 'tw:text-on-primary' %>" data-animate="hero"><%= d.eyebrow %></p><% } %>
+      <h1 class="tw:mt-4 tw:font-heading tw:text-4xl/tight tw:font-bold tw:tracking-wide tw:uppercase tw:sm:text-6xl/tight tw:lg:text-7xl/tight <%= d.image ? 'tw:text-white' : 'tw:text-on-primary' %>" data-animate="hero"><%- d.headlineHtml %></h1>
+      <% if (d.sub) { %><p class="tw:mx-auto tw:mt-5 tw:max-w-2xl tw:text-base tw:text-pretty tw:sm:text-lg/relaxed <%= d.image ? 'tw:text-white/85' : 'tw:text-on-primary' %>" data-animate="hero"><%= d.sub %></p><% } %>
+      <div class="tw:mt-9 tw:flex tw:flex-wrap tw:justify-center tw:gap-4" data-animate="hero">
+        <a class="tw:inline-block tw:rounded-md tw:px-8 tw:py-4 tw:text-base tw:font-bold tw:tracking-wider tw:uppercase tw:transition-opacity tw:hover:opacity-90 tw:sm:text-lg <%= d.image ? 'tw:bg-primary tw:text-on-primary' : 'tw:bg-page tw:text-ink' %>" href="<%= d.ctaHref %>"><%= d.ctaText %></a>
+        <% if (d.phone) { %><a class="tw:inline-block tw:rounded-md tw:border-2 tw:px-8 tw:py-4 tw:text-base tw:font-bold tw:tracking-wider tw:uppercase tw:transition-colors tw:hover:bg-white/10 tw:sm:text-lg <%= d.image ? 'tw:border-white/80 tw:text-white' : 'tw:border-current tw:text-on-primary' %>" href="tel:<%= d.phoneHref %>">Call <%= d.phone %></a><% } %>
+      </div>
+    </div>
+    <% if (d.image) { %><img class="tw:absolute tw:inset-0 tw:-z-10 tw:h-full tw:w-full tw:object-cover" src="<%= d.image %>" alt="" fetchpriority="high" style="object-position: <%= d.focal %>"><div class="tw:absolute tw:inset-0 tw:-z-10 tw:bg-black/55"></div><% } %>
+  </div>
+</section>

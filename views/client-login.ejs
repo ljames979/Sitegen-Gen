@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Website login</title>
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <%- include('partials-head') %>
+</head>
+<body>
+  <div class="narrow card">
+    <% if (mode === 'expired') { %>
+      <h2>This link has expired</h2>
+      <p class="muted">Invite links work for 7 days and only once. Ask whoever manages your website to send you a new one.</p>
+      <p><a href="/client-login">Already have a password? Log in</a></p>
+    <% } else if (mode === 'invite') { %>
+      <h2>Choose your password</h2>
+      <p class="muted">You are signing up to update <strong><%= typeof siteName !== 'undefined' ? siteName : 'your website' %></strong> as <strong><%= email %></strong>.</p>
+      <% if (error) { %><div class="error"><%= error %></div><% } %>
+      <form method="POST">
+        <label>Password (at least 8 characters)</label>
+        <input type="password" name="password" minlength="8" required autocomplete="new-password">
+        <label>Type it again</label>
+        <input type="password" name="password2" minlength="8" required autocomplete="new-password">
+        <button type="submit" style="margin-top:18px; width:100%;">Save password and continue</button>
+      </form>
+    <% } else if (mode === 'pick') { %>
+      <h2>Which website?</h2>
+      <% sites.forEach(s => { %><p><a class="btn" style="display:block; text-align:center;" href="/portal/<%= s.id %>"><%= s.name %></a></p><% }) %>
+      <form method="POST" action="/client-logout"><button type="submit" class="btn-secondary">Log out</button></form>
+    <% } else { %>
+      <h2>Log in to update your website</h2>
+      <% if (error) { %><div class="error"><%= error %></div><% } %>
+      <form method="POST" action="/client-login">
+        <label>Email</label>
+        <input type="email" name="email" value="<%= email %>" required autocomplete="username">
+        <label>Password</label>
+        <input type="password" name="password" required autocomplete="current-password">
+        <button type="submit" style="margin-top:18px; width:100%;">Log in</button>
+      </form>
+      <p class="muted" style="margin-top:16px; font-size:13px;">Forgot your password? Ask whoever manages your website to send a new invite.</p>
+    <% } %>
+  </div>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<%# Adapted from HyperUI (MIT) marketing/testimonials. CSS scroll-snap, arrow buttons wired in public/sg-lib.js (works by swiping without JS). %>
+<section class="sg-lib" data-sg-section="testimonials/carousel">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-7xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <div class="tw:relative tw:mt-8" data-sg-carousel>
+        <div class="tw:flex tw:snap-x tw:snap-mandatory tw:gap-4 tw:overflow-x-auto tw:pb-4" data-sg-track>
+          <% d.items.forEach(function (it) { %>
+            <blockquote class="tw:flex tw:w-[85%] tw:shrink-0 tw:snap-center tw:flex-col tw:rounded-xl tw:border tw:border-line tw:bg-page tw:p-6 tw:shadow-[var(--shadow-sm)] tw:sm:w-[48%] tw:lg:w-[32%]">
+              <% if (it.rating) { %><p class="tw:text-primary" aria-label="<%= it.rating %> out of 5 stars"><%= "★".repeat(Math.round(it.rating)) %></p><% } %>
+              <p class="tw:mt-2 tw:flex-1 tw:text-pretty tw:text-ink">&ldquo;<%= it.quote %>&rdquo;</p>
+              <footer class="tw:mt-4 tw:flex tw:items-center tw:gap-3 tw:text-sm"><% if (it.photo) { %><img class="tw:size-10 tw:shrink-0 tw:rounded-full tw:object-cover" src="<%= it.photo %>" alt="" loading="lazy" decoding="async"><% } %><span><span class="tw:font-medium tw:text-ink"><%= it.name %></span><% if (it.role) { %><span class="tw:text-muted"> &middot; <%= it.role %></span><% } %></span></footer>
+            </blockquote>
+          <% }) %>
+        </div>
+        <div data-sg-arrows hidden><div class="tw:mt-2 tw:flex tw:justify-center tw:gap-3">
+          <button type="button" class="tw:size-10 tw:rounded-full tw:border tw:border-line tw:bg-page tw:text-ink tw:transition-colors tw:hover:border-primary" aria-label="Previous review" data-sg-prev>&larr;</button>
+          <button type="button" class="tw:size-10 tw:rounded-full tw:border tw:border-line tw:bg-page tw:text-ink tw:transition-colors tw:hover:border-primary" aria-label="Next review" data-sg-next>&rarr;</button>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,170 @@
+<h3>Contact</h3>
+<label>Heading</label>
+<input type="text" name="contact_heading" value="<%= site.sections.contact.heading %>" maxlength="60">
+<label>Small label above the heading (optional, e.g. "Our care")</label>
+<input type="text" name="contact_eyebrow" value="<%= site.sections.contact.eyebrow || '' %>" maxlength="40">
+<label>Email</label>
+<input type="email" name="contact_email" value="<%= site.sections.contact.email %>" maxlength="254">
+<label>Phone</label>
+<input type="text" name="contact_phone" value="<%= site.sections.contact.phone %>" maxlength="40">
+<label>Address</label>
+<input type="text" name="contact_address" value="<%= site.sections.contact.address %>" maxlength="200">
+<p class="muted" style="font-size:13px;">If you add an address, a map will be shown automatically on the published page.</p>
+
+<label>Other offices (optional)</label>
+<div id="locationList">
+  <% (site.sections.contact.locations || []).forEach(l => { %>
+    <div class="service-row">
+      <input type="text" name="loc_name" value="<%= l.name %>" placeholder="Office name" maxlength="80">
+      <input type="text" name="loc_address" value="<%= l.address %>" placeholder="Street address, city, state" maxlength="200">
+      <input type="text" name="loc_phone" value="<%= l.phone %>" placeholder="Phone" maxlength="40">
+      <button type="button" class="btn-secondary remove-row">✕</button>
+    </div>
+  <% }) %>
+</div>
+<button type="button" class="btn-secondary" data-add="location">+ Add office</button>
+<template id="tpl-location">
+  <div class="service-row">
+    <input type="text" name="loc_name" placeholder="Office name" maxlength="80">
+    <input type="text" name="loc_address" placeholder="Street address, city, state" maxlength="200">
+    <input type="text" name="loc_phone" placeholder="Phone" maxlength="40">
+    <button type="button" class="btn-secondary remove-row">✕</button>
+  </div>
+</template>
+
+<label style="display:flex; align-items:center; gap:8px; font-weight:400;">
+  <input type="checkbox" name="contact_acceptSubmissions" value="1" style="width:auto;" <%= site.sections.contact.acceptSubmissions ? 'checked' : '' %>>
+  Show a contact form on the published page (visitors can message you, optionally with a photo)
+</label>
+<% if (site.id) { %>
+  <p class="muted" style="font-size:13px;">Messages show up on your <a href="/sites/<%= site.id %>/leads" target="_blank">Leads page</a>.</p>
+<% } %>
+<% const cform = formsLib.normalize(site.sections.contact.form); %>
+<div class="cf-builder" id="cfBuilder">
+  <h4 style="margin:18px 0 4px;">Contact form builder</h4>
+  <p class="muted" style="font-size:12.5px; margin:0 0 8px;">Use the standard form (name, phone, email, service, message, photo) or build your own with the questions your business needs. Put questions on different steps to turn it into a step-by-step form.</p>
+  <select name="cf_mode" id="cfMode">
+    <option value="standard" <%= cform.mode === 'standard' ? 'selected' : '' %>>Standard form</option>
+    <option value="custom" <%= cform.mode === 'custom' ? 'selected' : '' %>>My own form (build below)</option>
+  </select>
+  <div id="cfCustom" <%= cform.mode === 'custom' ? '' : 'hidden' %>>
+    <label>Start from a template</label>
+    <select id="cfPreset">
+      <option value="">Choose a template to fill in the questions…</option>
+      <% formsLib.PRESETS.forEach(p => { %><option value="<%= p.id %>"><%= p.name %></option><% }) %>
+    </select>
+    <p class="muted" id="cfPresetHint" style="font-size:12.5px; margin:4px 0 0;">A template replaces the questions below. Edit, remove or add anything afterwards.</p>
+    <label>Form title (optional)</label>
+    <input type="text" name="cf_title" value="<%= cform.title %>" maxlength="80" placeholder="Request an estimate">
+    <label>Short intro under the title (optional)</label>
+    <input type="text" name="cf_intro" value="<%= cform.intro %>" maxlength="200">
+    <label>Send button text (optional)</label>
+    <input type="text" name="cf_submitText" value="<%= cform.submitText %>" maxlength="40" placeholder="Send my request">
+    <p class="muted" style="font-size:12.5px; margin:10px 0 4px;">Questions. <strong>Step</strong> groups questions onto one screen (all on step 1 = a normal one-page form). For dropdown / pick-one / pick-several, list the choices separated by commas. Keep at least a Phone or Email question so you can reply.</p>
+    <div id="cfList">
+      <% cform.fields.forEach(f => { %>
+        <div class="service-row cf-row">
+          <input type="text" name="cf_label" value="<%= f.label %>" placeholder="Question" maxlength="80">
+          <select name="cf_type" class="cf-type"><% formsLib.TYPES.forEach(t => { %><option value="<%= t[0] %>" <%= f.type === t[0] ? 'selected' : '' %>><%= t[1] %></option><% }) %></select>
+          <input type="text" name="cf_options" class="cf-options" value="<%= f.options.join(', ') %>" placeholder="Choices, comma separated" <%= formsLib.HAS_OPTIONS.includes(f.type) ? '' : 'hidden' %>>
+          <select name="cf_step" title="Step"><% [1,2,3,4,5].forEach(n => { %><option value="<%= n %>" <%= f.step === n ? 'selected' : '' %>>Step <%= n %></option><% }) %></select>
+          <select name="cf_required"><option value="0" <%= !f.required ? 'selected' : '' %>>Optional</option><option value="1" <%= f.required ? 'selected' : '' %>>Required</option></select>
+          <button type="button" class="btn-secondary cf-up" title="Move up">↑</button>
+          <button type="button" class="btn-secondary cf-down" title="Move down">↓</button>
+          <button type="button" class="btn-secondary remove-row">✕</button>
+        </div>
+      <% }) %>
+    </div>
+    <button type="button" class="btn-secondary" data-add="cfField">+ Add question</button>
+  </div>
+</div>
+<template id="tpl-cfField">
+  <div class="service-row cf-row">
+    <input type="text" name="cf_label" placeholder="Question" maxlength="80">
+    <select name="cf_type" class="cf-type"><% formsLib.TYPES.forEach(t => { %><option value="<%= t[0] %>" <%= t[0] === 'text' ? 'selected' : '' %>><%= t[1] %></option><% }) %></select>
+    <input type="text" name="cf_options" class="cf-options" placeholder="Choices, comma separated" hidden>
+    <select name="cf_step" title="Step"><% [1,2,3,4,5].forEach(n => { %><option value="<%= n %>">Step <%= n %></option><% }) %></select>
+    <select name="cf_required"><option value="0">Optional</option><option value="1">Required</option></select>
+    <button type="button" class="btn-secondary cf-up" title="Move up">↑</button>
+    <button type="button" class="btn-secondary cf-down" title="Move down">↓</button>
+    <button type="button" class="btn-secondary remove-row">✕</button>
+  </div>
+</template>
+<script type="application/json" id="cfPresets"><%- JSON.stringify(formsLib.PRESETS).replace(/</g, '\\u003c') %></script>
+<script>
+(function () {
+  const list = document.getElementById('cfList'), mode = document.getElementById('cfMode');
+  if (!list || !mode) return;
+  const form = document.getElementById('editorForm');
+  const poke = () => form && form.dispatchEvent(new Event('input', { bubbles: true }));
+  const hasOpts = ['select', 'radio', 'checkbox'];
+  mode.addEventListener('change', () => { document.getElementById('cfCustom').hidden = mode.value !== 'custom'; });
+  function syncRow(row) { row.querySelector('.cf-options').hidden = !hasOpts.includes(row.querySelector('.cf-type').value); }
+  list.addEventListener('change', (e) => { const r = e.target.closest('.cf-row'); if (r && e.target.matches('.cf-type')) syncRow(r); });
+  document.addEventListener('click', (e) => {
+    const row = e.target.closest('.cf-row');
+    if (!row) return;
+    if (e.target.closest('.cf-up') && row.previousElementSibling) { row.parentNode.insertBefore(row, row.previousElementSibling); poke(); }
+    if (e.target.closest('.cf-down') && row.nextElementSibling) { row.parentNode.insertBefore(row.nextElementSibling, row); poke(); }
+    if (e.target.closest('.remove-row')) poke();
+  });
+  document.getElementById('cfPreset').addEventListener('change', function () {
+    const presets = JSON.parse(document.getElementById('cfPresets').textContent);
+    const p = presets.find(x => x.id === this.value);
+    if (!p) return;
+    if (list.children.length && !confirm('Replace the current questions with this template?')) { this.value = ''; return; }
+    const tpl = document.getElementById('tpl-cfField');
+    list.innerHTML = '';
+    p.fields.forEach(f => {
+      const node = tpl.content.cloneNode(true), r = node.querySelector('.cf-row');
+      r.querySelector('[name=cf_label]').value = f.label;
+      r.querySelector('[name=cf_type]').value = f.type;
+      r.querySelector('[name=cf_options]').value = f.options || '';
+      r.querySelector('[name=cf_step]').value = String(f.step);
+      r.querySelector('[name=cf_required]').value = f.required ? '1' : '0';
+      syncRow(r);
+      list.appendChild(node);
+    });
+    const set = (n, v) => { const el = document.querySelector('[name=' + n + ']'); if (el) el.value = v || ''; };
+    set('cf_title', p.title); set('cf_intro', p.intro); set('cf_submitText', p.submitText);
+    this.value = '';
+    poke();
+  });
+})();
+</script>
+
+<label>Send new-message alerts to (optional)</label>
+<input type="email" name="contact_notifyEmail" value="<%= site.sections.contact.notifyEmail || '' %>" maxlength="254" placeholder="Defaults to the contact email above">
+<% if (typeof mailConfigured !== 'undefined' && mailConfigured) { %>
+  <p class="muted" style="font-size:13px;">Email alerts are on: each new message is emailed to this address (or the contact email if left blank).</p>
+<% } else { %>
+  <p class="muted" style="font-size:13px;">Email alerts are off until email sending is set up in the server's <code>.env</code> file (see the README, "Email alerts"). Messages still appear on the Leads page.</p>
+<% } %>
+
+<label class="check"><input type="checkbox" name="contact_homeMap" value="1" <%= site.sections.contact.homeMap ? 'checked' : '' %>> Show a "Where we work" map and service areas on the home page</label>
+<label class="check"><input type="checkbox" name="contact_footerHours" value="1" <%= site.sections.contact.footerHours ? 'checked' : '' %>> Show opening hours in the footer</label>
+
+<label>Floating button in the corner of every page</label>
+<select name="contact_floatButton">
+  <% const fb = site.sections.contact.floatButton || ''; %>
+  <option value="" <%= fb === '' ? 'selected' : '' %>>None</option>
+  <option value="text" <%= fb === 'text' ? 'selected' : '' %>>Text us (opens a text message to the phone number above)</option>
+  <option value="whatsapp" <%= fb === 'whatsapp' ? 'selected' : '' %>>WhatsApp (chat with the phone number above)</option>
+  <option value="call" <%= fb === 'call' ? 'selected' : '' %>>Call us (taps to call the phone number above)</option>
+  <option value="book" <%= fb === 'book' ? 'selected' : '' %>>Book now (needs online booking switched on)</option>
+  <option value="quote" <%= fb === 'quote' ? 'selected' : '' %>>Get a quote (goes to the contact page)</option>
+</select>
+<p class="muted" style="font-size:12.5px; margin:4px 0 0;">Needs a phone number above. A 10-digit US number is assumed to be +1; type the country code for other numbers. Only offer this if you actually answer texts.</p>
+<label style="display:flex; align-items:center; gap:8px; font-weight:400;">
+  <input type="checkbox" name="contact_autoReply" value="1" style="width:auto;" <%= site.sections.contact.autoReply ? 'checked' : '' %>>
+  Email visitors a "we received your request" note right after they submit the form
+</label>
+<textarea name="contact_autoReplyText" rows="2" maxlength="600" placeholder="Optional custom wording. Leave blank for a short default thank-you."><%= site.sections.contact.autoReplyText || '' %></textarea>
+<p class="muted" style="font-size:13px;">Only sent when email sending is set up and the visitor gave an email address. Replies go to the alert address above. Don't promise a response time here unless you can keep it.</p>
+
+<label>Facebook URL (optional)</label>
+<input type="url" name="contact_social_facebook" value="<%= site.sections.contact.social ? site.sections.contact.social.facebook : '' %>" placeholder="https://facebook.com/yourbusiness">
+<label>Instagram URL (optional)</label>
+<input type="url" name="contact_social_instagram" value="<%= site.sections.contact.social ? site.sections.contact.social.instagram : '' %>" placeholder="https://instagram.com/yourbusiness">
+<label>Twitter / X URL (optional)</label>
+<input type="url" name="contact_social_twitter" value="<%= site.sections.contact.social ? site.sections.contact.social.twitter : '' %>" placeholder="https://x.com/yourbusiness">

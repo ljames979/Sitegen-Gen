@@ -1,0 +1,25 @@
+<%# Adapted from HyperUI (MIT) marketing/sections list layouts: a clean price-list style. %>
+<section class="sg-lib" data-sg-section="services/list">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-4xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-20">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <ul class="tw:list-none tw:p-0 tw:mt-8 tw:divide-y tw:divide-line tw:overflow-hidden tw:rounded-xl tw:border tw:border-line tw:bg-page" data-animate="stagger">
+        <% d.items.forEach(function (it) { %>
+          <li>
+            <a class="tw:flex tw:items-start tw:justify-between tw:gap-6 tw:p-5 tw:transition-colors tw:hover:bg-surface" href="<%= it.href %>">
+              <span class="tw:block">
+                <span class="tw:block tw:font-heading tw:text-lg tw:font-semibold tw:text-ink"><%= it.title %></span>
+                <% if (it.description) { %><span class="tw:mt-1 tw:block tw:text-sm/relaxed tw:text-pretty tw:text-muted"><%= it.description %></span><% } %>
+              </span>
+              <span class="tw:shrink-0 tw:text-sm tw:font-medium tw:text-primary"><%= it.price || 'Details' %> &rarr;</span>
+            </a>
+          </li>
+        <% }) %>
+      </ul>
+    </div>
+  </div>
+</section>

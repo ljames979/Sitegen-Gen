@@ -1,0 +1,17 @@
+<%# Original layout (HyperUI-style spacing): towns the client actually serves, as chips. %>
+<section class="sg-lib" data-sg-section="areas/chips">
+  <div class="tw:bg-surface">
+    <div class="tw:mx-auto tw:max-w-5xl tw:px-4 tw:py-12 tw:sm:px-6 tw:lg:px-8 tw:lg:py-16">
+      <div class="tw:mx-auto tw:max-w-3xl tw:text-center" data-animate="fade-up">
+        <% if (d.eyebrow) { %><p class="tw:text-sm tw:font-medium tw:tracking-wide tw:text-primary tw:uppercase"><%= d.eyebrow %></p><% } %>
+        <h2 data-sg-head class="tw:font-heading tw:text-2xl tw:font-semibold tw:text-ink tw:sm:text-3xl"><%= d.heading %></h2>
+        <% if (d.intro) { %><p class="tw:mt-3 tw:text-pretty tw:text-muted"><%= d.intro %></p><% } %>
+      </div>
+      <ul class="tw:list-none tw:p-0 tw:mt-6 tw:flex tw:flex-wrap tw:justify-center tw:gap-2" data-animate="stagger">
+        <% d.items.forEach(function (a) { %>
+          <li><% if (a.href) { %><a class="tw:inline-block tw:rounded-full tw:border tw:border-line tw:bg-page tw:px-4 tw:py-2 tw:text-sm tw:text-ink tw:transition-colors tw:hover:border-primary tw:hover:text-primary" href="<%= a.href %>"><%= a.name %></a><% } else { %><span class="tw:inline-block tw:rounded-full tw:border tw:border-line tw:bg-page tw:px-4 tw:py-2 tw:text-sm tw:text-ink"><%= a.name %></span><% } %></li>
+        <% }) %>
+      </ul>
+    </div>
+  </div>
+</section>

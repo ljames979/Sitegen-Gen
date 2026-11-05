@@ -1,0 +1,52 @@
+<h3>Gallery</h3>
+<label>Heading</label>
+<input type="text" name="gallery_heading" value="<%= site.sections.gallery.heading %>" maxlength="60">
+<label>Small label above the heading (optional, e.g. "Our care")</label>
+<input type="text" name="gallery_eyebrow" value="<%= site.sections.gallery.eyebrow || '' %>" maxlength="40">
+<div id="galleryList">
+  <% site.sections.gallery.images.forEach((img, gi) => { %>
+    <div class="gallery-row upload-row">
+      <input type="url" name="gallery_image" value="<%= img %>" placeholder="https://... or upload">
+      <input type="text" name="gallery_alt" value="<%= (site.sections.gallery.alts || [])[gi] || '' %>" placeholder="Describe this photo (helps Google and screen readers)" maxlength="140" class="alt-input">
+      <input type="file" accept="image/*" class="file-input" hidden>
+      <button type="button" class="btn-secondary upload-btn">Upload</button>
+      <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+      <button type="button" class="btn-secondary remove-row">✕</button>
+    </div>
+  <% }) %>
+</div>
+<button type="button" class="btn-secondary" data-add="gallery">+ Add image</button>
+<%- include('_cards-pick', { site, fam: 'gallery' }) %>
+
+<h4 style="margin:22px 0 4px;">Before &amp; after (optional)</h4>
+<p class="muted" style="font-size:13px; margin-top:0;">Pairs of real project photos shown side by side. Both photos are needed for a pair to appear.</p>
+<% const baRows = [0, 1, 2].map(i => (site.sections.gallery.beforeAfter || [])[i] || { before: '', after: '', caption: '' }); %>
+<% baRows.forEach((p, i) => { %>
+  <div style="border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:8px;">
+    <label style="margin-top:0;">Pair <%= i + 1 %> — before</label>
+    <div class="upload-row">
+      <input type="url" name="ba_before" value="<%= p.before %>" placeholder="https://... or upload">
+      <input type="file" accept="image/*" class="file-input" hidden>
+      <button type="button" class="btn-secondary upload-btn">Upload</button>
+    </div>
+    <label>After</label>
+    <div class="upload-row">
+      <input type="url" name="ba_after" value="<%= p.after %>" placeholder="https://... or upload">
+      <input type="file" accept="image/*" class="file-input" hidden>
+      <button type="button" class="btn-secondary upload-btn">Upload</button>
+    </div>
+    <label>Caption (optional)</label>
+    <input type="text" name="ba_caption" value="<%= p.caption %>" maxlength="120" placeholder="Full roof replacement, Kissimmee">
+  </div>
+<% }) %>
+
+<template id="tpl-gallery">
+  <div class="gallery-row upload-row">
+    <input type="url" name="gallery_image" placeholder="https://... or upload">
+    <input type="text" name="gallery_alt" placeholder="Describe this photo (helps Google and screen readers)" maxlength="140" class="alt-input">
+    <input type="file" accept="image/*" class="file-input" hidden>
+    <button type="button" class="btn-secondary upload-btn">Upload</button>
+    <button type="button" class="btn-secondary pick-btn">Choose photo</button>
+    <button type="button" class="btn-secondary remove-row">✕</button>
+  </div>
+</template>
