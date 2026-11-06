@@ -10,6 +10,7 @@ module.exports = function (app, deps) {
     syncMixBlocks
   } = deps;
   const inlineEdit = require('../inlineedit');
+  const textBoxes = require('../textboxes'), textStyles = require('../textstyles'), elStyles = require('../elstyles'), picBoxes = require('../picboxes');
 
   // ---- show the client: pitch mode, three designs side by side, a private preview link ----
   function adviceTemplateFor(site) {
@@ -203,6 +204,19 @@ module.exports = function (app, deps) {
     db.prepare("UPDATE sites SET sections = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(sections), req.site.id);
     invalidateSiteCache(req.site);
     res.json({ ok: true, where: r.where, photos: inlineEdit.photos(sections) });
+  });
+  // the page tools on the Blocks screen's Edit mode (+ Add text, pictures, shapes, stamps, Style text, Move & size):
+  // the same four lists the editor saves, each one only when it is sent
+  app.post('/sites/:id/blocks/tools', requireAuth, loadOwnedSite, (req, res) => {
+    const b = req.body || {}, sections = req.site.sections || {};
+    const texts = sections.texts = sections.texts || {};
+    const kinds = [['texts_json', 'items', textBoxes], ['tstyles_json', 'styles', textStyles], ['estyles_json', 'elems', elStyles], ['pics_json', 'pics', picBoxes]];
+    let n = 0;
+    for (const [field, key, lib] of kinds) if (typeof b[field] === 'string') { texts[key] = lib.fromBody(b[field]); n++; }
+    if (!n) return res.status(400).json({ ok: false, error: 'Nothing to save.' });
+    db.prepare("UPDATE sites SET sections = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(sections), req.site.id);
+    invalidateSiteCache(req.site);
+    res.json({ ok: true });
   });
   app.post('/sites/:id/blocks/recipes', requireAuth, loadOwnedSite, (req, res) => {
     const blocks = mixPage.clean(req.body && req.body.blocks);

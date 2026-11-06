@@ -79,6 +79,14 @@
     .stage.fit iframe { width: 1280px; max-width: none; height: calc(100% / var(--z)); justify-self: start; transform: scale(var(--z)); transform-origin: 0 0; border-radius: 0; }
     .stage.phone iframe { max-width: 390px; }
     .stage iframe.next { visibility: hidden; }
+    .edtools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 16px; background: #fff; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+    .edtools[hidden] { display: none; }
+    .edtools-lbl { font-size: 13px; font-weight: 700; color: #64748b; }
+    .edtools-note { font-size: 12.5px; color: #64748b; }
+    .edtools .btn-secondary, .shape-pick .btn-secondary { font: 600 13px/1.2 inherit; font-family: inherit; padding: 6px 11px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; color: #0f172a; cursor: pointer; }
+    .edtools .btn-secondary:hover { border-color: #2563eb; }
+    .edtools .btn-secondary.on, .edtools .btn-secondary[aria-pressed="true"] { background: #2563eb; color: #fff; border-color: transparent; }
+    #edPick .shape-pick { flex-shrink: 0; }
     /* the library */
     .lib-head { padding: 0 14px 10px; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid #e2e8f0; }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -133,6 +141,19 @@
     <button type="button" class="ui-btn" id="openBtn">Open full page</button>
     <button type="button" class="ui-btn primary" id="saveBtn">Use on the home page</button>
   </div>
+
+  <%# Edit mode's page tools: the same + Add text / picture / shape / stamp, Style text and Move & size as the editor %>
+  <div class="edtools" id="edTools" hidden>
+    <span class="edtools-lbl">Tools:</span>
+    <%- include('_page-tools-bar', { cutTool: false }) %>
+    <span class="edtools-note">Changes save to the site right away.</span>
+  </div>
+  <div id="edPick"><%- include('_page-tools-pick') %></div>
+  <% const _tx = site.sections.texts || {}; %>
+  <input type="hidden" id="textsJson" value="<%= JSON.stringify(textBoxes.clean(_tx.items)) %>">
+  <input type="hidden" id="tstylesJson" value="<%= JSON.stringify(textStyles.clean(_tx.styles)) %>">
+  <input type="hidden" id="estylesJson" value="<%= JSON.stringify(elStyles.clean(_tx.elems)) %>">
+  <input type="hidden" id="picsJson" value="<%= JSON.stringify(picBoxes.clean(_tx.pics)) %>">
 
   <div class="wrap">
     <section class="pane" id="left" aria-labelledby="pageHead">
@@ -464,6 +485,10 @@
       doc.head.appendChild(st);
       doc.addEventListener('click', function (e) {
         if (e.target.closest && e.target.closest('.sg-ed-bar')) return;   // Edit mode's own buttons on the page
+        // the page tools (+ Add text, pictures, shapes, Style text, Move & size) handle their own clicks
+        var H = doc.documentElement.classList;
+        if (H.contains('sg-ts-mode') || H.contains('sg-es-mode') || H.contains('sg-pic-adding') || H.contains('sg-tx-adding')) return;
+        if (e.target.closest && e.target.closest('.sg-pic, [data-sg-tx], .sg-picbar, .sg-txbar, .sg-tsbar, .sg-esbar, .sg-cutpick')) return;
         var m = e.target.closest && e.target.closest('.sg-mix'); if (!m) return;
         if (ed.on && ed.typing(e.target)) { e.preventDefault(); return; }   // a click inside the words being typed places the caret (and follows no link)
         e.preventDefault(); e.stopPropagation();
@@ -476,6 +501,7 @@
       doc.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); } });
       arr.attach(doc);
       ed.attach(doc);
+      (window.sgToolHooks || []).forEach(function (fn) { try { fn(); } catch (err) { /* a tool that could not hook in */ } });
     }
     function mark(scroll) {
       var doc; try { doc = frame.contentDocument; } catch (e) { return; }
@@ -1155,6 +1181,15 @@
       };
       E.set = function (on) {
         E.on = on; if (!on) { endWords(true); closeBar(); }
+        // the page tools show in Edit mode; leaving it turns off any tool that is on
+        var tb = document.getElementById('edTools');
+        if (tb) {
+          tb.hidden = !on;
+          if (!on) {
+            tb.querySelectorAll('button[aria-pressed="true"]').forEach(function (b) { if (b.id !== 'addShapeBtn' && b.id !== 'addStampBtn') b.click(); });
+            var pc = document.getElementById('shapePickClose'), pk = document.getElementById('shapePick'); if (pk && !pk.hidden && pc) pc.click();
+          }
+        }
         try { frame.contentDocument.body.classList.toggle('sg-edmode', on); } catch (e) {}
         if (on) say('Edit: click words to type on them, or a photo to change it. Changes save to the site right away.', '');
       };
@@ -1285,7 +1320,51 @@
     });
 
     drawList(); drawSaved(); drawGrid();
+    // what the page tools (second script below) use from this screen
+    window.sgBlocks = { frame: function () { return frame; }, say: say, post: post, refresh: function () { refresh(); }, statusEl: statusEl, siteId: siteId };
   })();
+  </script>
+  <script src="/shapeart.js"></script>
+  <script>
+    // ---- the page tools (views/_page-tools.ejs) on this screen: what they need from the page they live on ----
+    var sgToolHooks = [];
+    Object.defineProperty(window, 'preview', { get: function () { return sgBlocks.frame(); }, configurable: true });
+    const statusEl = sgBlocks.statusEl, siteId = sgBlocks.siteId, say = sgBlocks.say, post = sgBlocks.post;
+    function onPreviewLoad(fn) { sgToolHooks.push(fn); }
+    let inlineEditing = false, pvStale = false;
+    let toolTimer = null, toolSaving = null, toolAgain = false;
+    function sendTools() {
+      var body = {}; [['textsJson', 'texts_json'], ['tstylesJson', 'tstyles_json'], ['estylesJson', 'estyles_json'], ['picsJson', 'pics_json']].forEach(function (x) { body[x[1]] = document.getElementById(x[0]).value; });
+      return post('/blocks/tools', body).then(function (d) { if (!d.ok) say(d.error || 'Not saved.', 'err'); }, function () { say('Not saved: the connection dropped. Try again.', 'err'); });
+    }
+    function runToolSave() {
+      toolTimer = null;
+      if (toolSaving) { toolAgain = true; return toolSaving; }
+      toolSaving = sendTools().finally(function () { toolSaving = null; if (toolAgain) { toolAgain = false; runToolSave(); } });
+      return toolSaving;
+    }
+    function scheduleAutosave() { clearTimeout(toolTimer); toolTimer = setTimeout(runToolSave, 600); }
+    async function flushSave() { if (toolTimer) { clearTimeout(toolTimer); runToolSave(); } while (toolSaving) await toolSaving; }
+    function freshPreview() { sgBlocks.refresh(); }
+    const isCut = (u) => /^\/uploads\/cut-[a-z0-9]+\.(webp|png)$/.test(String(u || '').trim());
+    const cutOrig = {
+      all() { try { return JSON.parse(localStorage.getItem('sg-cut-orig') || '{}') || {}; } catch (e) { return {}; } },
+      get(cut) { return this.all()[cut] || ''; },
+      set(cut, orig) { const m = this.all(); m[cut] = orig; try { localStorage.setItem('sg-cut-orig', JSON.stringify(m)); } catch (e) { /* storage blocked */ } }
+    };
+    async function cutPhoto(url) {
+      url = String(url || '').trim();
+      if (!url) throw new Error('Add a photo first');
+      if (isCut(url)) return url;
+      const r = await fetch('/sites/' + siteId + '/cutout', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ url }) });
+      const j = await r.json().catch(() => ({ ok: false, error: 'the app refused (error ' + r.status + ')' }));
+      if (!j.ok) throw new Error(j.error || 'Could not cut out that photo');
+      cutOrig.set(j.url, url);
+      return j.url;
+    }
+    const pickPhotoFor = null;   // the free photo search lives in the editor
+    window.addEventListener('beforeunload', function () { if (toolTimer) runToolSave(); });
+<%- include('_page-tools') %>
   </script>
 <script src="/colorlabel.js" defer></script>
 </body>
