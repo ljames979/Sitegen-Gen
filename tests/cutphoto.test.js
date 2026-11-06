@@ -6,7 +6,7 @@ const path = require('path');
 const pb = require('../picboxes');
 const photoBlend = require('../photoblend');
 
-const ed = fs.readFileSync(path.join(__dirname, '../views/editor.ejs'), 'utf8');
+const ed = ['editor', '_page-tools', '_page-tools-bar', '_page-tools-pick'].map(n => fs.readFileSync(path.join(__dirname, '../views/' + n + '.ejs'), 'utf8')).join('\n');   // the page tools live in shared partials
 
 test('cut out: every picture box in the panel gets the button, except the tab icon and the old-site screenshot', () => {
   assert.match(ed, /async function cutPhoto\(url\)[\s\S]*fetch\('\/sites\/' \+ siteId \+ '\/cutout'/);

@@ -4,11 +4,13 @@
 // taking turns) or the owner's own pictures (1 to 4; more than one take turns). Each one is pinned to its part of the
 // page at a spot measured in % of that part, so it stays over the same thing as the page grows.
 // Saved with the editor (hidden box pics_json) as sections.texts.pics:
-//   { id, page, at, x, y, w, h, art, photos, fit }
+//   { id, page, at, x, y, w, h, art, photos, fit, color, turn, text, sub }
+// art can also be an odd shape ('shape-sparkle') or a stamp ('stamp-round', with its words in text and sub).
 // The page draws them in the text boxes' hidden holder; public/sg-fx.js moves each into its part.
 const petArt = require('./petart');
+const shapeArt = require('./public/shapeart');   // odd shapes and stamps (+ Shape, + Stamp)
 
-const MAX = 20;
+const MAX = 40;   // pictures, paw prints, shapes and stamps together
 const MAX_PEEK = 9;   // pets in a peeking row
 const ID = /^p[a-z0-9]{7}$/;
 const PAGE = /^[a-z0-9][a-z0-9:/_-]{0,79}$/i;
@@ -24,7 +26,7 @@ const num = (v, lo, hi, d) => { const n = Number(v); return Number.isFinite(n) ?
 function cleanOne(p) {
   if (!p || typeof p !== 'object') return null;
   if (!ID.test(String(p.id || '')) || !PAGE.test(String(p.page || '')) || !AT.test(String(p.at || ''))) return null;
-  let art = ARTS.some(a => a[0] === p.art) ? p.art : '';
+  let art = ARTS.some(a => a[0] === p.art) || shapeArt.isArt(p.art) ? p.art : '';
   const photos = ([]).concat(Array.isArray(p.photos) ? p.photos : []).map(String).filter(u => u.length <= 500 && PHOTO.test(u)).slice(0, art === 'peek' ? MAX_PEEK : 4);
   if (!art && !photos.length) art = 'turns';   // nothing of their own yet: the pets stand in
   return {
@@ -34,7 +36,8 @@ function cleanOne(p) {
     art, photos: art && art !== 'peek' ? [] : photos,
     fit: FITS.some(f => f[0] === p.fit) ? p.fit : 'fit',
     color: HEX.test(String(p.color || '')) ? String(p.color).toLowerCase() : COLORS[p.color] ? p.color : 'brand',
-    turn: Math.round(num(p.turn, -180, 180, 0))
+    turn: Math.round(num(p.turn, -180, 180, 0)),
+    ...(/^stamp-/.test(art) ? { text: shapeArt.cleanText(p.text, shapeArt.MAX_TEXT), sub: shapeArt.cleanText(p.sub, shapeArt.MAX_SUB) } : {})
   };
 }
 function clean(list) {
@@ -48,9 +51,11 @@ function forPage(site, page) {
   return clean((((site || {}).sections || {}).texts || {}).pics).filter(p => p.page === page);
 }
 // the numbers come from clean, so they are safe to write into the page
-const style = (p) => `--x:${p.x}%;--y:${p.y}%;--w:${p.w}%;--h:${p.h}%` + (p.turn ? `;--r:${p.turn}deg` : '') + (isPaw(p) ? `;color:${COLORS[p.color] || p.color}` : '');
+const style = (p) => `--x:${p.x}%;--y:${p.y}%;--w:${p.w}%;--h:${p.h}%` + (p.turn ? `;--r:${p.turn}deg` : '') + (isInk(p) ? `;color:${COLORS[p.color] || p.color}` : '');
 const PAW_ARTS = ['paw', 'pawline', 'catpaw', 'catpawline', 'cattrail', 'cattrailline', 'pawtrail', 'pawtrailline'];
 const isPaw = (p) => PAW_ARTS.includes(p.art);
+// drawn in one color the owner picks: paw prints, odd shapes and stamps
+const isInk = (p) => isPaw(p) || shapeArt.isArt(p.art);
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 // what goes inside the box: the pets drawing(s) or the owner's pictures, the first one showing
 // Pets peeking over a hidden bar (Leo, 2026-11-02): a row of the owner's pet photos (or our drawn cats and dogs until
@@ -66,6 +71,7 @@ function peekPets(p) {
   }).join('');
 }
 function inner(p) {
+  if (shapeArt.isArt(p.art)) return shapeArt.svg(p.art, { fit: p.fit, on: true, uid: p.id, text: p.text, sub: p.sub });
   if (p.art === 'peek') return `<div class="sg-peek on${p.photos.length ? '' : ' sg-peek-drawn'}">${peekPets(p)}</div>`;
   const on = (i) => (i === 0 ? ' class="on"' : '');
   if (isPaw(p)) return petArt[/trail/.test(p.art) ? 'trail' : 'paw'](/line$/.test(p.art), p.fit, /^cat/.test(p.art) ? 'cat' : 'dog').replace('<svg class="sg-pets', '<svg class="on sg-pets');
@@ -78,4 +84,4 @@ function html(p) {
   return `<div class="sg-pic sg-pic-${p.fit}" data-sg-pic="${p.id}" data-at="${esc(p.at)}" style="${style(p)}"${turns(p) ? ' data-sg-tb-turns' : ''}><div class="sg-pic-in sg-tb-pic">${inner(p)}</div></div>`;
 }
 
-module.exports = { PAW_ARTS, clean, fromBody, forPage, style, inner, html, turns, isPaw, peekPets, ARTS, FITS, COLORS, MAX, MAX_PEEK };
+module.exports = { isInk, PAW_ARTS, clean, fromBody, forPage, style, inner, html, turns, isPaw, peekPets, ARTS, FITS, COLORS, MAX, MAX_PEEK };

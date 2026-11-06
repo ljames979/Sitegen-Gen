@@ -39,7 +39,7 @@ test('word styling takes an exact size from 8px to 200px', () => {
 test('your own text boxes: the page script pins each box to its part, and the editor has the tool', () => {
   const js = fs.readFileSync(path.join(__dirname, '../public/sg-fx.js'), 'utf8');
   assert.match(js, /window\.sgText = \{ parts: parts, key: textKey, find: find, place: place \}/);
-  const ed = fs.readFileSync(path.join(__dirname, '../views/editor.ejs'), 'utf8');
+  const ed = ['editor', '_page-tools', '_page-tools-bar', '_page-tools-pick'].map(n => fs.readFileSync(path.join(__dirname, '../views/' + n + '.ejs'), 'utf8')).join('\n');   // the page tools live in shared partials
   assert.match(ed, /id="addTextBtn"/); assert.match(ed, /name="texts_json" id="textsJson"/); assert.match(ed, /data-ie="style"/);
   assert.match(fs.readFileSync(path.join(__dirname, '../public/sg-site.css'), 'utf8'), /\.sg-tx \{ position: absolute; left: var\(--x\); top: var\(--y\); width: var\(--w\)/);
 });

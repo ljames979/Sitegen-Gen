@@ -79,7 +79,7 @@ test('peeking pets: up to 9 own photos (or our drawn pets), most rise and duck a
 
 test('your own pictures: the page script pins them, the editor has the tool, the CSS sizes them', () => {
   assert.match(fs.readFileSync(path.join(__dirname, '../public/sg-fx.js'), 'utf8'), /querySelectorAll\('\[data-sg-tx\], \[data-sg-pic\]'\), place\)/);
-  const ed = fs.readFileSync(path.join(__dirname, '../views/editor.ejs'), 'utf8');
+  const ed = ['editor', '_page-tools', '_page-tools-bar', '_page-tools-pick'].map(n => fs.readFileSync(path.join(__dirname, '../views/' + n + '.ejs'), 'utf8')).join('\n');   // the page tools live in shared partials
   assert.match(ed, /id="addPicBtn"/); assert.match(ed, /id="addPawBtn"/); assert.match(ed, /id="addCatPawBtn"[^>]*>\+ Cat paw<\/button>/); assert.match(ed, /id="addTrailBtn"[^>]*>\+ Paw trail<\/button>/); assert.match(ed, /cattrail: petArt\.trail\(false, 'fit', 'cat'\)/); assert.match(ed, /catpawline: petArt\.paw\(true, 'fit', 'cat'\)/); assert.match(ed, /data-a="smaller"[\s\S]*data-k="w"[\s\S]*data-k="h"/); assert.match(ed, /name="pics_json" id="picsJson"/);
   assert.match(fs.readFileSync(path.join(__dirname, '../public/sg-site.css'), 'utf8'), /\.sg-pic \{ position: absolute; left: var\(--x\); top: var\(--y\); width: var\(--w\); height: var\(--h\)/);
 });

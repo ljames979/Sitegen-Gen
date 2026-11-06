@@ -1,0 +1,30 @@
+<%# the + Shape / + Stamp picker (public/shapeart.js) %>
+      <div class="shape-pick" id="shapePick" hidden>
+        <div class="shape-pick-head"><strong id="shapePickTitle">Odd shapes</strong><span class="muted" id="shapePickHint"></span><button type="button" class="btn-secondary" id="shapePickClose">Close</button></div>
+        <div id="shapePickStampWords" class="shape-pick-words" hidden>
+          <label>Big words <input type="text" id="stampText" maxlength="<%= shapeArt.MAX_TEXT %>" value="<%= String(site.name || '').slice(0, shapeArt.MAX_TEXT) %>"></label>
+          <label>Small words <input type="text" id="stampSub" maxlength="<%= shapeArt.MAX_SUB %>" placeholder="optional, e.g. Fresh daily"></label>
+        </div>
+        <div id="shapePickList"></div>
+      </div>
+<style>
+    /* + Shape / + Stamp picker (public/shapeart.js) */
+    .shape-pick { border-bottom: 1px solid var(--border, #e2e8f0); background: #fff; padding: 10px 14px; max-height: 34vh; overflow: auto; flex-shrink: 0; }
+    .shape-pick[hidden] { display: none; }
+    .shape-pick-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; margin-bottom: 6px; }
+    .shape-pick-head .muted { flex: 1; min-width: 200px; }
+    .shape-pick-head .btn-secondary { padding: 4px 10px; font-size: 12.5px; }
+    .shape-pick-group { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted, #64748b); margin: 8px 0 4px; }
+    .shape-pick-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+    .shape-pick-words[hidden] { display: none; }
+    .shape-pick-words { display: flex; gap: 10px; flex-wrap: wrap; margin: 4px 0 8px; }
+    .shape-pick-words label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; margin: 0; }
+    .shape-pick-words input { width: 190px; margin: 0; padding: 5px 8px; font-size: 13px; }
+    .shape-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px 6px; border: 1px solid var(--border, #e2e8f0); border-radius: 10px; background: #fff; cursor: pointer; font-size: 12px; color: inherit; }
+    .shape-tile:hover { border-color: var(--primary, #2563eb); }
+    .shape-tile.on { border-color: var(--primary, #2563eb); box-shadow: 0 0 0 3px rgba(37, 99, 235, .18); background: #eff6ff; }
+    .shape-tile-art { position: relative; width: 72px; height: 56px; display: block; }
+    .shape-tile-art svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .shape-tile-name { text-align: center; line-height: 1.2; }
+    .shape-pick .btn-secondary { cursor: pointer; }
+</style>

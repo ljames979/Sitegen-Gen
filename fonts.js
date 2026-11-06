@@ -15,6 +15,18 @@ const FONTS = [
   { name: 'Creepster', group: 'Eccentric', single: true, hint: 'horror' },
   { name: 'Bangers', group: 'Eccentric', single: true, hint: 'comic book' },
   { name: 'Cinzel Decorative', group: 'Eccentric', weights: '700', hint: 'ornate roman' },
+  // special fonts (Leo, 2026-11-06): free Google look-alikes of hand-lettering styles (retro swirly script, brush
+  // script, hand-drawn capitals, tall cartoon capitals, worn wide capitals); shown as cards under Fonts > Special Fonts
+  { name: 'Leckerli One', group: 'Special fonts', single: true, hint: 'retro swirly script', look: 'Retro swirly script' },
+  { name: 'Sonsie One', group: 'Special fonts', single: true, hint: 'swashy groovy script', look: 'Swashy groovy script' },
+  { name: 'Shrikhand', group: 'Special fonts', single: true, hint: 'chunky retro italic', look: 'Chunky retro italic' },
+  { name: 'Yellowtail', group: 'Special fonts', single: true, hint: 'brush script', look: 'Brush script' },
+  { name: 'Kaushan Script', group: 'Special fonts', single: true, hint: 'bold brush script', look: 'Bold brush script' },
+  { name: 'Gloria Hallelujah', group: 'Special fonts', single: true, hint: 'hand-drawn capitals', look: 'Hand-drawn capitals', caps: true },
+  { name: 'Gochi Hand', group: 'Special fonts', single: true, hint: 'marker hand lettering', look: 'Marker hand lettering', caps: true },
+  { name: 'Luckiest Guy', group: 'Special fonts', single: true, hint: 'tall cartoon capitals', look: 'Tall cartoon capitals', caps: true },
+  { name: 'Chicle', group: 'Special fonts', single: true, hint: 'bouncy condensed capitals', look: 'Bouncy condensed capitals', caps: true },
+  { name: 'Rubik Dirt', group: 'Special fonts', single: true, hint: 'worn wide capitals', look: 'Worn wide capitals', caps: true },
   // bold headlines
   { name: 'Bebas Neue', group: 'Bold headlines', single: true },
   { name: 'Anton', group: 'Bold headlines', single: true },
@@ -86,4 +98,6 @@ function cssFamily(name, fallback) {
 
 const isVariable = (name) => { const f = byName.get(String(name || '').toLowerCase()); return !!(f && f.axes); };
 
-module.exports = { isVariable, FONTS, cleanFontName, isSingleWeight, familyParam, cssFamily };
+const SPECIAL = FONTS.filter(f => f.group === 'Special fonts');
+
+module.exports = { SPECIAL, isVariable, FONTS, cleanFontName, isSingleWeight, familyParam, cssFamily };
