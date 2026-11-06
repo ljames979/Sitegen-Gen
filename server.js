@@ -208,6 +208,7 @@ app.locals.patternBlock = patternBlock;
 app.locals.textBoxes = textBoxes;
 app.locals.picBoxes = picBoxes;
 app.locals.petArt = require('./petart');
+app.locals.shapeArt = require('./public/shapeart');
 app.locals.textStyles = textStyles;
 app.locals.elStyles = elStyles;
 app.set('view engine', 'ejs');

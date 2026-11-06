@@ -187,6 +187,31 @@
     .row-move { display: inline-flex; flex-direction: column; gap: 2px; flex: none; }
     .row-move button { background: #f1f5f9; color: var(--text); border: 1px solid var(--border); padding: 0; width: 30px; min-height: 19px; font-size: 11px; line-height: 1; border-radius: 6px; }
     .row-move button:hover, .row-move button:focus-visible { background: #dbeafe; }
+    /* + Shape / + Stamp picker (public/shapeart.js) */
+    .shape-pick { border-bottom: 1px solid var(--border); background: #fff; padding: 10px 14px; max-height: 34vh; overflow: auto; flex-shrink: 0; }
+    .shape-pick[hidden] { display: none; }
+    .shape-pick-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; margin-bottom: 6px; }
+    .shape-pick-head .muted { flex: 1; min-width: 200px; }
+    .shape-pick-head .btn-secondary { padding: 4px 10px; font-size: 12.5px; }
+    .shape-pick-group { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 8px 0 4px; }
+    .shape-pick-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+    .shape-pick-words[hidden] { display: none; }
+    .shape-pick-words { display: flex; gap: 10px; flex-wrap: wrap; margin: 4px 0 8px; }
+    .shape-pick-words label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; margin: 0; }
+    .shape-pick-words input { width: 190px; margin: 0; padding: 5px 8px; font-size: 13px; }
+    .shape-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px 6px; border: 1px solid var(--border); border-radius: 10px; background: #fff; cursor: pointer; font-size: 12px; color: inherit; }
+    .shape-tile:hover { border-color: var(--primary); }
+    .shape-tile.on { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, .18); background: #eff6ff; }
+    .shape-tile-art { position: relative; width: 72px; height: 56px; display: block; }
+    .shape-tile-art svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .shape-tile-name { text-align: center; line-height: 1.2; }
+    /* Fonts > Special Fonts cards */
+    .sf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin: 6px 0 12px; }
+    .sf-card { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: #fff; display: flex; flex-direction: column; gap: 6px; }
+    .sf-sample { font-size: 28px; line-height: 1.15; min-height: 66px; display: flex; align-items: center; overflow: hidden; word-break: break-word; }
+    .sf-name { font-size: 12.5px; } .sf-name .muted { display: block; }
+    .sf-use { display: flex; gap: 6px; } .sf-use .btn-secondary { padding: 4px 10px; font-size: 12.5px; }
+    .sf-use .btn-secondary.on { background: var(--primary); color: #fff; border-color: transparent; }
   </style>
 </head>
 <body>
@@ -650,6 +675,39 @@
           </select>
           <input type="text" name="theme_bodyFontCustom" value="<%= bSel && !known(bSel) ? bSel : '' %>" placeholder="…or type any Google Font name" class="font-custom" data-sample="bodySample">
           <div id="bodySample" class="font-sample" style="font-size:15px; margin:2px 0 10px;">Walk-ins welcome. Custom designs by appointment.</div>
+          <details class="sub special-fonts" id="specialFonts">
+            <summary>Special Fonts</summary>
+            <p class="hint">Hand-lettering looks: retro swirly script, brush script, hand-drawn capitals, tall cartoon capitals and worn capitals. Use one for the headings or the body, or pick it in Style text or + Add text to set just a few words in it.</p>
+            <div class="sf-grid"><% fonts.SPECIAL.forEach((f, i) => { %>
+              <div class="sf-card">
+                <div class="sf-sample" style="font-family:'<%= f.name %>', cursive; color:<%= ['#880d1e', '#dd2d4a', '#f26a8d', '#e0789c', '#4fb3c2'][i % 5] %>;<%= f.caps ? ' text-transform:uppercase;' : '' %>"><%= site.name || 'Your Business' %></div>
+                <div class="sf-name"><strong><%= f.name %></strong> <span class="muted"><%= f.look %></span></div>
+                <div class="sf-use"><button type="button" class="btn-secondary" data-sf-use="theme_headingFont" data-sf-font="<%= f.name %>">Headings</button><button type="button" class="btn-secondary" data-sf-use="theme_bodyFont" data-sf-font="<%= f.name %>">Body</button></div>
+              </div><% }) %></div>
+            <script>
+              (function () {
+                var box = document.getElementById('specialFonts'); if (!box) return;
+                var loaded = false;
+                function load() {
+                  if (loaded) return; loaded = true;
+                  var l = document.createElement('link'); l.rel = 'stylesheet';
+                  l.href = 'https://fonts.googleapis.com/css2?<%- fonts.SPECIAL.map(f => fonts.familyParam(f.name)).join('&') %>&display=swap';
+                  document.head.appendChild(l);
+                }
+                box.addEventListener('toggle', function () { if (box.open) load(); });
+                if (box.open) load();
+                box.addEventListener('click', function (e) {
+                  var b = e.target.closest('[data-sf-use]'); if (!b) return;
+                  var sel = document.querySelector('select[name=' + b.dataset.sfUse + ']'); if (!sel) return;
+                  sel.value = b.dataset.sfFont;
+                  sel.dispatchEvent(new Event('change', { bubbles: true })); sel.dispatchEvent(new Event('input', { bubbles: true }));
+                  box.querySelectorAll('[data-sf-use="' + b.dataset.sfUse + '"]').forEach(function (x) { x.classList.toggle('on', x === b); });
+                  var hc = document.querySelector('select[name=theme_headingCase]');
+                  if (b.dataset.sfUse === 'theme_headingFont' && hc && !hc.value && !/Hand|Guy|Chicle|Dirt|Hallelujah/.test(b.dataset.sfFont)) { hc.value = 'none'; hc.dispatchEvent(new Event('change', { bubbles: true })); }
+                });
+              })();
+            </script>
+          </details>
           <label>Heading capitalization</label>
           <select name="theme_headingCase">
             <option value="" <%= !site.theme.headingCase ? 'selected' : '' %>>Style default</option>
@@ -1017,9 +1075,19 @@
         <button type="button" class="btn-secondary" id="addPawBtn" aria-pressed="false" title="Stamp paw prints anywhere on a block: each click adds one, in your logo color (Esc or click here again to stop)">+ Paw print</button>
         <button type="button" class="btn-secondary" id="addCatPawBtn" aria-pressed="false" title="Stamp cat paw prints anywhere on a block: each click adds one (Esc or click here again to stop)">+ Cat paw</button>
         <button type="button" class="btn-secondary" id="addTrailBtn" aria-pressed="false" title="One click lays a whole trail of cat paw prints winding up the block; drag, size, turn and color it like one picture (pick a dog trail in its menu)">+ Paw trail</button>
+        <button type="button" class="btn-secondary" id="addShapeBtn" aria-pressed="false" title="Odd shapes: sparkles, drops, swirls, a cloud badge, an arrow banner, squiggles and more. Pick one, then click the page to place it (each click adds one)">+ Shape</button>
+        <button type="button" class="btn-secondary" id="addStampBtn" aria-pressed="false" title="Rubber stamps with your own words: round, framed, seal or postage stamp. Pick one, then click the page to stamp it">+ Stamp</button>
         <button type="button" class="btn-secondary" id="styleTextBtn" aria-pressed="false" title="Click any words on the page to set an exact size, font and color, stretch the box they sit in (drag the white handles), move them or type new words. Select a few words first to style only those">Style text</button>
         <button type="button" class="btn-secondary" id="moveSizeBtn" aria-pressed="false" title="Click any piece of a block (a picture, card, button, icon, shape or words) and drag it to move it, pull its white handles to make it bigger or smaller, type an exact width and height, zoom it, turn it, bring it to the front or hide it">✥ Move &amp; size</button>
         <a href="/sites/<%= site.id %>/preview" target="_blank" class="muted" title="Open the preview in a new tab (with the motion switcher)">Open &#8599;</a>
+      </div>
+      <div class="shape-pick" id="shapePick" hidden>
+        <div class="shape-pick-head"><strong id="shapePickTitle">Odd shapes</strong><span class="muted" id="shapePickHint"></span><button type="button" class="btn-secondary" id="shapePickClose">Close</button></div>
+        <div id="shapePickStampWords" class="shape-pick-words" hidden>
+          <label>Big words <input type="text" id="stampText" maxlength="<%= shapeArt.MAX_TEXT %>" value="<%= String(site.name || '').slice(0, shapeArt.MAX_TEXT) %>"></label>
+          <label>Small words <input type="text" id="stampSub" maxlength="<%= shapeArt.MAX_SUB %>" placeholder="optional, e.g. Fresh daily"></label>
+        </div>
+        <div id="shapePickList"></div>
       </div>
       <div class="preview-stage" id="previewStage"><iframe src="/sites/<%= site.id %>/preview?bar=0" id="previewFrame" title="Site preview"></iframe></div>
     </div>
@@ -1044,6 +1112,7 @@
   </div>
 
   <script src="/palette.js"></script>
+  <script src="/shapeart.js"></script>
   <script>
     const siteId = <%= site.id %>;
 
@@ -2920,6 +2989,8 @@
       const PAWS = <%- JSON.stringify({ paw: petArt.paw(false, 'fit'), pawline: petArt.paw(true, 'fit'), catpaw: petArt.paw(false, 'fit', 'cat'), catpawline: petArt.paw(true, 'fit', 'cat'), cattrail: petArt.trail(false, 'fit', 'cat'), cattrailline: petArt.trail(true, 'fit', 'cat'), pawtrail: petArt.trail(false, 'fit'), pawtrailline: petArt.trail(true, 'fit') }).replace(/</g, '\\u003c') %>;
       const PCOL = { brand: 'var(--primary)', accent: 'var(--accent)', white: '#ffffff', dark: '#111827' }, BRAND = '<%= site.theme.primaryColor || '#2563eb' %>';
       const isPaw = (p) => Object.prototype.hasOwnProperty.call(PAWS, p.art);
+      // odd shapes and stamps (public/shapeart.js): one color like the paws
+      const SA = window.ShapeArt, isShape = (p) => !!(SA && SA.isArt(p.art)), isStamp = (p) => /^stamp-/.test(p.art || '') && isShape(p), isInk = (p) => isPaw(p) || isShape(p);
       const PET1 = <%- JSON.stringify(Array.from({ length: 7 }, (_, i) => petArt.single(i))).replace(/</g, '\\u003c') %>, MAXPEEK = <%= picBoxes.MAX_PEEK %>;
       const escA = (t) => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
       // the peeking row, with the same numbers as the page (picboxes.peekPets)
@@ -2932,7 +3003,7 @@
       }
       const pawBtn = document.getElementById('addPawBtn'), catPawBtn = document.getElementById('addCatPawBtn'), trailBtn = document.getElementById('addTrailBtn');
       // which paw the clicks stamp: a dog's (+ Paw print), a cat's (+ Cat paw) or a whole trail (+ Paw trail)
-      let stamping = false, stampCat = false, stampTrail = false;
+      let stamping = false, stampCat = false, stampTrail = false, stampArt = '';
       let list = []; try { list = JSON.parse(input.value) || []; } catch (e) { list = []; }
       let adding = false, cur = null, clipping = false;
       const cutBtn = document.getElementById('addCutBtn');
@@ -2945,11 +3016,11 @@
       function draw(el, p) {
         el.className = 'sg-pic sg-pic-' + p.fit + (cur && cur.el === el ? ' sg-pic-on' : '');
         ['x', 'y', 'w', 'h'].forEach(k => el.style.setProperty('--' + k, p[k] + '%'));
-        el.style.setProperty('--r', (p.turn || 0) + 'deg'); el.style.color = isPaw(p) ? (PCOL[p.color] || p.color || PCOL.brand) : '';
+        el.style.setProperty('--r', (p.turn || 0) + 'deg'); el.style.color = isInk(p) ? (PCOL[p.color] || p.color || PCOL.brand) : '';
         const turns = p.art === 'turns' || (!p.art && p.photos.length > 1);
         if (turns) el.setAttribute('data-sg-tb-turns', ''); else el.removeAttribute('data-sg-tb-turns');
         let inner = el.querySelector('.sg-pic-in'); if (!inner) { inner = el.ownerDocument.createElement('div'); inner.className = 'sg-pic-in sg-tb-pic'; el.appendChild(inner); }
-        inner.innerHTML = p.art === 'peek' ? peekHtml(p) : isPaw(p) ? PAWS[p.art].replace('xMidYMid meet', p.fit === 'stretch' ? 'none' : 'xMidYMid meet').replace('<svg class="sg-pets', '<svg class="on sg-pets')
+        inner.innerHTML = isShape(p) ? SA.svg(p.art, { fit: p.fit, on: true, uid: p.id, text: p.text, sub: p.sub }) : p.art === 'peek' ? peekHtml(p) : isPaw(p) ? PAWS[p.art].replace('xMidYMid meet', p.fit === 'stretch' ? 'none' : 'xMidYMid meet').replace('<svg class="sg-pets', '<svg class="on sg-pets')
           : p.art === 'turns' ? pet('cats', p.fit, true) + pet('dogs', p.fit, false) : p.art ? pet(p.art, p.fit, true) : '';
         if (!p.art && p.photos) p.photos.forEach((u, i) => { const im = el.ownerDocument.createElement('img'); im.src = u; im.alt = ''; if (i === 0) im.className = 'on'; inner.appendChild(im); });
         // in the editor the turns run here (the page's own timer only starts on load)
@@ -2967,15 +3038,60 @@
       if (cutBtn) cutBtn.addEventListener('click', () => { endBox(); setStamping(false); setAdding(!(adding && clipping), true); });
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && adding) setAdding(false); if (e.key === 'Escape' && stamping) setStamping(false); });
       // paw prints: every click stamps one more, until Esc or the button again
-      function setStamping(on, cat, trail) {
-        stamping = on; stampCat = !!cat; stampTrail = !!trail;
-        [[pawBtn, false, false], [catPawBtn, true, false], [trailBtn, true, true]].forEach(([b, c, t]) => { if (b) { const o = on && stampCat === c && stampTrail === t; b.setAttribute('aria-pressed', String(o)); b.classList.toggle('on', o); } });
+      function setStamping(on, cat, trail, art) {
+        stamping = on; stampCat = !!cat; stampTrail = !!trail; stampArt = on && art ? art : '';
+        shapeBtnsOn();
+        [[pawBtn, false, false], [catPawBtn, true, false], [trailBtn, true, true]].forEach(([b, c, t]) => { if (b) { const o = on && !stampArt && stampCat === c && stampTrail === t; b.setAttribute('aria-pressed', String(o)); b.classList.toggle('on', o); } });
         const d = pdoc(); if (d) d.documentElement.classList.toggle('sg-pic-adding', on || adding);
-        if (on) statusEl.textContent = stampTrail ? 'Click where the paw trail should go: it lays a whole trail there (Esc to stop)' : 'Click anywhere on a block to stamp a ' + (stampCat ? 'cat ' : '') + 'paw print. Keep clicking for more (Esc to stop)';
+        if (on && stampArt) statusEl.textContent = 'Click anywhere on a block to place the ' + (shapeLabel(stampArt) || 'shape').toLowerCase() + '. Keep clicking for more (Esc to stop)';
+        else if (on) statusEl.textContent = stampTrail ? 'Click where the paw trail should go: it lays a whole trail there (Esc to stop)' : 'Click anywhere on a block to stamp a ' + (stampCat ? 'cat ' : '') + 'paw print. Keep clicking for more (Esc to stop)';
       }
       if (pawBtn) pawBtn.addEventListener('click', () => { endBox(); setAdding(false); setStamping(!(stamping && !stampCat && !stampTrail), false); });
       if (catPawBtn) catPawBtn.addEventListener('click', () => { endBox(); setAdding(false); setStamping(!(stamping && stampCat && !stampTrail), true); });
       if (trailBtn) trailBtn.addEventListener('click', () => { endBox(); setAdding(false); setStamping(!(stamping && stampTrail), true, true); });
+      // + Shape and + Stamp: a picker under the preview bar (shapes in their sections, stamps with their words); picking
+      // one makes each click on the page place it, like the paw prints
+      const shapeBtn = document.getElementById('addShapeBtn'), stampBtn = document.getElementById('addStampBtn'), pick = document.getElementById('shapePick');
+      let pickKind = '';
+      const shapeLabel = (art) => { if (!SA) return ''; const all = SA.shapeMenu().flatMap(g => g[1]).concat(SA.stampMenu()); const f = all.find(x => x[0] === art); return f ? f[1] : ''; };
+      function shapeBtnsOn() {
+        [[shapeBtn, 'shape'], [stampBtn, 'stamp']].forEach(([b, k]) => { if (!b) return; const o = pickKind === k || (stamping && stampArt.indexOf(k + '-') === 0); b.setAttribute('aria-pressed', String(o)); b.classList.toggle('on', o); });
+        if (pick) pick.querySelectorAll('[data-art]').forEach(t => t.classList.toggle('on', stamping && t.dataset.art === stampArt));
+      }
+      function tile(art, label, ratio, text, sub) {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'shape-tile'; b.dataset.art = art; b.title = label;
+        b.innerHTML = '<span class="shape-tile-art" style="color:' + BRAND + '">' + SA.svg(art, { on: true, uid: 'pk' + art.replace(/[^a-z]/g, ''), text, sub }) + '</span><span class="shape-tile-name">' + escA(label) + '</span>';
+        return b;
+      }
+      function openPick(kind) {
+        if (!pick || !SA) return;
+        if (pickKind === kind) { closePick(); return; }
+        pickKind = kind; endBox(); setAdding(false); setStamping(false);
+        const listEl = document.getElementById('shapePickList'); listEl.innerHTML = '';
+        document.getElementById('shapePickTitle').textContent = kind === 'shape' ? 'Shapes' : 'Stamps';
+        document.getElementById('shapePickHint').textContent = kind === 'shape' ? 'Pick a shape, then click the page to place it. It takes your logo color; change it in its bar.' : 'Type the words, pick a stamp, then click the page to stamp it.';
+        document.getElementById('shapePickStampWords').hidden = kind !== 'stamp';
+        if (kind === 'shape') SA.shapeMenu().forEach(([g, items]) => {
+          const h = document.createElement('div'); h.className = 'shape-pick-group'; h.textContent = g; listEl.appendChild(h);
+          const row = document.createElement('div'); row.className = 'shape-pick-row'; items.forEach(x => row.appendChild(tile(x[0], x[1], x[2]))); listEl.appendChild(row);
+        });
+        else { const row = document.createElement('div'); row.className = 'shape-pick-row'; SA.stampMenu().forEach(x => { const t = tile(x[0], x[1], x[2], stampWords().text, stampWords().sub); t.title = x[3]; row.appendChild(t); }); listEl.appendChild(row); }
+        pick.hidden = false; shapeBtnsOn();
+      }
+      function closePick() { pickKind = ''; if (pick) pick.hidden = true; if (stamping && stampArt) setStamping(false); shapeBtnsOn(); }
+      const stampWords = () => ({ text: (document.getElementById('stampText') || {}).value || '', sub: (document.getElementById('stampSub') || {}).value || '' });
+      if (shapeBtn) shapeBtn.addEventListener('click', () => openPick('shape'));
+      if (stampBtn) stampBtn.addEventListener('click', () => openPick('stamp'));
+      if (pick) {
+        document.getElementById('shapePickClose').addEventListener('click', closePick);
+        pick.addEventListener('click', (e) => {
+          const t = e.target.closest('[data-art]'); if (!t) return;
+          if (stamping && stampArt === t.dataset.art) { setStamping(false); return; }
+          setAdding(false); setStamping(true, false, false, t.dataset.art);
+        });
+        // the stamp tiles show the words as they are typed
+        pick.addEventListener('input', (e) => { if (!e.target.closest('.shape-pick-words')) return; const w = stampWords(); pick.querySelectorAll('[data-art^="stamp-"] .shape-tile-art').forEach(s => { s.innerHTML = SA.svg(s.parentNode.dataset.art, { on: true, uid: 'pk' + s.parentNode.dataset.art.replace(/[^a-z]/g, ''), text: w.text, sub: w.sub }); }); });
+      }
       function css(d) {
         if (d.getElementById('sg-pic-ed')) return;
         const st = d.createElement('style'); st.id = 'sg-pic-ed';
@@ -2998,8 +3114,23 @@
       function addAt(d, e) {
         const part = partAt(d, e.target), T = d.defaultView.sgText, holder = d.querySelector('[data-sg-txpage]');
         if (!part || !T || !holder) { statusEl.textContent = 'Click inside a block or section of the page (not the top menu)'; return; }
-        if (list.length >= <%= picBoxes.MAX %>) { statusEl.textContent = 'A site can have up to <%= picBoxes.MAX %> pictures and paw prints'; setAdding(false); setStamping(false); return; }
+        if (list.length >= <%= picBoxes.MAX %>) { statusEl.textContent = 'A site can have up to <%= picBoxes.MAX %> pictures, paw prints, shapes and stamps'; setAdding(false); setStamping(false); return; }
         const r = part.getBoundingClientRect();
+        if (stamping && stampArt) {
+          // a shape or stamp about 120px wide (stamps 170px, or the size of the last one of the same kind), centered on
+          // the click, in the last shape's color; stamps take the words typed in the picker and a small tilt
+          const stamp = /^stamp-/.test(stampArt), last = [...list].reverse().find(q => q.art === stampArt), lastInk = [...list].reverse().find(isShape) || [...list].reverse().find(isInk);
+          const lastEl = last && d.querySelector('[data-sg-pic="' + last.id + '"]'), ratio = SA.ratio(stampArt);
+          const pw = lastEl ? Math.max(16, lastEl.offsetWidth) : stamp ? 170 : ratio < 0.35 ? 260 : 120, ph = lastEl ? Math.max(12, lastEl.offsetHeight) : pw * ratio;
+          const w = r1(Math.min(100, Math.max(3, pw / r.width * 100))), h = r1(Math.min(100, Math.max(2, ph / r.height * 100)));
+          const words = stampWords();
+          const p = { id: newId(), page: holder.dataset.sgTxpage, at: T.key(part), x: r1((e.clientX - r.left) / r.width * 100 - w / 2), y: r1((e.clientY - r.top) / r.height * 100 - h / 2),
+            w, h, art: stampArt, photos: [], fit: 'fit', color: lastInk ? lastInk.color : 'brand', turn: stamp ? Math.round(Math.random() * 16 - 8) : 0 };
+          if (stamp) { p.text = SA.cleanText(words.text, SA.MAX_TEXT); p.sub = SA.cleanText(words.sub, SA.MAX_SUB); }
+          list.push(p); save();
+          const el = d.createElement('div'); el.dataset.sgPic = p.id; el.dataset.at = p.at; draw(el, p); T.place(el);
+          return;
+        }
         if (stamping) {
           // a paw print about 64px across (or the size of the last one), centered on the click, tilted a little each
           // time; it keeps the last one's color and style
@@ -3083,7 +3214,11 @@
         const size = d.createElement('div'); size.className = 'sg-pic-size'; size.title = 'Drag to change the width and height'; size.textContent = '⤡';
         const turn = d.createElement('div'); turn.className = 'sg-pic-turn'; turn.title = 'Drag round to turn it (hold Shift for steps of 15°)'; turn.textContent = '↻';
         const bar = d.createElement('div'); bar.className = 'sg-picbar';
-        bar.innerHTML = '<select data-k="art" aria-label="What the picture shows">' + ARTS.map(a => '<option value="' + a[0] + '">' + a[1] + '</option>').join('') + '</select>' +
+        bar.innerHTML = '<select data-k="art" aria-label="What the picture shows"><optgroup label="Pictures">' + ARTS.map(a => '<option value="' + a[0] + '">' + a[1] + '</option>').join('') + '</optgroup>' +
+          (SA ? SA.shapeMenu().map(g => '<optgroup label="' + escA(g[0]) + '">' + g[1].map(x => '<option value="' + x[0] + '">' + escA(x[1]) + '</option>').join('') + '</optgroup>').join('') +
+            '<optgroup label="Stamps">' + SA.stampMenu().map(x => '<option value="' + x[0] + '">' + escA(x[1]) + '</option>').join('') + '</optgroup>' : '') + '</select>' +
+          '<input type="text" data-k="text" maxlength="' + (SA ? SA.MAX_TEXT : 28) + '" placeholder="Big words" aria-label="Stamp words" style="width:130px;padding:3px 6px;border-radius:6px;border:0;font:500 12.5px system-ui,sans-serif">' +
+          '<input type="text" data-k="sub" maxlength="' + (SA ? SA.MAX_SUB : 40) + '" placeholder="Small words" aria-label="Stamp small words" style="width:120px;padding:3px 6px;border-radius:6px;border:0;font:500 12.5px system-ui,sans-serif">' +
           '<button type="button" data-a="upload">Upload a picture</button><button type="button" data-a="find" title="Pick one from the free photo search (Pexels)">Free photo</button><span class="hint" data-k="count"></span><button type="button" data-a="clear">Remove mine</button>' +
           '<button type="button" data-a="cut" title="Cut out the subject of the picture(s) and make the backdrop see-through">✂ Cut out</button><button type="button" data-a="uncut" title="Put the original picture(s) back">↩ Undo cut</button>' +
           '<select data-k="fit" aria-label="How the picture fills its box">' + FITS.map(f => '<option value="' + f[0] + '" data-l="' + f[1] + '">' + f[1] + '</option>').join('') + '</select>' +
@@ -3103,8 +3238,9 @@
           q('count').textContent = own && p.photos.length ? p.photos.length + (peek ? (p.photos.length > 1 ? ' pets' : ' pet') : p.photos.length > 1 ? ' pictures, taking turns' : ' picture') : '';
           a('upload').textContent = peek ? (p.photos.length ? '+ Add more pet photos' : 'Upload pet photos') : own && p.photos.length ? (p.photos.length < 4 ? '+ Add another (they take turns)' : '') : 'Upload a picture';
           [...q('fit').options].forEach(o => { o.textContent = peek ? { fit: 'Cut-out photos (see-through PNG)', fill: 'Photos in rounded windows', stretch: 'Stretch to the box' }[o.value] : o.dataset.l || o.textContent; });
-          a('upload').hidden = isPaw(p) || (own ? p.photos.length >= cap : false); a('find').hidden = a('upload').hidden; a('clear').hidden = !own || !p.photos.length;
-          const paw = isPaw(p); q('fit').hidden = paw; a('full').hidden = paw; q('color').hidden = !paw;
+          q('text').hidden = q('sub').hidden = !isStamp(p); if (isStamp(p)) { if (d.activeElement !== q('text')) q('text').value = p.text || ''; if (d.activeElement !== q('sub')) q('sub').value = p.sub || ''; }
+          a('upload').hidden = isInk(p) || (own ? p.photos.length >= cap : false); a('find').hidden = a('upload').hidden; a('clear').hidden = !own || !p.photos.length;
+          const paw = isInk(p); q('fit').hidden = paw; a('full').hidden = paw; q('color').hidden = !paw;
           const ph = own ? p.photos : [];
           a('cut').hidden = !ph.length || ph.every(isCut); a('uncut').hidden = !ph.some(u => isCut(u) && cutOrig.get(u));
           q('w').value = p.w; q('h').value = p.h;
@@ -3127,12 +3263,14 @@
         const fit = () => { p.x = r1(Math.max(-20, Math.min(98, p.x))); p.y = r1(Math.max(-20, Math.min(98, p.y))); };
         cur = { el, p, grip, size, turn, bar, d };
         draw(el, p); sync(); placeUi();
-        bar.addEventListener('mousedown', (ev) => { if (!ev.target.matches('select')) ev.preventDefault(); });
+        bar.addEventListener('mousedown', (ev) => { if (!ev.target.matches('select, input[type=text]')) ev.preventDefault(); });
         bar.addEventListener('change', (ev) => {
           const k = ev.target.dataset.k;
           if (k === 'art') {
             const was = p.art; p.art = ev.target.value;
             if (p.art === 'peek' && was !== 'peek') { p.fit = 'fill'; if (p.w < 60) p.w = 100; }
+            if (isStamp(p) && p.text === undefined) { const w = stampWords(); p.text = SA.cleanText(w.text, SA.MAX_TEXT); p.sub = SA.cleanText(w.sub, SA.MAX_SUB); }
+            if (isShape(p)) p.photos = [];
             if (!p.art && !p.photos.length) { changed(); a('upload').click(); return; }
             changed();
           }
@@ -3142,6 +3280,7 @@
         bar.addEventListener('input', (ev) => {
           const k = ev.target.dataset.k;
           if (k === 'hex') { p.color = ev.target.value; draw(el, p); save(); }
+          if (k === 'text' || k === 'sub') { p[k] = SA.cleanText(ev.target.value, k === 'text' ? SA.MAX_TEXT : SA.MAX_SUB); draw(el, p); save(); }
           if (k === 'w' || k === 'h') { p[k] = r1(+ev.target.value); fit(); el.style.setProperty('--' + k, p[k] + '%'); placeUi(); save(); }
           if (k === 'turn') { p.turn = Math.round(+ev.target.value || 0); el.style.setProperty('--r', p.turn + 'deg'); placeUi(); save(); }
         });
