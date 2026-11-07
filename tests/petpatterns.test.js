@@ -59,3 +59,16 @@ test('pet patterns go over the color already there: blends, own section colors a
   const opts = bp.cleanSectionOpts({ about: { bg: 'color', bgColor: '#ffd6e0', grad: 'txp-paws', gradInk: 'white' }, faq: { bg: 'color', bgColor: '#ffd6e0', grad: 'sunset' } }, e => e, () => true);
   assert.equal(opts.about.grad, 'txp-paws'); assert.equal(opts.about.gradInk, 'white'); assert.equal(opts.faq.grad, undefined);
 });
+
+test('pet pattern size and see-through ride on the colors value; other textures ignore them', () => {
+  assert.equal(tx.cleanInk('p-candy_l_o60'), 'p-candy_l_o60'); assert.equal(tx.cleanInk('_s'), '_s');
+  assert.equal(tx.cleanInk('p-candy_x_o65'), 'p-candy'); assert.equal(tx.cleanInk('nope_l'), '_l');
+  assert.deepEqual(tx.inkOpts('white_s_o40'), { size: 's', op: 40 }); assert.equal(tx.inkMode('white_s_o40'), 'white');
+  const s = svgOf(tx.petLayer('txp-paws', theme, 'light', 'black_l_o60'));
+  assert.match(s, /patternTransform="scale\(1.4\)"/); assert.match(s, /opacity="0.6"/);
+  assert.doesNotMatch(svgOf(tx.petLayer('txp-paws', theme, 'light', 'black')), /patternTransform|opacity=/);
+  assert.equal(tx.image('tx-globe', theme, '#ff0000_l_o60'), tx.image('tx-globe', theme, '#ff0000'));
+  // headings get a soft glow of the color under the pattern
+  assert.match(bp.wrap({ bg: 'color', bgColor: '#ffd6e0', grad: 'txp-paws' }, theme).style, /--sg-pat-halo: #ffd6e0/);
+  assert.match(g.headCss(theme, '#ffffff', [], [['txp-paws', 'tint', 'black', '']]), /:is\(h2, h3\) \{ text-shadow: 0 0 3px/);
+});

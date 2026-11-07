@@ -99,8 +99,11 @@ const r1 = (n) => Math.round(n * 10) / 10;
 // The SVG for one pattern in the given colors (one color for all, or [main, second, small]; more than three: each
 // motif takes the next color in turn, like a rainbow). No size of its own, so as a background it fills the whole
 // section; the tile repeats inside it at a fixed size.
-function svg(key, colors) {
+// opts: { size: 's' | 'l' (small or large; medium when left out), op: 10-90 (see-through: how much shows; 100 when left out) }
+const SIZES = { s: 0.7, l: 1.4 };
+function svg(key, colors, opts) {
   const p = PATTERNS[key]; if (!p) return '';
+  const o = opts || {}, k = SIZES[o.size], op = o.op >= 10 && o.op < 100 ? o.op / 100 : 0;
   const cs = colors && colors.length ? colors : ['#2e2a2d'];
   const color = (role, i) => (cs.length > 3 ? cs[i % cs.length] : cs[Math.min(role, cs.length - 1)] || cs[0]);
   const used = [...new Set(p.items.map(x => x[0]))];
@@ -110,7 +113,7 @@ function svg(key, colors) {
   }).join('');
   // paws, bones and hearts are plain shapes: they take the color from fill="currentColor" on the use
   const defs = used.map(m => MOTIFS[m]).join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg"><defs>${defs}<pattern id="pp" width="${p.w}" height="${p.h}" patternUnits="userSpaceOnUse">${uses}</pattern></defs><rect width="100%" height="100%" fill="url(#pp)"/></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg"><defs>${defs}<pattern id="pp" width="${p.w}" height="${p.h}" patternUnits="userSpaceOnUse"${k ? ` patternTransform="scale(${k})"` : ''}>${uses}</pattern></defs><rect width="100%" height="100%" fill="url(#pp)"${op ? ` opacity="${op}"` : ''}/></svg>`;
 }
 
-module.exports = { LIST, PATTERNS, PALETTES, MOTIFS, svg };
+module.exports = { LIST, PATTERNS, PALETTES, MOTIFS, SIZES, svg };

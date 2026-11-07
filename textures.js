@@ -50,7 +50,6 @@ const DRAW = {
   },
   // an even field of dots with a frame and lines meeting in the middle
   grid(c) {
-    // the dots as a repeating pattern (a few hundred bytes instead of 1,800 dots)
     // the dots as a repeating pattern (a few hundred bytes instead of 1,800 dots), used as a mask so a color sweep
     // runs across the whole field instead of repeating in every tile
     const field = `<defs><pattern id="d" width="28" height="28" patternUnits="userSpaceOnUse" x="6" y="6"><circle cx="14" cy="14" r="1.5" fill="#fff"/></pattern><mask id="dm"><rect width="${W}" height="${H}" fill="url(#d)"/></mask></defs><rect width="${W}" height="${H}" fill="${c}" opacity=".26" mask="url(#dm)"/>`;
@@ -147,19 +146,33 @@ const INK_MODES = [['', 'As drawn'], ['brand', 'Brand color'], ['black', 'All bl
 const PALETTES = pets.PALETTES;
 const PAL = Object.fromEntries(PALETTES.map(p => [p[0], p[2]]));
 const BLACK = '#1d1c1f';
+// Pet patterns also take a size and a see-through amount, added after the colors: '_s' / '_l' (small / large) and
+// '_o10' to '_o90' (how much of the pattern shows), e.g. 'p-candy_l_o60' or '_s' (as drawn, small). Other textures
+// ignore them.
+const PET_SIZES = [['', 'Medium pattern'], ['s', 'Small pattern'], ['l', 'Large pattern']];
+const PET_OPS = [100, 80, 60, 40, 20];
 function cleanInk(v) {
+  const parts = String(v || '').trim().toLowerCase().split('_'), base = cleanBase(parts[0]);
+  let size = '', op = '';
+  parts.slice(1).forEach(x => { if (x === 's' || x === 'l') size = x; else if (/^o[1-9]0$/.test(x)) op = x; });
+  return base + (size ? '_' + size : '') + (op ? '_' + op : '');
+}
+// the colors part of an ink value, and its pattern options
+const inkBase = (v) => String(v || '').split('_')[0];
+function inkOpts(v) { const p = cleanInk(v).split('_').slice(1); return { size: p.includes('s') ? 's' : p.includes('l') ? 'l' : '', op: +((p.find(x => x[0] === 'o') || 'o100').slice(1)) }; }
+function cleanBase(v) {
   const s = String(v || '').trim().toLowerCase();
   if (s === 'brand' || s === 'rainbow' || s === 'black' || s === 'white' || Object.prototype.hasOwnProperty.call(PAL, s)) return s;
   const list = s.split(',').map(x => x.trim()).filter(Boolean);
   return list.length && list.length <= 3 && list.every(x => HEX.test(x)) ? list.join(',') : '';
 }
 // the mode an ink value is in, and its colors (for the pickers)
-const inkMode = (ink) => { const v = cleanInk(ink); return !v || v[0] !== '#' ? v : ['one', 'two', 'three'][v.split(',').length - 1]; };
+const inkMode = (ink) => { const v = inkBase(cleanInk(ink)); return !v || v[0] !== '#' ? v : ['one', 'two', 'three'][v.split(',').length - 1]; };
 // a class-safe name for an ink value
 const inkKey = (ink) => cleanInk(ink).replace(/#/g, '').replace(/,/g, '-');
 // The colors an ink value paints with: lifted to show on a dark base unless onLight
 function inkColors(ink, theme, onLight) {
-  const v = cleanInk(ink); if (!v) return null;
+  const v = inkBase(cleanInk(ink)); if (!v) return null;
   if (v === 'rainbow') return RAINBOW.slice();
   if (v === 'black') return [BLACK];
   if (v === 'white') return ['#ffffff'];
@@ -186,6 +199,7 @@ function beam(colors) {
 function stopsOf(id, theme, ink) {
   if (!isTexture(id)) return null;
   if (isPet(id)) return petBase(theme, ink);
+  ink = inkBase(cleanInk(ink));   // (size and see-through are for pet patterns only)
   const brand = id.startsWith('txb-'), t = BY[id.replace(/^txb?-/, '')], cs = inkColors(ink, theme);
   if (cs && t[0] !== 'prism') {
     // in chosen colors: a deep shade leaning toward the first one (a rainbow keeps a neutral dark base)
@@ -200,7 +214,7 @@ function stopsOf(id, theme, ink) {
 // A pet pattern's own soft base (when it replaces the color): cream under the tan-and-charcoal look, a dark shade
 // under white, a pale tint of the first color under anything else
 function petBase(theme, ink) {
-  const v = cleanInk(ink);
+  const v = inkBase(cleanInk(ink));
   if (!v || v === 'black') return ['#fbf7f1', '#f3eadd'];
   if (v === 'white') { const p = HEX.test(String((theme || {}).primaryColor || '')) ? theme.primaryColor.toLowerCase() : '#2e2a2d'; return [mix('#1c1b20', p, 0.22), mix('#141318', p, 0.3)]; }
   if (v === 'rainbow') return ['#ffffff', '#f6f5fb'];
@@ -210,7 +224,7 @@ function petBase(theme, ink) {
 // The colors a pet pattern is drawn in, on what it sits on: 'light', 'dark', 'brand' or a color (#hex).
 // As drawn: tan and charcoal on light colors, white on dark ones.
 function petColors(ink, theme, under) {
-  const v = cleanInk(ink);
+  const v = inkBase(cleanInk(ink));
   const dark = under === 'dark' || under === 'brand' || (HEX.test(String(under || '')) && contrast.luminance(under) < 0.4);
   if (!v) return dark ? ['#ffffff'] : PAL['p-classic'].slice();
   if (v === 'brand') { const p = HEX.test(String((theme || {}).primaryColor || '')) ? theme.primaryColor.toLowerCase() : '#2563eb'; return [under === 'brand' ? mix(p, '#ffffff', 0.75) : dark ? lift(p) : p]; }
@@ -219,9 +233,9 @@ function petColors(ink, theme, under) {
 // Just the pet pattern, nothing under it, for laying over the color already there
 function petLayer(id, theme, under, ink) {
   if (!isPet(id)) return '';
-  const cs = petColors(ink, theme, under), key = 'p' + id + cs.join(',');
+  const cs = petColors(ink, theme, under), o = inkOpts(ink), key = 'p' + id + cs.join(',') + o.size + o.op;
   if (cache.has(key)) return cache.get(key);
-  const out = url(pets.svg(id.slice(4), cs));
+  const out = url(pets.svg(id.slice(4), cs, o));
   cache.set(key, out);
   return out;
 }
@@ -230,6 +244,7 @@ const cache = new Map();
 function image(id, theme, ink) {
   if (!isTexture(id)) return '';
   if (isPet(id)) { const b = petBase(theme, ink); return `${petLayer(id, theme, b[0], ink)}, linear-gradient(180deg, ${b.join(', ')})`; }
+  ink = inkBase(cleanInk(ink));
   const t = BY[id.replace(/^txb?-/, '')], v = cleanInk(ink) || (id.startsWith('txb-') ? 'brand' : '');
   const cs = inkColors(v, theme);
   const key = id + '|' + (cs ? cs.join(',') : ''); if (cache.has(key)) return cache.get(key);
@@ -252,6 +267,7 @@ function image(id, theme, ink) {
 function drawing(id, color, ink) {
   if (!isTexture(id) || !HEX.test(String(color || ''))) return '';
   if (isPet(id)) return petLayer(id, null, color, ink);
+  ink = inkBase(cleanInk(ink));
   // the brand color is already worked out by the caller for what it sits on
   const t = BY[id.replace(/^txb?-/, '')], v = cleanInk(ink), cs = v && v !== 'brand' ? inkColors(v, null, true) : null;
   const list = cs || [color];
@@ -265,4 +281,4 @@ function drawing(id, color, ink) {
 // For the pickers: [[group, [[id, name]]]]
 const MENU = [['Pet patterns', pets.LIST.map(p => ['txp-' + p[0], p[1]])], ['Textures', LIST.map(t => ['tx-' + t[0], t[1]])], ['Textures in your colors', LIST.filter(t => t[6]).map(t => ['txb-' + t[0], t[1] + ', your colors'])]];
 
-module.exports = { PET_IDS, isPet, petLayer, petColors, PALETTES, IDS, isTexture, stopsOf, image, drawing, brandOn, MENU, LIST, cleanInk, inkMode, inkKey, inkColors, INK_MODES, RAINBOW };
+module.exports = { PET_SIZES, PET_OPS, inkBase, inkOpts, PET_IDS, isPet, petLayer, petColors, PALETTES, IDS, isTexture, stopsOf, image, drawing, brandOn, MENU, LIST, cleanInk, inkMode, inkKey, inkColors, INK_MODES, RAINBOW };

@@ -2,7 +2,7 @@
     all black, all white and the matching palettes (2026-11-07, for the pet patterns).
     Params: name (the form field), value (a textures.cleanInk value), theme, kind ('pattern' for the Gradient pattern
     block: its colors are the pattern's own). The hidden field holds the value. %>
-<% const _tx = gradients.textures, _iv = _tx.cleanInk(value), _im = _tx.inkMode(_iv), _ic = /^#/.test(_iv) ? _iv.split(',') : [], _th = theme || {};
+<% const _tx = gradients.textures, _iv = _tx.cleanInk(value), _im = _tx.inkMode(_iv), _ib = _tx.inkBase(_iv), _ic = /^#/.test(_ib) ? _ib.split(',') : [], _io = _tx.inkOpts(_iv), _th = theme || {};
    const _pat = typeof kind !== 'undefined' && kind === 'pattern';
    const _idef = [_th.primaryColor || '#2563eb', _th.accentColor || '#f59e0b', '#ec4899'], _nShow = { one: 1, two: 2, three: 3 }[_im] || 0; %>
 <span class="sg-inkpick" style="display:inline-flex; gap:6px; align-items:center; flex-wrap:wrap;" title="<%= _pat ? 'The colors the pattern is drawn in' : 'The colors a texture\'s lines and dots are drawn in (textures only; plain gradients keep their own colors)' %>">
@@ -11,16 +11,10 @@
     <optgroup label="Matching palettes (pet patterns color dogs, cats and paws from them)"><% _tx.PALETTES.forEach(m => { %><option value="<%= m[0] %>" <%= _im === m[0] ? 'selected' : '' %>><%= (_pat ? 'Pattern' : 'Texture') + ' in: ' + m[1].toLowerCase() %></option><% }) %></optgroup>
   </select>
   <% [0, 1, 2].forEach(i => { %><input type="color" class="sg-ink-c" aria-label="Texture color <%= i + 1 %>" value="<%= _ic[i] || _idef[i] %>" style="width:44px; height:32px; padding:2px;<%= i < _nShow ? '' : ' display:none;' %>"><% }) %>
+  <% if (!_pat) { %><%# pet patterns only (shown when one is picked): its size and how much of it shows %>
+  <select class="sg-ink-size sg-pet-only" aria-label="Pattern size" title="How big the dogs, cats and paws are"><% _tx.PET_SIZES.forEach(m => { %><option value="<%= m[0] %>" <%= _io.size === m[0] ? 'selected' : '' %>><%= m[1] %></option><% }) %></select>
+  <select class="sg-ink-op sg-pet-only" aria-label="See-through" title="How much of the pattern shows: lower lets more of the color under it through"><% _tx.PET_OPS.forEach(n => { %><option value="<%= n %>" <%= _io.op === n ? 'selected' : '' %>><%= n === 100 ? 'Full pattern' : 'See-through: ' + n + '%' %></option><% }) %></select>
+  <% } %>
   <input type="hidden" name="<%= name %>" value="<%= _iv %>">
 </span>
-<script>
-if (!window.sgInkPick) {
-  window.sgInkPick = function (box) {
-    var mode = box.querySelector('.sg-ink-mode').value, n = { one: 1, two: 2, three: 3 }[mode] || 0, cs = box.querySelectorAll('.sg-ink-c');
-    cs.forEach(function (c, i) { c.style.display = i < n ? '' : 'none'; });
-    box.querySelector('input[type=hidden]').value = n ? Array.prototype.slice.call(cs, 0, n).map(function (c) { return c.value.toLowerCase(); }).join(',') : mode;
-  };
-  // capture: the hidden value is set before the editor's own listeners (autosave, preview) read the form
-  ['input', 'change'].forEach(function (ev) { document.addEventListener(ev, function (e) { var b = e.target.closest && e.target.closest('.sg-inkpick'); if (b) window.sgInkPick(b); }, true); });
-}
-</script>
+<%# its code: public/inkpick.js (loaded once per page) %>

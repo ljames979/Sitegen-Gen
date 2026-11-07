@@ -1,12 +1,44 @@
 <%# The page tools' buttons (+ Add text, pictures, paws, shapes, stamps, Style text, Move & size) and the shape and
     stamp picker. Shared by the editor and the Blocks screen's Edit mode; their code is _page-tools.ejs. %>
-        <button type="button" class="btn-secondary" id="addTextBtn" aria-pressed="false" title="Add your own words anywhere on the page, then move them, size them and pick their font and color">+ Add text</button>
-        <button type="button" class="btn-secondary" id="addPicBtn" aria-pressed="false" title="Put a picture on top of any block (peeking cats and dogs, or your own), then drag it and pull its corner to size it">+ Add picture</button>
-        <% if (typeof cutTool === 'undefined' || cutTool) { %><button type="button" class="btn-secondary" id="addCutBtn" aria-pressed="false" title="Clip the subject out of one of your photos (pet, person or thing) and place it anywhere on a block: then drag, size and turn it">✂ Cut-out photo</button><% } %>
-        <button type="button" class="btn-secondary" id="addPawBtn" aria-pressed="false" title="Stamp paw prints anywhere on a block: each click adds one, in your logo color (Esc or click here again to stop)">+ Paw print</button>
-        <button type="button" class="btn-secondary" id="addCatPawBtn" aria-pressed="false" title="Stamp cat paw prints anywhere on a block: each click adds one (Esc or click here again to stop)">+ Cat paw</button>
-        <button type="button" class="btn-secondary" id="addTrailBtn" aria-pressed="false" title="One click lays a whole trail of cat paw prints winding up the block; drag, size, turn and color it like one picture (pick a dog trail in its menu)">+ Paw trail</button>
-        <button type="button" class="btn-secondary" id="addShapeBtn" aria-pressed="false" title="Odd shapes: sparkles, drops, swirls, a cloud badge, an arrow banner, squiggles and more. Pick one, then click the page to place it (each click adds one)">+ Shape</button>
-        <button type="button" class="btn-secondary" id="addStampBtn" aria-pressed="false" title="Rubber stamps with your own words: round, framed, seal or postage stamp. Pick one, then click the page to stamp it">+ Stamp</button>
+        <%# the add buttons sit in one "+ Add" menu (Leo, 2026-11-07: a tidier bar); they keep their ids, so the tools
+            work as before. The menu closes after a pick and shows which tool is on. %>
+        <details class="sg-addmenu">
+          <summary class="btn-secondary" title="Add words, pictures, paw prints, shapes or stamps to the page">+ Add <span aria-hidden="true">▾</span><span class="sg-addmenu-on"></span></summary>
+          <div class="sg-addmenu-list" role="menu">
+            <button type="button" class="btn-secondary" id="addTextBtn" aria-pressed="false" title="Add your own words anywhere on the page, then move them, size them and pick their font and color">+ Add text</button>
+            <button type="button" class="btn-secondary" id="addPicBtn" aria-pressed="false" title="Put a picture on top of any block (peeking cats and dogs, or your own), then drag it and pull its corner to size it">+ Add picture</button>
+            <% if (typeof cutTool === 'undefined' || cutTool) { %><button type="button" class="btn-secondary" id="addCutBtn" aria-pressed="false" title="Clip the subject out of one of your photos (pet, person or thing) and place it anywhere on a block: then drag, size and turn it">✂ Cut-out photo</button><% } %>
+            <button type="button" class="btn-secondary" id="addPawBtn" aria-pressed="false" title="Stamp paw prints anywhere on a block: each click adds one, in your logo color (Esc or click here again to stop)">+ Paw print</button>
+            <button type="button" class="btn-secondary" id="addCatPawBtn" aria-pressed="false" title="Stamp cat paw prints anywhere on a block: each click adds one (Esc or click here again to stop)">+ Cat paw</button>
+            <button type="button" class="btn-secondary" id="addTrailBtn" aria-pressed="false" title="One click lays a whole trail of cat paw prints winding up the block; drag, size, turn and color it like one picture (pick a dog trail in its menu)">+ Paw trail</button>
+            <button type="button" class="btn-secondary" id="addShapeBtn" aria-pressed="false" title="Odd shapes: sparkles, drops, swirls, a cloud badge, an arrow banner, squiggles and more. Pick one, then click the page to place it (each click adds one)">+ Shape</button>
+            <button type="button" class="btn-secondary" id="addStampBtn" aria-pressed="false" title="Rubber stamps with your own words: round, framed, seal or postage stamp. Pick one, then click the page to stamp it">+ Stamp</button>
+          </div>
+        </details>
         <button type="button" class="btn-secondary" id="styleTextBtn" aria-pressed="false" title="Click any words on the page to set an exact size, font and color, stretch the box they sit in (drag the white handles), move them or type new words. Select a few words first to style only those">Style text</button>
         <button type="button" class="btn-secondary" id="moveSizeBtn" aria-pressed="false" title="Click any piece of a block (a picture, card, button, icon, shape or words) and drag it to move it, pull its white handles to make it bigger or smaller, type an exact width and height, zoom it, turn it, bring it to the front or hide it">✥ Move &amp; size</button>
+        <style>
+          .sg-addmenu { position: relative; display: inline-block; }
+          .sg-addmenu > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 10px 18px; border-radius: 8px; background: #e2e8f0; color: #0f172a; font-size: 14px; font-weight: 600; user-select: none; }
+          .sg-addmenu > summary:hover, .sg-addmenu[open] > summary { background: #cbd5e1; }
+          .sg-addmenu > summary::-webkit-details-marker { display: none; }
+          .sg-addmenu-on:not(:empty) { margin-left: 6px; padding: 1px 7px; border-radius: 99px; background: var(--primary, #2563eb); color: #fff; font-size: 12px; }
+          .sg-addmenu-list { position: absolute; z-index: 60; top: calc(100% + 6px); left: 0; min-width: 210px; display: grid; gap: 4px; padding: 8px; background: #fff; border: 1px solid var(--border, #e2e8f0); border-radius: 12px; box-shadow: 0 10px 30px rgba(15, 23, 42, .15); }
+          .sg-addmenu-list > button { text-align: left; width: 100%; }
+          .sg-addmenu-list > [hidden] { display: none !important; }
+        </style>
+        <script>
+        (function () {
+          document.querySelectorAll('.sg-addmenu').forEach(function (m) {
+            if (m.dataset.ready) return; m.dataset.ready = '1';
+            var on = m.querySelector('.sg-addmenu-on'), list = m.querySelector('.sg-addmenu-list');
+            // close after a pick, and when clicking anywhere else
+            list.addEventListener('click', function (e) { if (e.target.closest('button')) setTimeout(function () { m.open = false; }, 0); });
+            document.addEventListener('click', function (e) { if (m.open && !m.contains(e.target)) m.open = false; });
+            // the tool that is on shows on the button
+            var show = function () { var b = list.querySelector('button[aria-pressed="true"]'); on.textContent = b ? b.textContent.replace(/^[+✂\s]+/, '') : ''; };
+            new MutationObserver(show).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-pressed'] });
+            show();
+          });
+        })();
+        </script>

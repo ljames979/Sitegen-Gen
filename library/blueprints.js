@@ -310,7 +310,9 @@ function wrap(o, theme) {
     // the design's own full-size layer when it has one (gradients.headCss: data-sg-pat)
     const dark = !!(theme && (theme.darkMode || theme.style === 'midnight'));
     const under = c1 && (o.bg === 'color' || o.bg === 'gradient') ? c1 : o.bg === 'brand' || o.bg === 'themegrad' ? 'brand' : dark ? 'dark' : 'light';
-    style.push(`--sg-pat: ${petOn(under)}`); attrs.push('data-sg-pat="1"');
+    // headings get a soft glow of that color around them, so they stay easy to read over the pattern
+    const halo = under[0] === '#' ? under : under === 'brand' ? 'var(--sg-brand, var(--primary))' : `var(--page-bg, ${under === 'dark' ? '#111111' : '#ffffff'})`;
+    style.push(`--sg-pat: ${petOn(under)}`, `--sg-pat-halo: ${halo}`); attrs.push('data-sg-pat="1"');
   }
   style.push(...customStyle);
   if (customStyle.some(x => x.startsWith('--sg-bgimg'))) attrs.push('data-sg-img="1"');   // a gradient: the section's own page color steps aside so it shows

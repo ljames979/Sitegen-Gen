@@ -142,6 +142,7 @@ function blendImage(id, theme, base, inkPick, strength) {
   // a pet pattern: just the pattern, in colors that show on what it sits on (no glow under it)
   if (textures.isPet(id)) return textures.petLayer(id, theme, base, inkPick);
   if (textures.isTexture(id)) {
+    inkPick = textures.inkBase(textures.cleanInk(inkPick));
     const p = hexOr((theme || {}).primaryColor, '#2563eb'), lum = contrast.luminance(p);
     const ink = base === 'brand' ? mix(p, '#ffffff', 0.72) : base === 'dark' ? textures.brandOn(theme) : lum > 0.45 ? mix(p, '#000000', 0.45) : p;
     // chosen texture colors (one, a few, or a rainbow) are drawn as picked; 'brand' uses the shade worked out above
@@ -181,6 +182,8 @@ function bodyClasses(theme) {
 // the site's blocks picked (only those get a class).
 // cards: [[gradient id, strength]] picked for the cards inside blocks (cardClass). used: [[id, ink, strength]],
 // blends: [[id, plain, ink, strength]]
+// a soft glow of the color under a pet pattern around headings (Leo, 2026-11-07: words stay readable over it)
+const halo = (c) => [3, 8, 14, 22].map(r => `0 0 ${r}px ${c}`).join(', ');
 function headCss(theme, pageBg, used, blends, cards) {
   const t = theme || {}, base = hexOr(pageBg, '#ffffff'), dark = contrast.luminance(base) < 0.2;
   const out = [];
@@ -197,6 +200,7 @@ function headCss(theme, pageBg, used, blends, cards) {
     if (seenUse.has(sel)) return; seenUse.add(sel);
     const g = background(id, t, '', '', k ? ink : '', x, base); if (!g) return;
     out.push(`${sel} { background: ${g.img}; color: ${g.onbrand}; --ink: ${g.onbrand}; --muted: ${g.onbrand}; } ${sel} :is(h2, h3, p, strong, li) { color: ${g.onbrand}; }`);
+    if (textures.isPet(id)) out.push(`${sel} :is(h2, h3) { text-shadow: ${halo(g.brand)}; }`);
   });
   // blended into the section's own color (wrap in library/blueprints.js writes --sg-gb), and blocks: one class per pick
   // it goes on the design's own full-size layer, over whatever color that layer paints (page, tint ...); a section
@@ -207,11 +211,13 @@ function headCss(theme, pageBg, used, blends, cards) {
   // the design's own full-size layer, or over the section's own color and gradient when it has none
   out.push('.sg-sec[data-sg-pat] .sg-lib > div:first-child { background-image: var(--sg-pat); background-size: auto; }');
   out.push('.sg-sec[data-sg-pat]:not(:has(.sg-lib > div)) { background-image: var(--sg-pat), var(--sg-bgimg, none), var(--sg-gb, none); }');
+  out.push(`.sg-sec[data-sg-pat] :is(h1, h2, h3) { text-shadow: ${halo('var(--sg-pat-halo)')}; }`);
   const seen = new Set();
   (blends || []).forEach(([id, plain, ink, gx]) => {
     const cls = blendClass(id, plain, ink, gx); if (!cls || seen.has(cls)) return; seen.add(cls);
     const base = plain === 'brand' ? 'brand' : plain === 'dark' || dark ? 'dark' : 'light';
     out.push(`.blk.${cls} { background-image: ${blendImage(id, t, base, ink, gx)}; }`);
+    if (textures.isPet(id)) out.push(`.blk.${cls} :is(h2, h3) { text-shadow: ${halo(plain === 'brand' ? 'var(--primary)' : plain === 'dark' ? '#0f172a' : base === 'dark' ? 'var(--page-bg)' : 'var(--page-bg, #ffffff)')}; }`);
   });
   // the cards inside a block (Leo 2026-11-05): each card gets the gradient and the words the color that reads on it.
   // Only the outermost card is painted (a card inside a card keeps the outer one's look).
