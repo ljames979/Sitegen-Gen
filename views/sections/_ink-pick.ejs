@@ -1,4 +1,5 @@
-<%# Texture colors picker (Leo, 2026-11-02): as drawn, brand color, one to three colors of the owner's, or a rainbow.
+<%# Texture colors picker (Leo, 2026-11-02): as drawn, brand color, one to three colors of the owner's, or a rainbow;
+    all black, all white and the matching palettes (2026-11-07, for the pet patterns).
     Params: name (the form field), value (a textures.cleanInk value), theme, kind ('pattern' for the Gradient pattern
     block: its colors are the pattern's own). The hidden field holds the value. %>
 <% const _tx = gradients.textures, _iv = _tx.cleanInk(value), _im = _tx.inkMode(_iv), _ic = /^#/.test(_iv) ? _iv.split(',') : [], _th = theme || {};
@@ -7,6 +8,7 @@
 <span class="sg-inkpick" style="display:inline-flex; gap:6px; align-items:center; flex-wrap:wrap;" title="<%= _pat ? 'The colors the pattern is drawn in' : 'The colors a texture\'s lines and dots are drawn in (textures only; plain gradients keep their own colors)' %>">
   <select class="sg-ink-mode" aria-label="Texture colors">
     <% _tx.INK_MODES.forEach(m => { %><option value="<%= m[0] %>" <%= _im === m[0] ? 'selected' : '' %>><%= _pat ? (m[0] ? 'Pattern in: ' + m[1].toLowerCase() : 'Pattern in: brand and accent colors') : m[0] ? 'Texture in: ' + m[1].toLowerCase() : 'Texture colors: as drawn' %></option><% }) %>
+    <optgroup label="Matching palettes (pet patterns color dogs, cats and paws from them)"><% _tx.PALETTES.forEach(m => { %><option value="<%= m[0] %>" <%= _im === m[0] ? 'selected' : '' %>><%= (_pat ? 'Pattern' : 'Texture') + ' in: ' + m[1].toLowerCase() %></option><% }) %></optgroup>
   </select>
   <% [0, 1, 2].forEach(i => { %><input type="color" class="sg-ink-c" aria-label="Texture color <%= i + 1 %>" value="<%= _ic[i] || _idef[i] %>" style="width:44px; height:32px; padding:2px;<%= i < _nShow ? '' : ' display:none;' %>"><% }) %>
   <input type="hidden" name="<%= name %>" value="<%= _iv %>">

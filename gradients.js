@@ -139,6 +139,8 @@ function blendImage(id, theme, base, inkPick, strength) {
   const k = cleanStrength(strength), stops = strongStops(stopsOf(id, theme) || [], k > 100 ? k : '', '#ffffff'); if (!stops.length) return '';
   // weaker: the glows are fainter (alpha 0x99 at 100), stronger: richer colors that glow further in
   const al = Math.round(0x99 * Math.min(1.5, (k || 100) / 100)).toString(16).padStart(2, '0'), reach = k > 100 ? 70 + Math.round((k - 100) / 2.5) : 70;
+  // a pet pattern: just the pattern, in colors that show on what it sits on (no glow under it)
+  if (textures.isPet(id)) return textures.petLayer(id, theme, base, inkPick);
   if (textures.isTexture(id)) {
     const p = hexOr((theme || {}).primaryColor, '#2563eb'), lum = contrast.luminance(p);
     const ink = base === 'brand' ? mix(p, '#ffffff', 0.72) : base === 'dark' ? textures.brandOn(theme) : lum > 0.45 ? mix(p, '#000000', 0.45) : p;
@@ -201,6 +203,10 @@ function headCss(theme, pageBg, used, blends, cards) {
   // without one takes over its content's page color, the content steps aside, as with a plain gallery gradient
   out.push('.sg-sec[data-sg-gb] .sg-lib > div:first-child { background-image: var(--sg-gb); background-size: auto; }');
   out.push('.sg-sec[data-sg-gb][data-sg-gb]:not(:has(.sg-lib > div)) { background-color: var(--sg-page0, var(--page-bg)); background-image: var(--sg-gb); } .sg-sec[data-sg-gb]:not(:has(.sg-lib > div)) > .sg-sec-in, .sg-sec[data-sg-gb]:not(:has(.sg-lib > div)) > .sg-side-wrap > .sg-sec-in { --page-bg: transparent; }');
+  // a pet pattern over a section's color, whatever its background (library/blueprints.js wrap writes --sg-pat): on
+  // the design's own full-size layer, or over the section's own color and gradient when it has none
+  out.push('.sg-sec[data-sg-pat] .sg-lib > div:first-child { background-image: var(--sg-pat); background-size: auto; }');
+  out.push('.sg-sec[data-sg-pat]:not(:has(.sg-lib > div)) { background-image: var(--sg-pat), var(--sg-bgimg, none), var(--sg-gb, none); }');
   const seen = new Set();
   (blends || []).forEach(([id, plain, ink, gx]) => {
     const cls = blendClass(id, plain, ink, gx); if (!cls || seen.has(cls)) return; seen.add(cls);

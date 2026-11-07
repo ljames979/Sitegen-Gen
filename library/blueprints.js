@@ -244,7 +244,9 @@ const hasSizePhoto = (o) => !!(o.flip || o.shape || o.bgColor || o.bgColor2 || o
 
 // The gradient settings only count with a gradient background (the pickers always send a value)
 function dropUnusedGrad(bg, o) {
-  if (bg !== 'preset') { delete o.grad; delete o.gradBlend; delete o.gradInk; }
+  // a pet pattern is laid over any background (Leo, 2026-11-07: "even when a color is selected"), so it stays
+  if (bg !== 'preset' && !(gradients.textures.isPet(o.grad) && bg !== 'photo')) { delete o.grad; delete o.gradBlend; delete o.gradInk; }
+  else if (bg !== 'preset') delete o.gradBlend;
   if (!GRAD_BGS.includes(bg)) { delete o.gradStyle; delete o.gradAngle; delete o.gradMove; delete o.grain; }
 }
 
@@ -279,6 +281,9 @@ function wrap(o, theme) {
   // custom colours: the section recolors itself like the brand background, with light or dark text chosen for contrast
   const onColor = (cols) => { const worst = (fg) => Math.min(...cols.map(c => contrast.ratio(fg, c))); return worst('#ffffff') >= worst('#111111') ? '#ffffff' : '#111111'; };
   const customStyle = [];
+  // a pet pattern picked with another background: laid over that color (petOn: what it sits on, for its colors)
+  const pet = bg !== 'preset' && gradients.textures.isPet(o.grad) ? o.grad : '';
+  const petOn = (under) => gradients.textures.petLayer(pet, theme, under, o.gradInk);
   if (bg === 'color' && c1) { bg = 'custom'; customStyle.push(`--sg-brand: ${c1}`, `--sg-onbrand: ${onColor([c1])}`); }
   const gs = gradients.cleanStyle(o.gradStyle), ga = gradients.cleanAngle(o.gradAngle), grain = !!o.grain;
   const gradAttrs = () => { if (o.gradMove) attrs.push('data-sg-gmove="1"'); if (grain) attrs.push('data-sg-grain="1"'); };
@@ -300,6 +305,13 @@ function wrap(o, theme) {
     bg = 'custom'; customStyle.push(`--sg-bgimg: ${g.img}`, `--sg-brand: ${g.brand}`, `--sg-onbrand: ${g.onbrand}`); gradAttrs();
   } else if (bg === 'preset') bg = '';
   else if (bg === 'color' || bg === 'gradient') bg = '';
+  if (pet && !(o.photo && o.photoPos === 'bg')) {
+    // the section's color stays (page, light band, brand, your color or your gradient); the pattern goes over it, on
+    // the design's own full-size layer when it has one (gradients.headCss: data-sg-pat)
+    const dark = !!(theme && (theme.darkMode || theme.style === 'midnight'));
+    const under = c1 && (o.bg === 'color' || o.bg === 'gradient') ? c1 : o.bg === 'brand' || o.bg === 'themegrad' ? 'brand' : dark ? 'dark' : 'light';
+    style.push(`--sg-pat: ${petOn(under)}`); attrs.push('data-sg-pat="1"');
+  }
   style.push(...customStyle);
   if (customStyle.some(x => x.startsWith('--sg-bgimg'))) attrs.push('data-sg-img="1"');   // a gradient: the section's own page color steps aside so it shows
   if (o.photo && o.photoPos === 'bg') { bg = 'photo'; style.push(`--sg-photo: url('${cssUrl(o.photo)}')`, `--sg-ov: ${OVERLAY[o.photoOverlay] != null ? OVERLAY[o.photoOverlay] : OVERLAY.medium}`); }
