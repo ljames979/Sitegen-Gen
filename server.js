@@ -88,6 +88,7 @@ const payments = require('./payments');
 const images = require('./images');
 const { optimizeUpload } = images;
 const cutout = require('./cutout');
+const photoedit = require('./photoedit');
 const { hasAiProvider, generateCopy, generateGroundedCopy, complete: aiComplete } = require('./ai');
 const chatedit = require('./chatedit');
 const accents = require('./accents');
@@ -1595,6 +1596,31 @@ const cutoutLimiter = rateLimit({ windowMs: 10 * 60 * 1000, limit: 60, standardH
 app.post('/sites/:id/cutout', requireAuth, loadOwnedSite, cutoutLimiter, express.json({ limit: '4kb' }), async (req, res) => {
   try { res.json({ ok: true, ...(await cutout.cutout(String((req.body || {}).url || '').trim())) }); }
   catch (e) { res.status(400).json({ ok: false, error: e.message || 'Could not cut out that photo.' }); }
+});
+// Photo editor (photoedit.js): Smart Select. prepare = the model looks at the photo once; mask = one click's outline;
+// subject = the main pet; image = the editor's working copy (same address as the site, so the editor can read pixels)
+const photoEditLimiter = rateLimit({ windowMs: 60 * 1000, limit: 600, standardHeaders: true, legacyHeaders: false });
+const photoEditErr = (res, e, msg) => res.status(400).json({ ok: false, error: (e && e.message) || msg });
+app.get('/sites/:id/photo-edit/status', requireAuth, loadOwnedSite, (req, res) => res.json({ ok: true, ready: photoedit.ready(), ...photoedit.status }));
+app.post('/sites/:id/photo-edit/prepare', requireAuth, loadOwnedSite, cutoutLimiter, express.json({ limit: '4kb' }), async (req, res) => {
+  try { res.json({ ok: true, ...(await photoedit.prepare(String((req.body || {}).url || '').trim())) }); }
+  catch (e) { photoEditErr(res, e, 'Could not open that photo.'); }
+});
+app.get('/sites/:id/photo-edit/image/:key', requireAuth, loadOwnedSite, (req, res) => {
+  const f = photoedit.imagePath(req.params.key);
+  if (!f) return res.status(404).json({ ok: false, error: 'Open the photo in the editor again' });
+  res.set('Cache-Control', 'private, max-age=3600'); res.type('png'); res.sendFile(f);
+});
+app.post('/sites/:id/photo-edit/mask', requireAuth, loadOwnedSite, photoEditLimiter, express.json({ limit: '8kb' }), async (req, res) => {
+  try {
+    const b = req.body || {};
+    const r = await photoedit.mask(String(b.key || ''), b.points, b.box && typeof b.box === 'object' ? b.box : null);
+    res.set('X-Sg-Score', String(r.score)); res.set('X-Sg-Area', r.area.toFixed(4)); res.type('png'); res.send(r.png);
+  } catch (e) { photoEditErr(res, e, 'Could not select that.'); }
+});
+app.post('/sites/:id/photo-edit/subject', requireAuth, loadOwnedSite, cutoutLimiter, express.json({ limit: '4kb' }), async (req, res) => {
+  try { res.type('png'); res.send(await photoedit.subject(String((req.body || {}).key || ''))); }
+  catch (e) { photoEditErr(res, e, 'Could not find the subject.'); }
 });
 app.post('/sites/:id/upload', requireAuth, loadOwnedSite, (req, res) => {
   upload.single('image')(req, res, async (err) => {

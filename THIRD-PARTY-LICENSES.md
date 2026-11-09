@@ -35,6 +35,11 @@ The ten animated icons in `public/lottie/icons.js` are drawn by `tools/build-lot
 ## Approved client styles: designmd.app (CC BY 4.0) and Devault
 `project-styles.js` holds design tokens adapted from 11 designmd.app design systems (styles 1 to 11, CC BY 4.0, https://creativecommons.org/licenses/by/4.0/) and one Devault style (12, Pop Studio Modern, used under Devault's design-reference license). Every page built with a designmd.app style carries the credit comment in its `<head>`. Only tokens are included; no style file is bundled, and the Devault file must never be shared with clients or sold as part of a theme pack.
 
+## Photo models (downloaded on first use, not bundled): Apache-2.0
+- **Segment Anything (SAM, ViT-B)** by Meta AI (https://github.com/facebookresearch/segment-anything), Apache License 2.0. The photo editor's Smart Select (`photoedit.js`) uses the quantized ONNX copy published with rembg (https://github.com/danielgatis/rembg, MIT), downloaded once into `models/`.
+- **IS-Net (DIS, isnet-general-use)** by Xuebin Qin et al. (https://github.com/xuebinqin/DIS), Apache License 2.0, for ✂ Cut out and the editor's Select subject (`cutout.js`), from the same rembg releases.
+Both run on this computer with onnxruntime-node (MIT) and sharp (Apache-2.0); no photo is sent to another service.
+
 ## Not used
 - **Preline UI**: free components are MIT but carry an additional "Preline UI Fair Use License" (attribution, no competing product, the license must travel with redistributed copies). SiteGen is resold as generated sites, so none of Preline's code is bundled. The interactive pieces are plain `<details>`, CSS scroll-snap and our own `public/sg-lib.js`.
 - **Flowbite** (MIT core): available as a fallback source; no markup from it is used yet.
