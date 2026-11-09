@@ -24,22 +24,28 @@
 </div>
 <% const _gm = gradients.menu(typeof site !== 'undefined' ? site.theme : {}), _gcur = _g('grad'), _gcss = (_gm.flatMap(g => g[1]).find(x => x[0] === _gcur) || [])[2] || ''; %>
 <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border,#e2e8f0);">
-  <p style="margin:0 0 4px; font-size:13px; font-weight:600;">Gradient gallery, textures and gradient style</p>
+  <p style="margin:0 0 4px; font-size:13px; font-weight:600;">Gallery: gradients, textures and pet patterns</p>
   <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
-    <label style="flex:2; min-width:200px; font-weight:400;">Gradient from the gallery
+    <label style="flex:2; min-width:200px; font-weight:400;">Pick from the gallery
       <select name="<%= pre %>grad" class="grad-pick" onchange="var o=this.options[this.selectedIndex];this.closest('div').querySelector('.grad-swatch').style.background=o.getAttribute('data-css')||'transparent'">
         <option value="" data-css="">None</option>
         <% _gm.forEach(g => { %><optgroup label="<%= g[0] %>"><% g[1].forEach(x => { %><option value="<%= x[0] %>" data-css="<%= x[2] %>" <%= _gcur === x[0] ? 'selected' : '' %>><%= x[1] %></option><% }) %></optgroup><% }) %>
       </select></label>
     <span class="grad-swatch" aria-hidden="true" style="width:64px; height:38px; border-radius:8px; border:1px solid var(--border,#e2e8f0); background:<%= _gcss || 'transparent' %>;"></span>
-    <label style="flex:1; min-width:150px; font-weight:400;">Style <%- _sel('gradStyle', [['', 'Automatic']].concat(Object.entries(gradients.STYLES)), _g('gradStyle')) %></label>
-    <label style="width:110px; font-weight:400;">Angle <input type="number" name="<%= pre %>gradAngle" value="<%= _g('gradAngle') %>" min="0" max="359" step="5" placeholder="135" title="Degrees, for straight and cone gradients"></label>
-    <label style="flex:1; min-width:150px; font-weight:400;">Movement <%- _sel('gradMove', [['', 'Still'], ['1', 'Slowly drifting']], _g('gradMove') ? '1' : '') %></label>
-    <label style="flex:2; min-width:200px; font-weight:400;">With the section's color <%- _sel('gradBlend', [['', 'Replace it with the gallery pick'], ['1', 'Blend the pick into it']], _g('gradBlend') ? '1' : '') %></label>
-    <label style="flex:1; min-width:150px; font-weight:400;">Grain <%- _sel('grain', [['', 'Smooth'], ['1', 'Grain over it (print-like)']], _g('grain') ? '1' : '') %></label>
-    <label style="flex:3; min-width:260px; font-weight:400;">Texture colors <%- include('_ink-pick', { name: pre + 'gradInk', value: _g('gradInk'), theme: typeof site !== 'undefined' ? site.theme : {} }) %></label>
+    <label style="flex:3; min-width:260px; font-weight:400;">Colors of the texture or pattern <%- include('_ink-pick', { name: pre + 'gradInk', value: _g('gradInk'), theme: typeof site !== 'undefined' ? site.theme : {} }) %></label>
   </div>
-  <p class="muted" style="font-size:12px; margin:4px 0 0;">Set Background (above) to "Gradient from the gallery" to use a gallery pick. Style, angle, movement and grain work with any gradient background, including "Brand gradient" and "Your gradient". Movement stays still for visitors who turn motion off. The textures at the end of the gallery (contour lines, dot grids, a wire globe and more) are drawn as they are, so style and angle do not change them; the swatch shows only their colors. "Blend the pick into it" keeps the section's own color and text: the gradient's colors glow in from the corners and a texture's lines and dots are drawn over it in your brand color. Texture colors draw a texture's lines and dots in your brand color, colors you pick (two or three sweep across it) or a rainbow.</p>
+  <%# the finer gradient settings, folded away (Leo, 2026-11-07: one simple Background choice, extras under "More") %>
+  <details class="sg-grad-more"<%= _g('gradStyle') || _g('gradAngle') !== '' || _g('gradMove') || _g('gradBlend') || _g('grain') ? ' open' : '' %> style="margin-top:6px;">
+    <summary style="cursor:pointer; font-size:13px; color:var(--primary,#2563eb);">More: style, angle, movement, blend and grain</summary>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-top:6px;">
+      <label style="flex:1; min-width:150px; font-weight:400;">Style <%- _sel('gradStyle', [['', 'Automatic']].concat(Object.entries(gradients.STYLES)), _g('gradStyle')) %></label>
+      <label style="width:110px; font-weight:400;">Angle <input type="number" name="<%= pre %>gradAngle" value="<%= _g('gradAngle') %>" min="0" max="359" step="5" placeholder="135" title="Degrees, for straight and cone gradients"></label>
+      <label style="flex:1; min-width:150px; font-weight:400;">Movement <%- _sel('gradMove', [['', 'Still'], ['1', 'Slowly drifting']], _g('gradMove') ? '1' : '') %></label>
+      <label style="flex:2; min-width:200px; font-weight:400;">With the section's color <%- _sel('gradBlend', [['', 'Replace it with the gallery pick'], ['1', 'Blend the pick into it']], _g('gradBlend') ? '1' : '') %></label>
+      <label style="flex:1; min-width:150px; font-weight:400;">Grain <%- _sel('grain', [['', 'Smooth'], ['1', 'Grain over it (print-like)']], _g('grain') ? '1' : '') %></label>
+    </div>
+  </details>
+  <p class="muted" style="font-size:12px; margin:4px 0 0;">Picking from the gallery sets Background (above) for you; pet patterns keep your Background color and go on top of it. Style, angle, movement and grain work with any gradient background, including "Brand gradient" and "Your gradient"; movement stays still for visitors who turn motion off. Textures are drawn as they are, so style and angle do not change them. "Blend the pick into it" keeps the section's own color and text: a gradient glows in from the corners and a texture's lines and dots are drawn over it. Texture colors: your brand color, colors you pick (two or three sweep across it), a rainbow, all black, all white or a matching palette; pet patterns also take a size and a see-through amount.</p>
 </div>
 <% if (typeof photo !== 'undefined' && photo) { %>
 <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border,#e2e8f0);">

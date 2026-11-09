@@ -1613,6 +1613,13 @@ function loadPublish(req, res, next) {
   next();
 }
 const HISTORY_MSG = { rollback: 'Rolled back. The site now shows that earlier version.', nlok: 'The matching Netlify deploy was made live again too.', nlfail: 'The content was rolled back, but Netlify could not restore its earlier deploy. Use "Publish again" on the Publish online page to update the Netlify copy.', nlskip: 'Netlify was not touched. Use "Publish again" on the Publish online page to update the Netlify copy.' };
+// The background picker's thumbnails (public/bgpick.js, Leo 2026-11-07): every gallery pick with a real preview,
+// textures and pet patterns drawn as they are. Fetched once, when the picker first opens.
+app.get('/sites/:id/bg-previews', requireAuth, loadOwnedSite, (req, res) => {
+  const theme = req.site.theme || {};
+  const groups = gradients.menu(theme, true, false).map(([label, list]) => [label, list.map(([id, name, css]) => [id, name, gradients.textures.isTexture(id) ? gradients.textures.image(id, theme) : css])]);
+  res.set('Cache-Control', 'private, max-age=60').json({ groups });
+});
 app.get('/sites/:id/history', requireAuth, loadOwnedSite, (req, res) => {
   const rows = db.prepare('SELECT id, kind, deploy_id, label, created_at FROM publish_history WHERE site_id = ? ORDER BY id DESC').all(req.site.id);
   res.render('history', { site: req.site, rows, msgs: HISTORY_MSG, flash: ['rollback', 'nlok', 'nlfail', 'nlskip'].filter(k => str(req.query[k], 3) === '1'), canNetlify: netlify.isConfigured() && !!req.site.netlify_site_id });
