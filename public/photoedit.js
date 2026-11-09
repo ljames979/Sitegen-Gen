@@ -1,4 +1,4 @@
-// Photo editor (Leo, 2026-11-09), part 1: Smart Select.
+// Photo editor (Leo, 2026-11-09). Part 1: Smart Select. Part 2: Change color, saved as changes (layers) on the original.
 // SGPhotoEdit.open({ siteId, src }) opens a full-screen editor over the page for one photo:
 //   Select  click anything (the dog, the towel, the brush, a bubble, the foam) and it is outlined. Shift+click adds
 //           another thing, Alt/Option+click takes one away
@@ -47,6 +47,15 @@
 .sgpe-float{position:absolute;z-index:3;display:flex;gap:4px;align-items:center;padding:5px;background:#0f172a;border:1px solid #334155;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:12.5px;white-space:nowrap}
 .sgpe-float span{color:#94a3b8;padding:0 6px}
 .sgpe-float button{padding:5px 9px}
+.sgpe button.primary{background:#2563eb;border-color:#3b82f6;color:#fff}.sgpe button.primary:hover{background:#1d4ed8}
+.sgpe-panel{border:1px solid #334155;border-radius:10px;padding:10px;margin:10px 0;background:#111a2e}
+.sgpe-panel .sg-cl-code{background:#0b1220;color:#e2e8f0;border-color:#334155}.sgpe-panel .sg-cl-name{color:#94a3b8}
+.sgpe-color{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.sgpe-color input[type=color]{width:44px;height:32px;padding:2px;border:1px solid #334155;border-radius:8px;background:#0b1220;cursor:pointer}
+.sgpe-sw{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}.sgpe-sw button{width:26px;height:26px;padding:0;border-radius:50%;border:2px solid #334155}.sgpe-sw button:hover{border-color:#fff}
+.sgpe-layers{list-style:none;margin:0;padding:0}.sgpe-layers li{display:flex;align-items:center;gap:6px;padding:6px 6px;border:1px solid #1e293b;border-radius:8px;margin-bottom:5px;background:#111a2e}
+.sgpe-layers li .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sgpe-layers li .dot{width:14px;height:14px;border-radius:50%;border:1px solid #475569;flex:none}
+.sgpe-layers li button{padding:3px 7px;font-size:12.5px}.sgpe-layers li.off .nm{opacity:.5;text-decoration:line-through}
+.sgpe-view.t-pick{cursor:copy}
 @media (max-width:820px){.sgpe{grid-template-columns:52px 1fr;grid-template-rows:auto 1fr auto}.sgpe-top{flex-wrap:wrap;gap:6px}.sgpe-top h2,.sgpe-top [data-a=fit],.sgpe-top [data-a=zin],.sgpe-top [data-a=zout]{display:none}.sgpe-top .sgpe-msg{order:9;flex-basis:100%;max-width:none}.sgpe-side{grid-column:1/-1;max-height:38vh;border-left:0;border-top:1px solid #1e293b}.sgpe-msg{max-width:30vw}}
 `;
 
@@ -70,6 +79,7 @@
   <button type="button" data-a="zout" title="Zoom out">−</button><button type="button" data-a="fit" title="Fit the photo on screen">Fit</button><button type="button" data-a="zin" title="Zoom in">+</button>
   <span class="sgpe-msg" role="status" aria-live="polite"></span>
   <span class="sp"></span>
+  <button type="button" data-a="save" class="primary" disabled title="Save the photo with its changes (the original is kept)">Save photo</button>
   <button type="button" data-a="close">Close</button>
 </div>
 <div class="sgpe-rail" role="toolbar" aria-label="Tools" aria-orientation="vertical">
@@ -79,7 +89,7 @@
 </div>
 <div class="sgpe-view t-select">
   <div class="sgpe-stage"><canvas class="sgpe-photo"></canvas><canvas class="sgpe-ov"></canvas><canvas class="sgpe-ui"></canvas></div>
-  <div class="sgpe-float" hidden><span class="sgpe-fl-info"></span><button type="button" data-a="invert" title="Select everything else">Invert</button><button type="button" data-a="clear" title="Clear the selection (Esc)">Clear</button></div>
+  <div class="sgpe-float" hidden><span class="sgpe-fl-info"></span><button type="button" data-a="recolor" title="Give the selection a new color, keeping its shading">🎨 Change color</button><button type="button" data-a="invert" title="Select everything else">Invert</button><button type="button" data-a="clear" title="Clear the selection (Esc)">Clear</button></div>
   <div class="sgpe-busy"><div><div class="sgpe-busy-t">Opening the photo…</div><div class="bar"><i></i></div></div></div>
 </div>
 <div class="sgpe-side">
@@ -93,6 +103,17 @@
   </div>
   <label>Edge softness <span class="val sgpe-soft-v">0 px</span><input type="range" class="sgpe-soft" min="0" max="40" value="0" aria-label="Edge softness"></label>
   <p class="hint">The softness blends the selection's edge, so changes made to it (coming next) fade into the photo instead of ending in a hard line.</p>
+  <div class="sgpe-panel sgpe-rc" hidden>
+    <h3>Change color</h3>
+    <div class="sgpe-color"><input type="color" class="sgpe-rc-color" value="#fdeef4" aria-label="New color"><button type="button" data-a="pick" title="Pick a color from the photo">💧 Pick from photo</button></div>
+    <div class="sgpe-sw" aria-label="Site colors"></div>
+    <label>Strength <span class="val sgpe-rc-str-v">100%</span><input type="range" class="sgpe-rc-str" min="0" max="100" value="100" aria-label="Strength"></label>
+    <label>Keep its shading <span class="val sgpe-rc-sh-v">100%</span><input type="range" class="sgpe-rc-sh" min="0" max="100" value="100" aria-label="Keep its shading"></label>
+    <div class="row"><button type="button" data-a="rc-apply" class="primary">Apply</button><button type="button" data-a="rc-reset">Reset</button><button type="button" data-a="compare" title="Hold to see the photo before (or hold the \\ key)">Hold to compare</button></div>
+  </div>
+  <h3>Changes</h3>
+  <ul class="sgpe-layers" aria-label="Changes to this photo"></ul>
+  <p class="hint sgpe-nolayers">No changes yet. Select something, then choose 🎨 Change color.</p>
   <h3>Keys</h3>
   <p class="hint"><kbd>S</kbd> select · <kbd>B</kbd> brush · <kbd>L</kbd> lasso · <kbd>[</kbd> <kbd>]</kbd> brush size · <kbd>Esc</kbd> clear · hold <kbd>Space</kbd> and drag to move around · scroll to zoom</p>
 </div>`;
@@ -114,6 +135,7 @@
       sel: null, shown: null, edges: null, area: 0, box: null,
       zoom: 1, tx: 0, ty: 0, space: false,
       busy: 0, closed: false,
+      layers: [], masks: {}, maskUrl: {}, editId: '', origSrc: src, trial: null, picking: false, dirty: false, base: null,
     };
     const hist = { list: [], at: -1 };
 
@@ -208,7 +230,7 @@
     // ---- undo / redo: each step keeps the selection and its softness ----
     function remember() {
       hist.list = hist.list.slice(0, hist.at + 1);
-      hist.list.push({ sel: S.sel ? S.sel.slice() : null, soft: S.soft });
+      hist.list.push({ sel: S.sel ? S.sel.slice() : null, soft: S.soft, layers: JSON.stringify(S.layers) });
       if (hist.list.length > 25) hist.list.shift();
       hist.at = hist.list.length - 1; histButtons();
     }
@@ -218,6 +240,7 @@
       const from = hist.at; hist.at = i; const h = hist.list[i]; histButtons();
       S.soft = h.soft; softIn.value = h.soft; softV.textContent = h.soft + ' px';
       S.sel = h.sel ? h.sel.slice() : null;
+      if (h.layers !== JSON.stringify(S.layers)) { S.layers = JSON.parse(h.layers); S.dirty = true; listLayers(); rerender(); }
       const word = i < from ? 'Undone' : 'Redone';
       if (!S.sel) { take({ sel: null }, false); return say(word); }
       const r = await work('restyle', {}).catch(() => null); if (r) { take(r, false); say(word); }
@@ -298,6 +321,7 @@
       if (e.button !== 0 || e.target.closest('.sgpe-float')) return;
       e.preventDefault();
       const p = toImg(e);
+      if (S.picking) { pickAt(p); return; }
       if (S.tool === 'select') { if (p.x >= 0 && p.y >= 0 && p.x < S.w && p.y < S.h) clickSelect(p, opFrom(e, S.mode)); return; }
       view.setPointerCapture(e.pointerId); strokeStart(e, p);
     });
@@ -331,7 +355,8 @@
       if (b.dataset.tool) return setTool(b.dataset.tool);
       if (b.dataset.mode) return setMode(b.dataset.mode);
       const a = b.dataset.a;
-      if (a === 'close') return close();
+      if (a === 'close') return tryClose();
+      if (a === 'save') return save();
       if (a === 'undo') return stepTo(hist.at - 1);
       if (a === 'redo') return stepTo(hist.at + 1);
       if (a === 'fit') return fit();
@@ -343,11 +368,160 @@
       if (a === 'invert') return simple('invert', 'Inverted…');
       if (a === 'all') return simple('all', 'Selected all…');
       if (a === 'clear') return clearSel();
+      if (a === 'recolor') return openRecolor();
+      if (a === 'rc-apply') return applyRecolor();
+      if (a === 'rc-reset') return resetRecolor();
+      if (a === 'pick') { S.picking = !S.picking; view.classList.toggle('t-pick', S.picking); b.setAttribute('aria-pressed', String(S.picking)); return say(S.picking ? 'Click the photo to pick its color' : ''); }
+      if (b.dataset.lhide) { const L = S.layers.find(x => x.id === b.dataset.lhide); if (L) { L.hidden = !L.hidden; changed(); } return; }
+      if (b.dataset.ldel) { S.layers = S.layers.filter(x => x.id !== b.dataset.ldel); changed(); return say('Change removed'); }
+      if (b.dataset.sw) { rcColor.value = b.dataset.sw; rcColor.dispatchEvent(new Event('input', { bubbles: true })); return; }
     });
     softIn.addEventListener('input', () => { S.soft = +softIn.value; softV.textContent = S.soft + ' px'; clearTimeout(softIn.t); softIn.t = setTimeout(restyle, 120); });
     softIn.addEventListener('change', () => { if (hist.list[hist.at] && hist.list[hist.at].soft !== S.soft) remember(); });
     sizeIn.addEventListener('input', () => setBrush(+sizeIn.value));
     setBrush(40); setTool('select');
+
+
+    // ---- changes (layers): each one has its own mask; the original photo is never changed ----
+    const rcPanel = $(root, '.sgpe-rc'), rcColor = $(root, '.sgpe-rc-color'), rcStr = $(root, '.sgpe-rc-str'), rcSh = $(root, '.sgpe-rc-sh');
+    const uid = () => Math.random().toString(36).slice(2, 10);
+    const NAMES = { recolor: 'Color' };
+    async function rerender() {
+      if (!S.base) return;
+      const t = S.trial;
+      const layers = S.layers.concat(t ? [t.layer] : []);
+      if (!layers.length) { cPhoto.getContext('2d').putImageData(S.base, 0, 0); return; }
+      const r = await work('render', { layers, trial: t ? t.mask.slice().buffer : null }).catch(err => { say(err.message, true); return null; });
+      if (!r || S.closed) return;
+      cPhoto.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(r.px), S.w, S.h), 0, 0);
+    }
+    let rrTimer = 0;
+    const rerenderSoon = () => { clearTimeout(rrTimer); rrTimer = setTimeout(rerender, 40); };
+    function changed() { S.dirty = true; listLayers(); rerender(); remember(); }
+    function listLayers() {
+      const ul = $(root, '.sgpe-layers');
+      ul.innerHTML = '';
+      S.layers.slice().reverse().forEach(L => {
+        const li = document.createElement('li'); if (L.hidden) li.className = 'off';
+        const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = L.color || '#888';
+        const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = L.name || NAMES[L.type] || 'Change';
+        const eye = document.createElement('button'); eye.type = 'button'; eye.dataset.lhide = L.id; eye.textContent = L.hidden ? 'Show' : 'Hide'; eye.setAttribute('aria-label', (L.hidden ? 'Show ' : 'Hide ') + nm.textContent);
+        const del = document.createElement('button'); del.type = 'button'; del.dataset.ldel = L.id; del.textContent = '✕'; del.title = 'Remove this change'; del.setAttribute('aria-label', 'Remove ' + nm.textContent);
+        li.append(dot, nm, eye, del); ul.appendChild(li);
+      });
+      $(root, '.sgpe-nolayers').hidden = S.layers.length > 0;
+      $(root, '[data-a=save]').disabled = !S.dirty;
+    }
+    function swatches() {
+      const box = $(root, '.sgpe-sw'); if (box.childElementCount) return;
+      const seen = new Set();
+      const add = (hex, label) => {
+        hex = String(hex || '').trim().toLowerCase(); if (!/^#[0-9a-f]{6}$/.test(hex) || seen.has(hex)) return; seen.add(hex);
+        const b = document.createElement('button'); b.type = 'button'; b.dataset.sw = hex; b.style.background = hex; b.title = label + ' ' + hex.toUpperCase(); b.setAttribute('aria-label', label + ' ' + hex.toUpperCase());
+        box.appendChild(b);
+      };
+      (opts.swatches || []).forEach(c => add(c, 'Site color'));
+      document.querySelectorAll('input[name^="theme_"][name$="Color"]').forEach(i => add(i.value, 'Site color'));
+      ['#fdeef4', '#f9a8d4', '#ec4899', '#fde68a', '#d4af37', '#93c5fd', '#2563eb', '#86efac', '#ffffff', '#111827'].forEach(c => add(c, 'Color'));
+    }
+    function trialLayer() {
+      return { id: '__t', type: 'recolor', mask: '__trial', color: rcColor.value, strength: +rcStr.value / 100, shading: +rcSh.value / 100 };
+    }
+    function openRecolor() {
+      if (!S.sel) return say('Select something first', true);
+      swatches(); rcPanel.hidden = false;
+      S.trial = { mask: (S.shown || S.sel).slice(), layer: trialLayer() };
+      // with a hard edge, reach 2 px past the outline so no rim of the old color is left
+      if (!S.soft) work('grow', { mask: S.trial.mask.slice().buffer, r: 2 }).then(r => { if (S.trial) { S.trial.mask = new Uint8Array(r.mask); rerender(); } }).catch(() => {});
+      say('Pick the new color: the photo shows it as you go. Apply keeps it');
+      rerender();
+      rcColor.focus();
+    }
+    function resetRecolor() { S.trial = null; rcPanel.hidden = true; S.picking = false; view.classList.remove('t-pick'); rerender(); say('Color change dropped'); }
+    function applyRecolor() {
+      if (!S.trial) return;
+      const mid = uid(), L = { ...trialLayer(), id: uid(), mask: mid, name: 'Color ' + rcColor.value.toUpperCase() };
+      S.masks[mid] = S.trial.mask; S.trial = null; rcPanel.hidden = true;
+      work('mask', { mid, mask: S.masks[mid].slice().buffer }).then(() => { S.layers.push(L); changed(); say('Color changed. Save photo keeps it; the original stays as it was'); });
+    }
+    [rcColor, rcStr, rcSh].forEach(i => i.addEventListener('input', () => {
+      $(root, '.sgpe-rc-str-v').textContent = rcStr.value + '%'; $(root, '.sgpe-rc-sh-v').textContent = rcSh.value + '%';
+      if (S.trial) { S.trial.layer = trialLayer(); rerenderSoon(); }
+    }));
+    function pickAt(p) {
+      const x = Math.max(0, Math.min(S.w - 1, Math.floor(p.x))), y = Math.max(0, Math.min(S.h - 1, Math.floor(p.y)));
+      const d = cPhoto.getContext('2d').getImageData(x, y, 1, 1).data;
+      const hex = '#' + [d[0], d[1], d[2]].map(v => v.toString(16).padStart(2, '0')).join('');
+      S.picking = false; view.classList.remove('t-pick'); $(root, '[data-a=pick]').setAttribute('aria-pressed', 'false');
+      rcColor.value = hex; rcColor.dispatchEvent(new Event('input', { bubbles: true }));
+      say('Picked ' + hex.toUpperCase());
+    }
+    // hold to compare: the photo as it was, while the button (or the \ key) is held
+    function compare(on) {
+      if (!S.base) return;
+      if (on) cPhoto.getContext('2d').putImageData(S.base, 0, 0); else rerender();
+    }
+    const cmpBtn = $(root, '[data-a=compare]');
+    cmpBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); compare(true); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => cmpBtn.addEventListener(t, () => compare(false)));
+
+    // a mask as a PNG (white = changed), for saving
+    function maskPng(m) {
+      const c = document.createElement('canvas'); c.width = S.w; c.height = S.h;
+      const x = c.getContext('2d'), d = x.createImageData(S.w, S.h);
+      for (let i = 0, j = 0; i < m.length; i++, j += 4) { d.data[j] = d.data[j + 1] = d.data[j + 2] = m[i]; d.data[j + 3] = 255; }
+      x.putImageData(d, 0, 0);
+      return new Promise(res => c.toBlob(res, 'image/png'));
+    }
+    async function readMaskUrl(url) {
+      const img = new Image(); img.src = url; await img.decode();
+      const c = document.createElement('canvas'); c.width = S.w; c.height = S.h;
+      const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0, S.w, S.h);
+      const d = x.getImageData(0, 0, S.w, S.h).data, m = new Uint8Array(S.w * S.h);
+      for (let i = 0; i < m.length; i++) m[i] = d[i * 4];
+      return m;
+    }
+    async function loadEdit(edit) {
+      for (const [mid, url] of Object.entries(edit.masks || {})) {
+        const m = await readMaskUrl(url);
+        S.masks[mid] = m; S.maskUrl[mid] = url;
+        await work('mask', { mid, mask: m.slice().buffer });
+      }
+      S.layers = (edit.layers || []).filter(L => S.masks[L.mask]);
+      await rerender();
+    }
+    const post = async (path, body, type) => {
+      const r = await fetch(api(path), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': type || 'application/json', 'Accept': 'application/json' }, body });
+      const j = await r.json().catch(() => ({ ok: false, error: 'SiteGen refused (error ' + r.status + ')' }));
+      if (!j.ok) throw new Error(j.error || 'Could not save');
+      return j;
+    };
+    // Save: the finished photo is rendered full size and uploaded like any photo; the original and the changes are kept
+    async function save() {
+      if (!S.key || !S.dirty) return;
+      if (S.trial) applyRecolor();
+      const r = await busy('Saving the photo…', async () => {
+        const used = new Set(S.layers.map(L => L.mask));
+        for (const mid of used) if (!S.maskUrl[mid]) S.maskUrl[mid] = (await post('keep-mask', await maskPng(S.masks[mid]), 'image/png')).url;
+        const full = await work('full', { url: api('full/' + S.key), layers: S.layers, type: 'image/webp' });
+        const fd = new FormData(); fd.append('image', full.blob, 'edited-photo.webp');
+        const up = await fetch('/sites/' + siteId + '/upload', { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
+        const uj = await up.json().catch(() => ({ ok: false }));
+        if (!uj.ok) throw new Error(uj.error || 'Could not upload the finished photo');
+        const masks = {}; used.forEach(mid => { masks[mid] = S.maskUrl[mid]; });
+        const sj = await post('save', JSON.stringify({ id: S.editId, src: S.origSrc, out: uj.url, w: S.w, h: S.h, layers: S.layers, masks }));
+        return { url: uj.url, edit: sj.edit };
+      });
+      if (!r) return;
+      S.editId = r.edit.id; S.dirty = false; listLayers();
+      say('Saved. The photo on the site now shows your changes; the original is kept');
+      if (opts.onSave) opts.onSave(r.url, r.edit);
+    }
+    let closeArmed = false;
+    function tryClose() {
+      if (S.dirty && !closeArmed) { closeArmed = true; setTimeout(() => { closeArmed = false; }, 4000); return say('Your changes are not saved. Press Save photo, or Close again to leave without them', true); }
+      close();
+    }
 
     // ---- keys ----
     // keys go to the editor only, while it is open (the page under it has its own Ctrl+Z, Esc ...)
@@ -365,13 +539,14 @@
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); return clearSel(); }
       if (e.key === ' ') { e.preventDefault(); if (!S.space) { S.space = true; view.classList.add('pan'); } return; }
       if (e.key === 'Alt') e.preventDefault();   // Windows would otherwise move focus to the browser menu
+      if (e.key === '\\') { if (!e.repeat) compare(true); return; }
       if (k === 's') return setTool('select');
       if (k === 'b') return setTool('brush');
       if (k === 'l') return setTool('lasso');
       if (e.key === '[') return setBrush(S.brush * 0.8);
       if (e.key === ']') return setBrush(S.brush * 1.25 + 1);
     }
-    function onKeyUp(e) { if (S.closed) return; e.stopPropagation(); if (e.key === ' ') { S.space = false; view.classList.remove('pan'); } }
+    function onKeyUp(e) { if (S.closed) return; e.stopPropagation(); if (e.key === '\\') compare(false); if (e.key === ' ') { S.space = false; view.classList.remove('pan'); } }
     window.addEventListener('keydown', onKey, true);
     window.addEventListener('keyup', onKeyUp, true);
     const onResize = () => fit();
@@ -410,10 +585,14 @@
         img.src = api('image/' + j.key);
         await img.decode();
         Object.assign(S, { key: j.key, w: j.w, h: j.h, img });
+        if (j.edit) { S.editId = j.edit.id; S.origSrc = j.edit.src; }
         [cPhoto, cOv, cUi].forEach(c => { c.width = j.w; c.height = j.h; });
         stage.style.width = j.w + 'px'; stage.style.height = j.h + 'px';
-        cPhoto.getContext('2d').drawImage(img, 0, 0);
-        busyEl.hidden = true; fit(); remember();
+        const px = cPhoto.getContext('2d', { willReadFrequently: true }); px.drawImage(img, 0, 0);
+        S.base = px.getImageData(0, 0, j.w, j.h);
+        await work('base', { px: S.base.data.slice().buffer });
+        if (j.edit) await loadEdit(j.edit);
+        busyEl.hidden = true; fit(); remember(); listLayers();
         say('Ready. Click anything in the photo to select it' + (j.cached ? '' : ' (' + ((j.ms || 0) / 1000).toFixed(1) + ' s to get ready)'));
       } catch (err) {
         busyT.textContent = err.message || 'Could not open that photo'; busyBar.parentNode.hidden = true;

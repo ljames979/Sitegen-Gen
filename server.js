@@ -1497,6 +1497,8 @@ app.post('/sites/:id/edit', requireAuth, loadOwnedSite, (req, res) => {
   if (b.estyles_json === undefined) sections.texts.elems = elStyles.clean(((req.site.sections || {}).texts || {}).elems);
   // and so are your own pictures (+ Add picture)
   if (b.pics_json === undefined) sections.texts.pics = picBoxes.clean(((req.site.sections || {}).texts || {}).pics);
+  // photos changed in the photo editor keep their originals and changes (saved by the editor itself)
+  if ((req.site.sections || {}).photoEdits) sections.photoEdits = photoedit.cleanEdits(req.site.sections.photoEdits);
   const theme = parseThemeFromBody(b);
   // Scroll Smoother and Split text are set in the Design lab, so an editor save keeps them as they are
   Object.assign(theme, keptMotion(req.site.theme, b));
@@ -1603,8 +1605,39 @@ const photoEditLimiter = rateLimit({ windowMs: 60 * 1000, limit: 600, standardHe
 const photoEditErr = (res, e, msg) => res.status(400).json({ ok: false, error: (e && e.message) || msg });
 app.get('/sites/:id/photo-edit/status', requireAuth, loadOwnedSite, (req, res) => res.json({ ok: true, ready: photoedit.ready(), ...photoedit.status }));
 app.post('/sites/:id/photo-edit/prepare', requireAuth, loadOwnedSite, cutoutLimiter, express.json({ limit: '4kb' }), async (req, res) => {
-  try { res.json({ ok: true, ...(await photoedit.prepare(String((req.body || {}).url || '').trim())) }); }
-  catch (e) { photoEditErr(res, e, 'Could not open that photo.'); }
+  try {
+    // a photo finished in the editor opens as its original, with its changes
+    const url = String((req.body || {}).url || '').trim();
+    const edit = photoedit.editFor(photoedit.cleanEdits((req.site.sections || {}).photoEdits), url);
+    res.json({ ok: true, ...(await photoedit.prepare(edit ? edit.src : url)), edit });
+  } catch (e) { photoEditErr(res, e, 'Could not open that photo.'); }
+});
+// Save: the finished photo was uploaded as usual (/upload); this keeps the original, the changes and their masks
+// a change's mask (black and white PNG, the editor's working size), kept with the uploads before Save
+app.post('/sites/:id/photo-edit/keep-mask', requireAuth, loadOwnedSite, photoEditLimiter, express.raw({ type: 'image/png', limit: '6mb' }), async (req, res) => {
+  try { res.json({ ok: true, url: await photoedit.saveMask(req.body) }); }
+  catch (e) { photoEditErr(res, e, 'A selection could not be saved.'); }
+});
+app.post('/sites/:id/photo-edit/save', requireAuth, loadOwnedSite, cutoutLimiter, express.json({ limit: '64kb' }), async (req, res) => {
+  try {
+    const b = req.body || {}, sections = req.site.sections || {};
+    const all = photoedit.cleanEdits(sections.photoEdits);
+    const id = photoedit.idOk(b.id) && all[b.id] ? b.id : nanoid(12).toLowerCase().replace(/[^a-z0-9]/g, 'x');
+    const masks = {};
+    for (const [mid, v] of Object.entries(b.masks || {}).slice(0, 60)) if (photoedit.idOk(mid) && /^\/uploads\/pe-[a-z0-9]+\.png$/.test(String(v))) masks[mid] = String(v);
+    const edit = photoedit.cleanEdit({ src: b.src, out: b.out, w: b.w, h: b.h, layers: b.layers, masks, at: new Date().toISOString() });
+    if (!edit) return res.status(400).json({ ok: false, error: 'Nothing to save.' });
+    all[id] = edit;
+    sections.photoEdits = photoedit.cleanEdits(all);
+    db.prepare("UPDATE sites SET sections = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(sections), req.site.id);
+    invalidateSiteCache(req.site);
+    res.json({ ok: true, id, edit: { id, ...edit } });
+  } catch (e) { photoEditErr(res, e, 'Could not save the photo.'); }
+});
+app.get('/sites/:id/photo-edit/full/:key', requireAuth, loadOwnedSite, (req, res) => {
+  const f = photoedit.imagePath(req.params.key, true);
+  if (!f) return res.status(404).json({ ok: false, error: 'Open the photo in the editor again' });
+  res.set('Cache-Control', 'private, max-age=3600'); res.type('png'); res.sendFile(f);
 });
 app.get('/sites/:id/photo-edit/image/:key', requireAuth, loadOwnedSite, (req, res) => {
   const f = photoedit.imagePath(req.params.key);

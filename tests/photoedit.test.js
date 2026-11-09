@@ -33,7 +33,7 @@ test('photo editor: every picture box and the photo bar on the page open it', ()
   const ed = read('views/editor.ejs');
   assert.match(ed, /<script src="\/photoedit\.js"><\/script>/);
   assert.match(ed, /pe\.className = 'btn-secondary pe-btn';\s*pe\.textContent = '🎨 Edit photo'/);
-  assert.match(ed, /closest\('\.pe-btn'\)[\s\S]*window\.SGPhotoEdit\.open\(\{ siteId, src: v \}\)/);
+  assert.match(ed, /closest\('\.pe-btn'\)[\s\S]*window\.SGPhotoEdit\.open\(\{ siteId, src: v, onSave \}\)/);
   assert.match(ed, /data-ph="edit"[^']*>🎨 Edit photo<\/button>/);
 });
 
@@ -105,4 +105,63 @@ test('photo editor: a real click outlines one thing (only where the selection mo
     fs.rmSync(file, { force: true }); fs.rmSync(cache, { recursive: true, force: true }); delete process.env.SG_PHOTOEDIT_DIR;
     delete require.cache[require.resolve('../photoedit')];
   }
+});
+
+// ---- part 2: Change color, saved as changes on the original ----
+test('photo editor saves: the original, the changes and their masks stay with the site; the editor reopens them', () => {
+  const s = read('server.js');
+  for (const r of ['save', 'keep-mask']) assert.match(s, new RegExp("app\\.post\\('/sites/:id/photo-edit/" + r + "', requireAuth, loadOwnedSite"));
+  assert.match(s, /app\.get\('\/sites\/:id\/photo-edit\/full\/:key', requireAuth, loadOwnedSite/);
+  assert.match(s, /express\.raw\(\{ type: 'image\/png', limit: '6mb' \}\)/);
+  // an editor save keeps them; prepare opens a finished photo as its original with its changes
+  assert.match(s, /if \(\(req\.site\.sections \|\| \{\}\)\.photoEdits\) sections\.photoEdits = photoedit\.cleanEdits\(req\.site\.sections\.photoEdits\);/);
+  assert.match(s, /const edit = photoedit\.editFor\(photoedit\.cleanEdits\(\(req\.site\.sections \|\| \{\}\)\.photoEdits\), url\);\s*res\.json\(\{ ok: true, \.\.\.\(await photoedit\.prepare\(edit \? edit\.src : url\)\), edit \}\)/);
+  const pe = require('../photoedit');
+  const e = pe.cleanEdit({ src: 'https://images.pexels.com/photos/1/a.jpeg', out: '/uploads/abc.webp', w: 900, h: 626, at: '2026-11-09T06:00:00Z',
+    masks: { mk01: '/uploads/pe-x1.png', bad: 'javascript:alert(1)', mk02: 'https://evil.example/x.png' },
+    layers: [
+      { id: 'ly01', type: 'recolor', mask: 'mk01', color: '#FDEEF4', strength: 2, shading: -1, name: 'Towel <b>' },
+      { id: 'ly02', type: 'recolor', mask: 'mk02', color: '#000000' },            // its mask was not kept: dropped
+      { id: 'ly03', type: 'script', mask: 'mk01' },                               // not a kind of change
+    ] });
+  assert.deepEqual(e.masks, { mk01: '/uploads/pe-x1.png' });
+  assert.deepEqual(e.layers, [{ id: 'ly01', type: 'recolor', name: 'Towel b', mask: 'mk01', hidden: false, color: '#fdeef4', strength: 1, shading: 0 }]);
+  assert.equal(pe.cleanEdit({ src: 'x', out: 'https://evil.example/a.webp' }), null);   // the finished photo is always an upload
+  const all = pe.cleanEdits({ abcd1234: e, 'NOT OK': e });
+  assert.deepEqual(Object.keys(all), ['abcd1234']);
+  assert.equal(pe.editFor(all, '/uploads/abc.webp').id, 'abcd1234');
+  assert.equal(pe.editFor(all, '/uploads/other.webp'), null);
+});
+
+test('photo editor page: Change color with the shared color picker, eyedropper, site colors, compare and save', () => {
+  const js = read('public/photoedit.js');
+  assert.match(js, /data-a="recolor"[^>]*>🎨 Change color</);
+  assert.match(js, /<input type="color" class="sgpe-rc-color"/);         // colorlabel.js adds the hex box and shades to it
+  assert.match(js, /data-a="pick"[^>]*>💧 Pick from photo</);
+  assert.match(js, /input\[name\^="theme_"\]\[name\$="Color"\]/);         // the site's own colors as swatches
+  for (const a of ['rc-apply', 'rc-reset', 'compare', 'save']) assert.match(js, new RegExp('data-a="' + a + '"'));
+  assert.match(js, /post\('keep-mask', await maskPng\(S\.masks\[mid\]\), 'image\/png'\)/);
+  assert.match(js, /work\('full', \{ url: api\('full\/' \+ S\.key\), layers: S\.layers, type: 'image\/webp' \}\)/);
+  assert.match(js, /hist\.list\.push\(\{ sel: S\.sel \? S\.sel\.slice\(\) : null, soft: S\.soft, layers: JSON\.stringify\(S\.layers\) \}\)/);
+  const ed = read('views/editor.ejs');
+  assert.match(ed, /window\.SGPhotoEdit\.open\(\{ siteId, src: v, onSave \}\)/);
+  assert.match(ed, /window\.SGPhotoEdit\.open\(\{ siteId, src: v, onSave: \(u\) => setPhoto\(field, u\) \}\)/);
+});
+
+test('Change color keeps the shading: darker stays darker, the average takes the new color', async () => {
+  const sent = [];
+  const box = { self: { postMessage: (m) => sent.push(m) }, Uint8Array, Uint8ClampedArray, Int32Array, Math, String, Map, Number };
+  vm.createContext(box); vm.runInContext(read('public/photoedit-worker.js'), box);
+  const ask = (q) => new Promise((res) => { const n = sent.length; box.self.onmessage({ data: { id: 1, w: 4, h: 1, t: 1, soft: 0, ...q } }); const t = setInterval(() => { if (sent.length > n) { clearInterval(t); res(sent[n]); } }, 1); });
+  // four teal pixels, dark to light, the last one not selected
+  const px = new Uint8ClampedArray([10, 70, 70, 255, 20, 110, 110, 255, 40, 150, 150, 255, 40, 150, 150, 255]);
+  await ask({ cmd: 'base', px: px.buffer });
+  await ask({ cmd: 'mask', mid: 'm1', mask: new Uint8Array([255, 255, 255, 0]).buffer });
+  const r = await ask({ cmd: 'render', layers: [{ id: 'l', type: 'recolor', mask: 'm1', color: '#fdeef4', strength: 1, shading: 1 }] });
+  const o = new Uint8Array(r.px), lum = (i) => o[i * 4] + o[i * 4 + 1] + o[i * 4 + 2];
+  assert.ok(lum(0) < lum(1) && lum(1) < lum(2), 'shading order kept');
+  for (let i = 0; i < 3; i++) assert.ok(o[i * 4] > o[i * 4 + 1], 'pink: more red than green');
+  assert.deepEqual([...o.slice(12, 16)], [40, 150, 150, 255]);          // outside the mask: untouched
+  const hidden = await ask({ cmd: 'render', layers: [{ id: 'l', type: 'recolor', mask: 'm1', color: '#fdeef4', hidden: true }] });
+  assert.deepEqual([...new Uint8Array(hidden.px)], [...px]);            // a hidden change shows the original
 });

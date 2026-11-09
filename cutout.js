@@ -94,4 +94,4 @@ async function cutout(src) {
   return { url: '/uploads/' + name, width: W, height: H };
 }
 
-module.exports = { cutout, alphaFor, photoBytes, ready, missing, MODEL, MODEL_URL, HOSTS };
+module.exports = { cutout, alphaFor, photoBytes, UPLOADS, ready, missing, MODEL, MODEL_URL, HOSTS };
