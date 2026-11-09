@@ -3,7 +3,8 @@
 //  - a code label next to it (#880D1E) that you can also type or paste a code into,
 //  - a strip of five shades of the picked color (darkest to lightest) to click,
 //  - a dark bubble above any color you point at, showing its code and a plain name
-//    ("880D1E · Dark red"), like the palette tools designers use.
+//    ("880D1E · Dark red"), like the palette tools designers use,
+//  - an eyedropper button (where the browser has one) and the last few colors picked (recent colors).
 // The brand color text boxes (Primary, Accent, Background, Name color) get a picker,
 // the strip and the name too. Palette swatches (.pal-dots) show the bubble on hover.
 // A picker can opt out with data-sg-cl="off".
@@ -170,6 +171,15 @@
     return out;
   }
 
+  // recent colors (Leo, 2026-11-09): the last few colors picked anywhere in the editor, newest first, kept in this browser
+  var RECENT_KEY = 'sg-cl-recent', RECENT_MAX = 6;
+  function recent() { try { var v = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); return Array.isArray(v) ? v.map(parseHex).filter(Boolean).slice(0, RECENT_MAX) : []; } catch (e) { return []; } }
+  function remember(h) {
+    h = parseHex(h); if (!h) return;
+    var list = [h].concat(recent().filter(function (x) { return x !== h; })).slice(0, RECENT_MAX);
+    try { localStorage.setItem(RECENT_KEY, JSON.stringify(list)); } catch (e) { /* storage blocked */ }
+  }
+
   // picker = the <input type=color>; text = a text box that holds the code instead (brand colors)
   function build(picker, text) {
     var wrap = document.createElement('span'); wrap.className = 'sg-cl'; wrap.setAttribute('data-sg-cl-for', '');
@@ -185,6 +195,7 @@
 
     function cur() { return parseHex(text ? text.value : picker.value); }
     function set(h) {
+      remember(h);
       if (text) { text.value = h; fire(text); }
       if (picker.value !== h) { picker.value = h; if (!text) fire(picker); }
       paint();
@@ -209,6 +220,22 @@
         b.addEventListener('click', function (e) { e.preventDefault(); set(x[0]); showTip(b, x[0], x[1]); });
         strip.appendChild(b);
       });
+      recent().filter(function (c) { return c !== h; }).slice(0, 5).forEach(function (c, i) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'sg-cl-sw sg-cl-recent' + (i ? '' : ' first'); b.style.background = c;
+        b.setAttribute('data-sg-hex', c); b.setAttribute('data-sg-hex-note', 'Recent color'); b.setAttribute('aria-label', 'Use recent color ' + label(c) + ' ' + name(c));
+        b.addEventListener('click', function (e) { e.preventDefault(); set(c); showTip(b, c, 'Recent color'); });
+        strip.appendChild(b);
+      });
+    }
+    // the eyedropper: pick a color from anywhere on the screen (Chrome and Edge; hidden where the browser can't)
+    if (typeof window.EyeDropper === 'function') {
+      var drop = document.createElement('button'); drop.type = 'button'; drop.className = 'sg-cl-drop'; drop.title = 'Pick a color from the screen'; drop.setAttribute('aria-label', 'Pick a color from the screen');
+      drop.innerHTML = '<svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M13.6 2.6a2.3 2.3 0 0 1 3.3 3.3l-2 2 .9.9-1.4 1.4-.9-.9-6.6 6.6H4.1v-2.8l6.6-6.6-.9-.9 1.4-1.4.9.9z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+      drop.addEventListener('click', function (e) {
+        e.preventDefault();
+        new window.EyeDropper().open().then(function (r) { var h = parseHex(r && r.sRGBHex) || cssToHex(r && r.sRGBHex); if (h) set(h); }).catch(function () { /* closed with Esc */ });
+      });
+      wrap.insertBefore(drop, strip);
     }
     if (chip) {
       var commit = function () { var h = parseHex(chip.textContent); if (h) set(h); else chip.textContent = (cur() || '').toUpperCase(); };
@@ -219,6 +246,7 @@
       chip.addEventListener('paste', function (e) { e.preventDefault(); var t = (e.clipboardData || window.clipboardData).getData('text'); var h = parseHex(t); chip.textContent = h ? h.toUpperCase() : t.trim().slice(0, 7); if (h) set(h); });
     }
     picker.addEventListener('input', function () { if (text) { text.value = picker.value; fire(text); } paint(); });
+    picker.addEventListener('change', function () { remember(picker.value); });
     if (text) text.addEventListener('input', paint);
     wrap.addEventListener('mouseenter', paint); // catch values set by other scripts
     paint();
@@ -263,7 +291,10 @@
     '.sg-cl-sw { all: unset; box-sizing: border-box; position: relative; width: 22px; height: 26px; cursor: pointer; }',
     '.sg-cl-sw:hover, .sg-cl-sw:focus-visible { outline: 2px solid var(--primary, #2563eb); outline-offset: -2px; z-index: 1; }',
     '.sg-cl-sw.on::after { content: ""; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: var(--dot, #fff); }',
-    '.sg-cl-sw.sg-cl-brand.first { margin-left: 4px; border-left: 2px solid #fff; }',
+    '.sg-cl-sw.sg-cl-brand.first, .sg-cl-sw.sg-cl-recent.first { margin-left: 4px; border-left: 2px solid #fff; }',
+    '.sg-cl-sw.sg-cl-recent { width: 16px; }',
+    '.sg-cl-drop { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 1px solid var(--border, #e2e8f0); border-radius: 8px; background: #fff; color: var(--text, #0f172a); cursor: pointer; }',
+    '.sg-cl-drop:hover, .sg-cl-drop:focus-visible { border-color: var(--primary, #2563eb); color: var(--primary, #2563eb); }',
     '.sg-cl-name { font-size: 12px; color: var(--muted, #64748b); white-space: nowrap; }',
     '.sg-cl-tip { position: absolute; z-index: 2147483000; pointer-events: none; background: #111; color: #fff; border-radius: 8px; padding: 6px 10px 5px; text-align: center; box-shadow: 0 4px 14px rgba(0, 0, 0, .25); }',
     '.sg-cl-tip[hidden] { display: none !important; }',

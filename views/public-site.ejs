@@ -240,7 +240,7 @@
    if (extraTheme && !hFont && extraTheme.heading.param && !fontFamilies.includes(extraTheme.heading.param)) fontFamilies.push(extraTheme.heading.param);
    if (extraTheme && extraTheme.body && !bFont && extraTheme.body.param && !fontFamilies.includes(extraTheme.body.param)) fontFamilies.push(extraTheme.body.param);
    if (mixHome) mixHome.fonts.forEach(f => { if (f && !fontFamilies.includes(f)) fontFamilies.push(f); });
-   const customFonts = [hFont, bFont].filter(Boolean).filter((n, i, a) => a.indexOf(n) === i);
+   const customFonts = [hFont, bFont].concat(decoCard.fontsOf(site)).filter(Boolean).filter((n, i, a) => a.indexOf(n) === i);
    const fontsHref = 'https://fonts.googleapis.com/css2?family=' + fontFamilies.join('&family=') + customFonts.map(n => '&' + fonts.familyParam(n)).join('') + '&display=swap'; %>
   <%# fonts load without blocking the first paint; the system font shows meanwhile %>
   <link rel="preload" as="style" href="<%= fontsHref %>" onload="this.onload=null;this.rel='stylesheet'">

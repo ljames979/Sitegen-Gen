@@ -487,6 +487,81 @@
       </div>
       <% }) %>
       <label style="font-weight: 400;"><input type="checkbox" class="sf-shapes"<%= sfOwn.shapes ? ' checked' : '' %>> Show the round dot, the color block and the stripes</label>
+    <% } else if (b.type === 'decocard') { %>
+      <% const dcO = decoCard.parse(b.body), dcSt = decoCard.styleOf(dcO.style), dcHid = (k) => dcO.hide.includes(k); %>
+      <textarea name="block_body" class="dc-body" hidden><%= b.body ? decoCard.cleanBody(b.body) : decoCard.cleanBody('') %></textarea>
+      <div class="dc-panel">
+        <input type="hidden" class="dc-style" value="<%= dcO.style %>">
+        <label>Card style <span class="muted">(switch any time; your words stay)</span></label>
+        <div class="dc-styles" role="radiogroup" aria-label="Card style">
+          <% decoCard.STYLES.forEach(s => { %><button type="button" class="dc-style-btn<%= dcO.style === s[0] ? ' on' : '' %>" role="radio" aria-checked="<%= dcO.style === s[0] %>" data-dcpick="<%= s[0] %>" data-thick="<%= s[3] %>" data-radius="<%= s[4] %>" data-op="<%= s[5] %>" title="<%= s[2] %>"><%- decoCard.thumb(s[0]) %><span><%= s[1] %></span></button><% }) %>
+        </div>
+        <fieldset class="dc-box">
+          <legend>What the card says <span class="muted">(top to bottom; untick to hide a part)</span></legend>
+          <div class="dc-slot"><label><input type="checkbox" class="dc-show" data-slot="icon"<%= dcHid('icon') ? '' : ' checked' %>> Top icon</label>
+            <select class="dc-icon" aria-label="Top icon"><% decoCard.ICONS.forEach(i => { %><option value="<%= i[0] %>" <%= dcO.icon === i[0] ? 'selected' : '' %>><%= i[1] %></option><% }) %></select></div>
+          <div class="dc-slot"><label><input type="checkbox" class="dc-show" data-slot="eyebrow"<%= dcHid('eyebrow') ? '' : ' checked' %>> Small line on top</label>
+            <input type="text" name="dc_eyebrow" class="dc-eyebrow" maxlength="80" value="<%= dcO.eyebrow %>" placeholder="e.g. By Royal Appointment"></div>
+          <div class="dc-slot"><label><input type="checkbox" class="dc-show" data-slot="heading"<%= dcHid('heading') ? '' : ' checked' %>> Heading</label> <span class="muted">Type it in the Heading box above.</span></div>
+          <div class="dc-slot"><label><input type="checkbox" class="dc-show" data-slot="tagline"<%= dcHid('tagline') ? '' : ' checked' %>> Tagline (in italics)</label>
+            <input type="text" name="dc_tagline" class="dc-tagline" maxlength="160" value="<%= dcO.tagline %>" placeholder="e.g. Purveyors of Fine Dog &amp; Cat Grooming"></div>
+          <div class="dc-slot"><label><input type="checkbox" class="dc-show" data-slot="div1"<%= dcHid('div1') ? '' : ' checked' %>> First divider</label></div>
+          <div class="dc-slot"><label><input type="checkbox" class="dc-show" data-slot="body"<%= dcHid('body') ? '' : ' checked' %>> Paragraphs</label>
+            <textarea name="dc_text" class="dc-text" rows="4" maxlength="3600" placeholder="A few sentences about you. Each line is a paragraph (up to 4)."><%= dcO.text.join('\n') %></textarea></div>
+          <div class="dc-slot"><label><input type="checkbox" class="dc-show" data-slot="quote"<%= dcHid('quote') ? '' : ' checked' %>> Closing line (italic, larger)</label>
+            <input type="text" name="dc_quote" class="dc-quote" maxlength="300" value="<%= dcO.quote %>" placeholder="e.g. Because to you, they're not just a pet."></div>
+          <div class="dc-slot"><label><input type="checkbox" class="dc-show" data-slot="div2"<%= dcHid('div2') ? '' : ' checked' %>> Second divider</label></div>
+          <div class="dc-slot"><label><input type="checkbox" class="dc-show" data-slot="details"<%= dcHid('details') ? '' : ' checked' %>> Details row (up to 3 short items)</label>
+            <div class="dc-row3"><% [0, 1, 2].forEach(n => { %><input type="text" name="dc_detail" class="dc-detail" maxlength="80" value="<%= dcO.details[n] || '' %>" placeholder="<%= ['Address', 'Phone', 'Hours'][n] %>"><% }) %></div></div>
+          <div class="dc-slot"><label><input type="checkbox" class="dc-show" data-slot="button"<%= dcHid('button') ? '' : ' checked' %>> Button</label> <span class="muted">Its words and link are the Button boxes below; it uses your site's button style.</span>
+            <div class="upload-row dc-c"><label><input type="checkbox" class="dc-own" data-key="btnc"<%= dcO.btnc ? ' checked' : '' %>> Own button color</label><input type="color" class="dc-col" data-key="btnc" data-sg-cl="full" value="<%= dcO.btnc || '#b8326a' %>"></div></div>
+        </fieldset>
+        <fieldset class="dc-box">
+          <legend>Colors</legend>
+          <div class="upload-row dc-c"><label>Border color</label><input type="color" class="dc-col dc-border" data-key="border" data-sg-cl="full" value="<%= dcO.border || '#b8923a' %>"></div>
+          <div class="dc-presets" role="group" aria-label="Quick border colors">
+            <% decoCard.PRESETS.forEach(p => { %><button type="button" class="dc-preset" data-dcpreset="<%= p[1] %>" title="<%= p[0] %> <%= p[1].toUpperCase() %>"><i style="background: <%= p[1] %>"></i><%= p[0] %></button><% }) %>
+          </div>
+          <p class="hint">The border color also colors the corner curls, the dividers and the top icon, unless you give them their own color.</p>
+          <div class="upload-row dc-c"><label><input type="checkbox" class="dc-own" data-key="orn"<%= dcO.orn ? ' checked' : '' %>> Ornament color (curls, dividers, icon)</label><input type="color" class="dc-col" data-key="orn" data-sg-cl="full" value="<%= dcO.orn || dcO.border || '#b8923a' %>"></div>
+          <div class="upload-row dc-c"><label>Card background</label><input type="color" class="dc-col" data-key="card" data-sg-cl="full" value="<%= dcO.card || '#ffffff' %>"></div>
+          <div class="upload-row dc-c"><label><input type="checkbox" class="dc-ownnum" data-key="cardop"<%= dcO.cardop != null ? ' checked' : '' %>> Card opacity</label><input type="range" class="dc-num" data-key="cardop" min="0" max="100" step="5" value="<%= dcO.cardop != null ? dcO.cardop : dcSt[5] %>"><output class="dc-out"><%= dcO.cardop != null ? dcO.cardop : dcSt[5] %>%</output></div>
+          <label>Behind the card</label>
+          <div class="upload-row dc-c">
+            <select class="dc-sec" aria-label="Behind the card"><% decoCard.SECS.forEach(o => { %><option value="<%= o[0] %>" <%= dcO.sec === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+            <input type="color" class="dc-col" data-key="sec1" data-sg-cl="full" value="<%= dcO.sec1 || '#fdeef4' %>" aria-label="Background color" title="Background color"<%= dcO.sec ? '' : ' hidden' %>>
+            <input type="color" class="dc-col" data-key="sec2" data-sg-cl="full" value="<%= dcO.sec2 || '#c9e4f5' %>" aria-label="Second color: the gradient's other end, or the glow" title="Second color: the gradient's other end, or the glow"<%= dcO.sec === 'gradient' || dcO.sec === 'glow' ? '' : ' hidden' %>>
+          </div>
+          <% [['headc', 'Heading and closing line'], ['bodyc', 'Body text and details'], ['accc', 'Small line on top and tagline']].forEach(x => { %>
+          <div class="upload-row dc-c"><label><input type="checkbox" class="dc-own" data-key="<%= x[0] %>"<%= dcO[x[0]] ? ' checked' : '' %>> Own color: <%= x[1] %></label><input type="color" class="dc-col" data-key="<%= x[0] %>" data-sg-cl="full" value="<%= dcO[x[0]] || '#3a3340' %>"></div>
+          <% }) %>
+          <p class="hint">Unticked colors come from your site's palette and are darkened where needed so they stay easy to read.</p>
+          <div class="dc-warn" role="status" aria-live="polite" hidden></div>
+        </fieldset>
+        <fieldset class="dc-box">
+          <legend>Size and shape</legend>
+          <div class="upload-row dc-c"><label><input type="checkbox" class="dc-ownnum" data-key="thick"<%= dcO.thick != null ? ' checked' : '' %>> Border thickness</label><input type="range" class="dc-num" data-key="thick" min="1" max="6" step="1" value="<%= dcO.thick != null ? dcO.thick : dcSt[3] %>"><output class="dc-out"><%= dcO.thick != null ? dcO.thick : dcSt[3] %>px</output></div>
+          <div class="upload-row dc-c"><label><input type="checkbox" class="dc-ownnum" data-key="radius"<%= dcO.radius != null ? ' checked' : '' %>> Corner rounding</label><input type="range" class="dc-num" data-key="radius" min="0" max="32" step="1" value="<%= dcO.radius != null ? dcO.radius : dcSt[4] %>"><output class="dc-out"><%= dcO.radius != null ? dcO.radius : dcSt[4] %>px</output></div>
+          <div class="upload-row dc-c">
+            <select class="dc-pad" aria-label="Space inside the card"><% decoCard.PADS.forEach(o => { %><option value="<%= o[0] %>" <%= dcO.pad === o[0] ? 'selected' : '' %>>Space inside: <%= o[1] %></option><% }) %></select>
+            <select class="dc-width" aria-label="Card width"><% decoCard.WIDTHS.forEach(o => { %><option value="<%= o[0] %>" <%= dcO.width === o[0] ? 'selected' : '' %>>Width: <%= o[1] %></option><% }) %></select>
+            <select class="dc-shadow" aria-label="Shadow"><% decoCard.SHADOWS.forEach(o => { %><option value="<%= o[0] %>" <%= dcO.shadow === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+          </div>
+          <p class="hint">Ticked boxes keep your own value; unticked follow the card style. Rounding changes the card's corners; the Art deco steps and the stamp's perforated edge keep their shape.</p>
+        </fieldset>
+        <fieldset class="dc-box">
+          <legend>Fonts</legend>
+          <div class="upload-row dc-c">
+            <% [['hfont', 'Heading font'], ['bfont', 'Body font']].forEach(x => { %>
+            <select class="dc-font" data-key="<%= x[0] %>" aria-label="<%= x[1] %>">
+              <option value=""><%= x[1] %>: your site's</option>
+              <% const _fg = {}; fonts.FONTS.forEach(f => { (_fg[f.group] = _fg[f.group] || []).push(f.name); }); Object.keys(_fg).forEach(g => { %><optgroup label="<%= g %>"><% _fg[g].forEach(n => { %><option value="<%= n %>" <%= dcO[x[0]] === n ? 'selected' : '' %>><%= n %></option><% }) %></optgroup><% }) %>
+              <% if (dcO[x[0]] && !fonts.FONTS.some(f => f.name === dcO[x[0]])) { %><option value="<%= dcO[x[0]] %>" selected><%= dcO[x[0]] %></option><% } %>
+            </select>
+            <% }) %>
+          </div>
+        </fieldset>
+      </div>
     <% } else if (b.type === 'ringcard') { %>
       <% const rgOwn = ringCard.parse(b.body); %>
       <textarea name="block_body" class="rg-body" hidden><%= b.body || '' %></textarea>
@@ -803,6 +878,10 @@
         <% shapeForm.SIDES.forEach(o => { %><option value="<%= o[0] %>" <%= shapeForm.cleanSide(b.side) === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
       </select>
       <p class="hint">On phones the photo goes on top and the form card under it.</p>
+    <% } else if (b.type === 'decocard') { %>
+      <input type="hidden" name="block_image" value="">
+      <input type="hidden" name="block_side" value="auto">
+      <p class="hint">Click any words on the page preview to type them there. On phones the card gets less padding, smaller curls, and the details row stacks.</p>
     <% } else if (b.type === 'ringcard') { %>
       <label>Photo (leave empty to use your About photo, or another of your site's photos)</label>
       <div class="upload-row">
@@ -1031,7 +1110,7 @@
   <div class="blkpick-group" data-group="<%= g.id %>" style="--g:<%= g.color %>">
     <div class="blkpick-gtitle"><i></i><%= g.label %></div>
     <div class="blkpick-grid">
-      <% g.items.forEach(it => { %><button type="button" class="blkpick-card" data-newblock="<%= it.type %>" data-find="<%= (it.name + ' ' + it.desc).toLowerCase() %>" title="Add a <%= it.name %> block"><%- it.pic %><span class="blkpick-txt"><span class="blkpick-name"><%= it.name %></span><span class="blkpick-desc"><%= it.desc %></span></span><span class="blkpick-plus" aria-hidden="true">+</span></button><% }) %>
+      <% g.items.forEach(it => { %><% if (it.styles) { it.styles.forEach(st => { %><button type="button" class="blkpick-card" data-newblock="<%= it.type %>" data-dcstyle="<%= st.id %>" data-find="<%= (it.name + ' ' + st.name + ' ' + st.desc + ' ' + it.desc).toLowerCase() %>" title="Add a <%= it.name %> in the <%= st.name %> style"><%- st.pic %><span class="blkpick-txt"><span class="blkpick-name"><%= it.name %>: <%= st.name %></span><span class="blkpick-desc"><%= st.desc %></span></span><span class="blkpick-plus" aria-hidden="true">+</span></button><% }); return; } %><button type="button" class="blkpick-card" data-newblock="<%= it.type %>" data-find="<%= (it.name + ' ' + it.desc).toLowerCase() %>" title="Add a <%= it.name %> block"><%- it.pic %><span class="blkpick-txt"><span class="blkpick-name"><%= it.name %></span><span class="blkpick-desc"><%= it.desc %></span></span><span class="blkpick-plus" aria-hidden="true">+</span></button><% }) %>
     </div>
   </div>
   <% }) %>
@@ -1164,6 +1243,8 @@
 <template id="tpl-block-phototabs"><% renderBlock({ type: 'phototabs' }); %></template>
 <template id="tpl-block-reviewcard"><% renderBlock({ type: 'reviewcard' }); %></template>
 <template id="tpl-block-twinphotos"><% renderBlock({ type: 'twinphotos' }); %></template>
+<template id="tpl-block-decocard"><% renderBlock({ type: 'decocard' }); %></template>
+<script src="/decocard-edit.js" defer></script>
 <template id="tpl-block-ringcard"><% renderBlock({ type: 'ringcard' }); %></template>
 <template id="tpl-block-shapeform"><% renderBlock({ type: 'shapeform' }); %></template>
 <template id="tpl-block-framedphoto"><% renderBlock({ type: 'framedphoto' }); %></template>
@@ -1219,6 +1300,7 @@
       if (el && item.block[f[0]] != null && el.type !== 'file') el.value = item.block[f[0]];
     });
     if (window.sgFilmUi) window.sgFilmUi(row);
+    if (window.sgDecoFill) window.sgDecoFill(row);   // Decorative card: its boxes from the saved body
     const wallSide = row.querySelector('.wall-side');
     if (wallSide) { const parts = wallSide.value.split(':'); Array.prototype.forEach.call(row.querySelectorAll('.wall-opts select'), function (x, n) { if (parts[n]) x.value = parts[n]; }); }
     const gpSide = row.querySelector('.gp-side');   // Gradient pattern: its pattern, look, motion and version

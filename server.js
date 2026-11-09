@@ -58,6 +58,7 @@ const photoTabs = require('./phototabs');
 const reviewCard = require('./reviewcard');
 const twinPhotos = require('./twinphotos');
 const ringCard = require('./ringcard');
+const decoCard = require('./decocard');
 const shapeForm = require('./shapeform');
 const framedPhoto = require('./framedphoto');
 const roundPhoto = require('./roundphoto');
@@ -198,6 +199,7 @@ app.locals.photoTabs = photoTabs;
 app.locals.reviewCard = reviewCard;
 app.locals.twinPhotos = twinPhotos;
 app.locals.ringCard = ringCard;
+app.locals.decoCard = decoCard;
 app.locals.shapeForm = shapeForm;
 app.locals.framedPhoto = framedPhoto;
 app.locals.roundPhoto = roundPhoto;
@@ -1157,7 +1159,7 @@ function parseThemeFromBody(b) {
 // editor, one entry per block; steps are one per line as "Title | text".
 // content blocks a site can have (hidden ones count too); was 20, which silently dropped new blocks (Leo, 2026-11-02)
 const MAX_BLOCKS = require('./blockcatalog').MAX_BLOCKS;
-const BLOCK_TYPES = ['photoText', 'steps', 'features', 'cta', 'chips', 'strip', 'split', 'pricing', 'team', 'stats', 'video', 'tabs', 'accordion', 'wall', 'cascade', 'photoBanner', 'beforeAfter', 'collage', 'trail', 'wave', 'bigwords', 'story', 'path', 'zoomword', 'morph', 'nodes', 'shapes', 'stack', 'herocard', 'aboutphone', 'thirds', 'mosaic', 'crossband', 'advice', 'photoblend', 'patterns', 'overlapcard', 'phototabs', 'reviewcard', 'twinphotos', 'ringcard', 'shapeform', 'framedphoto', 'roundphoto', 'photopairs', 'offsetphoto', 'aboutstory', 'aboutme', 'aboutbig', 'aboutfacts', 'aboutcollage', 'aboutnote', 'aboutpanel', 'socialshapes', 'socialphoto', 'socialcounts', 'socialonphoto', 'socialfeed', 'socialprofile', 'socialstrip', 'numcards', 'tipcards'];
+const BLOCK_TYPES = ['photoText', 'steps', 'features', 'cta', 'chips', 'strip', 'split', 'pricing', 'team', 'stats', 'video', 'tabs', 'accordion', 'wall', 'cascade', 'photoBanner', 'beforeAfter', 'collage', 'trail', 'wave', 'bigwords', 'story', 'path', 'zoomword', 'morph', 'nodes', 'shapes', 'stack', 'herocard', 'aboutphone', 'thirds', 'mosaic', 'crossband', 'advice', 'photoblend', 'patterns', 'overlapcard', 'phototabs', 'reviewcard', 'twinphotos', 'ringcard', 'shapeform', 'framedphoto', 'roundphoto', 'photopairs', 'offsetphoto', 'aboutstory', 'aboutme', 'aboutbig', 'aboutfacts', 'aboutcollage', 'aboutnote', 'aboutpanel', 'socialshapes', 'socialphoto', 'socialcounts', 'socialonphoto', 'socialfeed', 'socialprofile', 'socialstrip', 'numcards', 'tipcards', 'decocard'];
 const BLOCK_PAGES = ['home', 'about', 'services', 'testimonials', 'whyChoose', 'gallery', 'faq', 'blog', 'hours', 'contact'];
 function parseBlocksFromBody(b) {
   const cap = (v, n) => str(v, n);
@@ -1214,6 +1216,8 @@ function parseBlocksFromBody(b) {
         ? twinPhotos.cleanBody(str(col('block_body')[i], 6000))
         : type === 'ringcard'
         ? ringCard.cleanBody(str(col('block_body')[i], 4000))
+        : type === 'decocard'
+        ? decoCard.cleanBody(str(col('block_body')[i], 6000))
         : type === 'shapeform'
         ? shapeForm.cleanBody(str(col('block_body')[i], 2000))
         : type === 'framedphoto'
@@ -1247,7 +1251,7 @@ function parseBlocksFromBody(b) {
       imgfx: imgFx.clean(col('block_imgfx')[i]),
       height: heightFx.clean(col('block_height')[i])
     };
-    if (blk.heading || blk.body || blk.imageUrl || type === 'wall' || type === 'cascade' || ['collage', 'trail', 'wave', 'path', 'nodes', 'stack', 'herocard', 'aboutphone', 'thirds', 'mosaic', 'crossband', 'advice', 'photoblend', 'patterns', 'overlapcard', 'phototabs', 'reviewcard', 'twinphotos', 'ringcard', 'shapeform', 'framedphoto', 'roundphoto', 'photopairs', 'offsetphoto'].includes(type) || !!aboutBlocks.SPECS[type]) { ids.add(id); out.push(blk); }   // a wall, cascade, collage, trail, wave, photo cards or stacked cards shows the site's own content even when empty
+    if (blk.heading || blk.body || blk.imageUrl || type === 'wall' || type === 'cascade' || ['collage', 'trail', 'wave', 'path', 'nodes', 'stack', 'herocard', 'aboutphone', 'thirds', 'mosaic', 'crossband', 'advice', 'photoblend', 'patterns', 'overlapcard', 'phototabs', 'reviewcard', 'twinphotos', 'ringcard', 'shapeform', 'framedphoto', 'roundphoto', 'photopairs', 'offsetphoto', 'decocard'].includes(type) || !!aboutBlocks.SPECS[type]) { ids.add(id); out.push(blk); }   // a wall, cascade, collage, trail, wave, photo cards or stacked cards shows the site's own content even when empty
   });
   return out.slice(0, MAX_BLOCKS);
 }

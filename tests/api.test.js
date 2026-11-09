@@ -5746,7 +5746,9 @@ test('Content blocks in Page sections and on the Blocks screen: fixed ids, own e
   assert.match(editor, /<h3 class="blk-h3" data-name="Content block · Photo \+ text: First block"><svg class="blk-pic"[\s\S]*?<span class="blk-h3-main">First block<\/span><span class="blk-tag" title="Page tops and photo with words">Photo \+ text<\/span><\/h3>/);
   // the add-a-block picker: every design as a card, in its group
   assert.match(editor, /<div class="blkpick-group" data-group="words"[\s\S]*?data-newblock="steps"/);
-  assert.equal((editor.match(/class="blkpick-card" data-newblock=/g) || []).length, 62);
+  // every design is one card, except the Decorative card: one card per card style (6)
+  assert.equal((editor.match(/class="blkpick-card" data-newblock=/g) || []).length, 68);
+  assert.equal((editor.match(/data-newblock="decocard" data-dcstyle="(royal|minimal|deco|stamp|ribbon|glass)"/g) || []).length, 6);
   const order = `hero,blk:${ids[1]},about,services,testimonials,whyChoose,gallery,faq,blog,extraPages,hours,contact,blk:${ids[0]}`;
   const keep = { ...f, name: 'Entries Co', block_id: ids, layout_order: order };
   await c.post(editPath, keep);
@@ -6837,4 +6839,32 @@ test('numbered cards and big photo with cards blocks: lists as long as typed, nu
   assert.match(editor, /class="btn-secondary ab-del"/); assert.match(editor, /closest\('\.ab-add'\)/, 'the add and remove handler is on the page');
   assert.match(editor, /<input type="text" class="ab-c" maxlength="300" value="\/guide"/);
   assert.match(editor, /Words and lists: Numbered cards beside a photo/);
+});
+
+test('decorative card block: saved from the editor, drawn on the page in its style with a real heading and link, fonts loaded; editor panel filled', async () => {
+  const c = makeClient();
+  const { siteId, editPath } = await basicSite(c, 'decocard@example.com', 'Royal Paws', {});
+  await c.post(editPath, { name: 'Royal Paws', hero_headline: 'Hi',
+    block_type: ['decocard', 'decocard'], block_heading: ['Welcome to Royal Paws', 'Second'],
+    block_body: ['style: royal\nicon: crown\neyebrow: By Royal Appointment\ntagline: Fine grooming\ntext: We pamper pets.\nquote: They are family.\ndetail: [ADDRESS]\ndetail: [PHONE]\nborder: #B8923A\nbtnc: #b8326a\nsec: glow\nsec1: #fdeef4\nsec2: #c9e4f5\nhfont: Cinzel Decorative\nevil: <script>',
+      'style: ribbon\nhide: div1, div2\ntext: Just words'],
+    block_image: ['', ''], block_side: ['auto', 'auto'], block_buttonText: ['Book Your Visit', ''], block_buttonUrl: ['#book', ''],
+    block_edge: ['none', 'none'], block_bg: ['none', 'none'], block_place: ['bottom', 'bottom'], block_page: ['home', 'home'],
+    dc_eyebrow: ['ignored'], dc_text: ['ignored'] });
+  const html = await (await c.get(`/sites/${siteId}/preview`)).text();
+  assert.match(html, /class="blk blk-decocard blk-bg-none sg-dc-sec sg-dc-sec-glow" style="background: radial-gradient\(/);
+  assert.match(html, /<div class="sg-dc sg-dc-royal sg-dc-pad-m sg-dc-sh-soft" style="--dc-b: #b8923a; --dc-o: #b8923a;/);
+  assert.match(html, /<p class="sg-dc-eyebrow">By Royal Appointment<\/p><h2 class="sg-dc-h">Welcome to Royal Paws<\/h2><p class="sg-dc-tag">Fine grooming<\/p>/);
+  assert.match(html, /<ul class="sg-dc-details"><li>\[ADDRESS\]<\/li><li>\[PHONE\]<\/li><\/ul>/);
+  assert.match(html, /<a class="btn sg-dc-btn" href="#book">Book Your Visit<\/a>/);
+  assert.match(html, /Cinzel\+Decorative/, 'the card\'s own heading font is loaded');
+  assert.match(html, /sg-dc-ribbon[\s\S]*?<h2 class="sg-dc-h"><span class="sg-dc-rib">Second<\/span><\/h2>/);
+  assert.doesNotMatch(html, /evil|<script>\s*<\/p>/);
+  const editor = await (await c.get(editPath)).text();
+  assert.match(editor, /<template id="tpl-block-decocard">/); assert.match(editor, /<script src="\/decocard-edit\.js" defer><\/script>/);
+  assert.match(editor, /<input type="text" name="dc_eyebrow" class="dc-eyebrow" maxlength="80" value="By Royal Appointment"/);
+  assert.match(editor, /class="dc-style-btn on" role="radio" aria-checked="true" data-dcpick="royal"/);
+  assert.match(editor, /<input type="checkbox" class="dc-show" data-slot="div1">/, 'a hidden slot is unticked');
+  assert.match(editor, /class="dc-col dc-border" data-key="border" data-sg-cl="full" value="#b8923a"/);
+  assert.match(editor, /data-dcpreset="#b76e79"/);
 });
