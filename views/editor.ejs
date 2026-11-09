@@ -307,6 +307,7 @@
         <input type="hidden" name="texts_json" id="textsJson" value="<%= JSON.stringify(textBoxes.clean(((site.sections.texts || {}).items))) %>">
         <input type="hidden" name="tstyles_json" id="tstylesJson" value="<%= JSON.stringify(textStyles.clean(((site.sections.texts || {}).styles))) %>">
         <input type="hidden" name="estyles_json" id="estylesJson" value="<%= JSON.stringify(elStyles.clean(((site.sections.texts || {}).elems))) %>">
+        <input type="hidden" name="wmarks_json" id="wmarksJson" value="<%= JSON.stringify(watermark.clean(((site.sections.texts || {}).wmarks))) %>">
 
         <div class="section-block" data-tab="content" id="basicsBlock">
           <h3>Business basics</h3>
@@ -3067,6 +3068,9 @@
       });
     }
   </script>
+  <%# Watermark mode (watermark.js, public/watermark-edit.js) %>
+  <script type="application/json" id="sg-wm-cfg"><%- watermark.editorData() %></script>
+  <script src="/watermark-edit.js"></script>
 
 <%# Word styling: pick words in any text box and make them bigger, another font, a color, bold or italic (wordstyle.js) %>
 <div id="wsBar" class="ws-bar" hidden role="dialog" aria-label="Style the chosen words">

@@ -69,6 +69,7 @@ const textBoxes = require('./textboxes');
 const picBoxes = require('./picboxes');
 const textStyles = require('./textstyles');
 const elStyles = require('./elstyles');
+const watermark = require('./watermark');   // big faint icons behind a block or card (Leo, 2026-11-09)
 const designLab = require('./designlab');
 const brandKit = require('./brandkit');
 const siteScore = require('./score');
@@ -214,6 +215,7 @@ app.locals.petArt = require('./petart');
 app.locals.shapeArt = require('./public/shapeart');
 app.locals.textStyles = textStyles;
 app.locals.elStyles = elStyles;
+app.locals.watermark = watermark;
 app.set('view engine', 'ejs');
 app.set('views', __dirname + '/views');
 app.set('trust proxy', 1);
@@ -925,7 +927,7 @@ function parseSectionsFromBody(b) {
     },
     custom: { items: parseCustomFromBody(b) },
     blocks: { items: parseBlocksFromBody(b) },
-    texts: { items: textBoxes.fromBody(b.texts_json), styles: textStyles.fromBody(b.tstyles_json), elems: elStyles.fromBody(b.estyles_json), pics: picBoxes.fromBody(b.pics_json) },
+    texts: { items: textBoxes.fromBody(b.texts_json), styles: textStyles.fromBody(b.tstyles_json), elems: elStyles.fromBody(b.estyles_json), pics: picBoxes.fromBody(b.pics_json), wmarks: watermark.fromBody(b.wmarks_json) },
     trust: {
       badges: splitList(b.trust_badges, 40, 8),
       stats: ([]).concat(b.trust_stat_value || []).map((value, i) => ({
@@ -1499,6 +1501,8 @@ app.post('/sites/:id/edit', requireAuth, loadOwnedSite, (req, res) => {
   if (b.tstyles_json === undefined) sections.texts.styles = textStyles.clean(((req.site.sections || {}).texts || {}).styles);
   // and so are the moves and sizes of any piece of a block (Move & size mode)
   if (b.estyles_json === undefined) sections.texts.elems = elStyles.clean(((req.site.sections || {}).texts || {}).elems);
+  // and so are the watermarks behind blocks and cards (Watermark mode)
+  if (b.wmarks_json === undefined) sections.texts.wmarks = watermark.clean(((req.site.sections || {}).texts || {}).wmarks);
   // and so are your own pictures (+ Add picture)
   if (b.pics_json === undefined) sections.texts.pics = picBoxes.clean(((req.site.sections || {}).texts || {}).pics);
   // photos changed in the photo editor keep their originals and changes (saved by the editor itself)

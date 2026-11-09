@@ -210,7 +210,7 @@ module.exports = function (app, deps) {
   app.post('/sites/:id/blocks/tools', requireAuth, loadOwnedSite, (req, res) => {
     const b = req.body || {}, sections = req.site.sections || {};
     const texts = sections.texts = sections.texts || {};
-    const kinds = [['texts_json', 'items', textBoxes], ['tstyles_json', 'styles', textStyles], ['estyles_json', 'elems', elStyles], ['pics_json', 'pics', picBoxes]];
+    const kinds = [['texts_json', 'items', textBoxes], ['tstyles_json', 'styles', textStyles], ['estyles_json', 'elems', elStyles], ['pics_json', 'pics', picBoxes], ['wmarks_json', 'wmarks', require('../watermark')]];
     let n = 0;
     for (const [field, key, lib] of kinds) if (typeof b[field] === 'string') { texts[key] = lib.fromBody(b[field]); n++; }
     if (!n) return res.status(400).json({ ok: false, error: 'Nothing to save.' });

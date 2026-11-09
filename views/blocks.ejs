@@ -154,6 +154,7 @@
   <input type="hidden" id="tstylesJson" value="<%= JSON.stringify(textStyles.clean(_tx.styles)) %>">
   <input type="hidden" id="estylesJson" value="<%= JSON.stringify(elStyles.clean(_tx.elems)) %>">
   <input type="hidden" id="picsJson" value="<%= JSON.stringify(picBoxes.clean(_tx.pics)) %>">
+  <input type="hidden" id="wmarksJson" value="<%= JSON.stringify(watermark.clean(_tx.wmarks)) %>">
 
   <div class="wrap">
     <section class="pane" id="left" aria-labelledby="pageHead">
@@ -1334,7 +1335,7 @@
     let inlineEditing = false, pvStale = false;
     let toolTimer = null, toolSaving = null, toolAgain = false;
     function sendTools() {
-      var body = {}; [['textsJson', 'texts_json'], ['tstylesJson', 'tstyles_json'], ['estylesJson', 'estyles_json'], ['picsJson', 'pics_json']].forEach(function (x) { body[x[1]] = document.getElementById(x[0]).value; });
+      var body = {}; [['textsJson', 'texts_json'], ['tstylesJson', 'tstyles_json'], ['estylesJson', 'estyles_json'], ['picsJson', 'pics_json'], ['wmarksJson', 'wmarks_json']].forEach(function (x) { body[x[1]] = document.getElementById(x[0]).value; });
       return post('/blocks/tools', body).then(function (d) { if (!d.ok) say(d.error || 'Not saved.', 'err'); }, function () { say('Not saved: the connection dropped. Try again.', 'err'); });
     }
     function runToolSave() {
@@ -1366,6 +1367,8 @@
     window.addEventListener('beforeunload', function () { if (toolTimer) runToolSave(); });
 <%- include('_page-tools') %>
   </script>
+  <script type="application/json" id="sg-wm-cfg"><%- watermark.editorData() %></script>
+  <script src="/watermark-edit.js"></script>
 <script src="/colorlabel.js" defer></script>
 </body>
 </html>
