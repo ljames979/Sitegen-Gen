@@ -182,15 +182,17 @@ async function subject(key) {
 // A mask is a black and white PNG the working size, kept with the uploads. Opening the finished photo in the editor
 // opens the original with every change still there to change, hide or remove.
 const MAX_EDITS = 120, MAX_LAYERS = 60;
-const LAYER_TYPES = ['recolor'];
+const LAYER_TYPES = ['recolor', 'adjust'];
 const isUp = (u) => /^\/uploads\/[A-Za-z0-9._-]+$/.test(String(u || ''));
 const hex = (v) => (/^#[0-9a-f]{6}$/i.test(String(v || '')) ? String(v).toLowerCase() : '');
 const num = (v, lo, hi, d) => { const n = +v; return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : d; };
 const idOk = (v) => /^[a-z0-9]{4,20}$/.test(String(v || ''));
 function cleanLayer(L) {
   if (!L || !LAYER_TYPES.includes(L.type) || !idOk(L.id) || !idOk(L.mask)) return null;
-  const out = { id: L.id, type: L.type, name: String(L.name || '').replace(/[<>]/g, '').slice(0, 60), mask: L.mask, hidden: !!L.hidden };
+  const out = { id: L.id, type: L.type, name: String(L.name || '').replace(/[<>]/g, '').slice(0, 60), mask: L.mask, hidden: !!L.hidden,
+    opacity: num(L.opacity, 0, 1, 1), locked: !!L.locked };   // part 3: Strength in the Changes list, and 🔒
   if (L.type === 'recolor') Object.assign(out, { color: hex(L.color) || '#ff69b4', strength: num(L.strength, 0, 1, 1), shading: num(L.shading, 0, 1, 1) });
+  if (L.type === 'adjust') ['bright', 'contrast', 'sat', 'warm'].forEach(k => { out[k] = Math.round(num(L[k], -100, 100, 0)); });
   return out;
 }
 function cleanEdit(e) {

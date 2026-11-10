@@ -18,6 +18,7 @@
 // are left out.
 const Palette = require('./public/palette');
 const mixPage = require('./mixpage');
+const watermark = require('./watermark');
 const aboutBlocks = require('./aboutblocks');
 const photoTabs = require('./phototabs');
 const framedPhoto = require('./framedphoto');
@@ -388,7 +389,41 @@ function plan(site, opts) {
     out.push(...blk(closeBlk));
     mix = mixPage.clean(out);
   }
-  return { group, groupName: GROUP_NAMES[group], blocks: added.map(b => ({ id: b.id, type: b.type, name: mixPage.BLOCK_KINDS[b.type] || b.type })), mix };
+  const decor = (mix && o.decor !== false) ? addDecor(group, s, mix, ctx.colors, { about: aboutBlk, service: serviceBlk, close: closeBlk }) : [];
+  if (decor.length) mix = mixPage.clean(mix);
+  return { group, groupName: GROUP_NAMES[group], blocks: added.map(b => ({ id: b.id, type: b.type, name: mixPage.BLOCK_KINDS[b.type] || b.type })), mix, decor };
+}
+
+// Decorations for the new home page (Leo, 2026-11-10: "let the generator use them"): for pet businesses a patch of
+// grass under the About block for cut-out pets to stand on, a faint paw watermark behind the services, and a paw-print
+// pattern over the reviews or FAQ section. Only looks, never words. Returns what it added, in the owner's words.
+const DECOR = {
+  pets: { scene: 'grass:garden:m', mark: 'dog-section', pattern: { g: 'txp-paws', c: 'brand_o20', b: 1 }, patternOn: ['testimonials', 'faq', 'why'] },
+};
+function addDecor(group, s, mix, colors, blocks) {
+  const d = DECOR[group];
+  if (!d) return [];
+  const done = [];
+  const itemOf = (b) => (b ? mix.find(m => m.k === 'blk' && m.v === b.id) : null);
+  const about = itemOf(blocks.about), close = itemOf(blocks.close), grassOn = about || close;
+  if (grassOn && d.scene && !grassOn.scene) { grassOn.scene = d.scene; done.push('Grass along the bottom of the ' + (about ? 'About' : 'contact') + ' block'); }
+  if (blocks.service && d.mark) {
+    const w = watermark.fromPreset(d.mark, { id: 'w' + nanoId(), page: 'home', part: 'b:' + blocks.service.id, el: '', color: HEX.test(String(colors && colors.primary)) ? colors.primary.toLowerCase() : watermark.DEFAULT_COLOR });
+    if (w) { s.texts = { ...(s.texts || {}) }; s.texts.wmarks = watermark.clean([...(s.texts.wmarks || []), w]); done.push('A faint paw watermark behind the services'); }
+  }
+  // only on a section that will show (one with nothing in it is left off the page)
+  const has = { testimonials: ((s.testimonials || {}).items || []).length, faq: ((s.faq || {}).items || []).length, why: ((s.whyChoose || {}).items || []).length };
+  const pat = d.pattern && d.patternOn.filter(f => has[f]).map(f => mix.find(m => m.k === 'lib' && m.f === f && !m.bg)).find(Boolean);
+  if (pat) { pat.bg = d.pattern; done.push('A paw-print pattern on the ' + (mixPage.TYPES[pat.f] || pat.f) + ' section'); }
+  return done;
+}
+const HEX = /^#[0-9a-f]{6}$/i;
+const nanoId = () => { let x = ''; while (x.length < 7) x += Math.random().toString(36).slice(2); return x.slice(0, 7); };
+// After the preview swaps palettes: decorations drawn in the old brand color take the new one
+function recolorDecor(sections, from, to) {
+  const w = ((sections && sections.texts) || {}).wmarks;
+  if (!Array.isArray(w) || !from || !to || !HEX.test(String(to.primary))) return;
+  w.forEach(t => { if (t && String(t.color).toLowerCase() === String(from.primary).toLowerCase()) t.color = to.primary.toLowerCase(); });
 }
 
 // every shade plan() derives from the two colors (kept in step with makeBlock)
@@ -403,4 +438,4 @@ function recolor(items, ids, from, to) {
   }
 }
 
-module.exports = { EXTRA, detect, aiDetect, wordRe, PALETTES, matchPalette, deltaE, logoColors, GROUP_OF, PICKS, groupOf, plan, makeBlock, mix, recolor, industryFits };
+module.exports = { DECOR, recolorDecor, EXTRA, detect, aiDetect, wordRe, PALETTES, matchPalette, deltaE, logoColors, GROUP_OF, PICKS, groupOf, plan, makeBlock, mix, recolor, industryFits };

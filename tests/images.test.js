@@ -74,3 +74,16 @@ test('older photos get their copies made in the background on first use', async 
 test('uploadsUsed finds uploaded file names anywhere in a site', () => {
   assert.deepEqual(images.uploadsUsed({ a: '/uploads/a1.jpg', b: ['x', { c: 'url(/uploads/b2.png)' }], d: 'https://x/uploads/zz.jpg' }).sort(), ['a1.jpg', 'b2.png', 'zz.jpg']);
 });
+
+test('optimizeHtml: CSS background photos use the WebP copy; small ones and variants are left alone', async (t) => {
+  if (!sharp) return t.skip('sharp not installed');
+  const dir = await tmpDir();
+  await images.optimizeUpload({ path: await photo(dir, 'bgone.jpg', 2400, 1600) });
+  await photo(dir, 'bgtiny.jpg', 300, 200);
+  const html = `<head></head><main><div style="background-image:url('/uploads/bgone.jpg')"></div><div style="background:url(/uploads/bgone.jpg)"></div><i style="background:url(&quot;/uploads/bgtiny.jpg&quot;)"></i><b style="background:url(/uploads/bgone-960.webp)"></b></main>`;
+  const out = images.optimizeHtml(html, { dir });
+  assert.match(out, /url\('\/uploads\/bgone-1920\.webp'\)/);
+  assert.match(out, /url\(\/uploads\/bgone-1920\.webp\)/);
+  assert.match(out, /bgtiny\.jpg/);
+  assert.match(out, /url\(\/uploads\/bgone-960\.webp\)/);
+});

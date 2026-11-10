@@ -8,6 +8,7 @@ const express = require('express');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
+const pdfExport = require('./pdfexport');
 const multer = require('multer');
 const { nanoid } = require('nanoid');
 
@@ -41,6 +42,7 @@ const photoBanner = require('./photobanner');
 const collageBlock = require('./collageblock');
 const gradients = require('./gradients');
 const glassFx = require('./glassfx');
+const sceneDecor = require('./scenedecor');
 const motionBlocks = require('./motionblocks');
 const nodeCards = require('./nodecards');
 const shapeBlock = require('./shapeblock');
@@ -70,6 +72,7 @@ const picBoxes = require('./picboxes');
 const textStyles = require('./textstyles');
 const elStyles = require('./elstyles');
 const watermark = require('./watermark');   // big faint icons behind a block or card (Leo, 2026-11-09)
+const themeTokens = require('./themetokens');   // the site's own named colors, fonts and button styles (Leo, 2026-11-10)
 const designLab = require('./designlab');
 const brandKit = require('./brandkit');
 const siteScore = require('./score');
@@ -185,6 +188,7 @@ app.locals.photoBanner = photoBanner;
 app.locals.collageBlock = collageBlock;
 app.locals.gradients = gradients;
 app.locals.glassFx = glassFx;
+app.locals.sceneDecor = sceneDecor;
 app.locals.motionBlocks = motionBlocks;
 app.locals.nodeCards = nodeCards;
 app.locals.shapeBlock = shapeBlock;
@@ -201,6 +205,7 @@ app.locals.reviewCard = reviewCard;
 app.locals.twinPhotos = twinPhotos;
 app.locals.ringCard = ringCard;
 app.locals.decoCard = decoCard;
+app.locals.themeTokens = themeTokens;
 app.locals.shapeForm = shapeForm;
 app.locals.framedPhoto = framedPhoto;
 app.locals.roundPhoto = roundPhoto;
@@ -625,7 +630,9 @@ function siteNotFound(req, res, next, siteIn, basePath, preview) {
   return renderSitePage(req, res.status(404), next, { site: siteIn, page: 'notfound', basePath, preview: !!preview, cacheKey: null });
 }
 
-function renderSitePage(req, res, next, { site: siteIn, page, basePath, preview, contactSent, contactError, cacheKey, serviceSlug, itemSlug, reviewThanks, reviewError, bookingView, hideMotionBar, memberView, calm, bare }) {
+function renderSitePage(req, res, next, { site: siteIn, page, basePath, preview, contactSent, contactError, cacheKey, serviceSlug, itemSlug, reviewThanks, reviewError, bookingView, hideMotionBar, memberView, calm, bare, print }) {
+  // Export PDF (pdfexport.js): motion at rest, as with Calm motion
+  if (print) siteIn = { ...siteIn, theme: { ...siteIn.theme, calmMotion: true } };
   const site = extraThemes.withPageStyle(siteIn, page);
   const slugArg = itemSlug || serviceSlug;
   const trustData = site.sections.trust || {};
@@ -666,7 +673,7 @@ function renderSitePage(req, res, next, { site: siteIn, page, basePath, preview,
   }
   const locals = {
     tierOverride: preview ? str(req.query && req.query.tier, 12) : '',
-    site, preview: !!preview, hideMotionBar: !!hideMotionBar, calm: !!(preview && calm), bare: !!(preview && bare), page, basePath, origin, services, service, areas, area, posts, post, extras, extra,
+    site, preview: !!preview, hideMotionBar: !!hideMotionBar, calm: !!(preview && calm), bare: !!(preview && bare), print: (preview && print) || null, page, basePath, origin, services, service, areas, area, posts, post, extras, extra,
     navPages: buildNavPages(site, basePath),
     estimateError: str(req.query && req.query.error, 140),
     googleData: (preview ? null : googleReviews.forSite(db, site, () => cache.clear())),
@@ -1140,6 +1147,7 @@ function parseThemeFromBody(b) {
     motionStyle: app.locals.motionLib.isValid(b.theme_motionStyle) ? b.theme_motionStyle : app.locals.motionLib.DEFAULT,
     motionLevel: app.locals.motionLib.isLevel(b.theme_motionLevel) ? b.theme_motionLevel : app.locals.motionLib.LEVEL_DEFAULT,
     motionShader: app.locals.motionLib.isShader(b.theme_motionShader) ? b.theme_motionShader : 'aurora',
+    calmMotion: b.theme_calmMotion === '1',   // every effect as for visitors who turn motion off (Leo, 2026-11-10)
     hoverLift: b.theme_hoverLift === '1' || b.theme_hoverLift === 'on',
     logoUrl: isSafeUrl(b.theme_logoUrl) ? str(b.theme_logoUrl, 500) : '',
     faviconUrl: isSafeUrl(b.theme_faviconUrl) ? str(b.theme_faviconUrl, 500) : '',
@@ -1414,6 +1422,7 @@ app.post('/sites/:id/delete', requireAuth, (req, res) => {
     db.prepare('DELETE FROM photo_credits WHERE site_id = ?').run(site.id);
     db.prepare('DELETE FROM client_links WHERE site_id = ?').run(site.id);
     db.prepare('DELETE FROM share_links WHERE site_id = ?').run(site.id);
+    db.prepare('DELETE FROM share_feedback WHERE site_id = ?').run(site.id);
     db.prepare('DELETE FROM sites WHERE id = ?').run(site.id);
     invalidateSiteCache(site);
   }
@@ -1438,6 +1447,7 @@ app.get('/sites/:id/edit', requireAuth, loadOwnedSite, (req, res) => {
   const leadCount = db.prepare('SELECT COUNT(*) AS n FROM contact_submissions WHERE site_id = ?').get(req.site.id).n;
   const pendingReviews = db.prepare("SELECT COUNT(*) AS n FROM review_submissions WHERE site_id = ? AND status = 'pending'").get(req.site.id).n;
   const pendingBookings = db.prepare("SELECT COUNT(*) AS n FROM bookings WHERE site_id = ? AND status = 'pending'").get(req.site.id).n;
+  const feedbackNew = db.prepare('SELECT COUNT(*) AS n FROM share_feedback WHERE site_id = ? AND seen = 0').get(req.site.id).n;
   let newClientLink = '';
   if (req.query.clientlink === '1' && req.session.newClientLink) {
     newClientLink = req.session.newClientLink;
@@ -1463,6 +1473,7 @@ app.get('/sites/:id/edit', requireAuth, loadOwnedSite, (req, res) => {
     leadCount,
     pendingReviews,
     pendingBookings,
+    feedbackNew,
     bookingFlash: req.query.booking === '1',
     mailConfigured: mailer.isConfigured(),
     checklist: buildChecklist(req.site, checklistOpts(req.site)),
@@ -1508,6 +1519,10 @@ app.post('/sites/:id/edit', requireAuth, loadOwnedSite, (req, res) => {
   // photos changed in the photo editor keep their originals and changes (saved by the editor itself)
   if ((req.site.sections || {}).photoEdits) sections.photoEdits = photoedit.cleanEdits(req.site.sections.photoEdits);
   const theme = parseThemeFromBody(b);
+  // theme tokens (named colors, fonts, buttons): kept when the save doesn't carry them; while they are on they set the
+  // brand colors, fonts and button shape the rest of SiteGen reads
+  Object.assign(theme, themeTokens.parse(b, req.site.theme));
+  Object.assign(theme, themeTokens.linked(theme));
   // Scroll Smoother and Split text are set in the Design lab, so an editor save keeps them as they are
   Object.assign(theme, keptMotion(req.site.theme, b));
   const layout = parseLayoutFromBody(b);
@@ -1768,6 +1783,11 @@ const QUALITY_FIXES = {
     const buf = await brandKit.readLogo(site.theme.logoUrl, { uploadsDir: UPLOADS_DIR, safeFetch }); if (!buf) return '';
     try { const ic = await brandKit.makeIcons(buf, sharpLib, UPLOADS_DIR, site.id); site.theme = { ...site.theme, faviconUrl: ic.faviconUrl, touchIconUrl: ic.touchIconUrl }; return 'icons'; } catch { return ''; }
   },
+  async decor(site) {   // Decorative card words readable, watermarks turned down (quality.js decorChecks)
+    const sections = { ...site.sections };
+    if (!quality.applyDecorFix(sections)) return '';
+    site.sections = sections; return 'decor';
+  },
   async share(site) {
     let sharpLib; try { sharpLib = require('sharp'); } catch { return ''; }
     if (site.sections.seo && site.sections.seo.shareImage) return '';
@@ -1783,7 +1803,7 @@ app.post('/sites/:id/quality/fix', requireAuth, loadOwnedSite, async (req, res) 
   let kinds;
   if (req.body.fix === 'all') {
     const report = await runQuality(req, res, true);
-    kinds = report.score.fixes.filter(k => QUALITY_FIXES[k]);
+    kinds = [...new Set([...report.score.fixes, ...report.items.map(i => i.fix && i.fix.type).filter(Boolean)])].filter(k => QUALITY_FIXES[k]);
   } else kinds = QUALITY_FIXES[req.body.fix] ? [req.body.fix] : [];
   if (!kinds.length) return back();
   const site = { ...orig, theme: { ...orig.theme }, sections: { ...orig.sections } };
@@ -1893,7 +1913,8 @@ function styleSwap(style, ownColors) {
   return out;
 }
 const previewOpts = (req, extra) => ({
-  site: previewSite(req), basePath: `/sites/${req.site.id}/preview`, preview: true, hideMotionBar: req.query.bar === '0', calm: req.query.calm === '1', bare: req.query.bare === '1',
+  site: previewSite(req), basePath: `/sites/${req.site.id}/preview`, preview: true, hideMotionBar: req.query.bar === '0' || req.query.print === '1', calm: req.query.calm === '1', bare: req.query.bare === '1',
+  print: req.query.print === '1' ? pdfExport.SIZES[pdfExport.sizeOf(req.query.size)] : null,
   contactSent: false, contactError: false, cacheKey: null, ...extra
 });
 
@@ -1922,7 +1943,8 @@ const {
   clientLimiter, crypto, db, designLab, ensureBlockIds, extraThemes, filmFx, findTemplate, fonts, fs, getSite,
   heightFx, icons, imgFx, industryDesign, invalidateSiteCache, isSafeUrl, isValidHexColor, loadOwnedSite, mixHeroAt,
   mixPage, multer, nanoid, path, pinFx, renderSitePage, requireAuth, safeFetch, saveVersion, scrollFx,
-  servicesWithSlugs, slPageLib, smoothScroll, splitText, str, styleLib, styleSwap, syncMixBlocks
+  servicesWithSlugs, slPageLib, smoothScroll, splitText, str, styleLib, styleSwap, syncMixBlocks,
+  pdfExport, rateLimit, mailer, isTestEnv
 });
 
 // The published site, leads, bookings, reviews, reports, follow-ups, robots.txt and sitemap (routes/site-and-followup.js)

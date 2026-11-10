@@ -215,11 +215,13 @@
     <div class="row ed-actions">
       <a href="/sites/<%= site.id %>/preview" target="_blank" class="btn-secondary btn" title="Open the full preview in a new tab">Preview</a>
       <details class="menu">
-        <summary class="btn btn-secondary">Show the client</summary>
+        <summary class="btn btn-secondary">Show the client<% if (typeof feedbackNew !== 'undefined' && feedbackNew) { %> <span class="count" title="New notes from the client"><%= feedbackNew %></span><% } %></summary>
         <div class="menu-list">
           <a href="/sites/<%= site.id %>/pitch"><strong>Pitch mode</strong><span>Full-screen show of the site that scrolls itself</span></a>
           <a href="/sites/<%= site.id %>/compare"><strong>Compare 3 designs</strong><span>The same business in three styles, side by side</span></a>
-          <a href="/sites/<%= site.id %>/pitch#share"><strong>Share a preview link</strong><span>A private link the client can open on their phone</span></a>
+          <a href="/sites/<%= site.id %>/pitch#share"><strong>Share a preview link</strong><span>A private link the client can open on their phone and type changes into</span></a>
+          <a href="/sites/<%= site.id %>/feedback"><strong>Client feedback<% if (typeof feedbackNew !== 'undefined' && feedbackNew) { %> (<%= feedbackNew %> new)<% } %></strong><span>The changes the client asked for on the preview link</span></a>
+          <a href="/sites/<%= site.id %>/pdf"><strong>Export PDF</strong><span>Every page in one PDF to email; the client adds comments in any PDF reader</span></a>
         </div>
       </details>
       <details class="menu">
@@ -598,6 +600,7 @@
             <% } %>
           </details>
           <% } %>
+          <%- include('_theme-tokens', { site }) %>
           <details class="sub">
             <summary>Colors</summary>
           <label>Primary color</label>
@@ -737,6 +740,8 @@
           <label>Motion level</label>
           <select name="theme_motionLevel" id="motionLevel"><% motionLib.LEVELS.forEach(l => { %><option value="<%= l.id %>" <%= mTierNow === l.id ? 'selected' : '' %>><%= l.label %>: <%= l.hint %></option><% }) %></select>
           <% if (levelSuggest && levelSuggest.level !== mTierNow) { %><p class="hint">Suggested for this kind of business: <strong><%= motionLib.LEVELS.find(l => l.id === levelSuggest.level).label %></strong>. <%= levelSuggest.why %> <button type="button" class="btn-secondary" id="levelApply" data-level="<%= levelSuggest.level %>">Use <%= motionLib.LEVELS.find(l => l.id === levelSuggest.level).label %></button></p><% } else if (levelSuggest) { %><p class="hint">This level suits this kind of business. <%= levelSuggest.why %></p><% } %>
+          <label class="check" style="margin-top:10px;"><input type="checkbox" name="theme_calmMotion" value="1" <%= site.theme.calmMotion ? 'checked' : '' %>> Calm motion: no scroll effects at all</label>
+          <p class="hint">Turns off every moving effect on the site at once (envelope reveals, pinned blocks, split words, drifting watermarks, smooth scroll, More effects) and shows everything in its finished place, the same as visitors who switch motion off on their phone. Good for clients who want a quiet site. The settings stay, so unticking brings them back.</p>
           <div id="shaderRow" <%- mTierNow === 'showcase' ? '' : 'hidden' %>>
             <label>Animated hero background</label>
             <select name="theme_motionShader"><% motionLib.SHADERS.forEach(sh => { %><option value="<%= sh.id %>" <%= mShNow === sh.id ? 'selected' : '' %>><%= sh.label %>: <%= sh.hint %></option><% }) %></select>
@@ -2160,6 +2165,26 @@
         document.querySelectorAll('.ed-top a[href]').forEach(a => { const t = a.querySelector('strong'), d = t && t.nextElementSibling; if (a.getAttribute('href') !== '#') add(t ? t.textContent : a.textContent, d ? d.textContent : 'Open', () => { location.href = a.href; }); });
         add('Undo', 'Ctrl+Z', () => undoBtn.click());
         add('Redo', 'Ctrl+Shift+Z', () => redoBtn.click());
+        // the tools on the bar over the preview (Watermark, Move & size, + Add picture ...), with their own words as hints
+        document.querySelectorAll('#addTextBtn, #addPicBtn, #addCutBtn, #addPawBtn, #addCatPawBtn, #addTrailBtn, #addShapeBtn, #addStampBtn, #styleTextBtn, #moveSizeBtn, #watermarkBtn').forEach(b => {
+          add(b.textContent.replace(/^[+✂✥🐾]\s*/u, ''), 'Tool over the preview · ' + clean(b.title).slice(0, 70), () => { b.scrollIntoView({ block: 'center' }); b.click(); });
+        });
+        // tools on other pages, under the words people use for them (Leo, 2026-11-10: "find a tool")
+        const SID = <%= site.id %>, go = (u) => () => { location.href = u; };
+        [['Scene decor: picket fence, hedge, grass, hills', 'Blocks page › a block › Effects › Scene decor', '/sites/' + SID + '/blocks'],
+          ['Decorative card and Invitation Reveal envelope', 'Blocks page › add a Decorative card block, or edit one', '/sites/' + SID + '/blocks'],
+          ['Pet pattern backgrounds (paws, bones, dogs, cats)', 'Blocks page › a section › background, or any background picker', '/sites/' + SID + '/blocks'],
+          ['Effects for one block (pin, film, glass, height, more effects)', 'Blocks page › a block › Effects', '/sites/' + SID + '/blocks'],
+          ['Copy decorations from another site', 'Brand kit page › Copy decorations', '/sites/' + SID + '/brand#decor'],
+          ['Brand kit: colors, fonts and icon from the logo', 'Brand kit page', '/sites/' + SID + '/brand'],
+          ['Quality check before publishing', 'Contrast, photos, phones, decorations', '/sites/' + SID + '/quality'],
+          ['Pitch: show the client full screen', 'With packages and demo sites', '/sites/' + SID + '/pitch'],
+          ['Packages and prices for Pitch', 'Your three packages', '/packages?back=/sites/' + SID + '/pitch'],
+          ['Demo gallery', 'Your best sites to show other owners', '/demos'],
+          ['Export PDF to email the client (print, save as PDF)', 'Every page in one PDF; the client comments in a PDF reader', '/sites/' + SID + '/pdf'],
+          ['Client feedback and change requests', 'Notes the client typed on the preview link', '/sites/' + SID + '/feedback'],
+        ].forEach(([t, h, u]) => add(t, h, go(u)));
+        add('Edit photo: select, change color, adjust light (photo editor)', 'Click 🎨 Edit photo on any picture row, or on a photo in the preview', () => { const b = document.querySelector('button[title^="Open the photo editor"]'); if (b) { revealField(b); b.focus(); } });
         return out;
       }
       function render() {

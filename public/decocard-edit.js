@@ -23,6 +23,8 @@
   }
   function mix(a, b, t) { var x = rgb(a), y = rgb(b); return toHex(x.map(function (v, i) { return v * t + y[i] * (1 - t); })); }
 
+  var RV = ['env', 'flap', 'seal', 'liner'];
+  var val = function (row, sel) { var e = q(row, sel); return e ? e.value : ''; };
   function isDeco(row) { return row && q(row, 'textarea.dc-body'); }
   function styleBtn(row, id) { return q(row, '[data-dcpick="' + id + '"]'); }
 
@@ -38,12 +40,13 @@
     qa(row, '.dc-detail').forEach(function (i) { put('detail', i.value); });
     var hide = qa(row, '.dc-show').filter(function (c) { return !c.checked; }).map(function (c) { return c.dataset.slot; });
     if (hide.length) l.push('hide: ' + hide.join(', '));
-    var sec = q(row, '.dc-sec').value;
+    var sec = q(row, '.dc-sec').value, pat = val(row, '.dc-pat'), rv = val(row, '.dc-reveal');
     qa(row, '.dc-col').forEach(function (c) {
       var k = c.dataset.key, own = q(row, '.dc-own[data-key="' + k + '"]');
       if (!HEX.test(c.value)) return;
       if (own && !own.checked) return;                              // unticked: the site's palette / the border color
       if ((k === 'sec1' && !sec) || (k === 'sec2' && sec !== 'gradient' && sec !== 'glow')) return;
+      if ((k === 'patc' && !pat) || (RV.indexOf(k) >= 0 && !rv)) return;
       l.push(k + ': ' + c.value.toLowerCase());
     });
     if (sec) l.push('sec: ' + sec);
@@ -52,6 +55,14 @@
     if (q(row, '.dc-width').value !== 'm') l.push('width: ' + q(row, '.dc-width').value);
     if (q(row, '.dc-shadow').value !== 'soft') l.push('shadow: ' + q(row, '.dc-shadow').value);
     qa(row, '.dc-font').forEach(function (s) { if (s.value) l.push(s.dataset.key + ': ' + s.value); });
+    if (pat) { l.push('pat: ' + pat); l.push('patop: ' + val(row, '.dc-patop')); }
+    if (rv) {
+      l.push('reveal: ' + rv);
+      if (val(row, '.dc-sealicon') && val(row, '.dc-sealicon') !== 'crown') l.push('sealicon: ' + val(row, '.dc-sealicon'));
+      if (val(row, '.dc-len') && val(row, '.dc-len') !== 'm') l.push('len: ' + val(row, '.dc-len'));
+      put('hint', val(row, '.dc-hint'));
+      if (q(row, '.dc-once') && q(row, '.dc-once').checked) l.push('once: yes');
+    }
     var body = l.join('\n');
     if (ta.value !== body) { ta.value = body; ta.textContent = body; }
     warn(row);
@@ -80,6 +91,10 @@
     if (o.width) q(row, '.dc-width').value = o.width;
     if (o.shadow) q(row, '.dc-shadow').value = o.shadow;
     qa(row, '.dc-font').forEach(function (s) { s.value = o[s.dataset.key] || ''; });
+    var set = function (sel, v) { var e = q(row, sel); if (e) e.value = v; };
+    set('.dc-pat', o.pat || ''); set('.dc-patop', o.patop || 55); set('.dc-reveal', o.reveal || '');
+    set('.dc-sealicon', o.sealicon || 'crown'); set('.dc-len', o.len || 'm'); set('.dc-hint', o.hint || '');
+    if (q(row, '.dc-once')) q(row, '.dc-once').checked = /^(yes|on|true|1)$/i.test(o.once || '');
     refresh(row); build(row);
   }
 
@@ -102,6 +117,9 @@
     q(row, '.dc-col[data-key="sec1"]').hidden = !sec;
     q(row, '.dc-col[data-key="sec2"]').hidden = !(sec === 'gradient' || sec === 'glow');
     qa(row, '.dc-col[data-key^="sec"]').forEach(function (c) { var nx = c.nextElementSibling; if (nx && nx.hasAttribute('data-sg-cl-for')) nx.hidden = c.hidden; });
+    var po = q(row, '.dc-patopts'); if (po) po.hidden = !val(row, '.dc-pat');
+    var pv = q(row, '.dc-patout'); if (pv) pv.textContent = val(row, '.dc-patop') + '%';
+    var rb = q(row, '.dc-rvbox'); if (rb) rb.hidden = !val(row, '.dc-reveal');
   }
 
   // own colors that are hard to read on the card: say so, and offer a darker (or lighter) shade that passes
@@ -168,8 +186,71 @@
     qa(row, '.dc-style-btn').forEach(function (b) { if (b.classList.contains('on')) b.setAttribute('class', 'dc-style-btn on'); else b.setAttribute('class', 'dc-style-btn'); });
     qa(row, '.dc-num').forEach(function (r) { r.setAttribute('value', r.value); });
     q(row, '.dc-style').setAttribute('value', card.dataset.dcstyle);
+    var rs = q(row, '.dc-reveal');
+    if (rs) { var want = card.dataset.dcreveal || ''; rs.value = want; qa(rs, 'option').forEach(function (op) { if (op.value === want) op.setAttribute('selected', ''); else op.removeAttribute('selected'); }); var rb = q(row, '.dc-rvbox'); if (rb) { if (want) rb.removeAttribute('hidden'); else rb.setAttribute('hidden', ''); } }
     build(row);
   }, true);
+
+  // Invitation Reveal: play the envelope opening in the preview (or step through it with the slider), then put the
+  // card back the way the preview shows it for editing. The preview page has window.sgReveal (decocard.js).
+  var demo = { row: null, sec: null, raf: 0, timer: 0 };
+  function previewSec(row) {
+    var f = document.getElementById('previewFrame'), w, d;
+    try { w = f && f.contentWindow; d = f && f.contentDocument; } catch (e) { return null; }
+    var idBox = q(row, '[name="block_id"]'), id = idBox ? idBox.value : '';
+    if (!w || !d || !id) return null;
+    var sec = d.querySelector('section.sg-rv[data-sg-bid="' + id.replace(/[^a-z0-9_-]/gi, '') + '"]');
+    return sec && w.sgReveal ? { w: w, sec: sec } : null;
+  }
+  function say(row, msg) { var m = q(row, '.dc-rvmsg'); if (m) m.textContent = msg || ''; }
+  function demoAt(row, p, scroll) {
+    var t = previewSec(row);
+    if (!t) { say(row, 'The preview is still catching up with your changes. Give it a moment, then try again.'); return false; }
+    if (scroll || demo.sec !== t.sec) { try { t.sec.scrollIntoView({ block: 'start' }); } catch (e) {} }
+    if (!t.w.sgReveal.demo(t.sec, p)) { say(row, 'The preview is still catching up with your changes. Give it a moment, then try again.'); return false; }
+    demo.row = row; demo.sec = t.sec; demo.w = t.w;
+    q(row, '.dc-rvstop').hidden = false; say(row, '');
+    return true;
+  }
+  function demoStop(row) {
+    cancelAnimationFrame(demo.raf); clearTimeout(demo.timer);
+    if (demo.sec && demo.w && demo.w.sgReveal) { try { demo.w.sgReveal.stop(demo.sec); } catch (e) {} }
+    demo.sec = null;
+    if (row) { q(row, '.dc-rvstop').hidden = true; q(row, '.dc-rvscrub').value = 0; var b = q(row, '.dc-rvplay'); if (b) b.disabled = false; }
+  }
+  function demoPlay(row) {
+    demoStop(row);
+    if (!demoAt(row, 0, true)) return;
+    var b = q(row, '.dc-rvplay'), r = q(row, '.dc-rvscrub'), t0 = 0, dur = 5200;
+    if (b) b.disabled = true;
+    var step = function (ts) {
+      if (!t0) t0 = ts;
+      var p = Math.min(1, (ts - t0) / dur);
+      if (!demo.sec || !demo.w.sgReveal.demo(demo.sec, p)) return;
+      r.value = Math.round(p * 100);
+      if (p < 1) demo.raf = requestAnimationFrame(step);
+      else { if (b) b.disabled = false; demo.timer = setTimeout(function () { demoStop(row); }, 2500); }
+    };
+    demo.raf = requestAnimationFrame(step);
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('.dc-rvplay, .dc-rvstop'); if (!t) return;
+    var row = t.closest('.block-row'); if (!isDeco(row)) return;
+    e.preventDefault();
+    if (t.classList.contains('dc-rvplay')) demoPlay(row); else demoStop(row);
+  });
+  // the slider: its moves are not changes to the card, so they must not reach the editor's autosave
+  document.addEventListener('input', function (e) {
+    if (!e.target.classList || !e.target.classList.contains('dc-rvscrub')) return;
+    e.stopPropagation();
+    var row = e.target.closest('.block-row'); if (!row) return;
+    cancelAnimationFrame(demo.raf); clearTimeout(demo.timer);
+    var b = q(row, '.dc-rvplay'); if (b) b.disabled = false;
+    demoAt(row, e.target.value / 100, !demo.sec);
+  }, true);
+  document.addEventListener('change', function (e) { if (e.target.classList && e.target.classList.contains('dc-rvscrub')) e.stopPropagation(); }, true);
+  // turning the envelope off (or the preview reloading) ends a demo
+  document.addEventListener('change', function (e) { if (e.target.classList && e.target.classList.contains('dc-reveal') && !e.target.value) demoStop(e.target.closest('.block-row')); }, true);
 
   window.sgDecoFill = fill;
   window.sgDecoBuild = build;
@@ -186,7 +267,9 @@
     '.dc-presets{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 6px}.dc-preset{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 6px;border:1px solid var(--border,#e2e8f0);border-radius:999px;background:#fff;cursor:pointer;font:500 12.5px system-ui,sans-serif}' +
     '.dc-preset i,.dc-fix i{width:16px;height:16px;border-radius:50%;display:inline-block;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}' +
     '.dc-warn{background:#fff7ed;border:1px solid #fdba74;color:#7c2d12;border-radius:10px;padding:8px 10px;margin-top:8px;font-size:13px}.dc-warn p{margin:4px 0}' +
-    '.dc-fix{display:inline-flex;align-items:center;gap:6px;margin-left:4px;padding:3px 10px !important;font-size:12.5px !important}';
+    '.dc-fix{display:inline-flex;align-items:center;gap:6px;margin-left:4px;padding:3px 10px !important;font-size:12.5px !important}' +
+    '.dc-rvdemo{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:6px 0 10px;padding:10px 12px;border-radius:10px;background:#fdf2f8;border:1px solid #fbcfe8}' +
+    '.dc-rvstep{display:flex;align-items:center;gap:8px;font-weight:400;margin:0;flex:1;min-width:200px}.dc-rvstep input{flex:1}.dc-rvmsg{flex-basis:100%;margin:0}.dc-rvmsg:empty{display:none}';
   function start() {
     if (!document.getElementById('dc-edit-css')) { var st = document.createElement('style'); st.id = 'dc-edit-css'; st.textContent = css; document.head.appendChild(st); }
     qa(document, '.block-row').forEach(function (row) { if (isDeco(row) && !row.closest('template')) { refresh(row); warn(row); } });

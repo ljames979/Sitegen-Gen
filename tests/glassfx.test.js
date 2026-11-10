@@ -20,7 +20,7 @@ test('glass panel: stays readable with no blur or for visitors who ask for less 
   assert.match(glass.CSS, /\.sg-lq-ok \.sg-glass-liquid :is\([^)]*\) \{ -webkit-backdrop-filter: url\(#sg-lq\)/);
   assert.doesNotThrow(() => new Function(glass.SCRIPT)); assert.match(glass.SCRIPT, /userAgentData/);
   const ejs = fs.readFileSync(path.join(__dirname, '../views/blocks.ejs'), 'utf8');
-  assert.match(ejs, /data-a="glass"/); assert.match(ejs, /FX_KEYS = \['pin', 'film', 'imgfx', 'height', 'glass', 'xfx'\]/);
+  assert.match(ejs, /data-a="glass"/); assert.match(ejs, /FX_KEYS = \['pin', 'film', 'imgfx', 'height', 'glass', 'scene', 'xfx'\]/);
 });
 
 test('glass panel: only the Chromium rule uses the bending filter (other browsers keep a plain blur)', () => {

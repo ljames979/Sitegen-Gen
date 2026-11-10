@@ -180,6 +180,15 @@ function optimizeHtml(html, opts = {}) {
     }
   }
 
+  // every other photo drawn as a CSS background (block backgrounds, cut-outs, cards, the photo editor's results):
+  // the same picture as a WebP copy, which is several times lighter than a JPG or PNG of the same size (Leo, 2026-11-10)
+  html = html.replace(/url\((['"]?)\/uploads\/([A-Za-z0-9._-]+)\1\)/g, (all, q, name) => {
+    if (VARIANT_RE.test(name) || !SUPPORTED.has(path.extname(name).toLowerCase()) || /\.webp$/i.test(name)) return all;
+    const vs = variantsFor(name, dir);
+    if (!vs.length) { note(name); return all; }
+    return `url(${q}/uploads/${vs[vs.length - 1].file}${q})`;
+  });
+
   if (missing.size && opts.onVariants) for (const n of missing) ensureVariants(n, dir, opts.onVariants);
   return html;
 }

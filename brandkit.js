@@ -7,6 +7,8 @@ const crypto = require('crypto');
 const Palette = require('./public/palette');
 const fonts = require('./fonts');
 const lab = require('./designlab');
+const themeTokens = require('./themetokens');
+const decorKit = require('./decorkit');
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const MAX_LOGO = 5 * 1024 * 1024;
@@ -144,13 +146,15 @@ function cleanKit(k, isSafeUrl) {
   return {
     logoUrl: url(o.logoUrl), primaryColor: HEX.test(o.primaryColor || '') ? o.primaryColor : '', accentColor: HEX.test(o.accentColor || '') ? o.accentColor : '',
     headingFont: fonts.cleanFontName(o.headingFont) || '', bodyFont: fonts.cleanFontName(o.bodyFont) || '',
-    shape: shape ? shape.id : '', faviconUrl: url(o.faviconUrl), touchIconUrl: url(o.touchIconUrl)
+    shape: shape ? shape.id : '', faviconUrl: url(o.faviconUrl), touchIconUrl: url(o.touchIconUrl),
+    ...(themeTokens.clean(o.tokens) ? { tokens: themeTokens.clean(o.tokens) } : {}),   // the site's named colors, fonts and buttons, when it has them
+    ...(decorKit.clean(o.decor) ? { decor: decorKit.clean(o.decor) } : {})   // its decorations: scene decor, pet patterns, watermarks, card looks (decorkit.js)
   };
 }
 // a kit from a site's saved theme
-function fromTheme(theme) {
-  const c = lab.current(theme);
-  return { logoUrl: theme.logoUrl || '', primaryColor: c.primaryColor, accentColor: c.accentColor, headingFont: c.headingFont, bodyFont: c.bodyFont, shape: c.shape, faviconUrl: theme.faviconUrl || '', touchIconUrl: theme.touchIconUrl || '' };
+function fromTheme(theme, sections) {
+  const c = lab.current(theme), decor = sections ? decorKit.capture({ theme, sections }) : null;
+  return { ...(decor ? { decor } : {}), logoUrl: theme.logoUrl || '', primaryColor: c.primaryColor, accentColor: c.accentColor, headingFont: c.headingFont, bodyFont: c.bodyFont, shape: c.shape, faviconUrl: theme.faviconUrl || '', touchIconUrl: theme.touchIconUrl || '', ...(themeTokens.clean(theme.tokens) ? { tokens: themeTokens.clean(theme.tokens) } : {}) };
 }
 // the theme with a kit applied (only the parts the kit has)
 function applyKit(theme, kit) {
@@ -160,6 +164,7 @@ function applyKit(theme, kit) {
   if (kit.headingFont || kit.bodyFont) { t.headingFont = kit.headingFont; t.bodyFont = kit.bodyFont; }
   if (kit.shape !== undefined && kit.shape !== null && kit.shape !== '') { const s = lab.SHAPES.find(x => x.id === kit.shape); if (s) { t.buttonShape = s.buttonShape; t.corners = s.corners; } }
   if (kit.faviconUrl) { t.faviconUrl = kit.faviconUrl; t.touchIconUrl = kit.touchIconUrl || ''; }
+  if (kit.tokens) { t.tokens = themeTokens.clean(kit.tokens); Object.assign(t, themeTokens.linked(t)); }
   return t;
 }
 

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Packages and demo gallery — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .pk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+    .pk-grid textarea { min-height: 150px; font-size: 13.5px; }
+    .pk-demo { display: flex; gap: 10px; align-items: center; border-bottom: 1px solid var(--border); padding: 8px 0; font-weight: 400; margin: 0; }
+    .pk-demo input { width: auto; margin: 0; }
+    .pk-flash { margin-bottom: 14px; background: #ecfdf5; }
+  </style>
+</head>
+<body>
+  <nav><div class="row"><a href="<%= back %>" class="muted">&larr; Back</a><strong>Packages and demo gallery</strong></div></nav>
+  <div class="container">
+    <% if (saved) { %><div class="card pk-flash">Saved. The Pitch screen's Packages button and the <a href="/demos">demo gallery</a> show it.</div><% } %>
+    <form method="POST" action="/packages">
+      <input type="hidden" name="back" value="<%= back %>">
+      <div class="card">
+        <h2 style="margin-top:0;">Your three packages</h2>
+        <p class="muted" style="margin-top:0;">Shown on the Pitch screen (the Packages button), so a business owner can pick one while they look at their new site. Write your own prices; until you do, a package shows "<%= placeholder %>".</p>
+        <div class="pk-grid">
+          <% sales.tiers.forEach((t, i) => { %>
+          <div>
+            <label>Name<input type="text" name="tier<%= i %>_name" value="<%= t.name %>" maxlength="40"></label>
+            <label>Price, as you want it shown (e.g. $900 + $40/month)<input type="text" name="tier<%= i %>_price" value="<%= t.price %>" maxlength="40" placeholder="<%= placeholder %>"></label>
+            <label>What's included, one per line<textarea name="tier<%= i %>_items"><%= t.items.join('\n') %></textarea></label>
+            <label class="pk-demo"><input type="radio" name="best" value="<%= i %>" <%= t.best ? 'checked' : '' %>> Mark as "Most popular"</label>
+          </div>
+          <% }) %>
+        </div>
+        <label>A line under the packages (optional, e.g. "Hosting and changes included for the first year")<input type="text" name="note" value="<%= sales.note %>" maxlength="200"></label>
+      </div>
+      <div class="card">
+        <h2 style="margin-top:0;">Demo gallery</h2>
+        <p class="muted" style="margin-top:0;">Pick your best sites, ideally one per kind of business (a pet groomer, a roofer, a cleaner ...). They show on <a href="/demos">your demo gallery</a> and in Pitch, so you can show an owner a site like theirs. Make a new one in a couple of minutes with the generator (New site).</p>
+        <% if (!mySites.length) { %><p class="muted">No sites yet.</p><% } %>
+        <% mySites.forEach(s => { %>
+          <label class="pk-demo"><input type="checkbox" name="demo" value="<%= s.id %>" <%= sales.demos.includes(s.id) ? 'checked' : '' %>> <span><strong><%= s.name %></strong><% if (s.kind) { %> <span class="muted">· <%= s.kind %></span><% } %></span></label>
+        <% }) %>
+      </div>
+      <button type="submit">Save</button>
+    </form>
+  </div>
+</body>
+</html>

@@ -153,12 +153,38 @@ function recolor(px, mask, L) {
   }
 }
 
-const KINDS = { recolor };
+// Adjust (part 3): brightness, contrast, color strength and warmth, each -100..100, inside the mask
+function adjust(px, mask, L) {
+  const br = (L.bright || 0) / 100, ct = (L.contrast || 0) / 100, sa = (L.sat || 0) / 100, wm = (L.warm || 0) / 100;
+  const k = clamp01(L.strength == null ? 1 : L.strength);
+  const cf = ct >= 0 ? 1 + ct * 1.4 : 1 + ct * 0.9;   // contrast round the middle grey
+  const n = mask.length;
+  for (let i = 0; i < n; i++) {
+    const a = mask[i] / 255 * k; if (!a) continue;
+    const j = i * 4;
+    let r = px[j], g = px[j + 1], b = px[j + 2];
+    // brightness: lifts toward white or sinks toward black, so nothing clips hard
+    if (br > 0) { r += (255 - r) * br * 0.7; g += (255 - g) * br * 0.7; b += (255 - b) * br * 0.7; }
+    else if (br < 0) { const f = 1 + br * 0.7; r *= f; g *= f; b *= f; }
+    r = (r - 128) * cf + 128; g = (g - 128) * cf + 128; b = (b - 128) * cf + 128;
+    const lum = 0.299 * r + 0.587 * g + 0.114 * b, sf = 1 + sa;
+    r = lum + (r - lum) * sf; g = lum + (g - lum) * sf; b = lum + (b - lum) * sf;
+    r += wm * 28; g += wm * 6; b -= wm * 28;
+    px[j] += (Math.max(0, Math.min(255, r)) - px[j]) * a;
+    px[j + 1] += (Math.max(0, Math.min(255, g)) - px[j + 1]) * a;
+    px[j + 2] += (Math.max(0, Math.min(255, b)) - px[j + 2]) * a;
+  }
+}
+
+const KINDS = { recolor, adjust };
+// each change in order (later ones on top); a change's opacity (its Strength in the Changes list) scales its own strength
 function render(px, w, h, layers, maskOf) {
   for (const L of layers || []) {
     if (!L || L.hidden || !KINDS[L.type]) continue;
     const m = maskOf(L.mask); if (!m) continue;
-    KINDS[L.type](px, m, L, w, h);
+    const op = L.opacity == null ? 1 : clamp01(L.opacity);
+    if (!op) continue;
+    KINDS[L.type](px, m, op === 1 ? L : Object.assign({}, L, { strength: (L.strength == null ? 1 : L.strength) * op }), w, h);
   }
   return px;
 }
@@ -238,3 +264,5 @@ self.onmessage = async (e) => {
     self.postMessage({ id, ok: false, error: String((err && err.message) || err) });
   }
 };
+
+if (typeof module !== 'undefined') module.exports = { recolor, adjust, render };

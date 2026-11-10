@@ -2464,6 +2464,50 @@ a.sg-so-count:hover .sg-so-ring { transform: scale(1.06); }
 .sg-dc-glass .sg-dc-ln { max-width: 280px; height: 1px; border: 0; background: linear-gradient(90deg, transparent, currentColor, transparent); }
 /* the section behind the card (one color, a gradient or a soft glow) is set on the block itself */
 .blk-decocard.sg-dc-sec { padding-top: clamp(48px, 8vw, 96px); padding-bottom: clamp(48px, 8vw, 96px); }
+/* a faint wallpaper behind the card, and a soft band along the bottom for peeking pets to peek over */
+.blk-decocard.sg-dc-haspat, .blk-decocard:has(> .sg-dc-ledge) { position: relative; }
+.sg-dc-pat { position: absolute; inset: 0; z-index: 0; pointer-events: none; background-repeat: repeat; background-size: 72px 72px; }
+.sg-dc-pat ~ .blk-inner { position: relative; z-index: 1; }
+.sg-dc-pat ~ .sg-rv-track { position: relative; z-index: 1; }
+.sg-dc-ledge { position: absolute; left: 0; right: 0; bottom: 0; height: clamp(28px, 4vw, 44px); z-index: 7; pointer-events: none;
+  background: linear-gradient(var(--ledge) 0 0) bottom / 100% calc(100% - 6px) no-repeat; border-radius: 0; box-shadow: 0 -2px 0 color-mix(in srgb, var(--ledge) 70%, #000) inset; }
+.sg-dc-ledge::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 8px; background: color-mix(in srgb, var(--ledge) 82%, #fff); border-radius: 6px 6px 0 0; box-shadow: 0 3px 6px -3px rgba(60, 20, 40, .25); }
+.blk-decocard:has(> .sg-dc-ledge), .sg-rv-sheet:has(> .sg-dc-ledge) { padding-bottom: calc(clamp(48px, 8vw, 96px) + 24px); }
+
+/* Invitation Reveal (decocard.js, Leo 2026-11-10): the card comes out of an envelope as the visitor scrolls.
+   Without the script (or with motion turned off, and in the owner's preview) the card simply shows, open. */
+.blk-decocard.sg-rv { padding: 0; position: relative; }
+.sg-rv-sheet { position: relative; padding: clamp(48px, 8vw, 96px) 0; }
+.sg-rv-envb, .sg-rv-envf, .sg-rv-hint, .sg-rv-more { display: none; }
+.sg-rv-live .sg-rv-track { position: relative; height: var(--rv-len, 250vh); }
+@media (max-width: 700px) { .sg-rv-live .sg-rv-track { height: min(var(--rv-len, 250vh), 180vh); } }   /* phones always play it at the Quick length */
+.sg-rv-live .sg-rv-stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow-x: clip; background: var(--rv-glow, none); }
+.sg-rv-live .sg-rv-sheet { position: absolute; left: 0; right: 0; top: 0; z-index: 2; transform-origin: 50% 0; will-change: transform; }
+.sg-rv-live .sg-rv-sheet > .sg-dc-ledge, .sg-rv-live .sg-rv-sheet > [data-sg-pic], .sg-rv-live .sg-rv-sheet > [data-sg-tx] { opacity: var(--rv-x, 1); }
+.sg-rv-live .sg-rv-envb, .sg-rv-live .sg-rv-envf { display: block; position: absolute; transform-origin: 50% 100%; }
+.sg-rv-live .sg-rv-envb { z-index: 1; filter: drop-shadow(0 26px 34px rgba(80, 20, 50, .22)); }
+.sg-rv-live .sg-rv-envf { z-index: 3; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.sg-rv-envf:focus-visible { outline: 3px solid var(--primary, #b8326a); outline-offset: 8px; border-radius: 6px; }
+.sg-rv-back, .sg-rv-pocket, .sg-rv-flap { position: absolute; inset: 0; }
+.sg-rv-back svg, .sg-rv-pocket svg, .sg-rv-flap svg { display: block; width: 100%; height: 100%; }
+.sg-rv-flap { transform-origin: 50% 0; backface-visibility: visible; }
+.sg-rv-flapb { visibility: hidden; transform: rotateX(180deg); }
+.sg-rv-seal { position: absolute; left: 50%; top: 54%; width: 31%; aspect-ratio: 1; max-width: 140px; transform: translate(-50%, -50%); filter: drop-shadow(0 4px 6px rgba(70, 10, 35, .35)); }
+.sg-rv-seal i { position: absolute; inset: 0; transform-origin: 50% 60%; }
+.sg-rv-seal svg { display: block; width: 100%; height: 100%; }
+.sg-rv-sl { clip-path: polygon(0 0, 54% 0, 46% 38%, 55% 62%, 47% 100%, 0 100%); }
+.sg-rv-sr { clip-path: polygon(54% 0, 100% 0, 100% 100%, 47% 100%, 55% 62%, 46% 38%); }
+.sg-rv-live .sg-rv-hint { display: flex; position: absolute; left: 0; right: 0; top: 80%; z-index: 4; margin: 0; flex-direction: column; align-items: center; gap: 2px;
+  font: 600 13px/1.2 var(--body-font, system-ui); letter-spacing: .14em; text-transform: uppercase; color: var(--tk-eyebrow, #8e2350); pointer-events: none; }
+.sg-rv-tap { display: none; font-size: 12px; opacity: .8; }
+@media (pointer: coarse) { .sg-rv-tap { display: block; } }   /* phones: tapping the envelope opens it straight away */
+.sg-rv-hint b { font-size: 20px; animation: sg-rv-nudge 1.6s ease-in-out infinite; }
+@keyframes sg-rv-nudge { 50% { transform: translateY(6px); } }
+.sg-rv-live .sg-rv-more { display: block; }
+/* played from the editor (Play it in the preview): no scrolling needed, the stage just fills the preview */
+.sg-rv-live.sg-rv-demo .sg-rv-track { height: auto; }
+.sg-rv-live.sg-rv-demo .sg-rv-stage { position: relative; }
+.sg-rv-demo .sg-rv-envf { cursor: default; }
 @media (max-width: 640px) {
   .sg-dc { --dc-curl: 30px; }
   .sg-dc-royal .sg-dc-inner { inset: calc(var(--dc-w) + 4px); }

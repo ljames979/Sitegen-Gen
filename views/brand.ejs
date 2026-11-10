@@ -26,7 +26,9 @@
 <body>
   <nav><div class="row"><a href="/sites/<%= site.id %>/edit" class="muted">&larr; Back to editor</a><strong>Brand kit</strong></div></nav>
   <div class="container">
-    <% const flash = { applied: 'Brand kit applied. The earlier look is in the editor\'s Version history.', 'applied-saved': 'Brand kit applied and saved for reuse.', saved: 'Saved this site\'s look as a brand kit.', kit: 'Saved brand kit applied. The earlier look is in Version history.', deleted: 'Brand kit deleted.' }[done]; %>
+    <% const _rp = /^(\d+)-(\d+)$/.exec(report || ''), _rTxt = _rp ? ` ${_rp[1]} decoration${_rp[1] === '1' ? '' : 's'} added` + (_rp[2] !== '0' ? `, ${_rp[2]} left out because this site has no matching section` : '') + '.' : '';
+       const flash = { applied: 'Brand kit applied. The earlier look is in the editor\'s Version history.', 'applied-saved': 'Brand kit applied and saved for reuse.', saved: 'Saved this site\'s look as a brand kit.', kit: 'Saved brand kit applied.' + _rTxt + ' The earlier look is in Version history.', deleted: 'Brand kit deleted.',
+         decor: 'Decorations copied.' + _rTxt + ' The earlier look is in Version history ("Before copying decorations").', 'decor-none': 'That site has no decorations to copy.' }[done]; %>
     <% if (flash) { %><div class="card bk-flash"><%= flash %> <a href="/sites/<%= site.id %>/edit">Open the editor</a></div><% } %>
     <% if (error) { %><div class="card bk-err"><%= error %></div><% } %>
 
@@ -103,8 +105,10 @@
           <% if (k.kit.logoUrl) { %><img src="<%= k.kit.logoUrl %>" alt=""><% } %>
           <span style="flex:1; min-width:180px;"><strong><%= k.name %></strong><br>
             <% if (k.kit.primaryColor) { %><span class="bk-dots"><i style="background:<%= k.kit.primaryColor %>"></i><i style="background:<%= k.kit.accentColor %>"></i></span><% } %>
-            <span class="muted" style="font-size:12.5px;"><%= k.kit.headingFont ? k.kit.headingFont + ' + ' + (k.kit.bodyFont || 'style font') : "style's fonts" %><%= k.kit.shape ? ' · ' + k.kit.shape + ' buttons' : '' %></span></span>
-          <form method="POST" action="/sites/<%= site.id %>/brand/kits/<%= k.id %>/apply"><button type="submit" class="btn-secondary">Apply to this site</button></form>
+            <span class="muted" style="font-size:12.5px;"><%= k.kit.headingFont ? k.kit.headingFont + ' + ' + (k.kit.bodyFont || 'style font') : "style's fonts" %><%= k.kit.shape ? ' · ' + k.kit.shape + ' buttons' : '' %><%= k.kit.decor ? ' · ' + decorSummary(k.kit.decor) : '' %></span></span>
+          <form method="POST" action="/sites/<%= site.id %>/brand/kits/<%= k.id %>/apply" style="display:flex; gap:8px; align-items:center;">
+            <% if (k.kit.decor) { %><label style="margin:0; font-size:12.5px;"><input type="hidden" name="decor" value="0"><input type="checkbox" name="decor" value="1" checked> with its decorations</label><% } %>
+            <button type="submit" class="btn-secondary">Apply to this site</button></form>
           <form method="POST" action="/sites/<%= site.id %>/brand/kits/<%= k.id %>/delete"><button type="submit" class="btn-secondary" aria-label="Delete <%= k.name %>">Delete</button></form>
         </div>
       <% }) %>
@@ -113,6 +117,19 @@
           <input type="text" name="kit_name" value="<%= site.name %>" maxlength="60" style="margin:4px 0 0;"></label>
         <button type="submit" class="btn-secondary">Save as brand kit</button>
       </form>
+      <p class="muted" style="font-size:12.5px; margin:8px 0 0;"><%= decorOwn ? 'The kit also keeps this site\'s decorations: ' + decorOwn + '.' : 'This site has no decorations yet (scene decor, pet patterns, watermarks, card looks), so a kit saved now carries only colors, fonts and buttons.' %></p>
+    </div>
+
+    <div class="card" id="decor">
+      <h2 style="margin-top:0;">Copy decorations from another site</h2>
+      <p class="muted" style="margin-top:0;">Puts another site's scene decor, pet pattern backgrounds, watermarks and Decorative card looks on the same kinds of sections here. Words and photos stay as they are. Anything that has no matching section here is left out.</p>
+      <% if (!decorOthers.length) { %><p class="muted">None of your other sites has decorations yet.</p><% } else { %>
+      <form method="POST" action="/sites/<%= site.id %>/brand/copy-decor" style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+        <label style="margin:0; flex:1; min-width:220px;">Copy from
+          <select name="from_site" style="margin:4px 0 0;"><% decorOthers.forEach(o => { %><option value="<%= o.id %>"><%= o.name %> (<%= o.summary %>)</option><% }) %></select></label>
+        <button type="submit" class="btn-secondary">Copy decorations</button>
+      </form>
+      <% } %>
     </div>
   </div>
 </body>

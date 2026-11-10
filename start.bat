@@ -12,6 +12,10 @@ if errorlevel 1 (
   exit /b 1
 )
 
+REM Save the code as it is now as a version (versions.bat lists them and can go back), if Git is installed
+where git >nul 2>nul
+if not errorlevel 1 if exist ".git" call save-version.bat "Started SiteGen" >nul 2>nul
+
 echo Checking dependencies...
 call npm install --no-audit --no-fund
 if errorlevel 1 (

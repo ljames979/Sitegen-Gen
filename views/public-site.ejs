@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <% if (site.theme.calmMotion) { %><script>/* Calm motion (Design > Motion): every effect on this site behaves as it does for visitors who turn motion off */(function(){var d=document.documentElement;d.classList.add('sg-calm');var mm=window.matchMedia;if(!mm)return;window.matchMedia=function(q){if(/prefers-reduced-motion\s*:\s*reduce/.test(String(q))){var r=mm.call(window,q);return{matches:true,media:String(q),onchange:null,addListener:function(){},removeListener:function(){},addEventListener:function(){},removeEventListener:function(){},dispatchEvent:function(){return false}}}if(/prefers-reduced-motion\s*:\s*no-preference/.test(String(q))){return{matches:false,media:String(q),onchange:null,addListener:function(){},removeListener:function(){},addEventListener:function(){},removeEventListener:function(){},dispatchEvent:function(){return false}}}return mm.call(window,q)}})();</script>
+  <style>html.sg-calm{scroll-behavior:auto!important}html.sg-calm .sg-wm-drift{animation:none!important}</style><% } %>
   <%- extraThemes.creditComment(extraThemes.byId[site.theme.style]) %>
   <% const siteMeta = site.sections.meta || {};
      const city = (siteMeta.city || '').trim();
@@ -106,6 +108,9 @@
   <% if (shareImage) { %><meta property="og:image" content="<%= shareImage %>"><% } %>
   <meta name="twitter:card" content="<%= shareImage ? 'summary_large_image' : 'summary' %>">
   <script type="application/ld+json"><%- JSON.stringify(ld).replace(/</g, '\\u003c') %></script>
+  <% const _accQs = pageKey === 'home' ? ((site.sections.blocks || {}).items || []).filter(b => b.type === 'accordion' && (b.page || 'home') === 'home' && !(((site.layout && site.layout.hidden) || []).includes('blk:' + b.id))).flatMap(b => String(b.body || '').split('\n').map(l => { const i = l.indexOf('|'); return i > -1 ? [l.slice(0, i).trim(), l.slice(i + 1).trim()] : null; }).filter(q => q && q[0] && q[1])).slice(0, 30) : []; %>
+  <%# questions in an accordion block on the home page count as its FAQ for search engines (Leo, 2026-11-10) %>
+  <% if (_accQs.length) { %><script type="application/ld+json"><%- JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: _accQs.map(q => ({ '@type': 'Question', name: q[0], acceptedAnswer: { '@type': 'Answer', text: q[1] } })) }).replace(/</g, '\\u003c') %></script><% } %>
   <% if (pageKey === 'faq' && site.sections.faq.items.length) { %>
     <script type="application/ld+json"><%- JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: site.sections.faq.items.filter(q => q.question && q.answer).map(q => ({ '@type': 'Question', name: q.question, acceptedAnswer: { '@type': 'Answer', text: q.answer } })) }).replace(/</g, '\\u003c') %></script>
   <% } %>
@@ -204,6 +209,9 @@
   <% if (mixHome && mixHome.css) { %><style><%- mixHome.css.replace(/<\//g, '<\\/') %></style><% } %>
   <% if (mixHome && mixHome.arrange) { %><style id="sg-arrange"><%- mixHome.arrange %></style><% } %>
   <% if (typeof bare !== 'undefined' && bare) { %><style>body.sg-bare>:not(main):not(script):not(style){display:none!important}body.sg-bare main>:not(.sg-mix){display:none!important}body.sg-bare{padding:0!important;margin:0!important}</style><% } %>
+  <% if (typeof print !== 'undefined' && print) { %><style id="sg-print">*,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important;transition-duration:0s!important;transition-delay:0s!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}html{scroll-behavior:auto!important}@page{size:<%= print.w %>px <%= print.h %>px;margin:0}@media print{.sg-motion-bar,.chat-fab,.chat-panel,.cookie-bar,[data-sg-noprint]{display:none!important}section,figure,.card,img{break-inside:avoid}}</style>
+  <script>/* Export PDF: the page as a still snapshot (every photo loaded, nothing pinned or fixed to the screen) */(function(){var d=document;d.documentElement.classList.add('sg-print');d.addEventListener('DOMContentLoaded',function(){d.querySelectorAll('img[loading="lazy"],iframe[loading="lazy"]').forEach(function(i){i.loading='eager'})});window.addEventListener('load',function(){setTimeout(function(){var all=d.body?d.body.getElementsByTagName('*'):[];for(var i=0;i<all.length;i++){var cs=getComputedStyle(all[i]);if(cs.position==='fixed'){all[i].style.setProperty('position','absolute','important')}}window.scrollTo(0,0)},300)})})();</script><% } %>
+  <% if (preview && !(typeof print !== 'undefined' && print)) { %><script>/* Client feedback: "Show on the page" (#sg-fb=x,y) marks the spot the client pointed at */(function(){var m=/[#&]sg-fb=([0-9.]+),([0-9.]+)/.exec(location.hash);if(!m)return;window.addEventListener('load',function(){setTimeout(function(){var d=document,h=Math.max(d.documentElement.scrollHeight,d.body.scrollHeight),y=parseFloat(m[2])*h,x=parseFloat(m[1])*d.documentElement.clientWidth;var p=d.createElement('div');p.setAttribute('aria-hidden','true');p.style.cssText='position:absolute;z-index:2147483000;left:'+(x-16)+'px;top:'+(y-16)+'px;width:32px;height:32px;border-radius:50%;background:#ef4444;border:3px solid #fff;box-shadow:0 0 0 6px rgba(239,68,68,.35),0 6px 18px rgba(0,0,0,.35);pointer-events:none';d.body.appendChild(p);window.scrollTo(0,Math.max(0,y-innerHeight/3))},400)})})();</script><% } %>
   <% if (typeof calm !== 'undefined' && calm) { %><style id="sg-calm">*,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important;transition-duration:0s!important;transition-delay:0s!important}</style><script>setTimeout(function(){var s=document.getElementById('sg-calm');if(s)s.remove()},1500)</script><% } %>
   <% if (!(typeof calm !== 'undefined' && calm) && (motionLevel !== 'none' || (typeof preview !== 'undefined' && preview))) { %><script>(function(d){try{if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;var h=d.documentElement;h.classList.add('sg-anim');setTimeout(function(){h.classList.remove('sg-anim')},3000)}catch(e){}})(document)</script><% } %>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -240,7 +248,8 @@
    if (extraTheme && !hFont && extraTheme.heading.param && !fontFamilies.includes(extraTheme.heading.param)) fontFamilies.push(extraTheme.heading.param);
    if (extraTheme && extraTheme.body && !bFont && extraTheme.body.param && !fontFamilies.includes(extraTheme.body.param)) fontFamilies.push(extraTheme.body.param);
    if (mixHome) mixHome.fonts.forEach(f => { if (f && !fontFamilies.includes(f)) fontFamilies.push(f); });
-   const customFonts = [hFont, bFont].concat(decoCard.fontsOf(site)).filter(Boolean).filter((n, i, a) => a.indexOf(n) === i);
+   themeTokens.fontParams(site.theme).forEach(p => { const v = p.replace(/^family=/, ''); if (!fontFamilies.includes(v)) fontFamilies.push(v); });
+   const customFonts = [hFont, bFont].concat(decoCard.fontsOf(site)).filter(Boolean).filter(n => !themeTokens.fontParams(site.theme).some(p => p.startsWith('family=' + encodeURIComponent(n).replace(/%20/g, '+') + ':'))).filter((n, i, a) => a.indexOf(n) === i);
    const fontsHref = 'https://fonts.googleapis.com/css2?family=' + fontFamilies.join('&family=') + customFonts.map(n => '&' + fonts.familyParam(n)).join('') + '&display=swap'; %>
   <%# fonts load without blocking the first paint; the system font shows meanwhile %>
   <link rel="preload" as="style" href="<%= fontsHref %>" onload="this.onload=null;this.rel='stylesheet'">
@@ -275,6 +284,7 @@
     <% if (site.theme.headingCase === 'uppercase') { %>h1, h2, h3, nav.site-nav .brand { text-transform: uppercase !important; }<% } else if (site.theme.headingCase === 'none') { %>h1, h2, h3, nav.site-nav .brand { text-transform: none !important; }<% } %>
   </style>
   <link rel="stylesheet" href="<%= _sx ? '' : '/' %>sg-site.css<%= _sx ? '' : '?v=' + siteCssV %>">
+  <% const _tkCss = themeTokens.css(site.theme); if (_tkCss) { %><style id="sg-tokens"><%- _tkCss.replace(/<\//g, '<\\/') %></style><% } %>
   <script>/* one shared scroll listener: the page's effects hand it their work (sgOnScroll(fn)), and it runs them together once a frame while the page scrolls or resizes */window.sgOnScroll=function(){var f=[],r=0,run=function(){r=0;for(var i=0;i<f.length;i++)try{f[i]()}catch(e){}},ask=function(){if(!r)r=requestAnimationFrame(run)};addEventListener('scroll',ask,{passive:true});addEventListener('resize',ask);return function(fn){f.push(fn)}}();</script>
   <%- include('_lookfeel-head', { site }) %>
   <% const _cardCss = cardLayouts.css(site.theme); if (_cardCss) { %><style id="sg-cards"><%- _cardCss %></style><% } %>
@@ -393,7 +403,7 @@
        const _csEnd = customTail.filter(i => i.family !== 'custom' || i.after === 'end' || _csAt(i) < 0);
        // content blocks that are blocks of this page are drawn in their spot, not again at the top or bottom
        const _mixBlk = ((site.theme && site.theme.mix) || []).filter(m => m && m.k === 'blk').map(m => m.v); %>
-    <% mixHome.items.forEach((it, n) => { const _pin = pinFx.attrs(it.pin), _film = filmFx.attrs(it.film, site.theme), _ix = imgFx.attrs(it.imgfx), _ht = heightFx.attrs(it.height), _gl = glassFx.attrs(it.glass); %><div class="sg-mix<%= _pin.cls %><%= _film.cls %><%= _ix.cls %><%= _ht.cls %><%= _gl.cls %>" data-mix-i="<%= it.i %>" data-mix-f="<%= it.f %>"<% if (it.xfx) { %> data-xfx="<%= it.xfx.join(' ') %>"<% } %><% if (_pin.style || _film.style || _ht.style) { %> style="<%= [_pin.style, _film.style, _ht.style].filter(Boolean).join(' ') %>"<% } %>><% if (it.lib) { %><%- include('_lib-section', { item: it.lib }) %><% } else if (it.blk) { %><%- include('_blocks', { site, only: it.blk }) %><% } else { %><%- it.html %><% } %></div>
+    <% mixHome.items.forEach((it, n) => { const _pin = pinFx.attrs(it.pin), _film = filmFx.attrs(it.film, site.theme), _ix = imgFx.attrs(it.imgfx), _ht = heightFx.attrs(it.height), _gl = glassFx.attrs(it.glass), _sc = sceneDecor.attrs(it.scene); %><div class="sg-mix<%= _pin.cls %><%= _film.cls %><%= _ix.cls %><%= _ht.cls %><%= _gl.cls %><%= _sc.cls %>"<% if (it.a) { %> id="<%= it.a %>"<% } %> data-mix-i="<%= it.i %>" data-mix-f="<%= it.f %>"<% if (it.xfx) { %> data-xfx="<%= it.xfx.join(' ') %>"<% } %><% if (_pin.style || _film.style || _ht.style || _sc.style) { %> style="<%= [_pin.style, _film.style, _ht.style, _sc.style].filter(Boolean).join(' ') %>"<% } %>><% if (it.lib) { %><%- include('_lib-section', { item: it.lib }) %><% } else if (it.blk) { %><%- include('_blocks', { site, only: it.blk }) %><% } else { %><%- it.html %><% } %><%- sceneDecor.html(it.scene) %></div>
     <% if (n === 0) { %><%- include('_blocks', { site, place: 'top', skipIds: _mixBlk }) %><% } %>
     <% customTail.filter(i => i.after !== 'end' && _csAt(i) === n).forEach(i => { %><%- include('_lib-section', { item: i }) %>
     <% }) %>
@@ -1242,7 +1252,8 @@
     </section>
   <% } %>
 
-  <% if (page !== 'contact' && page !== 'thank-you' && page !== 'review' && page !== 'notfound' && !isLegalPage && !isCalcPage && !(sigHome && sigHome.sections.includes('cta'))) { %>
+  <% if (page !== 'contact' && page !== 'thank-you' && page !== 'review' && page !== 'notfound' && !isLegalPage && !isCalcPage && !(sigHome && sigHome.sections.includes('cta')) && !(page === 'home' && mixHome && mixHome.items.some(it => it.blk && ((site.sections.blocks || {}).items || []).some(b => b.id === it.blk && b.type === 'cta')))) { %>
+    <%# a Blocks home page with its own closing band (a Call to action block) doesn't get this generic one too (Leo, 2026-11-10) %>
     <section class="cta-band">
       <h2 data-animate="fade-up">Ready to get started?</h2>
       <p data-animate="fade-up">Reach out today and we'll be happy to help.</p>
@@ -1837,10 +1848,12 @@
   <script src="<%= _exp ? '' : '/' %>sg-fx.js" defer></script>
   <% const _smooth = smoothScroll.script(site.theme); if (_smooth) { %><script data-sg-smooth><%- _smooth.replace(/<\//g, '<\\/') %></script><% } %>
   <% if (((site.sections.blocks && site.sections.blocks.items) || []).some(b => b.type === 'video' && videoMask.masked(b.side))) { %><style data-sg-vm><%- videoMask.CSS %></style><%- videoMask.BLOB_SVG %><script data-sg-vm><%- videoMask.SCRIPT %></script><% } %>
+  <% if (mixHome && mixHome.items.some(it => it.scene)) { %><style data-sg-scene><%- sceneDecor.CSS %></style><% } %>
   <% if (mixHome && mixHome.items.some(it => it.glass)) { %><style data-sg-glass><%- glassFx.CSS %></style><script data-sg-glass><%- glassFx.SCRIPT %></script><% } %>
   <% if (((site.sections.blocks && site.sections.blocks.items) || []).some(b => b.imgfx) || (mixHome && mixHome.items.some(it => it.imgfx))) { %><style data-sg-ix><%- imgFx.CSS %></style><script data-sg-ix><%- imgFx.SCRIPT %></script><% } %>
   <% if (((site.sections.blocks && site.sections.blocks.items) || []).some(b => b.height) || (mixHome && mixHome.items.some(it => it.height))) { %><style data-sg-ht><%- heightFx.CSS %></style><% } %>
   <% if (((site.sections.blocks && site.sections.blocks.items) || []).some(b => b.film) || (mixHome && mixHome.items.some(it => it.film))) { %><style data-sg-film><%- filmFx.CSS %></style><% } %>
+  <% if (((site.sections.blocks && site.sections.blocks.items) || []).some(b => b && b.type === 'decocard' && decoCard.parse(b.body).reveal)) { %><script data-sg-rv><%- decoCard.REVEAL_SCRIPT.replace(/<\//g, '<\\/') %></script><% } %>
   <% if (((site.sections.blocks && site.sections.blocks.items) || []).some(b => b.pin) || (mixHome && mixHome.items.some(it => it.pin))) { %><style data-sg-pin><%- pinFx.CSS %></style><script data-sg-pin><%- pinFx.SCRIPT %></script><% } %>
   <% const _sfx = scrollFx.script(site.theme); if (_sfx) { %><style data-sg-sfx><%- scrollFx.css(site.theme) %></style><script data-sg-sfx><%- _sfx.replace(/<\//g, '<\\/') %></script><% } %>
   <% if (extraFx.list(site.theme).length || _mixXfx.length) { %><style data-sg-xfx><%- extraFx.CSS %></style><script type="application/json" id="sg-xfx"><%- extraFx.data(site, page, _mixXfx) %></script><script data-sg-xfx><%- extraFx.SCRIPT.replace(/<\//g, '<\\/') %></script><% } %>

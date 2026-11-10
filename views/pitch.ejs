@@ -47,6 +47,22 @@
     .pt-share h3 { margin: 0 0 6px; } .pt-share p { font-size: 13.5px; color: #475569; margin: 0 0 10px; }
     .pt-share input { margin-bottom: 8px; }
     .pt-share .row { flex-wrap: wrap; gap: 6px; }
+    .pt-pk { position: fixed; inset: 0; z-index: 25; display: none; overflow: auto; padding: 70px 18px 30px; background: rgba(11,15,23,.94); }
+    .pt-pk.on { display: block; }
+    .pt-pk h2 { text-align: center; color: #fff; margin: 0 0 6px; font-size: clamp(1.5rem, 3.5vw, 2.4rem); }
+    .pt-pk .sub { text-align: center; color: #94a3b8; margin: 0 0 22px; }
+    .pt-pk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; max-width: 1080px; margin: 0 auto; }
+    .pt-pk-card { background: #fff; color: #0f172a; border-radius: 18px; padding: 22px; position: relative; display: flex; flex-direction: column; gap: 10px; border: 3px solid transparent; }
+    .pt-pk-card.best { border-color: #f59e0b; box-shadow: 0 24px 60px rgba(245,158,11,.25); }
+    .pt-pk-card .tag { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: #f59e0b; color: #1c1300; font-size: 12px; font-weight: 800; padding: 4px 12px; border-radius: 999px; white-space: nowrap; }
+    .pt-pk-card h3 { margin: 0; font-size: 1.3rem; }
+    .pt-pk-card .price { font-size: 1.6rem; font-weight: 800; letter-spacing: -.01em; }
+    .pt-pk-card .price.ph { color: #94a3b8; font-size: 1.1rem; font-weight: 600; }
+    .pt-pk-card ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14.5px; }
+    .pt-pk-note { text-align: center; color: #cbd5e1; margin: 20px 0 0; }
+    .pt-pk-foot { text-align: center; margin-top: 18px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .pt-pk-foot a { color: #93c5fd; }
+    .pt-pk-x { position: fixed; top: 14px; right: 14px; z-index: 26; }
     @media (prefers-reduced-motion: reduce) { .pt-end, .pt-bar { transition: none; } }
   </style>
 </head>
@@ -62,6 +78,8 @@
     </span>
     <% if (pitch.oldShot) { %><button type="button" class="btn-secondary" id="oldNewBtn" aria-pressed="false">Old site vs new</button><% } %>
     <span class="sp"></span>
+    <% if (demos.length) { %><select id="demoSel" aria-label="Show a demo site" style="max-width:150px;"><option value="">Demo sites…</option><% demos.forEach(d => { %><option value="<%= d.id %>"><%= d.name %></option><% }) %></select><% } %>
+    <button type="button" class="btn-secondary" id="pkBtn" aria-expanded="false">Packages</button>
     <button type="button" class="btn-secondary" id="shareBtn" aria-expanded="false">Share link</button>
     <button type="button" class="btn-secondary" id="fsBtn">Full screen</button>
     <button type="button" id="startBtn">&#9654; Start the show</button>
@@ -72,11 +90,30 @@
     <p>Anyone with this link can look at the site (not edit it), even before it is published. Search engines are told to skip it. Replace or turn it off at any time.</p>
     <input type="text" id="shareUrl" readonly value="<%= shareLink %>" placeholder="No link yet">
     <p id="shareInfo"><%= share ? 'Opened ' + share.views + ' time' + (share.views === 1 ? '' : 's') + (share.last_viewed_at ? ', last on ' + share.last_viewed_at + ' (UTC)' : '') + '.' : '' %></p>
+    <p>The client can click "Suggest a change" on the link to type what they want changed. <a href="/sites/<%= site.id %>/feedback"><%= notes.n ? 'See their notes (' + notes.open + ' to do of ' + notes.n + ')' : 'Client feedback' %></a> · <a href="/sites/<%= site.id %>/pdf">Export PDF</a></p>
     <div class="row">
       <button type="button" id="shareCopy" <%= share ? '' : 'hidden' %>>Copy link</button>
       <button type="button" class="btn-secondary" id="shareMake"><%= share ? 'Replace link' : 'Create link' %></button>
       <button type="button" class="btn-danger" id="shareOff" <%= share ? '' : 'hidden' %>>Turn off</button>
     </div>
+  </div>
+
+  <div class="pt-pk" id="pkPanel" role="dialog" aria-modal="true" aria-label="Packages">
+    <button type="button" class="btn-secondary pt-pk-x" id="pkClose">Close</button>
+    <h2>Pick what suits <%= site.name %></h2>
+    <p class="sub">Every package is built around this site.</p>
+    <div class="pt-pk-grid">
+      <% sales.tiers.forEach(t => { %>
+      <div class="pt-pk-card<%= t.best ? ' best' : '' %>">
+        <% if (t.best) { %><span class="tag">Most popular</span><% } %>
+        <h3><%= t.name %></h3>
+        <div class="price<%= t.price ? '' : ' ph' %>"><%= t.price || placeholder %></div>
+        <ul><% t.items.forEach(x => { %><li><%= x %></li><% }) %></ul>
+      </div>
+      <% }) %>
+    </div>
+    <% if (sales.note) { %><p class="pt-pk-note"><%= sales.note %></p><% } %>
+    <div class="pt-pk-foot"><a href="/packages?back=/sites/<%= site.id %>/pitch">Change the packages and prices</a></div>
   </div>
 
   <div class="pt-stage" id="stage">
@@ -121,6 +158,19 @@
         document.querySelectorAll('[data-dev]').forEach(function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); });
         fit();
       });
+    });
+
+    // ---- packages, and showing one of the demo sites ----
+    var pk = document.getElementById('pkPanel'), pkBtn = document.getElementById('pkBtn');
+    function pkShow(on) { if (on) stopTour(); pk.classList.toggle('on', on); pkBtn.setAttribute('aria-expanded', String(on)); if (on) document.getElementById('pkClose').focus(); else pkBtn.focus(); }
+    pkBtn.addEventListener('click', function () { pkShow(!pk.classList.contains('on')); });
+    document.getElementById('pkClose').addEventListener('click', function () { pkShow(false); });
+    pk.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.stopPropagation(); pkShow(false); } });
+    var demoSel = document.getElementById('demoSel');
+    if (demoSel) demoSel.addEventListener('change', function () {
+      stopTour();
+      var id = demoSel.value || siteId, m = document.getElementById('motionSel').value;
+      pf.src = '/sites/' + id + '/preview?bar=0' + (m ? '&' + m : '');
     });
 
     // ---- motion choice reloads the preview ----

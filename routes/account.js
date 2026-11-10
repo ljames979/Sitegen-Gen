@@ -234,7 +234,7 @@ module.exports = function (app, deps) {
     if (blocks) {
       const gallery = [...new Set([].concat((g.sections.gallery && g.sections.gallery.images) || []).filter(Boolean))];
       const p = autosite.plan(g, { industryId: industry ? industry.id : 'generic', label: industry && industry.id !== 'generic' ? industry.label : 'About us', gallery, colors: { primary: g.theme.primaryColor, accent: g.theme.accentColor } });
-      auto.group = p.groupName; auto.blocks = p.blocks.map(b => b.name); auto.blockIds = p.blocks.map(b => b.id);
+      auto.group = p.groupName; auto.blocks = p.blocks.map(b => b.name); auto.decor = p.decor || []; auto.blockIds = p.blocks.map(b => b.id);
       if (p.mix && p.mix.length) { g.theme.homeLayout = 'mix'; g.theme.mix = p.mix; delete g.theme.homeFull; auto.mix = true; }
     }
     auto.colors = { primary: g.theme.primaryColor, accent: g.theme.accentColor };
@@ -434,6 +434,7 @@ module.exports = function (app, deps) {
       const theme = JSON.parse(req.draft.theme || '{}');
       const from = auto.colors || { primary: theme.primaryColor, accent: theme.accentColor };
       autosite.recolor((sec.blocks && sec.blocks.items) || [], auto.blockIds || [], from, pick);
+      autosite.recolorDecor(sec, from, pick);   // the paw watermark the generator added takes the new color too
       theme.primaryColor = pick.primary; theme.accentColor = pick.accent;
       auto.colors = { primary: pick.primary, accent: pick.accent }; auto.picked = pick.id;
       db.prepare('UPDATE site_drafts SET theme = ?, sections = ? WHERE id = ?').run(JSON.stringify(theme), JSON.stringify(sec), req.draft.id);
@@ -447,7 +448,8 @@ module.exports = function (app, deps) {
       if (sec.blocks && Array.isArray(sec.blocks.items)) sec.blocks.items = sec.blocks.items.filter(b => !ids.has(b.id));
       const theme = JSON.parse(req.draft.theme || '{}');
       if (theme.homeLayout === 'mix') { theme.homeLayout = 'full'; delete theme.mix; }
-      auto.blockIds = []; auto.blocks = []; auto.mix = false;
+      if (sec.texts && Array.isArray(sec.texts.wmarks)) sec.texts.wmarks = sec.texts.wmarks.filter(w => !(w && ids.has(String(w.part || '').slice(2))));   // their watermarks go with them
+      auto.blockIds = []; auto.blocks = []; auto.decor = []; auto.mix = false;
       db.prepare('UPDATE site_drafts SET theme = ?, sections = ? WHERE id = ?').run(JSON.stringify(theme), JSON.stringify(sec), req.draft.id);
     }
     res.redirect(`/sites/draft/${req.params.token}`);
