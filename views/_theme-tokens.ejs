@@ -1,0 +1,40 @@
+<%# Theme tokens panel (themetokens.js, public/themetokens-edit.js): the site's named colors, three fonts, text color
+    rules and three button styles. The whole set is kept in the hidden box theme_tokens_json. %>
+<% const _tk = themeTokens.clean(site.theme.tokens); %>
+<details class="sub" id="themeTokens"<%= _tk && _tk.on ? ' open' : '' %>>
+  <summary>Theme tokens (named colors, fonts, buttons)</summary>
+  <input type="hidden" name="theme_tokens_json" id="tkJson" value="<%= JSON.stringify(_tk) %>">
+  <script type="application/json" id="tkPresets"><%- JSON.stringify(themeTokens.PRESETS.map(p => ({ key: p.key, name: p.name, tokens: themeTokens.clean(p.tokens) }))).replace(/</g, '\\u003c') %></script>
+  <p class="hint">Your own palette with names, the display, accent and body fonts, the text colors and three button styles. While this is on, it sets the Primary and Accent colors, the fonts and the button shape for the whole site, and every color picker shows these colors first. To reuse them on another site, save a Brand kit from the <a href="/sites/<%= site.id %>/brand">Brand page</a> after saving.</p>
+  <label class="tk-on"><input type="checkbox" id="tkOn"<%= _tk && _tk.on ? ' checked' : '' %>> Use theme tokens on this site</label>
+  <div class="tk-row"><select id="tkPreset" aria-label="Start from a preset"><option value="">Start from a preset…</option><% themeTokens.PRESETS.forEach(p => { %><option value="<%= p.key %>"><%= p.name %></option><% }) %></select></div>
+  <div id="tkBody">
+    <label for="tkName">Theme name</label>
+    <input type="text" id="tkName" maxlength="60" placeholder="e.g. Imperial Pet Group">
+    <h4 class="tk-h">Colors</h4>
+    <div id="tkColors" class="tk-colors"></div>
+    <button type="button" class="btn-secondary" id="tkAddColor">+ Add a color</button>
+    <h4 class="tk-h">Fonts (Google Fonts)</h4>
+    <div id="tkFonts"></div>
+    <h4 class="tk-h">Text colors</h4>
+    <div id="tkText"></div>
+    <h4 class="tk-h">Buttons</h4>
+    <div id="tkButtons"></div>
+    <div id="tkWarn" class="tk-warn" aria-live="polite"></div>
+  </div>
+  <style>
+    #themeTokens .tk-row { margin: 6px 0; } #themeTokens .tk-h { margin: 14px 0 6px; font-size: 13.5px; }
+    #themeTokens .tk-colors { display: grid; gap: 6px; margin-bottom: 6px; }
+    #themeTokens .tk-c { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    #themeTokens .tk-c input[type=text] { width: 150px; margin: 0; }
+    #themeTokens .tk-c .tk-x { padding: 2px 8px; }
+    #themeTokens .tk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; align-items: end; }
+    #themeTokens .tk-grid label { font-size: 12.5px; margin: 0; } #themeTokens .tk-grid input, #themeTokens .tk-grid select { margin: 0; width: 100%; }
+    #themeTokens fieldset { border: 1px solid var(--border, #e2e8f0); border-radius: 10px; padding: 8px 10px 10px; margin: 0 0 8px; }
+    #themeTokens legend { font-size: 13px; font-weight: 600; padding: 0 4px; }
+    #themeTokens .tk-prev { margin-top: 8px; display: inline-block; text-decoration: none; }
+    #themeTokens .tk-warn p { background: #fff7ed; color: #9a3412; border-radius: 8px; padding: 6px 10px; font-size: 12.5px; margin: 6px 0; }
+    #themeTokens[data-off] #tkBody { opacity: .5; }
+  </style>
+</details>
+<script src="/themetokens-edit.js" defer></script>

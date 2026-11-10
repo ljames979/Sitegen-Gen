@@ -106,6 +106,9 @@
   <% if (shareImage) { %><meta property="og:image" content="<%= shareImage %>"><% } %>
   <meta name="twitter:card" content="<%= shareImage ? 'summary_large_image' : 'summary' %>">
   <script type="application/ld+json"><%- JSON.stringify(ld).replace(/</g, '\\u003c') %></script>
+  <% const _accQs = pageKey === 'home' ? ((site.sections.blocks || {}).items || []).filter(b => b.type === 'accordion' && (b.page || 'home') === 'home' && !(((site.layout && site.layout.hidden) || []).includes('blk:' + b.id))).flatMap(b => String(b.body || '').split('\n').map(l => { const i = l.indexOf('|'); return i > -1 ? [l.slice(0, i).trim(), l.slice(i + 1).trim()] : null; }).filter(q => q && q[0] && q[1])).slice(0, 30) : []; %>
+  <%# questions in an accordion block on the home page count as its FAQ for search engines (Leo, 2026-11-10) %>
+  <% if (_accQs.length) { %><script type="application/ld+json"><%- JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: _accQs.map(q => ({ '@type': 'Question', name: q[0], acceptedAnswer: { '@type': 'Answer', text: q[1] } })) }).replace(/</g, '\\u003c') %></script><% } %>
   <% if (pageKey === 'faq' && site.sections.faq.items.length) { %>
     <script type="application/ld+json"><%- JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: site.sections.faq.items.filter(q => q.question && q.answer).map(q => ({ '@type': 'Question', name: q.question, acceptedAnswer: { '@type': 'Answer', text: q.answer } })) }).replace(/</g, '\\u003c') %></script>
   <% } %>
@@ -240,7 +243,8 @@
    if (extraTheme && !hFont && extraTheme.heading.param && !fontFamilies.includes(extraTheme.heading.param)) fontFamilies.push(extraTheme.heading.param);
    if (extraTheme && extraTheme.body && !bFont && extraTheme.body.param && !fontFamilies.includes(extraTheme.body.param)) fontFamilies.push(extraTheme.body.param);
    if (mixHome) mixHome.fonts.forEach(f => { if (f && !fontFamilies.includes(f)) fontFamilies.push(f); });
-   const customFonts = [hFont, bFont].concat(decoCard.fontsOf(site)).filter(Boolean).filter((n, i, a) => a.indexOf(n) === i);
+   themeTokens.fontParams(site.theme).forEach(p => { const v = p.replace(/^family=/, ''); if (!fontFamilies.includes(v)) fontFamilies.push(v); });
+   const customFonts = [hFont, bFont].concat(decoCard.fontsOf(site)).filter(Boolean).filter(n => !themeTokens.fontParams(site.theme).some(p => p.startsWith('family=' + encodeURIComponent(n).replace(/%20/g, '+') + ':'))).filter((n, i, a) => a.indexOf(n) === i);
    const fontsHref = 'https://fonts.googleapis.com/css2?family=' + fontFamilies.join('&family=') + customFonts.map(n => '&' + fonts.familyParam(n)).join('') + '&display=swap'; %>
   <%# fonts load without blocking the first paint; the system font shows meanwhile %>
   <link rel="preload" as="style" href="<%= fontsHref %>" onload="this.onload=null;this.rel='stylesheet'">
@@ -275,6 +279,7 @@
     <% if (site.theme.headingCase === 'uppercase') { %>h1, h2, h3, nav.site-nav .brand { text-transform: uppercase !important; }<% } else if (site.theme.headingCase === 'none') { %>h1, h2, h3, nav.site-nav .brand { text-transform: none !important; }<% } %>
   </style>
   <link rel="stylesheet" href="<%= _sx ? '' : '/' %>sg-site.css<%= _sx ? '' : '?v=' + siteCssV %>">
+  <% const _tkCss = themeTokens.css(site.theme); if (_tkCss) { %><style id="sg-tokens"><%- _tkCss.replace(/<\//g, '<\\/') %></style><% } %>
   <script>/* one shared scroll listener: the page's effects hand it their work (sgOnScroll(fn)), and it runs them together once a frame while the page scrolls or resizes */window.sgOnScroll=function(){var f=[],r=0,run=function(){r=0;for(var i=0;i<f.length;i++)try{f[i]()}catch(e){}},ask=function(){if(!r)r=requestAnimationFrame(run)};addEventListener('scroll',ask,{passive:true});addEventListener('resize',ask);return function(fn){f.push(fn)}}();</script>
   <%- include('_lookfeel-head', { site }) %>
   <% const _cardCss = cardLayouts.css(site.theme); if (_cardCss) { %><style id="sg-cards"><%- _cardCss %></style><% } %>
@@ -393,7 +398,7 @@
        const _csEnd = customTail.filter(i => i.family !== 'custom' || i.after === 'end' || _csAt(i) < 0);
        // content blocks that are blocks of this page are drawn in their spot, not again at the top or bottom
        const _mixBlk = ((site.theme && site.theme.mix) || []).filter(m => m && m.k === 'blk').map(m => m.v); %>
-    <% mixHome.items.forEach((it, n) => { const _pin = pinFx.attrs(it.pin), _film = filmFx.attrs(it.film, site.theme), _ix = imgFx.attrs(it.imgfx), _ht = heightFx.attrs(it.height), _gl = glassFx.attrs(it.glass); %><div class="sg-mix<%= _pin.cls %><%= _film.cls %><%= _ix.cls %><%= _ht.cls %><%= _gl.cls %>" data-mix-i="<%= it.i %>" data-mix-f="<%= it.f %>"<% if (it.xfx) { %> data-xfx="<%= it.xfx.join(' ') %>"<% } %><% if (_pin.style || _film.style || _ht.style) { %> style="<%= [_pin.style, _film.style, _ht.style].filter(Boolean).join(' ') %>"<% } %>><% if (it.lib) { %><%- include('_lib-section', { item: it.lib }) %><% } else if (it.blk) { %><%- include('_blocks', { site, only: it.blk }) %><% } else { %><%- it.html %><% } %></div>
+    <% mixHome.items.forEach((it, n) => { const _pin = pinFx.attrs(it.pin), _film = filmFx.attrs(it.film, site.theme), _ix = imgFx.attrs(it.imgfx), _ht = heightFx.attrs(it.height), _gl = glassFx.attrs(it.glass); %><div class="sg-mix<%= _pin.cls %><%= _film.cls %><%= _ix.cls %><%= _ht.cls %><%= _gl.cls %>"<% if (it.a) { %> id="<%= it.a %>"<% } %> data-mix-i="<%= it.i %>" data-mix-f="<%= it.f %>"<% if (it.xfx) { %> data-xfx="<%= it.xfx.join(' ') %>"<% } %><% if (_pin.style || _film.style || _ht.style) { %> style="<%= [_pin.style, _film.style, _ht.style].filter(Boolean).join(' ') %>"<% } %>><% if (it.lib) { %><%- include('_lib-section', { item: it.lib }) %><% } else if (it.blk) { %><%- include('_blocks', { site, only: it.blk }) %><% } else { %><%- it.html %><% } %></div>
     <% if (n === 0) { %><%- include('_blocks', { site, place: 'top', skipIds: _mixBlk }) %><% } %>
     <% customTail.filter(i => i.after !== 'end' && _csAt(i) === n).forEach(i => { %><%- include('_lib-section', { item: i }) %>
     <% }) %>
@@ -1242,7 +1247,8 @@
     </section>
   <% } %>
 
-  <% if (page !== 'contact' && page !== 'thank-you' && page !== 'review' && page !== 'notfound' && !isLegalPage && !isCalcPage && !(sigHome && sigHome.sections.includes('cta'))) { %>
+  <% if (page !== 'contact' && page !== 'thank-you' && page !== 'review' && page !== 'notfound' && !isLegalPage && !isCalcPage && !(sigHome && sigHome.sections.includes('cta')) && !(page === 'home' && mixHome && mixHome.items.some(it => it.blk && ((site.sections.blocks || {}).items || []).some(b => b.id === it.blk && b.type === 'cta')))) { %>
+    <%# a Blocks home page with its own closing band (a Call to action block) doesn't get this generic one too (Leo, 2026-11-10) %>
     <section class="cta-band">
       <h2 data-animate="fade-up">Ready to get started?</h2>
       <p data-animate="fade-up">Reach out today and we'll be happy to help.</p>

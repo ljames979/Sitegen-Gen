@@ -168,6 +168,10 @@
       var i = document.querySelector('[name=' + x[0] + ']'), h = i && parseHex(i.value);
       if (h) out.push([h, x[1]]);
     });
+    // the site's theme tokens (named colors), from the Theme tokens panel or a page that lists them
+    var tk = document.querySelector('[name=theme_tokens_json]') || document.getElementById('sg-theme-tokens'), list = [];
+    try { var j = tk && JSON.parse(tk.value || tk.textContent || 'null'); list = (j && j.on !== false && Array.isArray(j.colors)) ? j.colors : []; } catch (e) { list = []; }
+    list.slice(0, 32).forEach(function (c) { var h = parseHex(c && c.hex); if (h && !out.some(function (o) { return o[0] === h; })) out.push([h, 'Theme: ' + String(c.key || '').slice(0, 24)]); });
     return out;
   }
 

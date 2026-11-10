@@ -70,6 +70,7 @@ const picBoxes = require('./picboxes');
 const textStyles = require('./textstyles');
 const elStyles = require('./elstyles');
 const watermark = require('./watermark');   // big faint icons behind a block or card (Leo, 2026-11-09)
+const themeTokens = require('./themetokens');   // the site's own named colors, fonts and button styles (Leo, 2026-11-10)
 const designLab = require('./designlab');
 const brandKit = require('./brandkit');
 const siteScore = require('./score');
@@ -201,6 +202,7 @@ app.locals.reviewCard = reviewCard;
 app.locals.twinPhotos = twinPhotos;
 app.locals.ringCard = ringCard;
 app.locals.decoCard = decoCard;
+app.locals.themeTokens = themeTokens;
 app.locals.shapeForm = shapeForm;
 app.locals.framedPhoto = framedPhoto;
 app.locals.roundPhoto = roundPhoto;
@@ -1508,6 +1510,10 @@ app.post('/sites/:id/edit', requireAuth, loadOwnedSite, (req, res) => {
   // photos changed in the photo editor keep their originals and changes (saved by the editor itself)
   if ((req.site.sections || {}).photoEdits) sections.photoEdits = photoedit.cleanEdits(req.site.sections.photoEdits);
   const theme = parseThemeFromBody(b);
+  // theme tokens (named colors, fonts, buttons): kept when the save doesn't carry them; while they are on they set the
+  // brand colors, fonts and button shape the rest of SiteGen reads
+  Object.assign(theme, themeTokens.parse(b, req.site.theme));
+  Object.assign(theme, themeTokens.linked(theme));
   // Scroll Smoother and Split text are set in the Design lab, so an editor save keeps them as they are
   Object.assign(theme, keptMotion(req.site.theme, b));
   const layout = parseLayoutFromBody(b);

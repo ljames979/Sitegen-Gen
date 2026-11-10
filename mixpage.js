@@ -65,6 +65,7 @@ function clean(list) {
     if (k === 'lib' && gradients.cleanMixBg(b.bg)) c.bg = gradients.cleanMixBg(b.bg);   // a gradient background (gradients.js)
     const xfx = extraFx.forBlock(b.xfx, f);   // More effects switched on for this block alone (extrafx.js)
     if (xfx.length) c.xfx = xfx;
+    if (/^[a-z][a-z0-9-]{0,30}$/.test(String(b.a || ''))) c.a = b.a;   // its own page anchor, e.g. "book" so #book links land on it (Leo, 2026-11-10)
     out.push(c);
     if (out.length >= MAX) break;
   }
@@ -238,7 +239,7 @@ function render(ctx, blocks) {
   list.forEach((b, i) => {
     const n = items.length;
     draw(b, i);
-    if (items.length > n) { sections.push(typeOf(b)); if (b.pin) items[n].pin = b.pin; if (b.film) items[n].film = b.film; if (b.imgfx) items[n].imgfx = b.imgfx; if (b.height) items[n].height = b.height; if (b.glass) items[n].glass = b.glass; if (b.xfx) items[n].xfx = b.xfx; }
+    if (items.length > n) { sections.push(typeOf(b)); if (b.pin) items[n].pin = b.pin; if (b.film) items[n].film = b.film; if (b.imgfx) items[n].imgfx = b.imgfx; if (b.height) items[n].height = b.height; if (b.glass) items[n].glass = b.glass; if (b.xfx) items[n].xfx = b.xfx; if (b.a) items[n].a = b.a; }
   });
   // the reset keeps SiteGen's heading rule off the Signature pieces
   if (css.length) css.unshift(':where(.sg-atelier) h1,:where(.sg-atelier) h2,:where(.sg-atelier) h3,:where(.sg-atelier) h4{color:inherit;font-family:inherit;line-height:inherit}');
