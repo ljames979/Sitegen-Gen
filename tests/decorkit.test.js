@@ -60,3 +60,22 @@ test('nothing to copy gives no kit, and junk is cleaned away', () => {
   assert.strictEqual(decorKit.capture({ theme: {}, sections: {} }), null);
   assert.strictEqual(decorKit.clean({ scenes: [{ at: '<script>', scene: 'fence:glassblue:l' }] }), null);
 });
+
+test('the generator decorates a pet business home page, and leaves others alone', () => {
+  const autosite = require('../autosite');
+  const mk = () => ({ name: 'Paws Spa', theme: { primaryColor: '#7a3e9d', accentColor: '#f2b705' }, sections: {
+    hero: { headline: 'Grooming', ctaText: 'Book' }, about: { heading: 'About', text: 'We groom dogs and cats.' },
+    services: { items: [{ title: 'Bath', description: 'A full bath' }, { title: 'Trim', description: 'A tidy trim' }] },
+    testimonials: { items: [] }, faq: { items: [{ question: 'Do you take cats?', answer: 'Yes.' }] }, contact: { phone: '555' }, meta: { city: 'Austin' } } });
+  const site = mk();
+  const p = autosite.plan(site, { industryId: 'pet-grooming', label: 'Pet grooming', gallery: ['/uploads/a.jpg', '/uploads/b.jpg', '/uploads/c.jpg', '/uploads/d.jpg'], colors: { primary: '#7a3e9d', accent: '#f2b705' } });
+  assert.ok(p.mix && p.mix.length);
+  assert.ok(p.decor.length >= 2, p.decor.join('; '));
+  assert.ok(p.mix.some(m => m.scene === 'grass:garden:m'));
+  assert.strictEqual(site.sections.texts.wmarks[0].color, '#7a3e9d');
+  autosite.recolorDecor(site.sections, { primary: '#7a3e9d' }, { primary: '#112233' });
+  assert.strictEqual(site.sections.texts.wmarks[0].color, '#112233');
+  const other = mk();
+  const q = autosite.plan(other, { industryId: 'plumbing', label: 'Plumbing', gallery: [], colors: { primary: '#7a3e9d', accent: '#f2b705' } });
+  assert.deepStrictEqual(q.decor, []);
+});
