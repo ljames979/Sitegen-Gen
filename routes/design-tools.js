@@ -10,6 +10,7 @@ module.exports = function (app, deps) {
     syncMixBlocks
   } = deps;
   const inlineEdit = require('../inlineedit');
+  const decorKit = require('../decorkit');
   const textBoxes = require('../textboxes'), textStyles = require('../textstyles'), elStyles = require('../elstyles'), picBoxes = require('../picboxes');
 
   // ---- show the client: pitch mode, three designs side by side, a private preview link ----
@@ -237,7 +238,13 @@ module.exports = function (app, deps) {
   const kitRows = (userId) => db.prepare('SELECT id, name, data, created_at FROM brand_kits WHERE user_id = ? ORDER BY id DESC').all(userId)
     .map(r => ({ id: r.id, name: r.name, created_at: r.created_at, kit: brandKit.cleanKit(JSON.parse(r.data || '{}'), isSafeUrl) }));
   function renderBrand(req, res, extra) {
-    res.render('brand', { site: req.site, kits: kitRows(req.session.userId), draft: null, error: '', done: str(req.query.done, 20), shapes: designLab.SHAPES, now: designLab.current(req.site.theme), ...extra });
+    // the owner's other sites that have decorations to copy (Decorations kit, decorkit.js)
+    const others = db.prepare('SELECT id, name, theme, sections FROM sites WHERE user_id = ? AND id != ? ORDER BY updated_at DESC LIMIT 200').all(req.session.userId, req.site.id)
+      .map(r => { let kit = null; try { kit = decorKit.capture({ theme: JSON.parse(r.theme || '{}'), sections: JSON.parse(r.sections || '{}') }); } catch { /* a broken row has nothing to copy */ } return { id: r.id, name: r.name, kit }; })
+      .filter(r => r.kit).map(r => ({ id: r.id, name: r.name, summary: decorKit.summary(r.kit) }));
+    const own = decorKit.capture(req.site);
+    res.render('brand', { site: req.site, kits: kitRows(req.session.userId), draft: null, error: '', done: str(req.query.done, 20), shapes: designLab.SHAPES, now: designLab.current(req.site.theme),
+      decorOthers: others, decorOwn: own ? decorKit.summary(own) : '', decorSummary: decorKit.summary, report: str(req.query.r, 40), ...extra });
   }
   function saveKit(userId, name, kit) {
     db.prepare('INSERT INTO brand_kits (user_id, name, data) VALUES (?, ?, ?)').run(userId, str(name, 60) || 'Brand kit', JSON.stringify(brandKit.cleanKit(kit, isSafeUrl)));
@@ -282,21 +289,35 @@ module.exports = function (app, deps) {
     const sections = share ? { ...site.sections, seo: { ...(site.sections.seo || {}), shareImage: share } } : site.sections;
     db.prepare("UPDATE sites SET theme = ?, sections = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(theme), JSON.stringify(sections), site.id);
     invalidateSiteCache(site);
-    if (b.save_kit === '1') saveKit(req.session.userId, b.kit_name || site.name, brandKit.fromTheme(theme));
+    if (b.save_kit === '1') saveKit(req.session.userId, b.kit_name || site.name, brandKit.fromTheme(theme, sections));
     res.redirect(`/sites/${site.id}/brand?done=${b.save_kit === '1' ? 'applied-saved' : 'applied'}`);
   });
   app.post('/sites/:id/brand/save', requireAuth, loadOwnedSite, (req, res) => {
-    saveKit(req.session.userId, req.body.kit_name || req.site.name, brandKit.fromTheme(req.site.theme));
+    saveKit(req.session.userId, req.body.kit_name || req.site.name, brandKit.fromTheme(req.site.theme, req.site.sections));
     res.redirect(`/sites/${req.site.id}/brand?done=saved`);
   });
   app.post('/sites/:id/brand/kits/:kitId/apply', requireAuth, loadOwnedSite, (req, res) => {
     const row = db.prepare('SELECT data FROM brand_kits WHERE id = ? AND user_id = ?').get(req.params.kitId, req.session.userId);
     if (!row) return res.redirect(`/sites/${req.site.id}/brand`);
     saveVersion(req.site.id, req.site.theme, req.site.sections, req.site.layout, 'Before brand kit');
-    const theme = brandKit.applyKit(req.site.theme, brandKit.cleanKit(JSON.parse(row.data || '{}'), isSafeUrl));
-    db.prepare("UPDATE sites SET theme = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(theme), req.site.id);
+    const kit = brandKit.cleanKit(JSON.parse(row.data || '{}'), isSafeUrl);
+    let theme = brandKit.applyKit(req.site.theme, kit), sections = req.site.sections, r = '';
+    // the kit's decorations too, unless the owner unticked them
+    if (kit.decor && req.body.decor !== '0') { const d = decorKit.apply({ theme, sections }, kit.decor); theme = d.theme; sections = d.sections; r = `&r=${d.report.added}-${d.report.skipped}`; }
+    db.prepare("UPDATE sites SET theme = ?, sections = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(theme), JSON.stringify(sections), req.site.id);
     invalidateSiteCache(req.site);
-    res.redirect(`/sites/${req.site.id}/brand?done=kit`);
+    res.redirect(`/sites/${req.site.id}/brand?done=kit${r}`);
+  });
+  // Copy another site's decorations (scene decor, pet patterns, watermarks, card looks) onto this one
+  app.post('/sites/:id/brand/copy-decor', requireAuth, loadOwnedSite, (req, res) => {
+    const row = db.prepare('SELECT theme, sections FROM sites WHERE id = ? AND user_id = ?').get(Number(req.body.from_site) || 0, req.session.userId);
+    const kit = row ? decorKit.capture({ theme: JSON.parse(row.theme || '{}'), sections: JSON.parse(row.sections || '{}') }) : null;
+    if (!kit) return res.redirect(`/sites/${req.site.id}/brand?done=decor-none`);
+    saveVersion(req.site.id, req.site.theme, req.site.sections, req.site.layout, 'Before copying decorations');
+    const d = decorKit.apply(req.site, kit);
+    db.prepare("UPDATE sites SET theme = ?, sections = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(d.theme), JSON.stringify(d.sections), req.site.id);
+    invalidateSiteCache(req.site);
+    res.redirect(`/sites/${req.site.id}/brand?done=decor&r=${d.report.added}-${d.report.skipped}`);
   });
   app.post('/sites/:id/brand/kits/:kitId/delete', requireAuth, loadOwnedSite, (req, res) => {
     db.prepare('DELETE FROM brand_kits WHERE id = ? AND user_id = ?').run(req.params.kitId, req.session.userId);
