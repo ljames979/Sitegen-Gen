@@ -5,6 +5,7 @@
 // The pictures are plain wireframes drawn here (no images, no outside icons).
 const mixPage = require('./mixpage');
 const aboutBlocks = require('./aboutblocks');
+const decoCard = require('./decocard');
 
 const GROUPS = [
   ['tops', 'Page tops and photo with words', '#2563eb', 'Page tops'],
@@ -51,6 +52,7 @@ const LIST = [
   ['socialstrip', 'social', aboutBlocks.SPECS.socialstrip.desc],
   ['numcards', 'words', aboutBlocks.SPECS.numcards.desc],
   ['tipcards', 'words', aboutBlocks.SPECS.tipcards.desc],
+  ['decocard', 'words', 'Your words framed in a card like a business card or an invitation: royal, minimal, art deco, stamp, ribbon or frosted glass'],
   ['crossband', 'tops', 'A tall photo and a colored card with a checklist, over a color band'],
   ['advice', 'tops', 'A big photo, a heading, and points that each have a small round photo'],
   ['shapes', 'tops', 'Big rolling words on the left, photos in rounded shapes on the right'],
@@ -98,6 +100,7 @@ const PICS = {
   phototabs: 'n 3 4 26 22; p 7 8 28 22; K 31 3 26 20; T 35 8 16; t 35 14 18; b 35 17 10; p 7 32 7 6; p 16 32 7 6; p 25 32 7 6',
   reviewcard: 'a 0 0 60 40; k 3 14 54 22; n 6 4 18 30; p 8 2 14 32; T 28 17 18; n 28 21 6 1; o 30 26 2.5; t 34 25 18; o 30 32 2.5; t 34 31 16',
   twinphotos: 'a 30 0 26 40; H 4 5 24; t 4 13 20; t 4 17 18; n 4 22 14 14; p 4 22 14 14; n 20 22 14 14; p 20 22 14 14; t 40 26 10; t 40 30 12; t 40 34 9',
+  decocard: 'k 9 4 42 32; a 12 7 36 26; T 22 15 16; t 19 20 22; t 21 24 18; b 25 29 10',
   ringcard: 'a 0 0 60 40; o 7 9 6; o 52 32 5; k 6 8 24 24; T 9 13 16; T 9 17 12; t 9 23 18; t 9 26 16; b 9 30 9; n 30 8 24 24; p 30 8 24 24',
   shapeform: 'a 0 0 60 40; o 9 9 6; n 6 26 22 11; n 26 5 26 26; p 30 7 18 24; o 50 31 5; k 10 7 18 27; T 13 11 12; t 13 16 12; t 13 20 12; t 13 24 12; b 13 29 12',
   framedphoto: 'n 0 0 60 40; a 0 0 60 40; n 34 4 22 22; n 4 20 20 16; p 9 7 40 24; k 32 21 18 16; T 35 24 11; t 35 28 12; b 35 32 8',
@@ -213,7 +216,9 @@ const nameOf = (type) => mixPage.BLOCK_KINDS[type] || 'Photo + text';
 function groups() {
   return GROUPS.map(([id, label, color, short]) => ({
     id, label, color, short,
-    items: LIST.filter(x => x[1] === id).map(([type, , desc]) => ({ type, name: nameOf(type), desc, pic: pic(type, color) }))
+    items: LIST.filter(x => x[1] === id).map(([type, , desc]) => ({ type, name: nameOf(type), desc, pic: pic(type, color),
+      // the Decorative card shows one card per card style in the picker, each with its own little picture
+      styles: type === 'decocard' ? decoCard.STYLES.map(([sid, sname, sdesc]) => ({ id: sid, name: sname, desc: sdesc, pic: decoCard.thumb(sid, color) })) : null }))
   }));
 }
 // what the page sections list needs for one block type: { name, group, groupLabel, color, pic }

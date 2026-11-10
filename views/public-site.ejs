@@ -240,7 +240,7 @@
    if (extraTheme && !hFont && extraTheme.heading.param && !fontFamilies.includes(extraTheme.heading.param)) fontFamilies.push(extraTheme.heading.param);
    if (extraTheme && extraTheme.body && !bFont && extraTheme.body.param && !fontFamilies.includes(extraTheme.body.param)) fontFamilies.push(extraTheme.body.param);
    if (mixHome) mixHome.fonts.forEach(f => { if (f && !fontFamilies.includes(f)) fontFamilies.push(f); });
-   const customFonts = [hFont, bFont].filter(Boolean).filter((n, i, a) => a.indexOf(n) === i);
+   const customFonts = [hFont, bFont].concat(decoCard.fontsOf(site)).filter(Boolean).filter((n, i, a) => a.indexOf(n) === i);
    const fontsHref = 'https://fonts.googleapis.com/css2?family=' + fontFamilies.join('&family=') + customFonts.map(n => '&' + fonts.familyParam(n)).join('') + '&display=swap'; %>
   <%# fonts load without blocking the first paint; the system font shows meanwhile %>
   <link rel="preload" as="style" href="<%= fontsHref %>" onload="this.onload=null;this.rel='stylesheet'">
@@ -1336,8 +1336,10 @@
   <% const _tsPage = textBoxes.pageId(pageKey, { service: typeof service !== 'undefined' ? service : null, area: typeof area !== 'undefined' ? area : null, post: typeof post !== 'undefined' ? post : null, extra: typeof extra !== 'undefined' ? extra : null }), _ts = textStyles.forPage(site, _tsPage), _tsFont = textStyles.fontLink(_ts); %>
   <% if (_tsFont) { %><link rel="stylesheet" href="<%= _tsFont %>" data-sg-tsfonts><% } %>
   <% if (_ts.length || (typeof preview !== 'undefined' && preview)) { %><script type="application/json" id="sg-ts-data"><%- textStyles.data(_ts) %></script><script data-sg-ts><%- textStyles.SCRIPT.replace(/<\//g, '<\\/') %></script><% } %>
-  <% const _es = elStyles.forPage(site, _tsPage); %>
-  <% if (_es.length || (typeof preview !== 'undefined' && preview)) { %><script type="application/json" id="sg-es-data"><%- elStyles.data(_es) %></script><script data-sg-es><%- elStyles.SCRIPT.replace(/<\//g, '<\\/') %></script><% } %>
+  <% const _es = elStyles.forPage(site, _tsPage), _wm = watermark.forPage(site, _tsPage); %>
+  <% if (_es.length || _wm.length || (typeof preview !== 'undefined' && preview)) { %><script type="application/json" id="sg-es-data"><%- elStyles.data(_es) %></script><script data-sg-es><%- elStyles.SCRIPT.replace(/<\//g, '<\\/') %></script><% } %>
+  <%# watermarks (watermark.js): put in after the pieces are named, so they never shift Move & size's names %>
+  <% if (_wm.length || (typeof preview !== 'undefined' && preview)) { %><script type="application/json" id="sg-wm-data"><%- watermark.data(_wm) %></script><script data-sg-wm><%- watermark.SCRIPT.replace(/<\//g, '<\\/') %></script><% } %>
 
   <% const bannerMode = legalLib.bannerMode(site, trackingOn, trackingMode); %>
   <% if (bannerMode) { %>

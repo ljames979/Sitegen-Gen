@@ -62,16 +62,11 @@ async function photoBytes(src) {
   return buf;
 }
 
-// Cut out one photo: returns { url } of a new see-through WebP in the uploads, the same size and framing as the photo
-// (so it sits exactly where the photo did), up to 1920 px wide.
-async function cutout(src) {
+// how much of each pixel is the subject (0..255), one byte per pixel, for a picture W x H px (any format sharp reads)
+async function alphaFor(input, W, H) {
   if (!ready()) throw new Error('Cutting out needs ' + missing().join(' and ') + ': run "npm install" in the SiteGen folder, then restart SiteGen');
-  const input = await photoBytes(src);
-  const base = sharp(input, { failOn: 'none' }).rotate();
-  const meta = await base.clone().resize({ width: 1920, height: 1920, fit: 'inside', withoutEnlargement: true }).toBuffer({ resolveWithObject: true });
-  const W = meta.info.width, H = meta.info.height;
   // the model looks at a 1024 x 1024 copy; colors scaled to 0..1 and centered (mean .5, spread 1)
-  const px = await sharp(meta.data).removeAlpha().resize(SIZE, SIZE, { fit: 'fill' }).raw().toBuffer();
+  const px = await sharp(input).removeAlpha().resize(SIZE, SIZE, { fit: 'fill' }).raw().toBuffer();
   const t = new Float32Array(3 * SIZE * SIZE);
   for (let i = 0; i < SIZE * SIZE; i++) for (let c = 0; c < 3; c++) t[c * SIZE * SIZE + i] = px[i * 3 + c] / 255 - 0.5;
   const s = await getSession();
@@ -81,11 +76,22 @@ async function cutout(src) {
   const a = Buffer.alloc(SIZE * SIZE);
   // scaled to 0..1, with the faintest edge haze (the old backdrop showing through) dropped
   for (let i = 0; i < SIZE * SIZE; i++) a[i] = Math.round(Math.max(0, Math.min(1, ((m[i] - lo) / ((hi - lo) || 1) - .06) / .9)) * 255);
-  const alpha = await sharp(a, { raw: { width: SIZE, height: SIZE, channels: 1 } }).resize(W, H, { fit: 'fill' }).toColourspace('b-w').raw().toBuffer();
+  return sharp(a, { raw: { width: SIZE, height: SIZE, channels: 1 } }).resize(W, H, { fit: 'fill' }).toColourspace('b-w').raw().toBuffer();
+}
+
+// Cut out one photo: returns { url } of a new see-through WebP in the uploads, the same size and framing as the photo
+// (so it sits exactly where the photo did), up to 1920 px wide.
+async function cutout(src) {
+  if (!ready()) throw new Error('Cutting out needs ' + missing().join(' and ') + ': run "npm install" in the SiteGen folder, then restart SiteGen');
+  const input = await photoBytes(src);
+  const base = sharp(input, { failOn: 'none' }).rotate();
+  const meta = await base.clone().resize({ width: 1920, height: 1920, fit: 'inside', withoutEnlargement: true }).toBuffer({ resolveWithObject: true });
+  const W = meta.info.width, H = meta.info.height;
+  const alpha = await alphaFor(meta.data, W, H);
   const rgb = await sharp(meta.data).removeAlpha().raw().toBuffer();
   const name = 'cut-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) + '.webp';
   await sharp(rgb, { raw: { width: W, height: H, channels: 3 } }).joinChannel(alpha, { raw: { width: W, height: H, channels: 1 } }).webp({ quality: 88, alphaQuality: 100 }).toFile(path.join(UPLOADS, name));
   return { url: '/uploads/' + name, width: W, height: H };
 }
 
-module.exports = { cutout, ready, missing, MODEL, MODEL_URL, HOSTS };
+module.exports = { cutout, alphaFor, photoBytes, UPLOADS, ready, missing, MODEL, MODEL_URL, HOSTS };

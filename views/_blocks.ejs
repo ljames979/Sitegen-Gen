@@ -775,6 +775,7 @@
       </div>
     </section>
   <% } %>
+  <% if (blk.type === 'decocard') { %><%- decoCard.html(site, blk, { pv: _pv, bg, ec }) %><% } %>
   <% if (blk.type === 'ringcard') { %>
     <% const rg = ringCard.view(site, blk, _mbSvc); %>
     <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-ringcard blk-bg-<%= bg %><%= ec %><%= rg.bg ? ' sg-rg-ownbg' : '' %>" style="--rg-c: <%= rg.color %>; --rg-h: <%= rg.headColor %>; --rg-on: <%= rg.colorOn %>;<%= rg.bg ? ' --rg-bg: ' + rg.bg + '; --edge: ' + rg.bg + ';' : '' %>">

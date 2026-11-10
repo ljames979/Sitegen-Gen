@@ -58,6 +58,7 @@ const photoTabs = require('./phototabs');
 const reviewCard = require('./reviewcard');
 const twinPhotos = require('./twinphotos');
 const ringCard = require('./ringcard');
+const decoCard = require('./decocard');
 const shapeForm = require('./shapeform');
 const framedPhoto = require('./framedphoto');
 const roundPhoto = require('./roundphoto');
@@ -68,6 +69,7 @@ const textBoxes = require('./textboxes');
 const picBoxes = require('./picboxes');
 const textStyles = require('./textstyles');
 const elStyles = require('./elstyles');
+const watermark = require('./watermark');   // big faint icons behind a block or card (Leo, 2026-11-09)
 const designLab = require('./designlab');
 const brandKit = require('./brandkit');
 const siteScore = require('./score');
@@ -88,6 +90,7 @@ const payments = require('./payments');
 const images = require('./images');
 const { optimizeUpload } = images;
 const cutout = require('./cutout');
+const photoedit = require('./photoedit');
 const { hasAiProvider, generateCopy, generateGroundedCopy, complete: aiComplete } = require('./ai');
 const chatedit = require('./chatedit');
 const accents = require('./accents');
@@ -197,6 +200,7 @@ app.locals.photoTabs = photoTabs;
 app.locals.reviewCard = reviewCard;
 app.locals.twinPhotos = twinPhotos;
 app.locals.ringCard = ringCard;
+app.locals.decoCard = decoCard;
 app.locals.shapeForm = shapeForm;
 app.locals.framedPhoto = framedPhoto;
 app.locals.roundPhoto = roundPhoto;
@@ -211,6 +215,7 @@ app.locals.petArt = require('./petart');
 app.locals.shapeArt = require('./public/shapeart');
 app.locals.textStyles = textStyles;
 app.locals.elStyles = elStyles;
+app.locals.watermark = watermark;
 app.set('view engine', 'ejs');
 app.set('views', __dirname + '/views');
 app.set('trust proxy', 1);
@@ -922,7 +927,7 @@ function parseSectionsFromBody(b) {
     },
     custom: { items: parseCustomFromBody(b) },
     blocks: { items: parseBlocksFromBody(b) },
-    texts: { items: textBoxes.fromBody(b.texts_json), styles: textStyles.fromBody(b.tstyles_json), elems: elStyles.fromBody(b.estyles_json), pics: picBoxes.fromBody(b.pics_json) },
+    texts: { items: textBoxes.fromBody(b.texts_json), styles: textStyles.fromBody(b.tstyles_json), elems: elStyles.fromBody(b.estyles_json), pics: picBoxes.fromBody(b.pics_json), wmarks: watermark.fromBody(b.wmarks_json) },
     trust: {
       badges: splitList(b.trust_badges, 40, 8),
       stats: ([]).concat(b.trust_stat_value || []).map((value, i) => ({
@@ -1156,7 +1161,7 @@ function parseThemeFromBody(b) {
 // editor, one entry per block; steps are one per line as "Title | text".
 // content blocks a site can have (hidden ones count too); was 20, which silently dropped new blocks (Leo, 2026-11-02)
 const MAX_BLOCKS = require('./blockcatalog').MAX_BLOCKS;
-const BLOCK_TYPES = ['photoText', 'steps', 'features', 'cta', 'chips', 'strip', 'split', 'pricing', 'team', 'stats', 'video', 'tabs', 'accordion', 'wall', 'cascade', 'photoBanner', 'beforeAfter', 'collage', 'trail', 'wave', 'bigwords', 'story', 'path', 'zoomword', 'morph', 'nodes', 'shapes', 'stack', 'herocard', 'aboutphone', 'thirds', 'mosaic', 'crossband', 'advice', 'photoblend', 'patterns', 'overlapcard', 'phototabs', 'reviewcard', 'twinphotos', 'ringcard', 'shapeform', 'framedphoto', 'roundphoto', 'photopairs', 'offsetphoto', 'aboutstory', 'aboutme', 'aboutbig', 'aboutfacts', 'aboutcollage', 'aboutnote', 'aboutpanel', 'socialshapes', 'socialphoto', 'socialcounts', 'socialonphoto', 'socialfeed', 'socialprofile', 'socialstrip', 'numcards', 'tipcards'];
+const BLOCK_TYPES = ['photoText', 'steps', 'features', 'cta', 'chips', 'strip', 'split', 'pricing', 'team', 'stats', 'video', 'tabs', 'accordion', 'wall', 'cascade', 'photoBanner', 'beforeAfter', 'collage', 'trail', 'wave', 'bigwords', 'story', 'path', 'zoomword', 'morph', 'nodes', 'shapes', 'stack', 'herocard', 'aboutphone', 'thirds', 'mosaic', 'crossband', 'advice', 'photoblend', 'patterns', 'overlapcard', 'phototabs', 'reviewcard', 'twinphotos', 'ringcard', 'shapeform', 'framedphoto', 'roundphoto', 'photopairs', 'offsetphoto', 'aboutstory', 'aboutme', 'aboutbig', 'aboutfacts', 'aboutcollage', 'aboutnote', 'aboutpanel', 'socialshapes', 'socialphoto', 'socialcounts', 'socialonphoto', 'socialfeed', 'socialprofile', 'socialstrip', 'numcards', 'tipcards', 'decocard'];
 const BLOCK_PAGES = ['home', 'about', 'services', 'testimonials', 'whyChoose', 'gallery', 'faq', 'blog', 'hours', 'contact'];
 function parseBlocksFromBody(b) {
   const cap = (v, n) => str(v, n);
@@ -1213,6 +1218,8 @@ function parseBlocksFromBody(b) {
         ? twinPhotos.cleanBody(str(col('block_body')[i], 6000))
         : type === 'ringcard'
         ? ringCard.cleanBody(str(col('block_body')[i], 4000))
+        : type === 'decocard'
+        ? decoCard.cleanBody(str(col('block_body')[i], 6000))
         : type === 'shapeform'
         ? shapeForm.cleanBody(str(col('block_body')[i], 2000))
         : type === 'framedphoto'
@@ -1246,7 +1253,7 @@ function parseBlocksFromBody(b) {
       imgfx: imgFx.clean(col('block_imgfx')[i]),
       height: heightFx.clean(col('block_height')[i])
     };
-    if (blk.heading || blk.body || blk.imageUrl || type === 'wall' || type === 'cascade' || ['collage', 'trail', 'wave', 'path', 'nodes', 'stack', 'herocard', 'aboutphone', 'thirds', 'mosaic', 'crossband', 'advice', 'photoblend', 'patterns', 'overlapcard', 'phototabs', 'reviewcard', 'twinphotos', 'ringcard', 'shapeform', 'framedphoto', 'roundphoto', 'photopairs', 'offsetphoto'].includes(type) || !!aboutBlocks.SPECS[type]) { ids.add(id); out.push(blk); }   // a wall, cascade, collage, trail, wave, photo cards or stacked cards shows the site's own content even when empty
+    if (blk.heading || blk.body || blk.imageUrl || type === 'wall' || type === 'cascade' || ['collage', 'trail', 'wave', 'path', 'nodes', 'stack', 'herocard', 'aboutphone', 'thirds', 'mosaic', 'crossband', 'advice', 'photoblend', 'patterns', 'overlapcard', 'phototabs', 'reviewcard', 'twinphotos', 'ringcard', 'shapeform', 'framedphoto', 'roundphoto', 'photopairs', 'offsetphoto', 'decocard'].includes(type) || !!aboutBlocks.SPECS[type]) { ids.add(id); out.push(blk); }   // a wall, cascade, collage, trail, wave, photo cards or stacked cards shows the site's own content even when empty
   });
   return out.slice(0, MAX_BLOCKS);
 }
@@ -1494,8 +1501,12 @@ app.post('/sites/:id/edit', requireAuth, loadOwnedSite, (req, res) => {
   if (b.tstyles_json === undefined) sections.texts.styles = textStyles.clean(((req.site.sections || {}).texts || {}).styles);
   // and so are the moves and sizes of any piece of a block (Move & size mode)
   if (b.estyles_json === undefined) sections.texts.elems = elStyles.clean(((req.site.sections || {}).texts || {}).elems);
+  // and so are the watermarks behind blocks and cards (Watermark mode)
+  if (b.wmarks_json === undefined) sections.texts.wmarks = watermark.clean(((req.site.sections || {}).texts || {}).wmarks);
   // and so are your own pictures (+ Add picture)
   if (b.pics_json === undefined) sections.texts.pics = picBoxes.clean(((req.site.sections || {}).texts || {}).pics);
+  // photos changed in the photo editor keep their originals and changes (saved by the editor itself)
+  if ((req.site.sections || {}).photoEdits) sections.photoEdits = photoedit.cleanEdits(req.site.sections.photoEdits);
   const theme = parseThemeFromBody(b);
   // Scroll Smoother and Split text are set in the Design lab, so an editor save keeps them as they are
   Object.assign(theme, keptMotion(req.site.theme, b));
@@ -1595,6 +1606,62 @@ const cutoutLimiter = rateLimit({ windowMs: 10 * 60 * 1000, limit: 60, standardH
 app.post('/sites/:id/cutout', requireAuth, loadOwnedSite, cutoutLimiter, express.json({ limit: '4kb' }), async (req, res) => {
   try { res.json({ ok: true, ...(await cutout.cutout(String((req.body || {}).url || '').trim())) }); }
   catch (e) { res.status(400).json({ ok: false, error: e.message || 'Could not cut out that photo.' }); }
+});
+// Photo editor (photoedit.js): Smart Select. prepare = the model looks at the photo once; mask = one click's outline;
+// subject = the main pet; image = the editor's working copy (same address as the site, so the editor can read pixels)
+const photoEditLimiter = rateLimit({ windowMs: 60 * 1000, limit: 600, standardHeaders: true, legacyHeaders: false });
+const photoEditErr = (res, e, msg) => res.status(400).json({ ok: false, error: (e && e.message) || msg });
+app.get('/sites/:id/photo-edit/status', requireAuth, loadOwnedSite, (req, res) => res.json({ ok: true, ready: photoedit.ready(), ...photoedit.status }));
+app.post('/sites/:id/photo-edit/prepare', requireAuth, loadOwnedSite, cutoutLimiter, express.json({ limit: '4kb' }), async (req, res) => {
+  try {
+    // a photo finished in the editor opens as its original, with its changes
+    const url = String((req.body || {}).url || '').trim();
+    const edit = photoedit.editFor(photoedit.cleanEdits((req.site.sections || {}).photoEdits), url);
+    res.json({ ok: true, ...(await photoedit.prepare(edit ? edit.src : url)), edit });
+  } catch (e) { photoEditErr(res, e, 'Could not open that photo.'); }
+});
+// Save: the finished photo was uploaded as usual (/upload); this keeps the original, the changes and their masks
+// a change's mask (black and white PNG, the editor's working size), kept with the uploads before Save
+app.post('/sites/:id/photo-edit/keep-mask', requireAuth, loadOwnedSite, photoEditLimiter, express.raw({ type: 'image/png', limit: '6mb' }), async (req, res) => {
+  try { res.json({ ok: true, url: await photoedit.saveMask(req.body) }); }
+  catch (e) { photoEditErr(res, e, 'A selection could not be saved.'); }
+});
+app.post('/sites/:id/photo-edit/save', requireAuth, loadOwnedSite, cutoutLimiter, express.json({ limit: '64kb' }), async (req, res) => {
+  try {
+    const b = req.body || {}, sections = req.site.sections || {};
+    const all = photoedit.cleanEdits(sections.photoEdits);
+    const id = photoedit.idOk(b.id) && all[b.id] ? b.id : nanoid(12).toLowerCase().replace(/[^a-z0-9]/g, 'x');
+    const masks = {};
+    for (const [mid, v] of Object.entries(b.masks || {}).slice(0, 60)) if (photoedit.idOk(mid) && /^\/uploads\/pe-[a-z0-9]+\.png$/.test(String(v))) masks[mid] = String(v);
+    const edit = photoedit.cleanEdit({ src: b.src, out: b.out, w: b.w, h: b.h, layers: b.layers, masks, at: new Date().toISOString() });
+    if (!edit) return res.status(400).json({ ok: false, error: 'Nothing to save.' });
+    all[id] = edit;
+    sections.photoEdits = photoedit.cleanEdits(all);
+    db.prepare("UPDATE sites SET sections = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(sections), req.site.id);
+    invalidateSiteCache(req.site);
+    res.json({ ok: true, id, edit: { id, ...edit } });
+  } catch (e) { photoEditErr(res, e, 'Could not save the photo.'); }
+});
+app.get('/sites/:id/photo-edit/full/:key', requireAuth, loadOwnedSite, (req, res) => {
+  const f = photoedit.imagePath(req.params.key, true);
+  if (!f) return res.status(404).json({ ok: false, error: 'Open the photo in the editor again' });
+  res.set('Cache-Control', 'private, max-age=3600'); res.type('png'); res.sendFile(f);
+});
+app.get('/sites/:id/photo-edit/image/:key', requireAuth, loadOwnedSite, (req, res) => {
+  const f = photoedit.imagePath(req.params.key);
+  if (!f) return res.status(404).json({ ok: false, error: 'Open the photo in the editor again' });
+  res.set('Cache-Control', 'private, max-age=3600'); res.type('png'); res.sendFile(f);
+});
+app.post('/sites/:id/photo-edit/mask', requireAuth, loadOwnedSite, photoEditLimiter, express.json({ limit: '8kb' }), async (req, res) => {
+  try {
+    const b = req.body || {};
+    const r = await photoedit.mask(String(b.key || ''), b.points, b.box && typeof b.box === 'object' ? b.box : null);
+    res.set('X-Sg-Score', String(r.score)); res.set('X-Sg-Area', r.area.toFixed(4)); res.type('png'); res.send(r.png);
+  } catch (e) { photoEditErr(res, e, 'Could not select that.'); }
+});
+app.post('/sites/:id/photo-edit/subject', requireAuth, loadOwnedSite, cutoutLimiter, express.json({ limit: '4kb' }), async (req, res) => {
+  try { res.type('png'); res.send(await photoedit.subject(String((req.body || {}).key || ''))); }
+  catch (e) { photoEditErr(res, e, 'Could not find the subject.'); }
 });
 app.post('/sites/:id/upload', requireAuth, loadOwnedSite, (req, res) => {
   upload.single('image')(req, res, async (err) => {

@@ -307,6 +307,7 @@
         <input type="hidden" name="texts_json" id="textsJson" value="<%= JSON.stringify(textBoxes.clean(((site.sections.texts || {}).items))) %>">
         <input type="hidden" name="tstyles_json" id="tstylesJson" value="<%= JSON.stringify(textStyles.clean(((site.sections.texts || {}).styles))) %>">
         <input type="hidden" name="estyles_json" id="estylesJson" value="<%= JSON.stringify(elStyles.clean(((site.sections.texts || {}).elems))) %>">
+        <input type="hidden" name="wmarks_json" id="wmarksJson" value="<%= JSON.stringify(watermark.clean(((site.sections.texts || {}).wmarks))) %>">
 
         <div class="section-block" data-tab="content" id="basicsBlock">
           <h3>Business basics</h3>
@@ -1079,6 +1080,7 @@
 
   <script src="/palette.js"></script>
   <script src="/shapeart.js"></script>
+  <script src="/photoedit.js"></script>
   <script src="/bgpick.js" defer></script>
   <script>
     const siteId = <%= site.id %>;
@@ -1446,6 +1448,12 @@
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-secondary cut-btn';
       b.title = 'Cut out the subject of this photo (pet, person or thing) and make its backdrop see-through';
       (row.querySelector('.pick-btn') || up).after(b);
+      // 🎨 Edit photo (photoedit.js): select any part of the photo; more photo tools join it step by step
+      if (window.SGPhotoEdit && !row.querySelector('.pe-btn')) {
+        const pe = document.createElement('button'); pe.type = 'button'; pe.className = 'btn-secondary pe-btn';
+        pe.textContent = '🎨 Edit photo'; pe.title = 'Open the photo editor: click any part of the photo (the pet, a towel, the background) to select it';
+        b.after(pe);
+      }
       cutLabel(row);
     }
     function cutLabel(row) {
@@ -1483,6 +1491,14 @@
         if (btn) btn.disabled = false;
       }
       if (typeof scheduleAutosave === 'function') scheduleAutosave();
+    });
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest('.pe-btn'); if (!b) return;
+      const url = b.closest('.upload-row').querySelector('input[type=url]'), v = url.value.trim();
+      if (!v) { statusEl.textContent = 'Add a photo first, then edit it'; return; }
+      // Save photo puts the finished photo in the box (the original and the changes stay with the site)
+      const onSave = (u) => { url.value = u; url.dispatchEvent(new Event('input', { bubbles: true })); url.dispatchEvent(new Event('change', { bubbles: true })); scheduleAutosave(); statusEl.textContent = 'Photo saved with your changes. 🎨 Edit photo opens them again'; };
+      try { window.SGPhotoEdit.open({ siteId, src: v, onSave }); } catch (err) { statusEl.textContent = err.message || 'Could not open the photo editor'; }
     });
     document.addEventListener('click', async (e) => {
       const b = e.target.closest('.cut-btn'); if (!b) return;
@@ -2555,6 +2571,7 @@
           (others.length ? '<button type="button" data-ph="pick" aria-expanded="false">Use one of this site\'s photos</button>' : '') +
           (field.closest('.upload-row').querySelector('.pick-btn') ? '<button type="button" data-ph="find">Find a free photo</button>' : '') +
           (field.closest('.upload-row').querySelector('.cut-btn') && field.value.trim() ? (isCut(field.value) ? (cutOrig.get(field.value.trim()) ? '<button type="button" data-ph="uncut">↩ Undo cut</button>' : '') : '<button type="button" data-ph="cut" title="Cut out the subject and make the backdrop see-through">✂ Cut out</button>') : '') +
+          (window.SGPhotoEdit && field.value.trim() ? '<button type="button" data-ph="edit" title="Open the photo editor">🎨 Edit photo</button>' : '') +
           '<button type="button" data-ph="close">Done</button>';
         doc.body.appendChild(bar);
         const place = () => {
@@ -2570,6 +2587,7 @@
           const b = ev.target.closest('button'); if (!b) return;
           ev.preventDefault(); ev.stopPropagation();
           if (b.dataset.ph === 'close') return endPhoto();
+          if (b.dataset.ph === 'edit') { const v = field.value.trim(); endPhoto(); try { window.SGPhotoEdit.open({ siteId, src: v, onSave: (u) => setPhoto(field, u) }); } catch (err) { statusEl.textContent = err.message || 'Could not open the photo editor'; } return; }
           if (b.dataset.ph === 'find') { endPhoto(); return field.closest('.upload-row').querySelector('.pick-btn').click(); }   // the photo search opens over the editor
           if (b.dataset.pick != null) return setPhoto(field, others[+b.dataset.pick]);
           if (b.dataset.ph === 'uncut') return setPhoto(field, cutOrig.get(field.value.trim()));
@@ -3051,6 +3069,9 @@
       });
     }
   </script>
+  <%# Watermark mode (watermark.js, public/watermark-edit.js) %>
+  <script type="application/json" id="sg-wm-cfg"><%- watermark.editorData() %></script>
+  <script src="/watermark-edit.js"></script>
 
 <%# Word styling: pick words in any text box and make them bigger, another font, a color, bold or italic (wordstyle.js) %>
 <div id="wsBar" class="ws-bar" hidden role="dialog" aria-label="Style the chosen words">

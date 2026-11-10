@@ -2346,3 +2346,129 @@ a.sg-so-count:hover .sg-so-ring { transform: scale(1.06); }
   .sg-pt-cards, .sg-pt-photo-right .sg-pt-cards { grid-column: 1; grid-row: 2; margin: -2rem .4rem 0; }
   .sg-pt-tabs, .sg-pt-photo-right .sg-pt-tabs { grid-column: 1; grid-row: 3; margin: 1rem .4rem 0; }
 }
+
+/* ---------- Decorative card block (decocard.js; Leo, 2026-11-09) ----------
+   Words framed in a card like a business card or an invitation, in six styles. Every border, curl, divider and icon
+   is drawn in CSS or inline SVG in the owner's colors: --dc-b border, --dc-o ornaments, --dc-card the card (with its
+   opacity), --dc-h / --dc-t / --dc-a heading, body and accent words, --dc-w border thickness, --dc-r corner radius. */
+.blk-decocard { overflow-x: clip; }
+.blk-decocard .sg-dc-stage { display: flex; justify-content: center; }
+.sg-dc { position: relative; isolation: isolate; width: 100%; max-width: var(--dc-max, 880px); margin: 0 auto; text-align: center; color: var(--dc-t); font-family: var(--dc-bf, inherit);
+  --dc-py: clamp(34px, 7vw, 60px); --dc-px: clamp(24px, 7vw, 72px); --dc-curl: clamp(30px, 7vw, 64px); }
+.sg-dc-pad-s { --dc-py: clamp(24px, 5vw, 36px); --dc-px: clamp(18px, 5vw, 40px); }
+.sg-dc-pad-l { --dc-py: clamp(40px, 9vw, 92px); --dc-px: clamp(26px, 9vw, 108px); }
+.sg-dc-bgl { position: absolute; inset: 0; z-index: -1; background: var(--dc-card); border-radius: var(--dc-r); }
+.sg-dc-sh-soft .sg-dc-bgl { box-shadow: 0 22px 50px -24px rgba(40, 20, 40, .32), 0 4px 14px -6px rgba(40, 20, 40, .12); }
+.sg-dc-sh-strong .sg-dc-bgl { box-shadow: 0 34px 70px -24px rgba(20, 10, 30, .55), 0 8px 22px -8px rgba(20, 10, 30, .3); }
+.sg-dc-fr { position: absolute; inset: 0; pointer-events: none; color: var(--dc-o); }
+.sg-dc-fr svg, .sg-dc-icon svg, .sg-dc-mk svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.sg-dc-in { position: relative; padding: var(--dc-py) var(--dc-px); }
+.sg-dc-in > :first-child { margin-top: 0; }
+.sg-dc-in > :last-child { margin-bottom: 0; }
+.sg-dc-icon { width: clamp(38px, 6vw, 54px); height: auto; aspect-ratio: 4 / 3; margin: 0 auto 14px; color: var(--dc-o); }
+.sg-dc-eyebrow { margin: 0 0 10px; color: var(--dc-a); font-size: clamp(.68rem, 1.5vw, .8rem); font-weight: 600; letter-spacing: .24em; text-transform: uppercase; overflow-wrap: anywhere; }
+.blk .sg-dc .sg-dc-h { margin: 0 0 10px; color: var(--dc-h); font-family: var(--dc-hf, inherit); font-size: clamp(1.55rem, 4.4vw, 2.75rem); line-height: 1.15; text-align: center; overflow-wrap: anywhere; -webkit-text-fill-color: currentColor; }
+.sg-dc-tag { margin: 0; color: var(--dc-a); font-size: clamp(1rem, 2.2vw, 1.22rem); font-style: italic; overflow-wrap: anywhere; }
+.sg-dc-body p { max-width: 62ch; margin: 0 auto 12px; color: var(--dc-t); line-height: 1.75; overflow-wrap: anywhere; }
+.sg-dc-body p:last-child { margin-bottom: 0; }
+.sg-dc-quote { max-width: 40ch; margin: 20px auto 0; color: var(--dc-h); font-family: var(--dc-hf, inherit); font-size: clamp(1.1rem, 2.6vw, 1.5rem); font-style: italic; line-height: 1.45; overflow-wrap: anywhere; }
+.sg-dc-details { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 0; margin: 0 auto 4px; padding: 0; list-style: none; color: var(--dc-t); font-size: .95rem; }
+.sg-dc-details li { flex: 1 1 0; min-width: 0; max-width: 260px; padding: 2px 16px; overflow-wrap: anywhere; }
+.sg-dc-details li + li { border-left: 1px solid var(--dc-o); }
+.sg-dc-cta { margin: 24px 0 0; }
+.sg-dc .sg-dc-btn { background: var(--dc-btn, var(--primary)); color: var(--dc-btn-on, var(--on-primary)); }
+/* dividers: lines either side of a mark, in the ornament color */
+.sg-dc-div { display: flex; align-items: center; justify-content: center; gap: 12px; max-width: 340px; margin: 24px auto; color: var(--dc-o); }
+.sg-dc-ln { flex: 1; height: 0; border-top: 1px solid currentColor; }
+.sg-dc-mk { flex: none; width: 16px; height: 16px; }
+.sg-dc-mk-wide { width: 40px; height: 11px; }
+.sg-dc-dot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+/* 1 Royal: a thick outer line, a 6px gap, a thin inner line; a curl in each inside corner (one drawing, mirrored) */
+.sg-dc-royal .sg-dc-bgl { border: var(--dc-w) solid var(--dc-b); }
+.sg-dc-royal .sg-dc-inner { position: absolute; inset: calc(var(--dc-w) + 6px); border: 1px solid var(--dc-b); border-radius: max(0px, calc(var(--dc-r) - 6px)); }
+.sg-dc-curl { position: absolute; width: var(--dc-curl); height: var(--dc-curl); --at: calc(var(--dc-w) + 11px); }
+.sg-dc-curl.sg-dc-tl { top: var(--at); left: var(--at); }
+.sg-dc-curl.sg-dc-tr { top: var(--at); right: var(--at); transform: scaleX(-1); }
+.sg-dc-curl.sg-dc-bl { bottom: var(--at); left: var(--at); transform: scaleY(-1); }
+.sg-dc-curl.sg-dc-br { bottom: var(--at); right: var(--at); transform: scale(-1, -1); }
+.sg-dc-royal .sg-dc-in { padding: calc(var(--dc-py) + 12px) calc(var(--dc-px) + 8px); }
+/* 2 Classic minimal: one thin line, small round corners, a short line as divider */
+.sg-dc-minimal .sg-dc-bgl { border: var(--dc-w) solid var(--dc-b); }
+.sg-dc-minimal .sg-dc-in { padding: calc(var(--dc-py) + 8px) calc(var(--dc-px) + 8px); }
+.sg-dc-minimal .sg-dc-ln { flex: none; width: 48px; }
+/* 3 Art deco: stepped corners (the card is cut to shape, the lines are drawn piece by piece), a thin second frame
+   inside, a fan at the top, three small diamonds as dividers */
+.sg-dc-deco { --s: clamp(8px, 1.6vw, 14px); }
+.sg-dc-deco .sg-dc-bgl { background: none; border-radius: 0; box-shadow: none; }
+.sg-dc-deco.sg-dc-sh-soft .sg-dc-bgl { filter: drop-shadow(0 14px 22px rgba(40, 20, 40, .2)); }
+.sg-dc-deco.sg-dc-sh-strong .sg-dc-bgl { filter: drop-shadow(0 22px 30px rgba(20, 10, 30, .42)); }
+.sg-dc-deco .sg-dc-bgl::before { content: ""; position: absolute; inset: 0; background: var(--dc-card);
+  clip-path: polygon(0 calc(2 * var(--s)), var(--s) calc(2 * var(--s)), var(--s) var(--s), calc(2 * var(--s)) var(--s), calc(2 * var(--s)) 0,
+    calc(100% - 2 * var(--s)) 0, calc(100% - 2 * var(--s)) var(--s), calc(100% - var(--s)) var(--s), calc(100% - var(--s)) calc(2 * var(--s)), 100% calc(2 * var(--s)),
+    100% calc(100% - 2 * var(--s)), calc(100% - var(--s)) calc(100% - 2 * var(--s)), calc(100% - var(--s)) calc(100% - var(--s)), calc(100% - 2 * var(--s)) calc(100% - var(--s)), calc(100% - 2 * var(--s)) 100%,
+    calc(2 * var(--s)) 100%, calc(2 * var(--s)) calc(100% - var(--s)), var(--s) calc(100% - var(--s)), var(--s) calc(100% - 2 * var(--s)), 0 calc(100% - 2 * var(--s))); }
+.sg-dc-deco .sg-dc-fr { --fw: var(--dc-w); --fc: var(--dc-b); }
+.sg-dc-deco .sg-dc-inner { position: absolute; inset: calc(var(--dc-w) + 6px); --fw: 1px; }
+.sg-dc-deco .sg-dc-edges { position: absolute; inset: 0; }
+.sg-dc-deco .sg-dc-edges > i, .sg-dc-deco .sg-dc-inner > i { position: absolute; background: var(--fc); }
+.sg-dc-deco i.t, .sg-dc-deco i.b { left: calc(2 * var(--s)); right: calc(2 * var(--s)); height: var(--fw); }
+.sg-dc-deco i.t { top: 0; } .sg-dc-deco i.b { bottom: 0; }
+.sg-dc-deco i.l, .sg-dc-deco i.r { top: calc(2 * var(--s)); bottom: calc(2 * var(--s)); width: var(--fw); }
+.sg-dc-deco i.l { left: 0; } .sg-dc-deco i.r { right: 0; }
+.sg-dc-step { position: absolute; width: calc(2 * var(--s) + var(--fw)); height: calc(2 * var(--s) + var(--fw)); }
+.sg-dc-step > i { position: absolute; background: var(--fc); }
+.sg-dc-step > i:nth-child(1) { left: 0; top: calc(2 * var(--s)); width: calc(var(--s) + var(--fw)); height: var(--fw); }
+.sg-dc-step > i:nth-child(2) { left: var(--s); top: var(--s); width: var(--fw); height: calc(var(--s) + var(--fw)); }
+.sg-dc-step > i:nth-child(3) { left: var(--s); top: var(--s); width: calc(var(--s) + var(--fw)); height: var(--fw); }
+.sg-dc-step > i:nth-child(4) { left: calc(2 * var(--s)); top: 0; width: var(--fw); height: calc(var(--s) + var(--fw)); }
+.sg-dc-step.sg-dc-tl { top: 0; left: 0; }
+.sg-dc-step.sg-dc-tr { top: 0; right: 0; transform: scaleX(-1); }
+.sg-dc-step.sg-dc-bl { bottom: 0; left: 0; transform: scaleY(-1); }
+.sg-dc-step.sg-dc-br { bottom: 0; right: 0; transform: scale(-1, -1); }
+.sg-dc-fan { position: absolute; top: calc(var(--dc-w) + 7px); left: 50%; width: clamp(64px, 12vw, 112px); aspect-ratio: 2 / 1; transform: translateX(-50%) scaleY(-1); color: var(--dc-o); }
+.sg-dc-deco .sg-dc-in { padding: calc(var(--dc-py) + clamp(30px, 6vw, 52px)) calc(var(--dc-px) + 10px) calc(var(--dc-py) + 10px); }
+/* 4 Vintage stamp: a perforated edge cut all the way round, a dashed inner border, dotted dividers */
+.sg-dc-stamp { --hole: clamp(4px, .9vw, 6px); --gap: clamp(13px, 2.4vw, 18px); }
+.sg-dc-stamp .sg-dc-bgl { background: none; border-radius: 0; box-shadow: none; }
+.sg-dc-stamp.sg-dc-sh-soft .sg-dc-bgl { filter: drop-shadow(0 12px 18px rgba(40, 20, 40, .22)); }
+.sg-dc-stamp.sg-dc-sh-strong .sg-dc-bgl { filter: drop-shadow(0 20px 26px rgba(20, 10, 30, .45)); }
+.sg-dc-stamp .sg-dc-bgl::before { content: ""; position: absolute; inset: 0; box-sizing: border-box; padding: var(--hole); background: var(--dc-card);
+  -webkit-mask: linear-gradient(#000 0 0) content-box,
+    radial-gradient(circle var(--hole) at 50% 0, #0000 97%, #000) top left / var(--gap) var(--hole) round no-repeat,
+    radial-gradient(circle var(--hole) at 50% 100%, #0000 97%, #000) bottom left / var(--gap) var(--hole) round no-repeat,
+    radial-gradient(circle var(--hole) at 0 50%, #0000 97%, #000) top left / var(--hole) var(--gap) no-repeat round,
+    radial-gradient(circle var(--hole) at 100% 50%, #0000 97%, #000) top right / var(--hole) var(--gap) no-repeat round;
+  mask: linear-gradient(#000 0 0) content-box,
+    radial-gradient(circle var(--hole) at 50% 0, #0000 97%, #000) top left / var(--gap) var(--hole) round no-repeat,
+    radial-gradient(circle var(--hole) at 50% 100%, #0000 97%, #000) bottom left / var(--gap) var(--hole) round no-repeat,
+    radial-gradient(circle var(--hole) at 0 50%, #0000 97%, #000) top left / var(--hole) var(--gap) no-repeat round,
+    radial-gradient(circle var(--hole) at 100% 50%, #0000 97%, #000) top right / var(--hole) var(--gap) no-repeat round; }
+.sg-dc-stamp .sg-dc-inner { position: absolute; inset: calc(var(--hole) + 9px); border: var(--dc-w) dashed var(--dc-b); border-radius: var(--dc-r); }
+.sg-dc-stamp .sg-dc-in { padding: calc(var(--dc-py) + 12px) calc(var(--dc-px) + 12px); }
+.sg-dc-stamp .sg-dc-ln { max-width: 220px; border-top: 3px dotted currentColor; }
+/* 5 Ribbon banner: a plain card with one border and a ribbon with folded ends behind the heading */
+.sg-dc-ribbon .sg-dc-bgl { border: var(--dc-w) solid var(--dc-b); }
+.sg-dc-ribbon { --rib-out: clamp(6px, 2vw, 16px); --rib-tail: clamp(16px, 3.4vw, 30px); }
+.blk .sg-dc-ribbon .sg-dc-h { position: relative; z-index: 0; margin: 8px calc(-1 * var(--dc-px) - var(--rib-out)) 20px; color: var(--dc-ro); }
+.sg-dc-rib { position: relative; display: block; padding: .42em 1.1em; background: var(--dc-o); color: var(--dc-ro); box-shadow: 0 8px 14px -10px rgba(0, 0, 0, .45); }
+.sg-dc-rib::before, .sg-dc-rib::after { content: ""; position: absolute; top: 100%; width: var(--rib-out); height: 10px; background: color-mix(in srgb, var(--dc-o) 55%, #000); }
+.sg-dc-rib::before { left: 0; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+.sg-dc-rib::after { right: 0; clip-path: polygon(0 0, 100% 0, 0 100%); }
+.blk .sg-dc-ribbon .sg-dc-h::before, .blk .sg-dc-ribbon .sg-dc-h::after { content: ""; position: absolute; z-index: -1; top: 10px; bottom: -10px; width: var(--rib-tail); background: color-mix(in srgb, var(--dc-o) 78%, #000); }
+.blk .sg-dc-ribbon .sg-dc-h::before { left: calc(var(--rib-tail) * -.7); clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 38% 50%); }
+.blk .sg-dc-ribbon .sg-dc-h::after { right: calc(var(--rib-tail) * -.7); clip-path: polygon(0 0, 100% 0, 62% 50%, 100% 100%, 0 100%); }
+.sg-dc-ribbon .sg-dc-in { padding: calc(var(--dc-py) + 4px) var(--dc-px); }
+/* 6 Frosted glass: a see-through card with blur, a light 1px border, big round corners, a soft shadow, a faded line */
+.sg-dc-glass .sg-dc-bgl { border: var(--dc-w) solid color-mix(in srgb, var(--dc-b) 40%, #fff); -webkit-backdrop-filter: blur(14px) saturate(150%); backdrop-filter: blur(14px) saturate(150%); }
+.sg-dc-glass.sg-dc-sh-soft .sg-dc-bgl { box-shadow: 0 24px 60px -22px rgba(40, 40, 80, .3), inset 0 1px 0 rgba(255, 255, 255, .6); }
+.sg-dc-glass .sg-dc-ln { max-width: 280px; height: 1px; border: 0; background: linear-gradient(90deg, transparent, currentColor, transparent); }
+/* the section behind the card (one color, a gradient or a soft glow) is set on the block itself */
+.blk-decocard.sg-dc-sec { padding-top: clamp(48px, 8vw, 96px); padding-bottom: clamp(48px, 8vw, 96px); }
+@media (max-width: 640px) {
+  .sg-dc { --dc-curl: 30px; }
+  .sg-dc-royal .sg-dc-inner { inset: calc(var(--dc-w) + 4px); }
+  .sg-dc-curl { --at: calc(var(--dc-w) + 8px); }
+  .sg-dc-details { flex-direction: column; align-items: center; gap: 6px; }
+  .sg-dc-details li { flex: none; max-width: none; padding: 0; }
+  .sg-dc-details li + li { border-left: 0; padding-top: 6px; border-top: 1px solid var(--dc-o); min-width: 40%; }
+}
