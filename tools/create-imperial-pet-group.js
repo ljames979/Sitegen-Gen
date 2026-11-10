@@ -8,8 +8,8 @@
 // Run it once:  node tools/create-imperial-pet-group.js
 // It makes a NEW site (your old "Imperial Pet Grooming" site is not touched) and prints its editor address.
 // Running it again makes nothing new while a site with the address imperial-pet-group exists.
-// Still to come (Leo asked for them last): the Invitation Reveal envelope (the welcome card is a Decorative card until
-// then) and the Scene Decor picket fence (the banner shows a labeled placeholder where it goes).
+// The welcome card is a Decorative card in Invitation Reveal mode (it comes out of a pink envelope as you scroll).
+// Still to come: the Scene Decor picket fence (the banner shows a labeled placeholder where it goes).
 const fs = require('fs');
 const path = require('path');
 const db = require('../db');
@@ -76,7 +76,7 @@ const hero = block('photoblend', {
   body: ['top: DOG & CAT GROOMING', 'badge: NOW BOOKING · Dogs & cats welcome', 'note: Expert dog and cat grooming with the patience, care, and attention to detail your pet deserves.', `photos: ${IMG.hero}`, 'color: #fdeef4'].join('\n'),
   buttonText: 'Book an Appointment', buttonUrl: BOOK, side: 'right:cut'
 });
-// 4. welcome: the Royal invitation card (becomes the Invitation Reveal envelope once that block is built)
+// 4. welcome: the Royal invitation card, sealed in a pink envelope (Invitation Reveal), on a faint crown wallpaper
 const welcome = block('decocard', {
   heading: 'Welcome to Imperial Pet Group',
   body: decoCard.cleanBody([
@@ -85,7 +85,9 @@ const welcome = block('decocard', {
     "quote: Because to you, they're not just a pet. They're family.",
     'detail: [ADDRESS]', 'detail: [PHONE]', 'detail: [HOURS]',
     'border: #d9578f', 'card: #ffffff', 'headc: #3d1f45', 'bodyc: #4a3f50', 'accc: #a8285e', 'btnc: #b8326a',
-    'sec: glow', 'sec1: #ffffff', 'sec2: #c9e4f5'
+    'sec: glow', 'sec1: #ffffff', 'sec2: #c9e4f5',
+    'pat: crowns', 'patc: #f2a9c6', 'patop: 55', 'ledge: #fbd9e7',
+    'reveal: envelope', 'env: #f2a9c6', 'flap: #e57faa', 'seal: #d9578f', 'liner: #fdeef4'
   ].join('\n')),
   buttonText: 'Book Your Visit', buttonUrl: BOOK
 });
@@ -197,14 +199,20 @@ sections.seo.title = seoTitle; sections.seo.description = seoDesc;
 // ---- decorations: editable pieces, not baked into pictures ----
 let pn = 0, tn = 0;
 const pid = () => 'p' + String(++pn).padStart(2, '0') + Math.random().toString(36).slice(2, 7).padEnd(5, '0');
+// the two peeking rows for the welcome card
+function welcomePeeks() {
+  return [
+    { id: pid(), page: 'home', at: at(welcome), x: 4, y: 77, w: 30, h: 18, art: 'peek', photos: [IMG.puppies], fit: 'fit' },
+    { id: pid(), page: 'home', at: at(welcome), x: 66, y: 77, w: 30, h: 18, art: 'peek', photos: [IMG.cats3], fit: 'fit' }
+  ];
+}
 const tid = () => 't' + String(++tn).padStart(2, '0') + Math.random().toString(36).slice(2, 7).padEnd(5, '0');
 const at = (b) => 'b:' + b.id;
 const pics = [
   // hero: six glass bubbles around the dog (+ Shape > Dot), light blue, at different sizes
   ...[[54, 12, 5], [88, 8, 3.5], [93, 46, 6], [58, 70, 3], [86, 80, 4.5], [50, 40, 2.5]].map(([x, y, w]) => ({ id: pid(), page: 'home', at: at(hero), x, y, w, h: w * 1.6, art: 'shape-dot', color: '#d6ebf8' })),
-  // welcome: peeking pets over the bottom edge (your two cut-outs take turns until you add more)
-  { id: pid(), page: 'home', at: at(welcome), x: 6, y: 80, w: 30, h: 20, art: 'peek', photos: [IMG.puppies], fit: 'fit' },
-  { id: pid(), page: 'home', at: at(welcome), x: 64, y: 80, w: 30, h: 20, art: 'peek', photos: [IMG.cats3], fit: 'fit' },
+  // welcome: puppies and cats peeking over the blush ledge under the card
+  ...welcomePeeks(),
   // dog section: a few faint paws on the right
   { id: pid(), page: 'home', at: at(dogs), x: 90, y: 8, w: 5, h: 8, art: 'pawline', color: '#ffffff', turn: 18 },
   { id: pid(), page: 'home', at: at(dogs), x: 94, y: 22, w: 4, h: 7, art: 'pawline', color: '#a9d0ea', turn: 30 },

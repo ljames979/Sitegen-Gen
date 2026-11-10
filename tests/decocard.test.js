@@ -73,6 +73,39 @@ test('decorative card: glass is see-through by default; fonts are collected for 
   dc.STYLE_IDS.forEach(s => assert.match(dc.thumb(s), /^<svg class="blk-pic"/));
   const item = catalog.groups().flatMap(g => g.items).find(i => i.type === 'decocard');
   assert.ok(item, 'listed in the Add block picker');
-  assert.deepEqual(item.styles.map(s => s.id), dc.STYLE_IDS);
+  assert.deepEqual(item.styles.filter(s => !s.reveal).map(s => s.id), dc.STYLE_IDS);
+  assert.ok(item.styles.some(s => s.reveal === 'envelope' && s.name === 'Invitation Reveal'), 'the Invitation Reveal card is in the picker');
   assert.equal(catalog.info('decocard').name, 'Decorative card');
+});
+
+test('Invitation Reveal: the envelope settings are kept, cleaned and dropped when it is off', () => {
+  const body = 'style: royal\nreveal: envelope\nenv: #F2A9C6\nflap: #e57faa\nseal: red\nsealicon: paw\nlen: l\nhint: Open me <b>\nonce: yes\npat: crowns\npatc: #f2a9c6\npatop: 55\nledge: #fbd9e7';
+  const p = dc.parse(body);
+  assert.equal(p.reveal, 'envelope'); assert.equal(p.env, '#f2a9c6'); assert.equal(p.seal, ''); assert.equal(p.sealicon, 'paw');
+  assert.equal(p.len, 'l'); assert.equal(p.once, true); assert.equal(p.pat, 'crowns'); assert.equal(p.patop, 55); assert.equal(p.ledge, '#fbd9e7');
+  const c = dc.cleanBody(body);
+  assert.match(c, /reveal: envelope/); assert.match(c, /env: #f2a9c6/); assert.match(c, /once: yes/); assert.match(c, /patop: 55/);
+  const off = dc.cleanBody(c.replace('reveal: envelope', 'reveal: nope'));
+  assert.doesNotMatch(off, /env:|reveal:|sealicon:|once:/);   // the envelope's own settings go with it
+  assert.match(off, /pat: crowns/);                          // the wallpaper stays: it works without the envelope
+  assert.doesNotMatch(dc.cleanBody('pat: \npatc: #ff0000'), /patc/);
+});
+
+test('Invitation Reveal markup: an envelope around the card, open without the script, still in the preview', () => {
+  const blk = { id: 'w1', heading: 'Welcome', buttonText: 'Book', buttonUrl: '#book', body: 'style: royal\nreveal: envelope\nsec: glow\nsec2: #c9e4f5\npat: crowns\nledge: #fbd9e7\nhint: Scroll to open' };
+  const h = dc.html({ theme: {} }, blk, {});
+  assert.match(h, /class="blk blk-decocard[^"]* sg-rv /);
+  assert.match(h, /--rv-len: 250vh/);
+  assert.match(h, /sg-rv-live/);                                 // the little script that turns the envelope on
+  assert.match(h, /class="sg-rv-envf" role="button" tabindex="0" aria-label="Open the invitation"/);
+  assert.match(h, /<div class="sg-rv-sheet"><div class="blk-inner sg-dc-stage">.*<h2 class="sg-dc-h">Welcome<\/h2>.*<span class="sg-dc-ledge"/);
+  assert.match(h, /--rv-glow: radial-gradient/);
+  assert.match(h, /class="sg-dc-pat"[^>]*data:image\/svg\+xml/);
+  assert.doesNotMatch(h, /data-reveal/);                         // no fade-in on top of the envelope
+  assert.ok(!/<\/script>[\s\S]*<script/.test(h.replace(/<script>[^<]*<\/script>/, '')), 'only the one small script');
+  const pv = dc.html({ theme: {} }, { ...blk, _i: 0 }, { pv: true });
+  assert.doesNotMatch(pv, /<script/);                            // the owner's preview shows the card open
+  const plain = dc.html({ theme: {} }, { ...blk, body: 'style: royal\nledge: #fbd9e7' }, {});
+  assert.doesNotMatch(plain, /sg-rv/); assert.match(plain, /sg-dc-ledge/); assert.match(plain, /data-reveal/);
+  assert.ok(dc.REVEAL_SCRIPT.includes('.sg-rv.sg-rv-live') && !/<\//.test(dc.REVEAL_SCRIPT));
 });

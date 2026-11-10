@@ -23,6 +23,8 @@
   }
   function mix(a, b, t) { var x = rgb(a), y = rgb(b); return toHex(x.map(function (v, i) { return v * t + y[i] * (1 - t); })); }
 
+  var RV = ['env', 'flap', 'seal', 'liner'];
+  var val = function (row, sel) { var e = q(row, sel); return e ? e.value : ''; };
   function isDeco(row) { return row && q(row, 'textarea.dc-body'); }
   function styleBtn(row, id) { return q(row, '[data-dcpick="' + id + '"]'); }
 
@@ -38,12 +40,13 @@
     qa(row, '.dc-detail').forEach(function (i) { put('detail', i.value); });
     var hide = qa(row, '.dc-show').filter(function (c) { return !c.checked; }).map(function (c) { return c.dataset.slot; });
     if (hide.length) l.push('hide: ' + hide.join(', '));
-    var sec = q(row, '.dc-sec').value;
+    var sec = q(row, '.dc-sec').value, pat = val(row, '.dc-pat'), rv = val(row, '.dc-reveal');
     qa(row, '.dc-col').forEach(function (c) {
       var k = c.dataset.key, own = q(row, '.dc-own[data-key="' + k + '"]');
       if (!HEX.test(c.value)) return;
       if (own && !own.checked) return;                              // unticked: the site's palette / the border color
       if ((k === 'sec1' && !sec) || (k === 'sec2' && sec !== 'gradient' && sec !== 'glow')) return;
+      if ((k === 'patc' && !pat) || (RV.indexOf(k) >= 0 && !rv)) return;
       l.push(k + ': ' + c.value.toLowerCase());
     });
     if (sec) l.push('sec: ' + sec);
@@ -52,6 +55,14 @@
     if (q(row, '.dc-width').value !== 'm') l.push('width: ' + q(row, '.dc-width').value);
     if (q(row, '.dc-shadow').value !== 'soft') l.push('shadow: ' + q(row, '.dc-shadow').value);
     qa(row, '.dc-font').forEach(function (s) { if (s.value) l.push(s.dataset.key + ': ' + s.value); });
+    if (pat) { l.push('pat: ' + pat); l.push('patop: ' + val(row, '.dc-patop')); }
+    if (rv) {
+      l.push('reveal: ' + rv);
+      if (val(row, '.dc-sealicon') && val(row, '.dc-sealicon') !== 'crown') l.push('sealicon: ' + val(row, '.dc-sealicon'));
+      if (val(row, '.dc-len') && val(row, '.dc-len') !== 'm') l.push('len: ' + val(row, '.dc-len'));
+      put('hint', val(row, '.dc-hint'));
+      if (q(row, '.dc-once') && q(row, '.dc-once').checked) l.push('once: yes');
+    }
     var body = l.join('\n');
     if (ta.value !== body) { ta.value = body; ta.textContent = body; }
     warn(row);
@@ -80,6 +91,10 @@
     if (o.width) q(row, '.dc-width').value = o.width;
     if (o.shadow) q(row, '.dc-shadow').value = o.shadow;
     qa(row, '.dc-font').forEach(function (s) { s.value = o[s.dataset.key] || ''; });
+    var set = function (sel, v) { var e = q(row, sel); if (e) e.value = v; };
+    set('.dc-pat', o.pat || ''); set('.dc-patop', o.patop || 55); set('.dc-reveal', o.reveal || '');
+    set('.dc-sealicon', o.sealicon || 'crown'); set('.dc-len', o.len || 'm'); set('.dc-hint', o.hint || '');
+    if (q(row, '.dc-once')) q(row, '.dc-once').checked = /^(yes|on|true|1)$/i.test(o.once || '');
     refresh(row); build(row);
   }
 
@@ -102,6 +117,9 @@
     q(row, '.dc-col[data-key="sec1"]').hidden = !sec;
     q(row, '.dc-col[data-key="sec2"]').hidden = !(sec === 'gradient' || sec === 'glow');
     qa(row, '.dc-col[data-key^="sec"]').forEach(function (c) { var nx = c.nextElementSibling; if (nx && nx.hasAttribute('data-sg-cl-for')) nx.hidden = c.hidden; });
+    var po = q(row, '.dc-patopts'); if (po) po.hidden = !val(row, '.dc-pat');
+    var pv = q(row, '.dc-patout'); if (pv) pv.textContent = val(row, '.dc-patop') + '%';
+    var rb = q(row, '.dc-rvbox'); if (rb) rb.hidden = !val(row, '.dc-reveal');
   }
 
   // own colors that are hard to read on the card: say so, and offer a darker (or lighter) shade that passes
@@ -168,6 +186,8 @@
     qa(row, '.dc-style-btn').forEach(function (b) { if (b.classList.contains('on')) b.setAttribute('class', 'dc-style-btn on'); else b.setAttribute('class', 'dc-style-btn'); });
     qa(row, '.dc-num').forEach(function (r) { r.setAttribute('value', r.value); });
     q(row, '.dc-style').setAttribute('value', card.dataset.dcstyle);
+    var rs = q(row, '.dc-reveal');
+    if (rs) { var want = card.dataset.dcreveal || ''; rs.value = want; qa(rs, 'option').forEach(function (op) { if (op.value === want) op.setAttribute('selected', ''); else op.removeAttribute('selected'); }); var rb = q(row, '.dc-rvbox'); if (rb) { if (want) rb.removeAttribute('hidden'); else rb.setAttribute('hidden', ''); } }
     build(row);
   }, true);
 

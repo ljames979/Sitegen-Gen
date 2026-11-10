@@ -218,7 +218,8 @@ function groups() {
     id, label, color, short,
     items: LIST.filter(x => x[1] === id).map(([type, , desc]) => ({ type, name: nameOf(type), desc, pic: pic(type, color),
       // the Decorative card shows one card per card style in the picker, each with its own little picture
-      styles: type === 'decocard' ? decoCard.STYLES.map(([sid, sname, sdesc]) => ({ id: sid, name: sname, desc: sdesc, pic: decoCard.thumb(sid, color) })) : null }))
+      styles: type === 'decocard' ? decoCard.STYLES.map(([sid, sname, sdesc]) => ({ id: sid, name: sname, desc: sdesc, pic: decoCard.thumb(sid, color) }))
+        .concat([{ id: 'royal', reveal: 'envelope', name: 'Invitation Reveal', desc: 'A Royal card sealed in an envelope: as visitors scroll, the seal breaks, the flap opens and the card slides out', pic: decoCard.thumb('envelope', color) }]) : null }))
   }));
 }
 // what the page sections list needs for one block type: { name, group, groupLabel, color, pic }

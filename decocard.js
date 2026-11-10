@@ -15,6 +15,11 @@
 //   cardop: 0-100   sec: solid | gradient | glow   sec1 / sec2: #rrggbb
 //   thick: 1-6   radius: 0-32   (empty = the style's own)   pad: s|m|l   width: s|m|l   shadow: none|soft|strong
 //   hfont / bfont: a Google font name (empty = the site's fonts)
+//   pat: crowns | paws | hearts | dots   patc: #rrggbb   patop: 5-100   (a faint wallpaper behind the card)
+//   ledge: #rrggbb                       (a soft band along the bottom, for peeking pets to peek over)
+// Invitation Reveal (Leo, 2026-11-10): the same card, sealed in an envelope that opens as the visitor scrolls
+//   reveal: envelope   env / flap / seal / liner: #rrggbb   sealicon: crown | paw | heart | star | none
+//   len: s | m | l (how much scrolling it takes)   hint: Scroll to open   once: yes (stays open once opened)
 const contrast = require('./contrast');
 const fonts = require('./fonts');
 
@@ -44,7 +49,14 @@ const WIDTHS = [['s', 'Small (600px)', 600], ['m', 'Medium (880px)', 880], ['l',
 const SHADOWS = [['none', 'No shadow'], ['soft', 'Soft shadow'], ['strong', 'Strong shadow']];
 const SECS = [['', 'The block\'s own background (below)'], ['solid', 'One color'], ['gradient', 'Two-color gradient'], ['glow', 'A soft glow behind the card']];
 const MAX_TEXT = 4, MAX_DETAIL = 3;
-const COLOR_KEYS = ['border', 'orn', 'card', 'headc', 'bodyc', 'accc', 'btnc', 'sec1', 'sec2'];
+const COLOR_KEYS = ['border', 'orn', 'card', 'headc', 'bodyc', 'accc', 'btnc', 'sec1', 'sec2', 'patc', 'ledge', 'env', 'flap', 'seal', 'liner'];
+const REVEALS = [['', 'No, the card just shows'], ['envelope', 'Yes: the card comes out of an envelope as visitors scroll']];
+const SEAL_ICONS = [['crown', 'Crown'], ['paw', 'Paw'], ['heart', 'Heart'], ['star', 'Star'], ['none', 'Plain seal']];
+const LENS = [['s', 'Quick (a little scrolling)', 180], ['m', 'Normal', 250], ['l', 'Slow (more scrolling)', 320]];
+const PATS = [['', 'No wallpaper'], ['crowns', 'Crowns'], ['paws', 'Paw prints'], ['hearts', 'Hearts'], ['dots', 'Dots']];
+// the envelope's own colors when the owner hasn't picked any (Leo's Imperial pinks)
+const RV_KEYS = ['env', 'flap', 'seal', 'liner'];
+const RV_DEFAULTS = { env: '#f2a9c6', flap: '#e57faa', seal: '#d9578f', liner: '#fdeef4' };
 
 const styleOf = (id) => STYLES.find(s => s[0] === id) || STYLES[0];
 const int = (v, lo, hi) => { const n = parseInt(String(v == null ? '' : v).trim(), 10); return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : null; };
@@ -52,7 +64,8 @@ const int = (v, lo, hi) => { const n = parseInt(String(v == null ? '' : v).trim(
 function parse(v) {
   const out = { style: 'royal', icon: 'crown', eyebrow: '', tagline: '', text: [], quote: '', details: [], hide: [],
     border: '', orn: '', card: '', headc: '', bodyc: '', accc: '', btnc: '', sec: '', sec1: '', sec2: '',
-    cardop: null, thick: null, radius: null, pad: 'm', width: 'm', shadow: 'soft', hfont: '', bfont: '' };
+    cardop: null, thick: null, radius: null, pad: 'm', width: 'm', shadow: 'soft', hfont: '', bfont: '',
+    pat: '', patc: '', patop: null, ledge: '', reveal: '', env: '', flap: '', seal: '', liner: '', sealicon: 'crown', len: 'm', hint: '', once: false };
   String(v || '').split('\n').forEach(l => {
     const m = /^([a-z0-9]+):\s?(.*)$/.exec(l.trim());
     if (!m) return;
@@ -74,6 +87,13 @@ function parse(v) {
     else if (k === 'width') { if (WIDTHS.some(p => p[0] === val.trim())) out.width = val.trim(); }
     else if (k === 'shadow') { if (SHADOWS.some(p => p[0] === val.trim())) out.shadow = val.trim(); }
     else if (k === 'hfont' || k === 'bfont') out[k] = fonts.cleanFontName(val) || '';
+    else if (k === 'pat') out.pat = PATS.some(x => x[0] === val.trim()) ? val.trim() : '';
+    else if (k === 'patop') out.patop = int(val, 5, 100);
+    else if (k === 'reveal') out.reveal = REVEALS.some(x => x[0] === val.trim()) ? val.trim() : '';
+    else if (k === 'sealicon') { if (SEAL_ICONS.some(x => x[0] === val.trim())) out.sealicon = val.trim(); }
+    else if (k === 'len') { if (LENS.some(x => x[0] === val.trim())) out.len = val.trim(); }
+    else if (k === 'hint') out.hint = flat(val, 60);
+    else if (k === 'once') out.once = /^(yes|on|true|1)$/i.test(val.trim());
   });
   return out;
 }
@@ -86,7 +106,10 @@ function cleanBody(v) {
   if (p.quote) l.push(`quote: ${p.quote}`);
   p.details.forEach(t => l.push(`detail: ${t}`));
   if (p.hide.length) l.push(`hide: ${p.hide.join(', ')}`);
-  COLOR_KEYS.forEach(k => { if (p[k]) l.push(`${k}: ${p[k]}`); });
+  COLOR_KEYS.forEach(k => {
+    if (!p[k] || (k === 'patc' && !p.pat) || (RV_KEYS.includes(k) && !p.reveal)) return;
+    l.push(`${k}: ${p[k]}`);
+  });
   if (p.sec) l.push(`sec: ${p.sec}`);
   ['cardop', 'thick', 'radius'].forEach(k => { if (p[k] != null) l.push(`${k}: ${p[k]}`); });
   if (p.pad !== 'm') l.push(`pad: ${p.pad}`);
@@ -94,6 +117,15 @@ function cleanBody(v) {
   if (p.shadow !== 'soft') l.push(`shadow: ${p.shadow}`);
   if (p.hfont) l.push(`hfont: ${p.hfont}`);
   if (p.bfont) l.push(`bfont: ${p.bfont}`);
+  if (p.pat) l.push(`pat: ${p.pat}`);
+  if (p.pat && p.patop != null) l.push(`patop: ${p.patop}`);
+  if (p.reveal) {
+    l.push(`reveal: ${p.reveal}`);
+    if (p.sealicon !== 'crown') l.push(`sealicon: ${p.sealicon}`);
+    if (p.len !== 'm') l.push(`len: ${p.len}`);
+    if (p.hint) l.push(`hint: ${p.hint}`);
+    if (p.once) l.push('once: yes');
+  }
   return l.join('\n');
 }
 
@@ -113,6 +145,39 @@ const DIAMONDS = '<svg viewBox="0 0 44 12"><path d="M6 1 L11 6 L6 11 L1 6 Z M22 
 const FAN = '<svg viewBox="0 0 120 60"><path d="M10 60 A50 50 0 0 1 110 60" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M26 60 A34 34 0 0 1 94 60" fill="none" stroke="currentColor" stroke-width="1.2"/>'
   + [-80, -60, -40, -20, 0, 20, 40, 60, 80].map(a => { const r = (a - 90) * Math.PI / 180; return `<path d="M60 60 L${(60 + 48 * Math.cos(r)).toFixed(1)} ${(60 + 48 * Math.sin(r)).toFixed(1)}" stroke="currentColor" stroke-width="${a % 40 === 0 ? 1.6 : 1}"/>`; }).join('')
   + '<circle cx="60" cy="60" r="7" fill="currentColor"/></svg>';
+
+// ---- wallpaper tiles (72 x 72, repeated behind the card) ----
+function patTile(id, color) {
+  const c = hex(color) || '#f2a9c6';
+  let art = '';
+  if (id === 'crowns') art = [[6, 10], [42, 46]].map(([x, y]) => `<g transform="translate(${x} ${y}) scale(.6)"><path d="M5 23 L7 9 L14 15.5 L20 5 L26 15.5 L33 9 L35 23 Z" fill="${c}"/><path d="M5 26.5 H35" stroke="${c}" stroke-width="2.6" stroke-linecap="round"/></g>`).join('');
+  else if (id === 'paws') art = [[8, 10, -16], [44, 44, 18]].map(([x, y, r]) => `<g transform="translate(${x} ${y}) rotate(${r} 10 9) scale(.5)">${ICON_SVG.paw.replace(/^<svg[^>]*>|<\/svg>$/g, '').replace(/currentColor/g, c)}</g>`).join('');
+  else if (id === 'hearts') art = [[9, 11], [45, 47]].map(([x, y]) => `<path transform="translate(${x} ${y}) scale(.48)" d="M20 31 C9 23 4 17.5 4 11.5 C4 7 7.5 3.5 12 3.5 C15.5 3.5 18.2 5.5 20 8.6 C21.8 5.5 24.5 3.5 28 3.5 C32.5 3.5 36 7 36 11.5 C36 17.5 31 23 20 31 Z" fill="${c}"/>`).join('');
+  else if (id === 'dots') art = `<circle cx="18" cy="18" r="3.2" fill="${c}"/><circle cx="54" cy="54" r="3.2" fill="${c}"/>`;
+  else return '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">${art}</svg>`;
+}
+const svgUrl = (svg) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+
+// ---- the envelope (Invitation Reveal): drawn 100 x 62, stretched to the envelope's box ----
+function envBack(c) {
+  return `<svg viewBox="0 0 100 62" preserveAspectRatio="none" focusable="false"><rect width="100" height="62" rx="2.2" fill="${c.back}"/><path d="M3.5 2.5 H96.5 L50 31 Z" fill="${c.liner}"/></svg>`;
+}
+function envPocket(c) {
+  return `<svg viewBox="0 0 100 62" preserveAspectRatio="none" focusable="false"><path d="M0 0 L50 34 L0 62 Z" fill="${c.side}"/><path d="M100 0 L50 34 L100 62 Z" fill="${c.side}"/>`
+    + `<path d="M0 62 L50 29 L100 62 Z" fill="${c.env}"/><path d="M1 61 L50 29.6 L99 61" fill="none" stroke="${c.edge}" stroke-width=".35" stroke-opacity=".55" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function envFlap(fill, edge) {
+  return `<svg viewBox="0 0 100 62" preserveAspectRatio="none" focusable="false"><path d="M0 0 H100 L55.5 33.2 Q50 37.4 44.5 33.2 Z" fill="${fill}"/><path d="M0 .4 L44.5 33.2 Q50 37.4 55.5 33.2 L100 .4" fill="none" stroke="${edge}" stroke-width="1" stroke-opacity=".5" vector-effect="non-scaling-stroke"/></svg>`;
+}
+// a wax seal with a wavy edge, a ring pressed into it and the icon in the middle
+function sealSvg(c, icon, gid) {
+  const pts = [];
+  for (let i = 0; i < 48; i++) { const a = i / 48 * Math.PI * 2, r = 46 + 2.6 * Math.sin(a * 9) + 1.4 * Math.sin(a * 5 + 1); pts.push(`${(50 + r * Math.cos(a)).toFixed(1)} ${(50 + r * Math.sin(a)).toFixed(1)}`); }
+  const ic = icon !== 'none' && ICON_SVG[icon] ? ICON_SVG[icon].replace('<svg ', `<svg x="27" y="29" width="46" height="40" style="color:${c.sealInk}" `) : '';
+  return `<svg viewBox="0 0 100 100" focusable="false"><defs><radialGradient id="${gid}" cx="38%" cy="34%" r="70%"><stop offset="0" stop-color="${c.seal}"/><stop offset="1" stop-color="${c.seal2}"/></radialGradient></defs>`
+    + `<path d="M${pts.join(' L')} Z" fill="url(#${gid})"/><circle cx="50" cy="50" r="33" fill="none" stroke="${c.seal2}" stroke-width="2.4" stroke-opacity=".7"/><circle cx="50" cy="50" r="30.5" fill="none" stroke="${c.sealInk}" stroke-width=".8" stroke-opacity=".45"/>${ic}</svg>`;
+}
 
 function divider(style) {
   if (style === 'royal') return `<span class="sg-dc-ln"></span><span class="sg-dc-mk">${STAR4}</span><span class="sg-dc-ln"></span>`;
@@ -159,7 +224,18 @@ function view(site, blk) {
   if (o.sec === 'solid') secCss = `background: ${secBase};`;
   else if (o.sec === 'gradient') secCss = `background: linear-gradient(135deg, ${secBase}, ${o.sec2 || '#c9e4f5'});`;
   else if (o.sec === 'glow') secCss = `background: radial-gradient(ellipse 72% 80% at 50% 50%, ${o.sec2 || '#c9e4f5'} 0%, ${rgba(o.sec2 || '#c9e4f5', 70)} 45%, ${rgba(secBase, 0)} 78%), ${secBase};`;
+  let rv = null;
+  if (o.reveal === 'envelope') {
+    const env = o.env || RV_DEFAULTS.env, seal = o.seal || RV_DEFAULTS.seal;
+    rv = { env, flap: o.flap || RV_DEFAULTS.flap, liner: o.liner || RV_DEFAULTS.liner, seal, seal2: mix(seal, '#2a0716', 0.6),
+      sealInk: mix('#ffffff', seal, 0.82), back: mix(env, '#000000', 0.86), side: mix(env, '#000000', 0.94), edge: mix(env, '#000000', 0.55),
+      icon: o.sealicon, len: (LENS.find(x => x[0] === o.len) || LENS[1])[2], hint: o.hint || 'Scroll to open', once: o.once,
+      // in the envelope the glow sits behind the card on the screen, not spread over the whole tall section
+      glow: o.sec === 'glow' ? `radial-gradient(ellipse 62% 58% at 50% 54%, ${o.sec2 || '#c9e4f5'} 0%, ${rgba(o.sec2 || '#c9e4f5', 70)} 40%, ${rgba(o.sec2 || '#c9e4f5', 0)} 74%)` : '' };
+    rv.flapEdge = mix(rv.flap, '#000000', 0.6);
+  }
   return {
+    rv, pat: o.pat ? { id: o.pat, color: o.patc || '#f2a9c6', op: o.patop != null ? o.patop : 55 } : null, ledge: o.ledge,
     style: o.style, styleName: st[1], icon: o.icon,
     eyebrow: shown('eyebrow') ? o.eyebrow : '', tagline: shown('tagline') ? o.tagline : '', text: shown('body') ? o.text : [],
     quote: shown('quote') ? o.quote : '', details: shown('details') ? o.details : [],
@@ -197,12 +273,29 @@ function html(site, blk, opts) {
     v.details.length ? `<ul class="sg-dc-details">${v.details.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '',
     v.button ? `<p class="sg-dc-cta"><a class="btn sg-dc-btn" href="${esc(v.button.url)}">${esc(v.button.text)}</a></p>` : ''
   ].join('');
-  const secCls = v.sec ? ` sg-dc-sec sg-dc-sec-${v.sec}` : '';
-  const secStyle = v.secCss ? ` style="${v.secCss} --edge: ${v.secEdge};"` : '';
-  return `<section${b.id ? ` data-sg-bid="${esc(b.id)}"` : ''}${op.pv && b._i != null ? ` data-sg-blk="${esc(b._i)}"` : ''} class="blk blk-decocard blk-bg-${esc(op.bg || 'none')}${esc(op.ec || '')}${secCls}"${secStyle}>`
-    + `<div class="blk-inner sg-dc-stage"><div class="${cls}" style="${vars}">`
+  const secCls = (v.sec ? ` sg-dc-sec sg-dc-sec-${v.sec}` : '') + (v.rv ? ' sg-rv' : '') + (v.pat ? ' sg-dc-haspat' : '');
+  const sty = [v.secCss ? `${v.secCss} --edge: ${v.secEdge};` : '', v.rv ? `--rv-len: ${v.rv.len}vh;` : ''].join(' ').trim();
+  const pat = v.pat && patTile(v.pat.id, v.pat.color) ? `<span class="sg-dc-pat" aria-hidden="true" style="background-image: ${esc(svgUrl(patTile(v.pat.id, v.pat.color)))}; opacity: ${v.pat.op / 100};"></span>` : '';
+  const ledge = v.ledge ? `<span class="sg-dc-ledge" aria-hidden="true" style="--ledge: ${v.ledge};"></span>` : '';
+  const card = `<div class="blk-inner sg-dc-stage"><div class="${cls}" style="${vars}">`
     + `<span class="sg-dc-bgl" aria-hidden="true"></span><span class="sg-dc-fr" aria-hidden="true">${frame(v.style)}</span>`
-    + `<div class="sg-dc-in" data-reveal>${parts}</div></div></div></section>`;
+    + `<div class="sg-dc-in"${v.rv ? '' : ' data-reveal'}>${parts}</div></div></div>`;
+  const open = `<section${b.id ? ` data-sg-bid="${esc(b.id)}"` : ''}${op.pv && b._i != null ? ` data-sg-blk="${esc(b._i)}"` : ''} class="blk blk-decocard blk-bg-${esc(op.bg || 'none')}${esc(op.ec || '')}${secCls}"${sty ? ` style="${sty}"` : ''}>`;
+  if (!v.rv) return open + pat + card + ledge + '</section>';
+  // Invitation Reveal: the card (with the ledge) is the "sheet"; the envelope's back and its front lie behind and in
+  // front of it. Without the script (or for visitors who turn motion off, and in the owner's preview) the sheet
+  // simply shows, open; the little script below turns the envelope on before the section is drawn.
+  const r = v.rv, gid = 'sgrv' + String(b.id || 'x').replace(/[^a-z0-9]/gi, '');
+  const live = op.pv ? '' : `<script>(function(s){try{if(!matchMedia('(prefers-reduced-motion: reduce)').matches)s.classList.add('sg-rv-live')}catch(e){}})(document.currentScript.parentNode)</script>`;
+  return open + live + pat
+    + `<div class="sg-rv-track"${r.once ? ' data-once' : ''}><div class="sg-rv-stage"${r.glow ? ` style="--rv-glow: ${r.glow};"` : ''}>`
+    + `<div class="sg-rv-envb" aria-hidden="true"><span class="sg-rv-back">${envBack(r)}</span><span class="sg-rv-flap sg-rv-flapb">${envFlap(r.liner, r.flapEdge)}</span></div>`
+    + `<div class="sg-rv-sheet">${card}${ledge}</div>`
+    + `<div class="sg-rv-envf" role="button" tabindex="0" aria-label="Open the invitation"><span class="sg-rv-pocket" aria-hidden="true">${envPocket(r)}</span>`
+    + `<span class="sg-rv-flap sg-rv-flapf" aria-hidden="true">${envFlap(r.flap, r.flapEdge)}</span>`
+    + `<span class="sg-rv-seal" aria-hidden="true"><i class="sg-rv-sl">${sealSvg(r, r.icon, gid + 'a')}</i><i class="sg-rv-sr">${sealSvg(r, r.icon, gid + 'b')}</i></span></div>`
+    + `<p class="sg-rv-hint" aria-hidden="true"><span>${esc(r.hint)}</span><b>&darr;</b></p>`
+    + `</div></div><div class="sg-rv-more" aria-hidden="true"></div></section>`;
 }
 // the card shows the heading as plain words ([highlight] marks and {{style|..}} marks dropped)
 const plainHeading = (h) => String(h || '').replace(/\{\{([^{}|<>]{1,300}?)(?:\|[^{}|<>]{0,40}){1,6}\}\}/g, '$1').replace(/[\[\]]/g, '');
@@ -228,8 +321,97 @@ function thumb(style, color) {
   else if (style === 'deco') art = `<path d="M15 4 H45 V6 H49 V10 H51 V30 H49 V34 H45 V36 H15 V34 H11 V30 H9 V10 H11 V6 H15 Z" fill="#fff" stroke="${c}" stroke-width="1.2"/><rect x="13" y="8" width="34" height="24" fill="none" stroke="${c}" stroke-width=".5"/><path d="M24 8 A6 6 0 0 1 36 8" fill="${c}" fill-opacity=".35"/><path d="M27 28.5 l1 -1 1 1 -1 1z M30 28.5 l1 -1 1 1 -1 1z M33 28.5 l1 -1 1 1 -1 1z" fill="${c}"/>`;
   else if (style === 'stamp') { art = `<rect x="9" y="4" width="42" height="32" fill="#fff"/>`; for (let x = 10; x <= 50; x += 3) art += `<circle cx="${x}" cy="4" r="1" fill="#f8fafc"/><circle cx="${x}" cy="36" r="1" fill="#f8fafc"/>`; for (let y = 6; y <= 34; y += 3) art += `<circle cx="9" cy="${y}" r="1" fill="#f8fafc"/><circle cx="51" cy="${y}" r="1" fill="#f8fafc"/>`; art += `<rect x="12.5" y="7.5" width="35" height="25" fill="none" stroke="${c}" stroke-width=".7" stroke-dasharray="1.6 1.2"/><path d="M22 28.5 h16" stroke="${c}" stroke-width=".9" stroke-dasharray=".3 1.4" stroke-linecap="round"/>`; }
   else if (style === 'ribbon') art = `<rect x="9" y="4" width="42" height="32" rx="1.5" fill="#fff" stroke="${c}" stroke-width="1"/><path d="M4 13 h6 v6 h-6 l2 -3z M56 13 h-6 v6 h6 l-2 -3z" fill="${c}" fill-opacity=".6"/><rect x="8" y="12.5" width="44" height="7" fill="${c}"/><rect x="22" y="15" width="16" height="2.4" rx="1.2" fill="#fff"/>`;
+  else if (style === 'envelope') return `<svg class="blk-pic" viewBox="0 0 60 40" width="60" height="40" aria-hidden="true" focusable="false"><rect width="60" height="40" rx="4" fill="#f8fafc"/>`
+    + `<rect x="19" y="3" width="22" height="20" fill="#fff" stroke="${c}" stroke-width=".8"/><path d="M27 8 L28 5.5 L30 7 L32 5.5 L33 8 Z" fill="${c}"/><rect x="23" y="11" width="14" height="1.8" rx=".9" fill="#334155"/><rect x="24" y="15" width="12" height="1.2" rx=".6" fill="#94a3b8"/>`
+    + `<path d="M12 14 L30 26 L48 14 V37 H12 Z" fill="#f2a9c6"/><path d="M12 37 L30 24 L48 37 Z" fill="#f6bfd5"/><path d="M12 14 L30 4 L48 14" fill="none" stroke="#e57faa" stroke-width="1.2" stroke-linejoin="round"/><circle cx="30" cy="26" r="3.6" fill="#d9578f"/></svg>`;
   else art = `<rect x="0" y="0" width="60" height="40" fill="#dbeafe"/><circle cx="16" cy="12" r="10" fill="#f9a8d4" fill-opacity=".7"/><circle cx="46" cy="30" r="11" fill="#93c5fd"/><rect x="9" y="4" width="42" height="32" rx="7" fill="#fff" fill-opacity=".6" stroke="#fff" stroke-width=".8"/><path d="M20 28.5 h20" stroke="${c}" stroke-width=".6" stroke-opacity=".7"/>`;
   return `<svg class="blk-pic" viewBox="0 0 60 40" width="60" height="40" aria-hidden="true" focusable="false"><rect width="60" height="40" rx="4" fill="#f8fafc"/>${art}${style === 'ribbon' ? '' : top + lines}</svg>`;
 }
 
-module.exports = { STYLES, STYLE_IDS, ICONS, ICON_SVG, SLOTS, SLOT_IDS, PRESETS, PADS, WIDTHS, SHADOWS, SECS, MAX_TEXT, MAX_DETAIL, parse, cleanBody, view, html, fontsOf, thumb, styleOf };
+
+// Invitation Reveal: works out where the envelope sits on the screen and plays it from how far the visitor has
+// scrolled through the section (the envelope lies still, the seal breaks, the flap opens, the card slides out and
+// grows while the envelope drops away). Clicking the envelope (or Enter / Space on it) scrolls straight to the open
+// card. public-site.ejs adds it when a page has an envelope card.
+const REVEAL_SCRIPT = `(function () {
+  var secs = Array.prototype.slice.call(document.querySelectorAll('.sg-rv.sg-rv-live')); if (!secs.length) return;
+  var cl = function (v) { return v < 0 ? 0 : v > 1 ? 1 : v; };
+  var seg = function (p, a, b) { return cl((p - a) / (b - a)); };
+  var ease = function (t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; };
+  var lerp = function (a, b, t) { return a + (b - a) * t; };
+  var top = function () { var n = document.querySelector('nav.site-nav'); if (!n) return 0; var c = getComputedStyle(n).position; return c === 'sticky' || c === 'fixed' ? Math.max(0, Math.min(160, n.getBoundingClientRect().bottom)) : 0; };
+  var all = secs.map(function (sec) {
+    var o = { sec: sec, track: sec.querySelector('.sg-rv-track'), stage: sec.querySelector('.sg-rv-stage'), sheet: sec.querySelector('.sg-rv-sheet'),
+      card: sec.querySelector('.sg-dc'), envb: sec.querySelector('.sg-rv-envb'), envf: sec.querySelector('.sg-rv-envf'), more: sec.querySelector('.sg-rv-more'),
+      fb: sec.querySelector('.sg-rv-flapb'), ff: sec.querySelector('.sg-rv-flapf'), sl: sec.querySelector('.sg-rv-sl'), sr: sec.querySelector('.sg-rv-sr'),
+      hint: sec.querySelector('.sg-rv-hint'), once: sec.querySelector('[data-once]'), done: false, g: null };
+    // a sticky box stops working inside a box that hides its overflow; "clip" still hides it but lets sticky work
+    for (var el = sec.parentElement; el && el !== document.body; el = el.parentElement) { var cs = getComputedStyle(el); if (cs.overflow !== 'visible' || cs.overflowY !== 'visible') el.style.overflow = 'clip'; }
+    var go = function (e) { if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return; e.preventDefault(); var r = o.track.getBoundingClientRect(); window.scrollTo({ top: window.pageYOffset + r.top + o.track.offsetHeight - o.stage.offsetHeight + 2, behavior: 'smooth' }); };
+    o.envf.addEventListener('click', go); o.envf.addEventListener('keydown', go);
+    return o;
+  });
+  function measure(o) {
+    var W = o.stage.clientWidth, vh = o.stage.clientHeight, hd = top(), av = vh - hd;
+    var cw = o.card.offsetWidth, ch = o.card.offsetHeight, ct = o.card.offsetTop, sh = o.sheet.offsetHeight;
+    if (!cw || !ch || !vh) return null;
+    var ew = Math.min(560, W - 40, av * 0.5 / 0.62), eh = ew * 0.62;
+    var ex = (W - ew) / 2, ey = hd + (av - eh) / 2 + av * 0.1;
+    var k0 = ew * 0.86 / cw, k1 = k0 * 1.05;
+    var ty0 = ey + eh * 0.3 - ct * k0;
+    var ty1 = Math.max(ey + eh * 0.5 - (ct + ch) * k1, hd + 12 - ct * k1);
+    var fits = sh <= av, tyF = fits ? hd + (av - sh) / 2 : hd + 14 - ct;
+    o.more.style.height = Math.max(0, Math.ceil(tyF + sh - vh)) + 'px';
+    [o.envb, o.envf].forEach(function (e) { e.style.left = ex + 'px'; e.style.top = ey + 'px'; e.style.width = ew + 'px'; e.style.height = eh + 'px'; });
+    o.hint.style.top = (ey + eh + 58) + 'px';
+    return { vh: vh, ey: ey, eh: eh, sh: sh, k0: k0, k1: k1, ty0: ty0, ty1: ty1, tyF: tyF };
+  }
+  function frame(o) {
+    var g = o.g; if (!g) return;
+    var r = o.track.getBoundingClientRect(), dist = o.track.offsetHeight - g.vh;
+    if (r.bottom < -g.vh || r.top > g.vh * 2) return;
+    var p = dist > 0 ? cl(-r.top / dist) : 1;
+    if (o.once) { if (p >= 1) o.done = true; if (o.done) p = 1; }
+    var s1 = ease(seg(p, 0, .08)), s2 = seg(p, .08, .22), s3 = ease(seg(p, .22, .42)), s4 = ease(seg(p, .42, .7)), s5 = ease(seg(p, .7, .94));
+    var envY = (1 - s1) * 24 + s5 * (g.vh - g.ey + 60), envS = .94 + .06 * s1, envO = cl(1 - (s5 - .35) * 2.2);
+    [o.envb, o.envf].forEach(function (e) { e.style.transform = 'translateY(' + envY.toFixed(1) + 'px) scale(' + envS.toFixed(3) + ')'; e.style.opacity = envO.toFixed(3); });
+    o.envf.style.visibility = envO <= 0 ? 'hidden' : '';
+    o.envf.tabIndex = p > .6 ? -1 : 0;
+    // the seal swells a little, cracks in two and the halves fall away
+    var b = ease(seg(s2, .3, 1)), sw = 1 + .07 * Math.sin(Math.PI * seg(s2, 0, .3));
+    o.sl.style.transform = 'translate(' + (-b * 26).toFixed(1) + '%, ' + (b * b * 70).toFixed(1) + '%) rotate(' + (-b * 34).toFixed(1) + 'deg) scale(' + sw.toFixed(3) + ')';
+    o.sr.style.transform = 'translate(' + (b * 26).toFixed(1) + '%, ' + (b * b * 80).toFixed(1) + '%) rotate(' + (b * 30).toFixed(1) + 'deg) scale(' + sw.toFixed(3) + ')';
+    o.sl.style.opacity = o.sr.style.opacity = (1 - b).toFixed(3);
+    // the flap folds back from its top edge; past half way it is behind the card (the inside of the flap shows)
+    var a = s3 * 178;
+    o.ff.style.transform = o.fb.style.transform = 'perspective(900px) rotateX(' + a.toFixed(1) + 'deg)';
+    o.ff.style.visibility = a < 90 ? '' : 'hidden'; o.fb.style.visibility = a < 90 ? 'hidden' : '';
+    // the card: inside, sliding out, then growing into place
+    var k = s5 > 0 ? lerp(g.k1, 1, s5) : lerp(g.k0, g.k1, s4), ty = s5 > 0 ? lerp(g.ty1, g.tyF, s5) : lerp(g.ty0 + (1 - s1) * 24 + g.eh * (1 - envS), g.ty1, s4);
+    o.sheet.style.transform = 'translateY(' + ty.toFixed(1) + 'px) scale(' + k.toFixed(4) + ')';
+    var under = (g.ey + g.eh * envS + envY - 3 - ty) / k;   // the envelope's bottom edge, in the card's own size
+    o.sheet.style.clipPath = envO <= 0 || under >= g.sh ? '' : 'inset(-100vh -50vw ' + Math.max(0, g.sh - under).toFixed(1) + 'px -50vw)';
+    o.sheet.style.setProperty('--rv-x', s5.toFixed(3));
+    o.hint.style.opacity = (1 - seg(p, .01, .07)).toFixed(3);
+    o.sec.classList.toggle('sg-rv-open', p >= .94);
+  }
+  var run = function () { all.forEach(frame); };
+  var size = function () { all.forEach(function (o) { o.g = measure(o); }); run(); };
+  // pictures and text boxes pinned to this section go on the card's sheet, so they stay where the owner put them
+  var adopt = function () {
+    all.forEach(function (o) {
+      var part = o.sec.parentElement; if (!part) return;
+      Array.prototype.forEach.call(part.querySelectorAll(':scope > [data-sg-pic], :scope > [data-sg-tx]'), function (n) { o.sheet.appendChild(n); });
+    });
+    size();
+  };
+  size();
+  if (window.sgOnScroll) window.sgOnScroll(run); else { addEventListener('scroll', run, { passive: true }); addEventListener('resize', run); }
+  addEventListener('resize', size);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', adopt); else adopt();
+  addEventListener('load', size);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(size);
+  if (window.ResizeObserver) all.forEach(function (o) { new ResizeObserver(function () { o.g = measure(o); frame(o); }).observe(o.card); });
+})();`;
+
+module.exports = { REVEAL_SCRIPT, REVEALS, SEAL_ICONS, LENS, PATS, RV_DEFAULTS, patTile,  STYLES, STYLE_IDS, ICONS, ICON_SVG, SLOTS, SLOT_IDS, PRESETS, PADS, WIDTHS, SHADOWS, SECS, MAX_TEXT, MAX_DETAIL, parse, cleanBody, view, html, fontsOf, thumb, styleOf };

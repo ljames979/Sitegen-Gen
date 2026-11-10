@@ -568,6 +568,32 @@
           <p class="hint">Ticked boxes keep your own value; unticked follow the card style. Rounding changes the card's corners; the Art deco steps and the stamp's perforated edge keep their shape.</p>
         </fieldset>
         <fieldset class="dc-box">
+          <legend>Wallpaper and ledge</legend>
+          <div class="upload-row dc-c">
+            <select class="dc-pat" aria-label="Wallpaper behind the card"><% decoCard.PATS.forEach(o => { %><option value="<%= o[0] %>" <%= dcO.pat === o[0] ? 'selected' : '' %>><%= o[0] ? 'Wallpaper: ' + o[1] : o[1] %></option><% }) %></select>
+            <span class="dc-patopts"<%= dcO.pat ? '' : ' hidden' %>><input type="color" class="dc-col" data-key="patc" data-sg-cl="full" value="<%= dcO.patc || '#f2a9c6' %>" aria-label="Wallpaper color" title="Wallpaper color">
+            <label style="font-weight: 400; margin: 0;">Strength <input type="range" class="dc-patop" min="5" max="100" step="5" value="<%= dcO.patop != null ? dcO.patop : 55 %>"></label><output class="dc-out dc-patout"><%= dcO.patop != null ? dcO.patop : 55 %>%</output></span>
+          </div>
+          <div class="upload-row dc-c"><label><input type="checkbox" class="dc-own" data-key="ledge"<%= dcO.ledge ? ' checked' : '' %>> A soft band along the bottom (for peeking pets to peek over)</label><input type="color" class="dc-col" data-key="ledge" data-sg-cl="full" value="<%= dcO.ledge || '#fbd9e7' %>"></div>
+          <p class="hint">Add the peeking pets with + Add picture in the preview and drag them onto the band.</p>
+        </fieldset>
+        <fieldset class="dc-box">
+          <legend>Invitation Reveal <span class="muted">(the card comes out of an envelope)</span></legend>
+          <select class="dc-reveal" aria-label="Invitation Reveal"><% decoCard.REVEALS.forEach(o => { %><option value="<%= o[0] %>" <%= dcO.reveal === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
+          <div class="dc-rvbox"<%= dcO.reveal ? '' : ' hidden' %>>
+            <p class="hint">As visitors scroll, the wax seal breaks, the flap opens and the card slides out and grows into place. Visitors can also click the envelope to open it. People who turn motion off see the card open. The preview here shows the card open; open your live site to watch it.</p>
+            <% [['env', 'Envelope'], ['flap', 'Flap'], ['seal', 'Wax seal'], ['liner', 'Inside of the envelope']].forEach(x => { %>
+            <div class="upload-row dc-c"><label><%= x[1] %></label><input type="color" class="dc-col" data-key="<%= x[0] %>" data-sg-cl="full" value="<%= dcO[x[0]] || decoCard.RV_DEFAULTS[x[0]] %>"></div>
+            <% }) %>
+            <div class="upload-row dc-c">
+              <select class="dc-sealicon" aria-label="Seal picture"><% decoCard.SEAL_ICONS.forEach(o => { %><option value="<%= o[0] %>" <%= dcO.sealicon === o[0] ? 'selected' : '' %>>Seal: <%= o[1] %></option><% }) %></select>
+              <select class="dc-len" aria-label="How much scrolling it takes"><% decoCard.LENS.forEach(o => { %><option value="<%= o[0] %>" <%= dcO.len === o[0] ? 'selected' : '' %>>Speed: <%= o[1] %></option><% }) %></select>
+            </div>
+            <input type="text" class="dc-hint" maxlength="60" value="<%= dcO.hint %>" placeholder="Words under the envelope (empty = Scroll to open)">
+            <label style="font-weight: 400;"><input type="checkbox" class="dc-once"<%= dcO.once ? ' checked' : '' %>> Once it is open, it stays open (scrolling back up doesn't close it)</label>
+          </div>
+        </fieldset>
+        <fieldset class="dc-box">
           <legend>Fonts</legend>
           <div class="upload-row dc-c">
             <% [['hfont', 'Heading font'], ['bfont', 'Body font']].forEach(x => { %>
@@ -1118,7 +1144,7 @@
   <div class="blkpick-group" data-group="<%= g.id %>" style="--g:<%= g.color %>">
     <div class="blkpick-gtitle"><i></i><%= g.label %></div>
     <div class="blkpick-grid">
-      <% g.items.forEach(it => { %><% if (it.styles) { it.styles.forEach(st => { %><button type="button" class="blkpick-card" data-newblock="<%= it.type %>" data-dcstyle="<%= st.id %>" data-find="<%= (it.name + ' ' + st.name + ' ' + st.desc + ' ' + it.desc).toLowerCase() %>" title="Add a <%= it.name %> in the <%= st.name %> style"><%- st.pic %><span class="blkpick-txt"><span class="blkpick-name"><%= it.name %>: <%= st.name %></span><span class="blkpick-desc"><%= st.desc %></span></span><span class="blkpick-plus" aria-hidden="true">+</span></button><% }); return; } %><button type="button" class="blkpick-card" data-newblock="<%= it.type %>" data-find="<%= (it.name + ' ' + it.desc).toLowerCase() %>" title="Add a <%= it.name %> block"><%- it.pic %><span class="blkpick-txt"><span class="blkpick-name"><%= it.name %></span><span class="blkpick-desc"><%= it.desc %></span></span><span class="blkpick-plus" aria-hidden="true">+</span></button><% }) %>
+      <% g.items.forEach(it => { %><% if (it.styles) { it.styles.forEach(st => { %><button type="button" class="blkpick-card" data-newblock="<%= it.type %>" data-dcstyle="<%= st.id %>"<% if (st.reveal) { %> data-dcreveal="<%= st.reveal %>"<% } %> data-find="<%= (it.name + ' ' + st.name + ' ' + st.desc + ' ' + it.desc).toLowerCase() %>" title="Add a <%= it.name %> in the <%= st.name %> style"><%- st.pic %><span class="blkpick-txt"><span class="blkpick-name"><%= it.name %>: <%= st.name %></span><span class="blkpick-desc"><%= st.desc %></span></span><span class="blkpick-plus" aria-hidden="true">+</span></button><% }); return; } %><button type="button" class="blkpick-card" data-newblock="<%= it.type %>" data-find="<%= (it.name + ' ' + it.desc).toLowerCase() %>" title="Add a <%= it.name %> block"><%- it.pic %><span class="blkpick-txt"><span class="blkpick-name"><%= it.name %></span><span class="blkpick-desc"><%= it.desc %></span></span><span class="blkpick-plus" aria-hidden="true">+</span></button><% }) %>
     </div>
   </div>
   <% }) %>
