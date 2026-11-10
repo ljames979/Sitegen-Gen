@@ -387,6 +387,42 @@ CREATE TABLE IF NOT EXISTS share_feedback (
 );
 `);
 
+// Selling and launching (salesflow.js, routes/sales.js): one row per site with the client's approval of the preview,
+// the package they picked, the deposit paid through Leo's own Stripe, the one-click launch, and the per-site extras
+// (lead webhook, Google Business Profile details, the Search Console tag, the visit-counter key for Netlify copies)
+db.exec(`
+CREATE TABLE IF NOT EXISTS site_sales (
+  site_id INTEGER PRIMARY KEY,
+  package TEXT NOT NULL DEFAULT '',
+  approved_at TEXT NOT NULL DEFAULT '',
+  approved_name TEXT NOT NULL DEFAULT '',
+  approved_email TEXT NOT NULL DEFAULT '',
+  approved_note TEXT NOT NULL DEFAULT '',
+  deposit_cents INTEGER NOT NULL DEFAULT 0,
+  currency TEXT NOT NULL DEFAULT 'usd',
+  stripe_session_id TEXT NOT NULL DEFAULT '',
+  pay_status TEXT NOT NULL DEFAULT 'none',
+  paid_at TEXT NOT NULL DEFAULT '',
+  paid_how TEXT NOT NULL DEFAULT '',
+  launch_domain TEXT NOT NULL DEFAULT '',
+  launch_state TEXT NOT NULL DEFAULT '',
+  launch_tries INTEGER NOT NULL DEFAULT 0,
+  launch_started_at TEXT NOT NULL DEFAULT '',
+  launched_at TEXT NOT NULL DEFAULT '',
+  launch_notify TEXT NOT NULL DEFAULT '',
+  stats_key TEXT NOT NULL DEFAULT '',
+  extras TEXT NOT NULL DEFAULT '{}',
+  forms_synced_at TEXT NOT NULL DEFAULT '',
+  FOREIGN KEY (site_id) REFERENCES sites(id)
+);
+CREATE INDEX IF NOT EXISTS idx_site_sales_stats ON site_sales(stats_key);
+`);
+// leads copied in from somewhere else (Netlify Forms) keep that system's id so they are never copied twice
+ensureColumn('contact_submissions', 'ext_id', "TEXT NOT NULL DEFAULT ''");
+db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_submissions_ext ON contact_submissions(site_id, ext_id) WHERE ext_id != ''");
+// the package a client picked in the questionnaire, carried to the site built from it
+ensureColumn('intake_submissions', 'package', "TEXT NOT NULL DEFAULT ''");
+
 // indexes created after columns are guaranteed to exist
 db.exec(`
 CREATE INDEX IF NOT EXISTS idx_sites_user_id ON sites(user_id);

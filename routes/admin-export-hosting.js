@@ -1,6 +1,8 @@
 // Billing, admin and backups, block library, export, hosting and payment requests
 // server.js calls this where these routes belong in its route order and hands it the shared helpers they use.
 const ROOT = require('path').join(__dirname, '..');
+const salesFlow = require('../salesflow');
+const gbpLib = require('../gbp');
 
 module.exports = function (app, deps) {
   const {
@@ -285,6 +287,9 @@ module.exports = function (app, deps) {
       const legalPages = legal.enabled(site) ? legal.PAGES.map(k => ({ page: k, file: `${k}.html` })) : [];
       const pages = [{ page: 'home', file: 'index.html' }, ...keys.map(k => ({ page: k, file: `${k}.html` })), ...legalPages, ...itemPages];
       const formsOn = hosted && !!site.sections.contact.acceptSubmissions;
+      // a hosted copy counts its visits back to SiteGen when SiteGen has a public https address (salesflow.statsBase)
+      const statsOrigin = hosted ? salesFlow.statsBase() : '';
+      const hostedStats = statsOrigin ? `${statsOrigin}/h/${salesFlow.statsKey(db, site.id)}` : '';
       if (formsOn) pages.push({ page: 'thank-you', file: 'thank-you.html' });
       if (hosted) pages.push({ page: 'notfound', file: '404.html' });
       const uploads = new Set();
@@ -292,7 +297,7 @@ module.exports = function (app, deps) {
       const files = [];
       for (const entry of pages) {
         const locals = {
-          site: extraThemes.withPageStyle(site, entry.page), preview: false, page: entry.page, basePath: '', origin: '', staticExport: true, netlifyForms: formsOn, services, areas, posts, extras,
+          site: extraThemes.withPageStyle(site, entry.page), preview: false, page: entry.page, basePath: '', origin: '', staticExport: true, netlifyForms: formsOn, hostedStats, services, areas, posts, extras,
           service: entry.page === 'service' ? entry.item : null, area: entry.page === 'area' ? entry.item : null,
           post: entry.page === 'post' ? entry.item : null, extra: entry.page === 'extra' ? entry.item : null,
           navPages: buildNavPages(site, '', false), contactSent: false, contactError: false, reviewThanks: false, reviewError: false
@@ -339,6 +344,15 @@ module.exports = function (app, deps) {
       for (const name of uploads) {
         const p = path.join(ROOT, 'public', 'uploads', name);
         if (fs.existsSync(p)) zip.file(p, { name: `uploads/${name}` });
+      }
+      // Google basics on a hosted copy: a sitemap of the real files and a robots.txt that points to it
+      const liveOrigin = hosted ? gbpLib.liveUrl(site, '').replace(/\/$/, '') : '';
+      if (liveOrigin && /^https?:\/\//.test(liveOrigin)) {
+        const lastmod = String(site.updated_at || '').slice(0, 10);
+        const urls = files.filter(f => !['404.html', 'thank-you.html'].includes(f.name)).map(f => f.name === 'index.html' ? '/' : '/' + f.name.replace(/\.html$/, ''));
+        const esc = (u) => u.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        zip.append(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${esc(liveOrigin + u)}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}</url>`).join('\n')}\n</urlset>\n`, { name: 'sitemap.xml' });
+        zip.append(`User-agent: *\nAllow: /\n\nSitemap: ${liveOrigin}/sitemap.xml\n`, { name: 'robots.txt' });
       }
       if (!hosted) zip.append(
         `${site.name}\n\nThis folder is a complete, static copy of the website.\n` +
@@ -389,32 +403,42 @@ module.exports = function (app, deps) {
     });
   });
 
-  app.post('/sites/:id/hosting/publish', requireAuth, loadOwnedSite, publishLimiter, async (req, res) => {
-    const site = req.site; const back = (q) => res.redirect(`/sites/${site.id}/hosting?${q}`);
-    if (netlify.isConfigured() && await qualityGate(req, res, 'hosting')) return;
-    if (!netlify.isConfigured()) return back('err=' + encodeURIComponent('Netlify is not connected yet. Add NETLIFY_AUTH_TOKEN to the .env file.'));
+  // Sends the finished site to Netlify (creating the Netlify site the first time). Shared by Publish online and Launch.
+  // Returns { ok, pending, error }; never throws.
+  async function publishToNetlify(site) {
     try {
-      const zipBuf = await exportToBuffer(site, { hosted: true });
       let siteId = site.netlify_site_id, created = false;
-      if (!siteId) {
+      if (!siteId) { // made first, so the copy knows its own address (sitemap.xml, robots.txt)
         const ns = await netlify.createSite(site.slug);
         siteId = ns.id; created = true;
         db.prepare('UPDATE sites SET netlify_site_id = ?, netlify_name = ?, netlify_url = ? WHERE id = ?').run(ns.id, ns.name, ns.url, site.id);
+        Object.assign(site, { netlify_site_id: ns.id, netlify_name: ns.name, netlify_url: ns.url });
       }
+      const zipBuf = await exportToBuffer(site, { hosted: true });
       const dep = await netlify.deployZip(siteId, zipBuf);
       const waited = dep.id ? await netlify.waitForDeploy(dep.id) : { ok: true };
-      if (!waited.ok && !waited.pending) return back('err=' + encodeURIComponent(waited.error || 'Netlify could not process the files.'));
+      if (!waited.ok && !waited.pending) return { ok: false, error: waited.error || 'Netlify could not process the files.' };
       db.prepare("UPDATE sites SET netlify_deployed_at = datetime('now') WHERE id = ?").run(site.id);
+      site.netlify_deployed_at = new Date().toISOString();
       recordPublish(site, 'netlify', dep.id);
       if (created && site.sections.contact.acceptSubmissions) { // contact form messages are emailed to the owner by Netlify
         const to = hostingNotifyEmail(site);
         if (to) { try { await netlify.createFormEmailHook(siteId, 'contact', to); } catch (e) { console.error('Netlify form email hook failed:', e.message); } }
       }
-      back('f=' + (waited.pending ? 'pending' : 'published'));
+      return { ok: true, pending: !!waited.pending, created };
     } catch (err) {
       console.error('Netlify publish failed:', err.message);
-      back('err=' + encodeURIComponent(err.message));
+      return { ok: false, error: err.message };
     }
+  }
+
+  app.post('/sites/:id/hosting/publish', requireAuth, loadOwnedSite, publishLimiter, async (req, res) => {
+    const site = req.site; const back = (q) => res.redirect(`/sites/${site.id}/hosting?${q}`);
+    if (netlify.isConfigured() && await qualityGate(req, res, 'hosting')) return;
+    if (!netlify.isConfigured()) return back('err=' + encodeURIComponent('Netlify is not connected yet. Add NETLIFY_AUTH_TOKEN to the .env file.'));
+    const r = await publishToNetlify(site);
+    if (!r.ok) return back('err=' + encodeURIComponent(r.error));
+    back('f=' + (r.pending ? 'pending' : 'published'));
   });
 
   app.post('/sites/:id/hosting/domain', requireAuth, loadOwnedSite, async (req, res) => {
@@ -510,5 +534,5 @@ module.exports = function (app, deps) {
     res.redirect(`/sites/${req.site.id}/edit?google=${r.data ? 'ok' : 'fail'}`);
   });
 
-  return { checklistOpts, libraryRows };
+  return { checklistOpts, libraryRows, publishToNetlify, exportToBuffer };
 };

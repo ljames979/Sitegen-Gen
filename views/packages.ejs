@@ -25,11 +25,13 @@
           <div>
             <label>Name<input type="text" name="tier<%= i %>_name" value="<%= t.name %>" maxlength="40"></label>
             <label>Price, as you want it shown (e.g. $900 + $40/month)<input type="text" name="tier<%= i %>_price" value="<%= t.price %>" maxlength="40" placeholder="<%= placeholder %>"></label>
+            <label>Deposit paid online when the client approves (e.g. 300; blank = none)<input type="text" inputmode="decimal" name="tier<%= i %>_deposit" value="<%= t.deposit %>" maxlength="10" placeholder="No online deposit"></label>
             <label>What's included, one per line<textarea name="tier<%= i %>_items"><%= t.items.join('\n') %></textarea></label>
             <label class="pk-demo"><input type="radio" name="best" value="<%= i %>" <%= t.best ? 'checked' : '' %>> Mark as "Most popular"</label>
           </div>
           <% }) %>
         </div>
+        <p class="muted" style="font-size:13.5px;">Deposits go to <strong>your</strong> Stripe account (STRIPE_SECRET_KEY in the .env file, the same key as hosting billing). The client sees the Pay button on their preview link after they press Approve.</p>
         <label>A line under the packages (optional, e.g. "Hosting and changes included for the first year")<input type="text" name="note" value="<%= sales.note %>" maxlength="200"></label>
       </div>
       <div class="card">

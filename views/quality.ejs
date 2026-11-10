@@ -84,6 +84,7 @@
         <% if (gate === 'hosting') { %>
           <form method="POST" action="/sites/<%= site.id %>/hosting/publish"><input type="hidden" name="force" value="1"><button type="submit" class="btn-secondary">Publish to Netlify anyway</button></form>
         <% } %>
+        <% if (gate === 'launch') { %><a class="btn btn-secondary" href="/sites/<%= site.id %>/launch">Back to Launch</a><% } %>
         <a class="btn btn-secondary" href="/sites/<%= site.id %>/quality">Check again</a>
       </div>
     </div>

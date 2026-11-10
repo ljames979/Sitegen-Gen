@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sell and launch — <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .flashbar { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; }
+    .flashbar.bad { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+    .flashbar.warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+    .card { margin-bottom: 18px; } .card h3 { margin-top: 0; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .row form { margin: 0; }
+    .steps { list-style: none; margin: 0 0 14px; padding: 0; }
+    .steps li { display: grid; grid-template-columns: 28px 1fr; gap: 8px; padding: 9px 0; border-bottom: 1px solid #e2e8f0; align-items: start; }
+    .steps .dot { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; background: #e2e8f0; color: #475569; }
+    .steps .done .dot { background: #16a34a; color: #fff; } .steps .wait .dot { background: #f59e0b; color: #fff; }
+    .steps .lbl { font-weight: 600; } .steps .note { font-size: 13.5px; color: #475569; word-break: break-word; }
+    .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+    .check { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; } .check input { width: auto; margin-top: 3px; }
+    table.dns { border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 8px; }
+    table.dns th, table.dns td { text-align: left; padding: 7px 9px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    code { background: #f1f5f9; padding: 2px 6px; border-radius: 6px; word-break: break-all; }
+    pre.msg { white-space: pre-wrap; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 14px; }
+    .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #f1f5f9; color: #475569; }
+    .pill.ok { background: #dcfce7; color: #166534; } .pill.wait { background: #fef3c7; color: #92400e; }
+    .small { font-size: 13px; }
+  </style>
+</head>
+<body>
+  <nav><div class="row"><a href="/sites/<%= site.id %>/edit" class="muted">&larr; <%= site.name %></a><strong>Sell and launch</strong><a href="/sites/<%= site.id %>/pitch" class="muted">Pitch</a><a href="/sites/<%= site.id %>/google" class="muted">Google basics</a><a href="/sites/<%= site.id %>/report" class="muted">Report</a></div></nav>
+  <div class="container">
+    <% if (flash) { %><div class="flashbar <%= /^Published and/.test(flash) ? 'warn' : '' %>"><%= flash %></div><% } %>
+    <% if (err) { %><div class="flashbar bad"><%= err %></div><% } %>
+    <% if (gate) { %><div class="flashbar warn">Launch paused: the quality check found <%= gate %> red item<%= gate === 1 ? '' : 's' %>. <a href="/sites/<%= site.id %>/quality?gate=launch">See and fix them</a>, or press <strong>Launch anyway</strong> below if you are sure.</div><% } %>
+
+    <!-- ===== where it stands ===== -->
+    <div class="card">
+      <h3>Where <%= site.name %> stands</h3>
+      <ol class="steps">
+        <% steps.forEach((s, i) => { %>
+          <li class="<%= s.state %>"><span class="dot"><%= s.state === 'done' ? '✓' : s.state === 'wait' ? '…' : i + 1 %></span>
+            <div><div class="lbl"><%= s.label %></div><% if (s.note) { %><div class="note"><%= s.note %></div><% } %></div></li>
+        <% }) %>
+      </ol>
+      <% if (liveUrl) { %><p style="margin:0;">Live at <a href="<%= liveUrl %>" target="_blank" rel="noopener"><%= liveUrl %></a></p><% } %>
+    </div>
+
+    <!-- ===== approve and pay ===== -->
+    <div class="card" id="approval">
+      <h3>Client approval and deposit</h3>
+      <% if (!shareLink) { %>
+        <p class="muted" style="margin-top:-6px;">Make a private preview link on the <a href="/sites/<%= site.id %>/pitch#share">Pitch screen</a> and send it to the client. On it they can suggest changes, then press <strong>Approve</strong>, pick a package and pay the deposit you set on <a href="/packages?back=/sites/<%= site.id %>/pitch">Packages</a>.</p>
+      <% } else { %>
+        <p class="muted" style="margin-top:-6px;">The client's preview link: <a href="<%= shareLink %>" target="_blank" rel="noopener"><%= shareLink %></a>. They approve and pay there.</p>
+      <% } %>
+      <% if (row.approved_at) { %>
+        <p style="margin:0 0 6px;"><span class="pill ok">Approved</span> by <strong><%= row.approved_name %></strong> (<a href="mailto:<%= row.approved_email %>"><%= row.approved_email %></a>) on <%= row.approved_at %> UTC<%= row.package ? ' · package: ' + row.package : '' %></p>
+        <% if (row.approved_note) { %><p class="small" style="margin:0 0 6px;">Their note: <%= row.approved_note %></p><% } %>
+      <% } else { %>
+        <p style="margin:0 0 6px;"><span class="pill">Not approved yet</span></p>
+      <% } %>
+      <p style="margin:0 0 10px;">Deposit:
+        <% if (row.pay_status === 'paid') { %><span class="pill ok">Paid</span> <%= money(row.deposit_cents, row.currency) %> on <%= row.paid_at %> UTC<%= row.paid_how === 'manual' ? ' (marked by you)' : ' through Stripe' %>
+        <% } else if (row.pay_status === 'pending') { %><span class="pill wait">Waiting</span> <%= money(row.deposit_cents, row.currency) %>: the client opened the payment page. SiteGen checks with Stripe every 5 minutes.
+        <% } else if (row.deposit_cents) { %><span class="pill">Not paid</span> <%= money(row.deposit_cents, row.currency) %>
+        <% } else { %><span class="muted">none asked<%= stripeOn ? '' : '' %></span><% } %>
+      </p>
+      <% if (!stripeOn) { %><p class="small muted" style="margin:0 0 10px;">Online deposits are off until your Stripe secret key is in the <code>.env</code> file as <code>STRIPE_SECRET_KEY</code> (the same key hosting billing uses), then restart SiteGen. Set the deposit amounts on <a href="/packages?back=/sites/<%= site.id %>/pitch">Packages</a>.</p><% } %>
+      <div class="row">
+        <% if (row.pay_status !== 'paid') { %>
+          <form method="POST" action="/sites/<%= site.id %>/sales/mark-paid" class="row"><input type="text" name="amount" inputmode="decimal" placeholder="Amount (optional)" style="width:150px; margin:0;" value="<%= row.deposit_cents ? (row.deposit_cents / 100).toFixed(2) : '' %>"><button type="submit" class="btn-secondary">Mark deposit paid (cash or check)</button></form>
+        <% } else { %>
+          <form method="POST" action="/sites/<%= site.id %>/sales/mark-paid"><input type="hidden" name="paid" value="0"><button type="submit" class="btn-secondary">Set back to not paid</button></form>
+        <% } %>
+        <% if (row.approved_at) { %><form method="POST" action="/sites/<%= site.id %>/sales/clear-approval" onsubmit="return confirm('Clear the approval? The client can approve again.');"><button type="submit" class="btn-secondary">Clear approval</button></form><% } %>
+      </div>
+    </div>
+
+    <!-- ===== launch ===== -->
+    <div class="card" id="launch">
+      <h3>Launch</h3>
+      <% if (!netlifyOn) { %>
+        <p class="muted" style="margin-top:-6px;">Launch puts the site on Netlify (free hosting with automatic HTTPS) on the client's own domain. Connect Netlify once first:</p>
+        <ol class="small">
+          <li>Make a free account at netlify.com.</li>
+          <li>In Netlify open <strong>User settings</strong>, <strong>Applications</strong>, <strong>New access token</strong>.</li>
+          <li>Add a line to the <code>.env</code> file in your SiteGen folder: <code>NETLIFY_AUTH_TOKEN=your-token-here</code></li>
+          <li>Restart SiteGen (<code>start.bat</code>) and come back here.</li>
+        </ol>
+      <% } else { %>
+        <p class="muted" style="margin-top:-6px;">One click: runs the quality check, publishes the site, adds the domain and turns on HTTPS. If the domain's DNS is not pointing at Netlify yet, SiteGen keeps trying every 15 minutes for 3 days and emails the client the moment it is live.</p>
+        <form method="POST" action="/sites/<%= site.id %>/launch" onsubmit="var b=this.querySelector('button[type=submit]'); b.disabled=true; b.textContent='Launching… (up to a minute)';">
+          <div class="grid2">
+            <label>Client's domain (optional)<input type="text" name="domain" value="<%= defaultDomain %>" maxlength="253" placeholder="www.theirbusiness.com" autocomplete="off"></label>
+            <label>Email the client when it's live (optional)<input type="email" name="notify" value="<%= defaultNotify %>" maxlength="254" placeholder="owner@theirbusiness.com"></label>
+          </div>
+          <label class="check"><input type="checkbox" name="report" value="1" <%= reportTick ? 'checked' : '' %>> Also send them the monthly website report (visits, calls and leads) at that address</label>
+          <% if (gate) { %><input type="hidden" name="force" value="1"><% } %>
+          <button type="submit"><%= gate ? 'Launch anyway' : site.netlify_site_id ? 'Launch (publish again)' : 'Launch' %></button>
+        </form>
+        <% if (!mailOn) { %><p class="small muted">Email sending is not set up, so the client cannot be emailed automatically. Send them this yourself once it's live:</p><pre class="msg"><%= clientMessage %></pre><% } %>
+        <% if (row.launch_state === 'waiting-dns') { %>
+          <form method="POST" action="/sites/<%= site.id %>/launch/stop" style="margin-top:10px;"><button type="submit" class="btn-secondary">Stop waiting for HTTPS</button></form>
+        <% } %>
+        <% if (dns.length) { %>
+          <h4 style="margin:16px 0 4px;">DNS records for <%= site.netlify_domain %></h4>
+          <p class="small muted" style="margin:0;">Add these where the domain was bought (GoDaddy, Namecheap, Google Domains, ...). Changes can take from minutes to a few hours.</p>
+          <table class="dns"><tr><th>Type</th><th>Name / host</th><th>Value / points to</th></tr>
+            <% dns.forEach(d => { %><tr><td><%= d.type %></td><td><code><%= d.host %></code></td><td><code><%= d.value %></code><% if (d.note) { %><div class="small muted"><%= d.note %></div><% } %></td></tr><% }) %>
+          </table>
+        <% } %>
+        <p class="small muted" style="margin-bottom:0;">More hosting options (remove the domain, publish history): <a href="/sites/<%= site.id %>/hosting">Publish online</a>.</p>
+      <% } %>
+    </div>
+
+    <!-- ===== leads ===== -->
+    <div class="card" id="leads">
+      <h3>Leads and the CRM</h3>
+      <p class="muted" style="margin-top:-6px;">Every message from the site lands on the <a href="/sites/<%= site.id %>/leads">Leads page</a> (<%= leads.n %> so far), with statuses, follow-up dates and follow-up emails.</p>
+      <% if (site.netlify_site_id) { %>
+        <p style="margin:0 0 8px;">On the Netlify copy, messages go to Netlify Forms first. SiteGen copies them into Leads every 10 minutes and each time you open Leads<%= leads.netlify ? ' (' + leads.netlify + ' copied so far)' : '' %>.<% if (row.forms_synced_at) { %> <span class="muted small">Last checked <%= row.forms_synced_at %> UTC.</span><% } %></p>
+        <form method="POST" action="/sites/<%= site.id %>/sales/sync-forms" style="margin-bottom:12px;"><button type="submit" class="btn-secondary">Check Netlify for new messages now</button></form>
+      <% } %>
+      <h4 style="margin:10px 0 4px;">Send every new lead to a CRM (webhook)</h4>
+      <p class="small muted" style="margin:0 0 8px;">Paste the address your CRM gives you for incoming leads (a Zapier or Make "catch hook" works too, so leads can go to Google Sheets, HubSpot, a text message ...). SiteGen sends each new lead as JSON, signed with the secret below in the <code>X-SiteGen-Signature</code> header (HMAC-SHA256).</p>
+      <form method="POST" action="/sites/<%= site.id %>/sales/webhook" class="row">
+        <input type="url" name="url" value="<%= row.ext.webhook.url %>" maxlength="500" placeholder="https://hooks.zapier.com/..." style="flex:1; min-width:240px; margin:0;">
+        <button type="submit">Save</button>
+      </form>
+      <% if (row.ext.webhook.url) { %>
+        <p class="small" style="margin:8px 0;">Signing secret: <code><%= row.ext.webhook.secret %></code><% if (row.ext.webhook.lastStatus) { %> · Last send: <%= row.ext.webhook.lastStatus %> (<%= row.ext.webhook.lastAt %> UTC)<% } %></p>
+        <div class="row">
+          <form method="POST" action="/sites/<%= site.id %>/sales/webhook/test"><button type="submit" class="btn-secondary">Send a test lead</button></form>
+          <form method="POST" action="/sites/<%= site.id %>/sales/webhook"><input type="hidden" name="action" value="rotate"><button type="submit" class="btn-secondary">New secret</button></form>
+          <form method="POST" action="/sites/<%= site.id %>/sales/webhook" onsubmit="return confirm('Stop sending leads to this address?');"><input type="hidden" name="action" value="remove"><button type="submit" class="btn-secondary">Remove</button></form>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- ===== report ===== -->
+    <div class="card" id="report">
+      <h3>Monthly client report</h3>
+      <p class="muted" style="margin-top:-6px;">On the first of each month the client gets last month's visits, calls, button taps and leads<%= site.sections.meta.reportEmail ? ' at ' + site.sections.meta.reportEmail : '' %>. <a href="/sites/<%= site.id %>/report">See the report</a> or send one now from there.</p>
+      <% if (!site.sections.meta.reportEmail) { %><p class="small" style="margin:0 0 6px;">No report address yet: tick the box under Launch, or set it in the editor (Local SEO &amp; tracking).</p><% } %>
+      <% if (site.netlify_site_id && !statsOn) { %><p class="small muted" style="margin:0;">Visits on the Netlify copy are counted only when SiteGen itself has a public https address (<code>PUBLIC_URL</code> in the .env file, see "Putting it online" in the README). Leads and calls from the form are counted either way.</p><% } %>
+    </div>
+  </div>
+</body>
+</html>

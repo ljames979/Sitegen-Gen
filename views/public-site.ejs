@@ -97,6 +97,7 @@
     if (ldAreaNames.length) ld.areaServed = ldAreaNames.map(a => ({ '@type': 'Place', name: a }));
   %>
   <% if (preview || noindexPage) { %><meta name="robots" content="noindex"><% } %>
+  <% { const _gsv = typeof sgVerifyTag === 'function' ? sgVerifyTag(site.id) : ''; if (_gsv) { %><meta name="google-site-verification" content="<%= _gsv %>"><% } } %>
   <link rel="canonical" href="<%= canonical %>">
   <% if (site.theme.faviconUrl) { %><link rel="icon" href="<%= ldAbs(site.theme.faviconUrl) %>"><link rel="apple-touch-icon" href="<%= ldAbs(site.theme.touchIconUrl || site.theme.faviconUrl) %>"><% } else if (site.theme.logoUrl) { %><link rel="icon" href="<%= ldAbs(site.theme.logoUrl) %>"><link rel="apple-touch-icon" href="<%= ldAbs(site.theme.logoUrl) %>"><% } else { %>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<%= encodeURIComponent(faviconSvg) %>"> <% } %>
@@ -1405,6 +1406,12 @@
     </div>
   <% } %>
 
+  <% if (!preview && typeof hostedStats !== 'undefined' && hostedStats && page !== 'notfound') { %>
+  <script>
+    // a copy hosted elsewhere (Netlify) counts its page views back to SiteGen: no cookies, no personal data
+    try { navigator.sendBeacon(<%- JSON.stringify(hostedStats + '/v') %>, new URLSearchParams({ p: <%- JSON.stringify(page === 'service' && service ? 'services/' + service.slug : page === 'area' && area ? 'areas/' + area.slug : page === 'post' && post ? 'blog/' + post.slug : page === 'extra' && extra ? 'p/' + extra.slug : page).replace(/</g, '\\u003c') %> })); } catch (err) { /* counting is optional */ }
+  </script>
+  <% } %>
   <script>
     // count what visitors do (taps on phone, email, text, contact/book buttons) without cookies;
     // also tells Google Analytics / Meta Ads when those are set up
@@ -1422,6 +1429,9 @@
       if (ev === 'call') { if (window.gtag) gtag('event', 'click_to_call'); if (window.fbq) fbq('track', 'Contact'); }
       else if (ev === 'email') { if (window.gtag) gtag('event', 'click_email'); if (window.fbq) fbq('track', 'Contact'); }
       else if (ev === 'text') { if (window.gtag) gtag('event', 'click_text'); if (window.fbq) fbq('track', 'Contact'); }
+      <% if (!preview && typeof hostedStats !== 'undefined' && hostedStats) { %>
+      try { navigator.sendBeacon(<%- JSON.stringify(hostedStats + '/e') %>, new URLSearchParams({ e: ev, p: <%- JSON.stringify(page === 'service' && service ? 'services/' + service.slug : page).replace(/</g, '\\u003c') %> })); } catch (err) { /* counting is optional */ }
+      <% } %>
       <% if (!preview && !(typeof staticExport !== 'undefined' && staticExport)) { %>
       try { navigator.sendBeacon('<%= basePath %>/e', new URLSearchParams({ e: ev, p: <%- JSON.stringify(page === 'service' && service ? 'services/' + service.slug : page).replace(/</g, '\\u003c') %> })); } catch (err) { /* counting is optional */ }
       <% } %>

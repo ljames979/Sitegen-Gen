@@ -755,6 +755,8 @@ function handleReviewSubmission(req, res, row, basePath) {
 
 // One place every new lead goes through (contact form, chat, estimate): store it, alert the owner,
 // send the optional receipt, and queue the optional follow-up emails.
+// set once routes/sales.js is wired: sends each new lead to the site's CRM webhook (when one is set)
+let onLeadCreated = () => {};
 function recordLead(req, row, lead, imageUrl, source) {
   const info = db.prepare(
     'INSERT INTO contact_submissions (site_id, name, email, phone, message, image_url, service, answers, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
@@ -762,6 +764,7 @@ function recordLead(req, row, lead, imageUrl, source) {
   notifyOwner(req, row, lead, imageUrl || '');
   autoReplyToVisitor(row, lead.email);
   try { leadsLib.enqueue(db, info.lastInsertRowid, row.id, hydrateSite(row).sections.contact.followUp); } catch (e) { console.error('Follow-up queue failed:', e.message); }
+  try { onLeadCreated(row.id, info.lastInsertRowid); } catch (e) { console.error('Lead webhook failed:', e.message); }
   return info.lastInsertRowid;
 }
 
@@ -1394,7 +1397,7 @@ const {
 
 // Billing, admin and backups, block library, export, hosting and payment requests (routes/admin-export-hosting.js)
 const {
-  checklistOpts, libraryRows
+  checklistOpts, libraryRows, publishToNetlify
 } = require('./routes/admin-export-hosting')(app, {
   PAGE_KEYS, ZipArchive, areasWithSlugs, backups, billing, buildChecklist, buildNavPages, cache, calc, db,
   defaultTheme, extraPageList, extraThemes, fs, googleReviews, hostingNotifyEmail, images, isAdmin, isTestEnv,
@@ -1407,7 +1410,7 @@ const {
 // Intake questionnaires: start links, PDF intake and submissions (routes/intake.js)
 require('./routes/intake')(app, {
   aiComplete, applyIntake, autoDesign, baseSiteFromTemplate, readGenLogo, db, defaultLayout, designBrief, designOptionsLib, fs,
-  generateGroundedCopy, generateLimiter, getSite, grounding, hasAiProvider, intake, intakePdf, isTestEnv, mailer,
+  generateGroundedCopy, generateLimiter, getSite, grounding, hasAiProvider, intake, intakePdf, isTestEnv, isValidEmail, mailer,
   multer, nanoid, optimizeUpload, path, rateLimit, requireAuth, saveVersion, str, uniqueSlug, upload
 });
 
@@ -1754,7 +1757,7 @@ async function runQuality(req, res, withScore) {
 app.get('/sites/:id/quality', requireAuth, loadOwnedSite, async (req, res) => {
   const report = await runQuality(req, res, true);
   let hasSharp = true; try { require.resolve('sharp'); } catch { hasSharp = false; }
-  res.render('quality', { site: req.site, report, hasSharp, gate: ['publish', 'hosting'].includes(req.query.gate) ? req.query.gate : '', done: str(req.query.done, 60) });
+  res.render('quality', { site: req.site, report, hasSharp, gate: ['publish', 'hosting', 'launch'].includes(req.query.gate) ? req.query.gate : '', done: str(req.query.done, 60) });
 });
 // One-click fixes. Each works on a copy of the site and reports what it changed; the fix list is always recomputed
 // here, never trusted from the form. Returns a short word for the page's "done" note, or '' when nothing changed.
@@ -1946,6 +1949,14 @@ const {
   servicesWithSlugs, slPageLib, smoothScroll, splitText, str, styleLib, styleSwap, syncMixBlocks,
   pdfExport, rateLimit, mailer, isTestEnv
 });
+
+// Selling and launching: approve and pay, one-click launch, Netlify messages into Leads, the CRM webhook, Google basics
+// and visit counts for Netlify copies (routes/sales.js). Before site-and-followup so the Leads page can sync first.
+({ onLeadCreated } = require('./routes/sales')(app, {
+  PORT, billing, clientLimiter, db, findTemplate, getSite, hydrateSite, invalidateSiteCache, isTestEnv, isValidEmail,
+  leadsLib, loadOwnedSite, mailer, netlify, payments, publishToNetlify, rateLimit, reports, requireAuth, runQuality,
+  saveVersion, str
+}));
 
 // The published site, leads, bookings, reviews, reports, follow-ups, robots.txt and sitemap (routes/site-and-followup.js)
 const {

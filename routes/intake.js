@@ -1,11 +1,13 @@
 // Intake questionnaires: start links, PDF intake and submissions
 // server.js calls this where these routes belong in its route order and hands it the shared helpers they use.
 const ROOT = require('path').join(__dirname, '..');
+const salesLib = require('../packages');
+const salesFlow = require('../salesflow');
 
 module.exports = function (app, deps) {
   const {
     aiComplete, applyIntake, autoDesign, baseSiteFromTemplate, readGenLogo, db, defaultLayout, designBrief, designOptionsLib, fs,
-    generateGroundedCopy, generateLimiter, getSite, grounding, hasAiProvider, intake, intakePdf, isTestEnv, mailer,
+    generateGroundedCopy, generateLimiter, getSite, grounding, hasAiProvider, intake, intakePdf, isTestEnv, isValidEmail, mailer,
     multer, nanoid, optimizeUpload, path, rateLimit, requireAuth, saveVersion, str, uniqueSlug, upload
   } = deps;
 
@@ -29,7 +31,9 @@ module.exports = function (app, deps) {
     req.intakeOwner = db.prepare('SELECT email FROM users WHERE id = ?').get(link.user_id);
     next();
   }
-  const startView = (req, extra) => ({ mode: 'form', link: req.intakeLink, token: req.params.token, errors: [], d: {}, owner: '', ...extra });
+  // the owner's packages, for "Which package are you interested in?" (names and only the prices the owner typed)
+  const pkgChoices = (userId) => salesLib.read(db, userId).tiers.map(t => ({ name: t.name, price: t.price }));
+  const startView = (req, extra) => ({ mode: 'form', link: req.intakeLink, token: req.params.token, errors: [], d: {}, owner: '', pkgs: req.intakeLink ? pkgChoices(req.intakeLink.user_id) : [], ...extra });
 
   app.get('/start/:token', loadIntakeLink, (req, res) => res.render('start', startView(req, {})));
 
@@ -46,14 +50,15 @@ module.exports = function (app, deps) {
     const b = req.body || {};
     if (b.website) return res.redirect(`/start/${req.params.token}/done`); // honeypot
     const d = intake.clean(b);
+    d.pkg = pkgChoices(req.intakeLink.user_id).some(p => p.name === d.pkg) ? d.pkg : '';
     const errors = intake.problems(d);
     if (errors.length) return res.status(400).render('start', startView(req, { errors, d: b }));
-    const info = db.prepare('INSERT INTO intake_submissions (link_id, user_id, data) VALUES (?, ?, ?)').run(req.intakeLink.id, req.intakeLink.user_id, JSON.stringify(d));
+    const info = db.prepare('INSERT INTO intake_submissions (link_id, user_id, data, package) VALUES (?, ?, ?, ?)').run(req.intakeLink.id, req.intakeLink.user_id, JSON.stringify(d), d.pkg);
     if (mailer.isConfigured() && req.intakeOwner) {
       mailer.sendReport({
         to: req.intakeOwner.email, replyTo: d.contactEmail,
         subject: `New client questionnaire: ${d.bizName}`,
-        text: `${d.contactName} filled in the questionnaire for ${d.bizName} (${d.bizType}).\n\nReview it and build the site: ${req.protocol}://${req.get('host')}/intake/submissions/${info.lastInsertRowid}\n\nReply to this email to reach ${d.contactName} (${d.contactEmail}${d.contactPhone ? ', ' + d.contactPhone : ''}).\n`
+        text: `${d.contactName} filled in the questionnaire for ${d.bizName} (${d.bizType}).${d.pkg ? `\nPackage they're interested in: ${d.pkg}` : ''}\n\nReview it and build the site: ${req.protocol}://${req.get('host')}/intake/submissions/${info.lastInsertRowid}\n\nReply to this email to reach ${d.contactName} (${d.contactEmail}${d.contactPhone ? ', ' + d.contactPhone : ''}).\n`
       }).catch(e => console.error('Questionnaire email failed:', e.message));
     }
     res.redirect(`/start/${req.params.token}/done`);
@@ -97,11 +102,33 @@ module.exports = function (app, deps) {
       res.redirect(`/intake/submissions/${id}`);
     });
   });
-  app.post('/intake/links', requireAuth, (req, res) => {
+  // the email a client gets with their questionnaire link (sent from the owner's SMTP, replies go to the owner)
+  async function emailLink(req, link, to, name) {
+    const owner = db.prepare('SELECT email FROM users WHERE id = ?').get(req.session.userId) || {};
+    return mailer.sendReport({
+      to, replyTo: owner.email,
+      subject: `A few questions for your new website${link.label ? ' (' + link.label + ')' : ''}`,
+      text: `Hi${name ? ' ' + name : ''},\n\nTo build your new website I need a few details about your business: what you offer, your hours, your logo and some photos. It takes about 10 minutes and works on a phone, and your answers are saved as you go.\n\n${intakeBase(req)}${link.token}\n\nAny questions, just reply to this email.\n\nThank you!`
+    }).catch(e => { console.error('Questionnaire link email failed:', e.message); return false; });
+  }
+  app.post('/intake/links', requireAuth, async (req, res) => {
     const n = db.prepare('SELECT COUNT(*) AS n FROM intake_links WHERE user_id = ?').get(req.session.userId).n;
     if (n >= 100) return res.redirect('/intake?f=toomany');
-    db.prepare('INSERT INTO intake_links (user_id, token, label) VALUES (?, ?, ?)').run(req.session.userId, nanoid(24), str(req.body.label, 80));
-    res.redirect('/intake?f=created');
+    const to = str(req.body.email, 254).trim();
+    if (to && !isValidEmail(to)) return res.redirect('/intake?f=bademail');
+    const token = nanoid(24), label = str(req.body.label, 80);
+    db.prepare('INSERT INTO intake_links (user_id, token, label) VALUES (?, ?, ?)').run(req.session.userId, token, label);
+    if (!to) return res.redirect('/intake?f=created');
+    const ok = mailer.isConfigured() && await emailLink(req, { token, label }, to, str(req.body.first, 60).trim());
+    res.redirect('/intake?f=' + (ok ? 'emailed' : 'nomail'));
+  });
+  app.post('/intake/links/:id/send', requireAuth, async (req, res) => {
+    const l = db.prepare('SELECT * FROM intake_links WHERE id = ? AND user_id = ?').get(req.params.id, req.session.userId);
+    const to = str(req.body.email, 254).trim();
+    if (!l || l.closed) return res.redirect('/intake');
+    if (!isValidEmail(to)) return res.redirect('/intake?f=bademail');
+    const ok = mailer.isConfigured() && await emailLink(req, l, to, '');
+    res.redirect('/intake?f=' + (ok ? 'emailed' : 'nomail'));
   });
   app.post('/intake/links/:id/toggle', requireAuth, (req, res) => {
     db.prepare('UPDATE intake_links SET closed = 1 - closed WHERE id = ? AND user_id = ?').run(req.params.id, req.session.userId);
@@ -206,6 +233,7 @@ module.exports = function (app, deps) {
       const info = db.prepare('INSERT INTO sites (user_id, slug, name, theme, sections, layout, seo_title, seo_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
         .run(req.session.userId, slug, name, JSON.stringify(theme), JSON.stringify(sections), JSON.stringify(layout), sections.seo.title, sections.seo.description);
       saveVersion(info.lastInsertRowid, theme, sections, layout, 'Built from client questionnaire');
+      if (s.package || d.pkg) salesFlow.set(db, info.lastInsertRowid, { package: str(s.package || d.pkg, 40) }); // pre-picks it on the preview link's Approve
       db.prepare("UPDATE intake_submissions SET status = 'built', site_id = ?, todo = ? WHERE id = ?").run(info.lastInsertRowid, JSON.stringify(intake.todoList(d).concat(scrub.notes.length ? [`Wording the client did not support was replaced or removed (${scrub.notes.join(', ')}). Add real details if you want those parts back.`] : [])), s.id);
       void tpl; void filled;
       res.redirect(`/sites/${info.lastInsertRowid}/edit?generated=${aiCopy ? 'ai' : '1'}&fromintake=1`);

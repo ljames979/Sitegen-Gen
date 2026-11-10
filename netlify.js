@@ -112,6 +112,12 @@ async function createFormEmailHook(siteId, formName, email) {
   await call('POST', '/hooks', { json: { site_id: siteId, form_name: formName, type: 'email', event: 'submission_created', data: { email } } });
 }
 
+// the newest contact-form messages sent to the hosted copy (Netlify Forms keeps them; SiteGen copies them into Leads)
+async function listSubmissions(siteId, { perPage = 100 } = {}) {
+  const d = await call('GET', `/sites/${encodeURIComponent(siteId)}/submissions?per_page=${Math.min(100, Math.max(1, perPage))}`, { timeoutMs: 20000 });
+  return Array.isArray(d) ? d : [];
+}
+
 // "Example.com", "https://www.example.com/" -> "example.com" / "www.example.com"; '' when it is not a real domain
 function cleanDomain(input) {
   let d = String(input || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/:\d+$/, '').replace(/\.$/, '');
@@ -139,4 +145,4 @@ function dnsInstructions(domain, netlifySubdomain) {
   return out;
 }
 
-module.exports = { isConfigured, NetlifyError, createSite, deployZip, restoreDeploy, getDeploy, waitForDeploy, getSite, setCustomDomain, clearCustomDomain, provisionSsl, createFormEmailHook, cleanDomain, dnsInstructions, siteName };
+module.exports = { isConfigured, NetlifyError, createSite, deployZip, restoreDeploy, getDeploy, waitForDeploy, getSite, setCustomDomain, clearCustomDomain, provisionSsl, createFormEmailHook, listSubmissions, cleanDomain, dnsInstructions, siteName };
