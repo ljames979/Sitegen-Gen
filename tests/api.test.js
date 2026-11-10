@@ -4945,6 +4945,66 @@ test('share link: view-only preview with no account, not indexed, and it stops w
   assert.equal((await stranger.get('/look/short')).status, 404);
 });
 
+test('share link feedback: the client types changes (with the spot), the owner sees, ticks and deletes them, and gets an email', async () => {
+  const c = makeClient();
+  const { siteId } = await basicSite(c, 'feedback@example.com', 'Feedback Roofing');
+  const { url } = await (await c.post(`/sites/${siteId}/share`, {}, { headers: { Accept: 'application/json' } })).json();
+  const p = new URL(url).pathname;
+  const stranger = makeClient();
+  assert.match(await (await stranger.get(p)).text(), /Suggest a change/);
+  const json = { headers: { 'Content-Type': 'application/json', Accept: 'application/json' } };
+  const send = (body) => fetch(BASE + p + '/feedback', { method: 'POST', ...json, body: JSON.stringify(body) });
+  assert.equal((await send({ message: ' ' })).status, 400, 'an empty note is refused');
+  const r = await send({ message: 'Please use our new number <b>555-0199</b>', name: 'Pat', page: '/services', spot: 'photo: "Roof Repair"', x: 0.25, y: 0.4 });
+  assert.equal(r.status, 200);
+  const d = await r.json();
+  assert.equal(d.ok, true); assert.equal(d.note.page, '/services'); assert.equal(d.note.y, 0.4); assert.equal(d.note.x, 0.25);
+  await send({ message: 'Odd page and spot', page: 'javascript:alert(1)', y: 7 });
+  const honey = await send({ message: 'spam', website: 'http://spam.test' });
+  assert.equal(honey.status, 200);
+  const list = await (await fetch(BASE + p + '/feedback')).json();
+  assert.equal(list.notes.length, 2, 'the honeypot note is not stored');
+  assert.equal(list.notes[0].page, '/', 'a bad page path falls back to home'); assert.equal(list.notes[0].y, null);
+  // the owner: a count on the editor, the list (HTML escaped), done and delete
+  assert.match(await (await c.get(`/sites/${siteId}/edit`)).text(), /Client feedback \(2 new\)/);
+  const page = await (await c.get(`/sites/${siteId}/feedback`)).text();
+  assert.match(page, /555-0199/); assert.doesNotMatch(page, /<b>555-0199<\/b>/); assert.match(page, /Pat/);
+  assert.match(page, /#sg-fb=0\.25,0\.4/);
+  assert.doesNotMatch(await (await c.get(`/sites/${siteId}/edit`)).text(), /Client feedback \(\d+ new\)/, 'opening the list marks them seen');
+  const id = list.notes[1].id;
+  await c.post(`/sites/${siteId}/feedback/${id}/done`, { done: '1' });
+  const after = await (await fetch(BASE + p + '/feedback')).json();
+  assert.equal(after.notes.find(n => n.id === id).done, true, 'the client sees it marked done');
+  assert.match(await (await c.get(`/sites/${siteId}/pitch`)).text(), /1 to do of 2/);
+  await c.post(`/sites/${siteId}/feedback/${list.notes[0].id}/delete`);
+  assert.equal((await (await fetch(BASE + p + '/feedback')).json()).notes.length, 1);
+  // the account owner was emailed
+  const mail = await waitForMail(1).then(() => fs.readFileSync(MAIL_FILE, 'utf8'));
+  assert.match(mail, /New change request for Feedback Roofing/);
+  // only the owner can see or change the notes; a turned-off link takes no more notes
+  const other = makeClient(); await other.post('/signup', { email: 'feedback-other@example.com', password: 'password1' });
+  assert.equal((await other.get(`/sites/${siteId}/feedback`)).status, 404);
+  await other.post(`/sites/${siteId}/feedback/${id}/delete`);
+  assert.equal((await (await fetch(BASE + p + '/feedback')).json()).notes.length, 1);
+  await c.post(`/sites/${siteId}/share/revoke`);
+  assert.equal((await send({ message: 'after revoke' })).status, 404);
+});
+
+test('export PDF: the page lists the site pages, the print view holds motion still, and the print key is required', async () => {
+  const c = makeClient();
+  const { siteId } = await basicSite(c, 'pdf@example.com', 'Pdf Roofing');
+  const page = await (await c.get(`/sites/${siteId}/pdf`)).text();
+  assert.match(page, /Make the PDF|No Chrome or Edge/);
+  assert.match(page, /value="home" checked/); assert.match(page, /value="services" checked/);
+  const pv = await (await c.get(`/sites/${siteId}/preview/services?print=1&size=phone`)).text();
+  assert.match(pv, /id="sg-print"/); assert.match(pv, /@page\{size:390px 844px;margin:0\}/); assert.match(pv, /sg-calm/);
+  assert.doesNotMatch(await (await c.get(`/sites/${siteId}/preview`)).text(), /id="sg-print"/);
+  assert.equal((await fetch(BASE + '/pdfprint/not-a-key/site')).status, 404);
+  const other = makeClient(); await other.post('/signup', { email: 'pdf-other@example.com', password: 'password1' });
+  assert.equal((await other.get(`/sites/${siteId}/pdf`)).status, 404);
+  assert.equal((await other.post(`/sites/${siteId}/pdf`, { size: 'desktop' })).status, 404);
+});
+
 test('open-now badge, reviews wall and before/after slider render only when switched on and readable', async () => {
   const c = makeClient();
   const quotes = ['Great job one.', 'Great job two.', 'Great job three.', 'Great job four.'];

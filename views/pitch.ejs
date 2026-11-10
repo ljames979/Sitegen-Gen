@@ -90,6 +90,7 @@
     <p>Anyone with this link can look at the site (not edit it), even before it is published. Search engines are told to skip it. Replace or turn it off at any time.</p>
     <input type="text" id="shareUrl" readonly value="<%= shareLink %>" placeholder="No link yet">
     <p id="shareInfo"><%= share ? 'Opened ' + share.views + ' time' + (share.views === 1 ? '' : 's') + (share.last_viewed_at ? ', last on ' + share.last_viewed_at + ' (UTC)' : '') + '.' : '' %></p>
+    <p>The client can click "Suggest a change" on the link to type what they want changed. <a href="/sites/<%= site.id %>/feedback"><%= notes.n ? 'See their notes (' + notes.open + ' to do of ' + notes.n + ')' : 'Client feedback' %></a> · <a href="/sites/<%= site.id %>/pdf">Export PDF</a></p>
     <div class="row">
       <button type="button" id="shareCopy" <%= share ? '' : 'hidden' %>>Copy link</button>
       <button type="button" class="btn-secondary" id="shareMake"><%= share ? 'Replace link' : 'Create link' %></button>

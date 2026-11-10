@@ -12,10 +12,38 @@
     .sv-bar .seg button { border-radius: 0; padding: 6px 12px; font-size: 13px; background: #1e293b; color: #e2e8f0; min-height: 36px; }
     .sv-bar .seg button:first-child { border-radius: 8px 0 0 8px; } .sv-bar .seg button:last-child { border-radius: 0 8px 8px 0; }
     .sv-bar .seg button.on { background: #e2e8f0; color: #0f172a; }
-    .sv-stage { flex: 1; min-height: 0; display: flex; justify-content: center; }
+    .sv-bar .sv-fb-btn { background: #facc15; color: #0f172a; font-weight: 700; padding: 7px 14px; font-size: 14px; min-height: 36px; border-radius: 8px; }
+    .sv-bar .sv-fb-btn .n { background: #0f172a; color: #fff; border-radius: 999px; padding: 0 7px; font-size: 12px; margin-left: 4px; }
+    .sv-main { flex: 1; min-height: 0; display: flex; }
+    .sv-stage { flex: 1; min-width: 0; min-height: 0; display: flex; justify-content: center; position: relative; }
     .sv-stage iframe { width: 100%; height: 100%; border: 0; background: #fff; transition: max-width .2s; }
     .sv-stage.phone { padding: 14px 0; } .sv-stage.phone iframe { max-width: 390px; border-radius: 22px; box-shadow: 0 10px 30px rgba(15,23,42,.18); }
-    @media (max-width: 700px) { .sv-bar .seg { display: none; } }
+    .sv-point-tip { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 8px 14px; border-radius: 999px; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.25); z-index: 3; }
+    .sv-fb { width: 360px; max-width: 100%; background: #fff; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; min-height: 0; }
+    .sv-fb[hidden] { display: none; }
+    .sv-fb-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #e2e8f0; }
+    .sv-fb-head h2 { margin: 0; font-size: 17px; }
+    .sv-fb-head button { background: none; color: #475569; font-size: 22px; padding: 0 6px; min-height: 0; }
+    .sv-fb-body { flex: 1; overflow: auto; padding: 14px; }
+    .sv-fb-body p.help { font-size: 13.5px; color: #475569; margin: 0 0 10px; }
+    .sv-fb-body textarea { min-height: 96px; resize: vertical; }
+    .sv-fb-body label { font-size: 13px; font-weight: 600; margin-bottom: 4px; display: block; }
+    .sv-spot { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 2px 0 10px; font-size: 13.5px; }
+    .sv-spot .chip { background: #eef2ff; color: #3730a3; border-radius: 999px; padding: 3px 10px; font-weight: 600; }
+    .sv-spot button { padding: 5px 10px; font-size: 13px; min-height: 0; }
+    .sv-fb-status { font-size: 13.5px; margin-top: 8px; } .sv-fb-status.err { color: #b91c1c; } .sv-fb-status.ok { color: #166534; }
+    .sv-notes { margin-top: 18px; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+    .sv-notes h3 { font-size: 14px; margin: 0 0 8px; }
+    .sv-note { border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; font-size: 13.5px; }
+    .sv-note .w { color: #64748b; font-size: 12px; margin-bottom: 2px; }
+    .sv-note .num { display: inline-flex; width: 20px; height: 20px; border-radius: 50%; background: #ef4444; color: #fff; font-size: 11px; font-weight: 700; align-items: center; justify-content: center; margin-right: 6px; }
+    .sv-note.done { opacity: .65; } .sv-note .ok { color: #166534; font-weight: 700; }
+    .sv-hp { position: absolute; left: -9999px; }
+    @media (max-width: 760px) {
+      .sv-bar .seg { display: none; }
+      .sv-main { flex-direction: column; }
+      .sv-fb { width: 100%; border-left: 0; border-top: 1px solid #e2e8f0; max-height: 62%; }
+    }
   </style>
 </head>
 <body>
@@ -23,15 +51,172 @@
     <span><strong><%= site.name %></strong>: preview of the new website. It is not live yet.</span>
     <span class="sp"></span>
     <span class="seg" role="group" aria-label="Screen"><button type="button" class="on" data-dev="desktop" aria-pressed="true">Computer</button><button type="button" data-dev="phone" aria-pressed="false">Phone</button></span>
+    <button type="button" class="sv-fb-btn" id="fbBtn" aria-expanded="false" aria-controls="fbPanel">&#128172; Suggest a change<span class="n" id="fbCount" hidden></span></button>
   </div>
-  <div class="sv-stage" id="stage"><iframe src="/look/<%= token %>/site" title="Website preview"></iframe></div>
+  <div class="sv-main">
+    <div class="sv-stage" id="stage">
+      <div class="sv-point-tip" id="pointTip" hidden>Click the part of the page you mean (Esc to cancel)</div>
+      <iframe id="sv" src="/look/<%= token %>/site" title="Website preview"></iframe>
+    </div>
+    <aside class="sv-fb" id="fbPanel" hidden aria-label="Suggest a change">
+      <div class="sv-fb-head"><h2>Suggest a change</h2><button type="button" id="fbClose" aria-label="Close">&times;</button></div>
+      <div class="sv-fb-body">
+        <p class="help">Tell us anything you'd like different: words, photos, colors, prices, the order of things. Point at the spot so we know exactly where.</p>
+        <form id="fbForm" autocomplete="on">
+          <div class="sv-spot"><span id="spotText">Where: <span class="chip" id="spotChip">this page</span></span><button type="button" class="btn-secondary" id="pointBtn">&#128205; Point at the spot</button></div>
+          <label for="fbMsg">What would you like changed?</label>
+          <textarea id="fbMsg" name="message" maxlength="2000" required placeholder="e.g. Please use our new phone number 555-0100 here"></textarea>
+          <label for="fbName">Your name (optional)</label>
+          <input type="text" id="fbName" name="name" maxlength="80" autocomplete="name">
+          <input type="text" name="website" class="sv-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button type="submit" id="fbSend">Send</button>
+          <div class="sv-fb-status" id="fbStatus" aria-live="polite"></div>
+        </form>
+        <div class="sv-notes" id="notesBox" hidden>
+          <h3>Notes sent so far</h3>
+          <div id="notesList"></div>
+        </div>
+      </div>
+    </aside>
+  </div>
   <script>
+  (function () {
+    var token = <%- JSON.stringify(token) %>;
+    var base = '/look/' + token + '/site';
+    var frame = document.getElementById('sv'), stage = document.getElementById('stage');
+    var panel = document.getElementById('fbPanel'), fbBtn = document.getElementById('fbBtn');
+    var form = document.getElementById('fbForm'), msg = document.getElementById('fbMsg'), nameIn = document.getElementById('fbName');
+    var status = document.getElementById('fbStatus'), chip = document.getElementById('spotChip'), pointBtn = document.getElementById('pointBtn'), tip = document.getElementById('pointTip');
+    var notes = [], spot = null, pointing = false;
+
     document.querySelectorAll('[data-dev]').forEach(function (b) {
       b.addEventListener('click', function () {
-        document.getElementById('stage').classList.toggle('phone', b.dataset.dev === 'phone');
+        stage.classList.toggle('phone', b.dataset.dev === 'phone');
         document.querySelectorAll('[data-dev]').forEach(function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); });
+        setTimeout(drawPins, 250);
       });
     });
+
+    try { nameIn.value = localStorage.getItem('sg-fb-name') || ''; } catch (e) { /* private window */ }
+
+    function showPanel(on) {
+      panel.hidden = !on; fbBtn.setAttribute('aria-expanded', String(on));
+      if (on) setTimeout(function () { msg.focus(); }, 50); else stopPointing();
+      setTimeout(drawPins, 50);
+    }
+    fbBtn.addEventListener('click', function () { showPanel(panel.hidden); });
+    document.getElementById('fbClose').addEventListener('click', function () { showPanel(false); });
+
+    // the page the client is looking at, as a path inside the site ("/" for home)
+    function pagePath() {
+      try { var p = frame.contentWindow.location.pathname; return p.indexOf(base) === 0 ? (p.slice(base.length) || '/') : '/'; } catch (e) { return '/'; }
+    }
+    function pageLabel(p) { return p === '/' ? 'Home' : p.replace(/^\//, '').replace(/\//g, ' › ').replace(/-/g, ' '); }
+    function resetSpot() { spot = null; chip.textContent = pageLabel(pagePath()) + ' page'; pointBtn.textContent = '📍 Point at the spot'; }
+
+    // pointing: the next click in the preview picks the spot instead of following a link
+    function describe(el) {
+      var box = el.closest && el.closest('section, header, footer, [data-sg-ee], .sg-mix > *, article, main > div');
+      var h = box && box.querySelector('h1, h2, h3');
+      var t = (h && h.textContent) || (el.textContent || '') || (el.getAttribute && (el.getAttribute('alt') || el.getAttribute('aria-label'))) || '';
+      t = t.replace(/\s+/g, ' ').trim();
+      if (t.length > 50) t = t.slice(0, 48) + '…';
+      var kind = el.tagName === 'IMG' || el.closest('figure, picture') ? 'photo' : box && box.tagName === 'HEADER' ? 'top of page' : box && box.tagName === 'FOOTER' ? 'footer' : '';
+      return (kind ? kind + (t ? ': ' : '') : '') + (t ? '"' + t + '"' : (kind || 'this spot'));
+    }
+    function onPick(e) {
+      if (!pointing) return;
+      e.preventDefault(); e.stopPropagation();
+      var d = frame.contentDocument, de = d.documentElement;
+      var h = Math.max(de.scrollHeight, d.body ? d.body.scrollHeight : 0), w = de.clientWidth || 1;
+      spot = { page: pagePath(), spot: describe(e.target), x: Math.min(1, Math.max(0, e.clientX / w)), y: Math.min(1, Math.max(0, (e.clientY + (frame.contentWindow.scrollY || 0)) / h)) };
+      chip.textContent = pageLabel(spot.page) + ' · ' + spot.spot;
+      pointBtn.textContent = 'Pick again';
+      stopPointing();
+      drawPins();
+      msg.focus();
+    }
+    function onKey(e) { if (e.key === 'Escape') stopPointing(); }
+    function startPointing() {
+      var d; try { d = frame.contentDocument; } catch (e) { return; }
+      if (!d) return;
+      pointing = true; tip.hidden = false;
+      d.documentElement.style.cursor = 'crosshair';
+      d.addEventListener('click', onPick, true); d.addEventListener('keydown', onKey); document.addEventListener('keydown', onKey);
+    }
+    function stopPointing() {
+      pointing = false; tip.hidden = true;
+      try { var d = frame.contentDocument; d.documentElement.style.cursor = ''; d.removeEventListener('click', onPick, true); d.removeEventListener('keydown', onKey); } catch (e) { /* page changed */ }
+      document.removeEventListener('keydown', onKey);
+    }
+    pointBtn.addEventListener('click', function () { if (pointing) stopPointing(); else startPointing(); });
+
+    // numbered pins on the page for the notes on it (and the spot being written about)
+    function drawPins() {
+      var d; try { d = frame.contentDocument; } catch (e) { return; }
+      if (!d || !d.body) return;
+      d.querySelectorAll('.sg-fb-pin').forEach(function (p) { p.remove(); });
+      if (panel.hidden) return;
+      var de = d.documentElement, h = Math.max(de.scrollHeight, d.body.scrollHeight), w = de.clientWidth, page = pagePath();
+      var list = notes.map(function (n, i) { return { n: n, label: String(notes.length - i) }; }).filter(function (o) { return o.n.page === page && o.n.y !== null && o.n.y !== undefined; });
+      if (spot && spot.page === page) list.push({ n: spot, label: '+', cur: true });
+      list.forEach(function (o) {
+        var p = d.createElement('div');
+        p.className = 'sg-fb-pin'; p.textContent = o.label; p.setAttribute('aria-hidden', 'true');
+        var x = (o.n.x === null || o.n.x === undefined ? 0.5 : o.n.x) * w, y = o.n.y * h;
+        p.style.cssText = 'position:absolute;z-index:2147483000;left:' + (x - 13) + 'px;top:' + (y - 13) + 'px;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:700 12px/1 system-ui,sans-serif;color:#fff;pointer-events:none;border:2px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.35);background:' + (o.cur ? '#2563eb' : o.n.done ? '#16a34a' : '#ef4444');
+        d.body.appendChild(p);
+      });
+    }
+    frame.addEventListener('load', function () { stopPointing(); if (!spot) resetSpot(); setTimeout(drawPins, 600); });
+
+    function renderNotes() {
+      var box = document.getElementById('notesBox'), list = document.getElementById('notesList'), cnt = document.getElementById('fbCount');
+      list.innerHTML = '';
+      box.hidden = !notes.length;
+      var open = notes.filter(function (n) { return !n.done; }).length;
+      cnt.hidden = !notes.length; cnt.textContent = String(notes.length);
+      notes.forEach(function (n, i) {
+        var el = document.createElement('div'); el.className = 'sv-note' + (n.done ? ' done' : '');
+        var w = document.createElement('div'); w.className = 'w';
+        if (n.y !== null && n.y !== undefined) { var num = document.createElement('span'); num.className = 'num'; num.textContent = String(notes.length - i); w.appendChild(num); }
+        w.appendChild(document.createTextNode(pageLabel(n.page) + (n.spot ? ' · ' + n.spot : '') + (n.name ? ' · ' + n.name : '')));
+        if (n.done) { var ok = document.createElement('span'); ok.className = 'ok'; ok.textContent = '  ✓ Done'; w.appendChild(ok); }
+        var m = document.createElement('div'); m.textContent = n.message;
+        el.appendChild(w); el.appendChild(m); list.appendChild(el);
+      });
+      void open;
+    }
+    function loadNotes() {
+      fetch('/look/' + token + '/feedback', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d && d.ok) { notes = d.notes; renderNotes(); drawPins(); }
+      }).catch(function () {});
+    }
+    loadNotes();
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var text = msg.value.trim();
+      if (text.length < 2) { status.className = 'sv-fb-status err'; status.textContent = 'Please type what you would like changed.'; return; }
+      var s = spot || { page: pagePath(), spot: '', x: null, y: null };
+      var body = { message: text, name: nameIn.value.trim(), page: s.page, spot: s.spot, x: s.x, y: s.y, website: form.website.value };
+      try { localStorage.setItem('sg-fb-name', body.name); } catch (err) { /* private window */ }
+      var send = document.getElementById('fbSend'); send.disabled = true;
+      status.className = 'sv-fb-status'; status.textContent = 'Sending…';
+      fetch('/look/' + token + '/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+        .then(function (d) {
+          if (!d.ok) throw new Error(d.error || 'That did not send. Please try again.');
+          if (d.note) notes.unshift(d.note);
+          msg.value = ''; resetSpot(); renderNotes(); drawPins();
+          status.className = 'sv-fb-status ok'; status.textContent = 'Thank you! Your note was sent. Add another any time.';
+        })
+        .catch(function (err) { status.className = 'sv-fb-status err'; status.textContent = err.message; })
+        .then(function () { send.disabled = false; });
+    });
+    resetSpot();
+    window.addEventListener('resize', function () { clearTimeout(window.__sgfbT); window.__sgfbT = setTimeout(drawPins, 200); });
+  })();
   </script>
 </body>
 </html>

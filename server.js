@@ -8,6 +8,7 @@ const express = require('express');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
+const pdfExport = require('./pdfexport');
 const multer = require('multer');
 const { nanoid } = require('nanoid');
 
@@ -629,7 +630,9 @@ function siteNotFound(req, res, next, siteIn, basePath, preview) {
   return renderSitePage(req, res.status(404), next, { site: siteIn, page: 'notfound', basePath, preview: !!preview, cacheKey: null });
 }
 
-function renderSitePage(req, res, next, { site: siteIn, page, basePath, preview, contactSent, contactError, cacheKey, serviceSlug, itemSlug, reviewThanks, reviewError, bookingView, hideMotionBar, memberView, calm, bare }) {
+function renderSitePage(req, res, next, { site: siteIn, page, basePath, preview, contactSent, contactError, cacheKey, serviceSlug, itemSlug, reviewThanks, reviewError, bookingView, hideMotionBar, memberView, calm, bare, print }) {
+  // Export PDF (pdfexport.js): motion at rest, as with Calm motion
+  if (print) siteIn = { ...siteIn, theme: { ...siteIn.theme, calmMotion: true } };
   const site = extraThemes.withPageStyle(siteIn, page);
   const slugArg = itemSlug || serviceSlug;
   const trustData = site.sections.trust || {};
@@ -670,7 +673,7 @@ function renderSitePage(req, res, next, { site: siteIn, page, basePath, preview,
   }
   const locals = {
     tierOverride: preview ? str(req.query && req.query.tier, 12) : '',
-    site, preview: !!preview, hideMotionBar: !!hideMotionBar, calm: !!(preview && calm), bare: !!(preview && bare), page, basePath, origin, services, service, areas, area, posts, post, extras, extra,
+    site, preview: !!preview, hideMotionBar: !!hideMotionBar, calm: !!(preview && calm), bare: !!(preview && bare), print: (preview && print) || null, page, basePath, origin, services, service, areas, area, posts, post, extras, extra,
     navPages: buildNavPages(site, basePath),
     estimateError: str(req.query && req.query.error, 140),
     googleData: (preview ? null : googleReviews.forSite(db, site, () => cache.clear())),
@@ -1419,6 +1422,7 @@ app.post('/sites/:id/delete', requireAuth, (req, res) => {
     db.prepare('DELETE FROM photo_credits WHERE site_id = ?').run(site.id);
     db.prepare('DELETE FROM client_links WHERE site_id = ?').run(site.id);
     db.prepare('DELETE FROM share_links WHERE site_id = ?').run(site.id);
+    db.prepare('DELETE FROM share_feedback WHERE site_id = ?').run(site.id);
     db.prepare('DELETE FROM sites WHERE id = ?').run(site.id);
     invalidateSiteCache(site);
   }
@@ -1443,6 +1447,7 @@ app.get('/sites/:id/edit', requireAuth, loadOwnedSite, (req, res) => {
   const leadCount = db.prepare('SELECT COUNT(*) AS n FROM contact_submissions WHERE site_id = ?').get(req.site.id).n;
   const pendingReviews = db.prepare("SELECT COUNT(*) AS n FROM review_submissions WHERE site_id = ? AND status = 'pending'").get(req.site.id).n;
   const pendingBookings = db.prepare("SELECT COUNT(*) AS n FROM bookings WHERE site_id = ? AND status = 'pending'").get(req.site.id).n;
+  const feedbackNew = db.prepare('SELECT COUNT(*) AS n FROM share_feedback WHERE site_id = ? AND seen = 0').get(req.site.id).n;
   let newClientLink = '';
   if (req.query.clientlink === '1' && req.session.newClientLink) {
     newClientLink = req.session.newClientLink;
@@ -1468,6 +1473,7 @@ app.get('/sites/:id/edit', requireAuth, loadOwnedSite, (req, res) => {
     leadCount,
     pendingReviews,
     pendingBookings,
+    feedbackNew,
     bookingFlash: req.query.booking === '1',
     mailConfigured: mailer.isConfigured(),
     checklist: buildChecklist(req.site, checklistOpts(req.site)),
@@ -1907,7 +1913,8 @@ function styleSwap(style, ownColors) {
   return out;
 }
 const previewOpts = (req, extra) => ({
-  site: previewSite(req), basePath: `/sites/${req.site.id}/preview`, preview: true, hideMotionBar: req.query.bar === '0', calm: req.query.calm === '1', bare: req.query.bare === '1',
+  site: previewSite(req), basePath: `/sites/${req.site.id}/preview`, preview: true, hideMotionBar: req.query.bar === '0' || req.query.print === '1', calm: req.query.calm === '1', bare: req.query.bare === '1',
+  print: req.query.print === '1' ? pdfExport.SIZES[pdfExport.sizeOf(req.query.size)] : null,
   contactSent: false, contactError: false, cacheKey: null, ...extra
 });
 
@@ -1936,7 +1943,8 @@ const {
   clientLimiter, crypto, db, designLab, ensureBlockIds, extraThemes, filmFx, findTemplate, fonts, fs, getSite,
   heightFx, icons, imgFx, industryDesign, invalidateSiteCache, isSafeUrl, isValidHexColor, loadOwnedSite, mixHeroAt,
   mixPage, multer, nanoid, path, pinFx, renderSitePage, requireAuth, safeFetch, saveVersion, scrollFx,
-  servicesWithSlugs, slPageLib, smoothScroll, splitText, str, styleLib, styleSwap, syncMixBlocks
+  servicesWithSlugs, slPageLib, smoothScroll, splitText, str, styleLib, styleSwap, syncMixBlocks,
+  pdfExport, rateLimit, mailer, isTestEnv
 });
 
 // The published site, leads, bookings, reviews, reports, follow-ups, robots.txt and sitemap (routes/site-and-followup.js)

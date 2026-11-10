@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Client feedback — <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .fb-note { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; }
+    .fb-note.done { opacity: .6; }
+    .fb-note.done .fb-msg { text-decoration: line-through; }
+    .fb-meta { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+    .fb-where { display: inline-block; background: #eef2ff; color: #3730a3; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; margin: 2px 0 6px; }
+    .fb-new { background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; margin-left: 6px; }
+    .fb-msg { margin: 0; white-space: pre-wrap; }
+    .fb-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .fb-actions form { margin: 0; }
+    .fb-actions button, .fb-actions a.btn { padding: 6px 12px; font-size: 13.5px; }
+    .fb-check { width: 22px; height: 22px; margin: 2px 0 0; flex: 0 0 auto; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="row">
+      <a href="/sites/<%= site.id %>/edit" class="muted">&larr; <%= site.name %></a>
+      <strong>Client feedback</strong>
+    </div>
+  </nav>
+
+  <div class="container">
+    <p class="muted">Changes your client asked for on the private preview link. Tick a note when it's done: the client sees it marked as done on their link.</p>
+    <p style="font-size:14px;">
+      <% if (shareLink) { %>Their link: <a href="<%= shareLink %>" target="_blank"><%= shareLink %></a> · <a href="/sites/<%= site.id %>/pitch#share">Manage link</a>
+      <% } else { %>No preview link yet. <a href="/sites/<%= site.id %>/pitch#share">Create one</a> and send it to the client: they can type changes right on it.<% } %>
+      · <a href="/sites/<%= site.id %>/pdf">Export PDF</a>
+    </p>
+
+    <% if (!notes.length) { %>
+      <div class="card"><p class="muted" style="margin:0;">No notes yet. When the client clicks "Suggest a change" on their preview link, it shows up here<%= locals.mailOn ? ' and you get an email' : '' %>.</p></div>
+    <% } %>
+    <% notes.forEach(n => { %>
+      <div class="card fb-note<%= n.done ? ' done' : '' %>" id="note-<%= n.id %>">
+        <form method="POST" action="/sites/<%= site.id %>/feedback/<%= n.id %>/done">
+          <input type="hidden" name="done" value="<%= n.done ? '0' : '1' %>">
+          <input type="checkbox" class="fb-check" <%= n.done ? 'checked' : '' %> aria-label="Done" onchange="this.form.submit()">
+        </form>
+        <div style="flex:1; min-width:0;">
+          <div class="fb-meta"><%= n.name || 'Client' %> · <%= n.at %> (UTC)<% if (n.fresh) { %><span class="fb-new">New</span><% } %></div>
+          <span class="fb-where"><%= n.page === '/' ? 'Home' : n.page.replace(/^\//, '').replace(/\//g, ' › ') %><%= n.spot ? ' · ' + n.spot : '' %></span>
+          <p class="fb-msg"><%= n.message %></p>
+          <div class="fb-actions">
+            <a class="btn btn-secondary" target="_blank" href="/sites/<%= site.id %>/preview<%= n.page === '/' ? '' : n.page %><%= n.y !== null && n.y !== undefined ? '#sg-fb=' + (n.x === null || n.x === undefined ? 0.5 : n.x) + ',' + n.y : '' %>">Show on the page</a>
+            <a class="btn btn-secondary" href="/sites/<%= site.id %>/edit">Open the editor</a>
+            <form method="POST" action="/sites/<%= site.id %>/feedback/<%= n.id %>/delete" onsubmit="return confirm('Delete this note?')"><button type="submit" class="btn-danger">Delete</button></form>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</body>
+</html>

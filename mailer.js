@@ -78,6 +78,16 @@ async function sendMail(msg) {
   return true;
 }
 
+// Tells the SiteGen account owner a client typed a change request on the preview link (routes/design-tools.js).
+async function sendFeedbackAlert({ to, siteName, name, where, message, listUrl }) {
+  if (!isConfigured() || !to) return false;
+  return sendMail({
+    to,
+    subject: oneLine(`New change request for ${siteName}`).slice(0, 200),
+    text: `${oneLine(name) || 'Your client'} left a note on the preview of "${siteName}" (${oneLine(where)}):\n\n${message}\n\nSee all notes: ${listUrl}`
+  });
+}
+
 // Asks a past customer to review the business (sent by the owner on purpose).
 async function sendReviewRequest({ to, name, siteName, link, replyTo }) {
   if (!isConfigured() || !to) return false;
@@ -130,4 +140,4 @@ async function sendBookingCustomer({ to, siteName, subject, text, replyTo }) {
   return sendMail({ to, replyTo: replyTo || undefined, subject: oneLine(`${subject} — ${siteName}`).slice(0, 200), text: `${text}\n\n— ${siteName}` });
 }
 
-module.exports = { sendBookingAlert, sendBookingCustomer, sendPaymentLink, isConfigured, sendLeadAlert, sendAutoReply, sendReviewRequest, sendReviewAlert, sendReport };
+module.exports = { sendBookingAlert, sendBookingCustomer, sendPaymentLink, isConfigured, sendLeadAlert, sendAutoReply, sendReviewRequest, sendReviewAlert, sendReport, sendFeedbackAlert };

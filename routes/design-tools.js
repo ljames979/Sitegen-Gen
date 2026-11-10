@@ -7,7 +7,7 @@ module.exports = function (app, deps) {
     fs, getSite, heightFx, icons, imgFx, industryDesign, invalidateSiteCache, isSafeUrl, isValidHexColor,
     loadOwnedSite, mixHeroAt, mixPage, multer, nanoid, path, pinFx, renderSitePage, requireAuth, safeFetch,
     saveVersion, scrollFx, servicesWithSlugs, slPageLib, smoothScroll, splitText, str, styleLib, styleSwap,
-    syncMixBlocks
+    syncMixBlocks, pdfExport, rateLimit, mailer, isTestEnv
   } = deps;
   const inlineEdit = require('../inlineedit');
   const decorKit = require('../decorkit');
@@ -49,7 +49,8 @@ module.exports = function (app, deps) {
     const share = shareRow(req.site.id);
     const sales = salesLib.read(db, req.session.userId);
     const demos = sales.demos.length ? db.prepare(`SELECT id, name FROM sites WHERE user_id = ? AND id IN (${sales.demos.map(() => '?').join(',')})`).all(req.session.userId, ...sales.demos).filter(d => d.id !== req.site.id) : [];
-    res.render('pitch', { site: req.site, motions: PITCH_MOTION, share, shareLink: share ? shareUrl(req, share.token) : '', sales, demos, placeholder: salesLib.PLACEHOLDER });
+    const notes = db.prepare('SELECT COUNT(*) AS n, SUM(CASE WHEN done = 0 THEN 1 ELSE 0 END) AS open FROM share_feedback WHERE site_id = ?').get(req.site.id);
+    res.render('pitch', { site: req.site, motions: PITCH_MOTION, share, shareLink: share ? shareUrl(req, share.token) : '', sales, demos, placeholder: salesLib.PLACEHOLDER, notes: { n: notes.n || 0, open: notes.open || 0 } });
   });
 
   // ---- what Leo sells: three packages for the Pitch screen, and a demo gallery of his best sites (packages.js) ----
@@ -394,6 +395,119 @@ module.exports = function (app, deps) {
   app.get('/look/:token/site/:prefix/:item', clientLimiter, loadShare, (req, res) => {
     if (!Object.prototype.hasOwnProperty.call(ITEM_ROUTES, req.params.prefix)) return res.status(404).render('not-found');
     renderSitePage(req, res, null, shareOpts(req, { page: ITEM_ROUTES[req.params.prefix], itemSlug: req.params.item }));
+  });
+
+  // ---- Export PDF: every page of the site in one PDF to email to the client (pdfexport.js) ----
+  // the pages a PDF can hold: home, then the menu pages (not the members login)
+  const pdfPages = (site) => [{ key: 'home', label: 'Home', path: '' }].concat(
+    buildNavPages(site, '').filter(n => n.key !== 'members').map(n => ({ key: n.key, label: String(n.label || n.key).slice(0, 60), path: n.href }))
+  );
+  app.get('/sites/:id/pdf', requireAuth, loadOwnedSite, (req, res) => {
+    res.render('pdf-export', { site: req.site, pages: pdfPages(req.site), sizes: pdfExport.SIZES, browser: !!pdfExport.findBrowser() });
+  });
+  app.post('/sites/:id/pdf', requireAuth, loadOwnedSite, async (req, res) => {
+    const all = pdfPages(req.site);
+    const want = [].concat(req.body.pages || []).map(String);
+    const pages = want.length ? all.filter(p => want.includes(p.key)) : all;
+    const size = pdfExport.sizeOf(req.body.size);
+    const key = pdfExport.issueKey(req.site.id);
+    const base = `http://127.0.0.1:${req.socket.localPort}/pdfprint/${key}/site`;
+    try {
+      const out = await pdfExport.makePdf({
+        pages: pages.map(p => ({ label: p.label, url: `${base}${p.path}?size=${size}` })),
+        size, title: `${req.site.name}: website preview`
+      });
+      const name = `${pdfExport.safeName(req.site.name)} - website preview${size === 'phone' ? ' (phone)' : ''}.pdf`;
+      res.set('Content-Type', 'application/pdf');
+      res.set('Content-Disposition', `attachment; filename="${name}"`);
+      if (out.failed.length) res.set('X-SG-Skipped', encodeURIComponent(out.failed.join(', ')));
+      res.send(out.pdf);
+    } catch (e) {
+      console.error('PDF export failed:', e.message);
+      res.status(e.code === 'NO_BROWSER' ? 501 : 500).json({ ok: false, noBrowser: e.code === 'NO_BROWSER', error: e.code === 'NO_BROWSER' ? 'No Chrome or Edge was found on this computer.' : 'The PDF could not be made: ' + e.message });
+    } finally {
+      pdfExport.dropKey(key);
+    }
+  });
+  // what the headless browser opens: the owner's preview, motion at rest, behind a 10-minute key
+  function loadPrint(req, res, next) {
+    res.set('X-Robots-Tag', 'noindex, nofollow');
+    const siteId = pdfExport.checkKey(req.params.key);
+    const site = siteId ? getSite(siteId) : null;
+    if (!site) return res.status(404).render('not-found');
+    req.site = site;
+    next();
+  }
+  const printOpts = (req, extra) => ({
+    site: req.site, basePath: `/pdfprint/${req.params.key}/site`, preview: true, hideMotionBar: true,
+    print: pdfExport.SIZES[pdfExport.sizeOf(req.query.size)], contactSent: false, contactError: false, cacheKey: null, ...extra
+  });
+  app.get('/pdfprint/:key/site', loadPrint, (req, res) => renderSitePage(req, res, null, printOpts(req, { page: 'home' })));
+  app.get('/pdfprint/:key/site/:page', loadPrint, (req, res) => renderSitePage(req, res, null, printOpts(req, { page: req.params.page })));
+  app.get('/pdfprint/:key/site/:prefix/:item', loadPrint, (req, res) => {
+    if (!Object.prototype.hasOwnProperty.call(ITEM_ROUTES, req.params.prefix)) return res.status(404).render('not-found');
+    renderSitePage(req, res, null, printOpts(req, { page: ITEM_ROUTES[req.params.prefix], itemSlug: req.params.item }));
+  });
+
+  // ---- client feedback on the share link: the client types what to change (and can point at the spot) ----
+  const feedbackLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000, limit: 40, standardHeaders: true, legacyHeaders: false,
+    skip: () => isTestEnv, message: { ok: false, error: 'Too many notes at once. Please wait a few minutes.' }
+  });
+  const FEEDBACK_MAX = 500;   // per site
+  const fbRow = (r) => ({ id: r.id, page: r.page, spot: r.spot, x: r.x, y: r.y, name: r.name, message: r.message, done: !!r.done, at: r.created_at });
+  const pagePath = (v) => {
+    const p = String(v || '').slice(0, 200);
+    return /^\/[A-Za-z0-9/_\-.]*$/.test(p) ? p : '/';
+  };
+  app.get('/look/:token/feedback', clientLimiter, loadShare, (req, res) => {
+    const rows = db.prepare('SELECT * FROM share_feedback WHERE site_id = ? ORDER BY id DESC LIMIT 200').all(req.site.id);
+    res.json({ ok: true, notes: rows.map(fbRow) });
+  });
+  app.post('/look/:token/feedback', feedbackLimiter, loadShare, (req, res) => {
+    const b = req.body || {};
+    if (b.website) return res.json({ ok: true });   // honeypot
+    const message = str(b.message, 2000).trim();
+    if (message.length < 2) return res.status(400).json({ ok: false, error: 'Please type what you would like changed.' });
+    const n = db.prepare('SELECT COUNT(*) AS n FROM share_feedback WHERE site_id = ?').get(req.site.id).n;
+    if (n >= FEEDBACK_MAX) return res.status(429).json({ ok: false, error: 'This preview has all the notes it can take. Please send the rest by email.' });
+    const frac = (v) => { const n = v === '' || v === null || v === undefined ? NaN : Number(v); return Number.isFinite(n) && n >= 0 && n <= 1 ? Math.round(n * 1000) / 1000 : null; };
+    const row = {
+      page: pagePath(b.page), spot: str(b.spot, 160).replace(/\s+/g, ' ').trim(), name: str(b.name, 80).trim(), message,
+      x: frac(b.x), y: frac(b.y)
+    };
+    const info = db.prepare('INSERT INTO share_feedback (site_id, page, spot, x, y, name, message) VALUES (?, ?, ?, ?, ?, ?, ?)').run(req.site.id, row.page, row.spot, row.x, row.y, row.name, row.message);
+    // tell the SiteGen account owner by email when mail is set up; never blocks the client
+    try {
+      const owner = db.prepare('SELECT email FROM users WHERE id = ?').get(req.site.user_id);
+      if (owner && owner.email && mailer.isConfigured()) {
+        const where = (row.page === '/' ? 'Home' : row.page) + (row.spot ? ` · ${row.spot}` : '');
+        mailer.sendFeedbackAlert({
+          to: owner.email, siteName: req.site.name, name: row.name, where, message: row.message,
+          listUrl: `${req.protocol}://${req.get('host')}/sites/${req.site.id}/feedback`
+        }).catch(err => console.error('Feedback email failed:', err.message));
+      }
+    } catch (e) { console.error('Feedback email failed:', e.message); }
+    res.json({ ok: true, note: fbRow({ ...row, id: info.lastInsertRowid, done: 0, created_at: new Date().toISOString().slice(0, 19).replace('T', ' ') }) });
+  });
+
+  // Leo's list of the client's notes
+  app.get('/sites/:id/feedback', requireAuth, loadOwnedSite, (req, res) => {
+    const rows = db.prepare('SELECT * FROM share_feedback WHERE site_id = ? ORDER BY done ASC, id DESC').all(req.site.id);
+    const fresh = new Set(rows.filter(r => !r.seen).map(r => r.id));
+    db.prepare('UPDATE share_feedback SET seen = 1 WHERE site_id = ? AND seen = 0').run(req.site.id);
+    const share = shareRow(req.site.id);
+    res.render('feedback', { site: req.site, mailOn: mailer.isConfigured(), notes: rows.map(r => ({ ...fbRow(r), fresh: fresh.has(r.id) })), shareLink: share ? shareUrl(req, share.token) : '' });
+  });
+  app.post('/sites/:id/feedback/:fid/done', requireAuth, loadOwnedSite, (req, res) => {
+    const done = req.body.done === '0' ? 0 : 1;
+    db.prepare('UPDATE share_feedback SET done = ? WHERE id = ? AND site_id = ?').run(done, req.params.fid, req.site.id);
+    if (String(req.get('accept') || '').includes('json')) return res.json({ ok: true, done: !!done });
+    res.redirect(`/sites/${req.site.id}/feedback`);
+  });
+  app.post('/sites/:id/feedback/:fid/delete', requireAuth, loadOwnedSite, (req, res) => {
+    db.prepare('DELETE FROM share_feedback WHERE id = ? AND site_id = ?').run(req.params.fid, req.site.id);
+    res.redirect(`/sites/${req.site.id}/feedback`);
   });
 
   return { adviceTemplateFor, keptMotion };

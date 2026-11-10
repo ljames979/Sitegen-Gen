@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Export PDF — <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .pdf-pages { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px 14px; margin: 8px 0 16px; }
+    .pdf-pages label { display: flex; gap: 8px; align-items: center; margin: 0; font-weight: 500; }
+    .pdf-pages input { width: auto; margin: 0; }
+    .pdf-size { display: flex; gap: 18px; flex-wrap: wrap; margin: 6px 0 18px; }
+    .pdf-size label { display: flex; gap: 8px; align-items: center; margin: 0; font-weight: 500; }
+    .pdf-size input { width: auto; margin: 0; }
+    .pdf-status { margin-top: 14px; font-size: 14.5px; }
+    .pdf-status.err { color: #b91c1c; }
+    .pdf-tips li { margin-bottom: 6px; }
+    .pdf-spin { display: inline-block; width: 14px; height: 14px; border: 2px solid #cbd5e1; border-top-color: var(--primary); border-radius: 50%; animation: pdfspin .8s linear infinite; vertical-align: -2px; margin-right: 6px; }
+    @keyframes pdfspin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="row">
+      <a href="/sites/<%= site.id %>/edit" class="muted">&larr; <%= site.name %></a>
+      <strong>Export PDF</strong>
+    </div>
+  </nav>
+
+  <div class="container">
+    <p class="muted">Makes one PDF of the site to email to your client. They can open it on any computer or phone and add comments with their PDF reader (Adobe Reader, Edge, Preview on a Mac). It is a still picture of the site, so moving effects such as the envelope opening show at rest. To let them see the motion and type changes straight into the site, send the <a href="/sites/<%= site.id %>/pitch#share">preview link</a> too.</p>
+
+    <form class="card" id="pdfForm" method="POST" action="/sites/<%= site.id %>/pdf">
+      <h3 style="margin-top:0;">Pages to include</h3>
+      <div class="pdf-pages">
+        <% pages.forEach(p => { %><label><input type="checkbox" name="pages" value="<%= p.key %>" checked> <%= p.label %></label><% }) %>
+      </div>
+      <h3>Layout</h3>
+      <div class="pdf-size">
+        <% Object.keys(sizes).forEach((k, i) => { %><label><input type="radio" name="size" value="<%= k %>" <%= i === 0 ? 'checked' : '' %>> <%= sizes[k].label %> (<%= sizes[k].w %> px wide)</label><% }) %>
+      </div>
+      <% if (browser) { %>
+        <button type="submit" id="pdfGo">Make the PDF</button>
+      <% } else { %>
+        <p class="pdf-status err">No Chrome or Edge was found on this computer, so SiteGen can't make the PDF by itself. Use "Print view" below instead.</p>
+      <% } %>
+      <div class="pdf-status" id="pdfStatus" aria-live="polite"></div>
+    </form>
+
+    <div class="card" style="margin-top:16px;">
+      <h3 style="margin-top:0;">Print view (another way)</h3>
+      <p class="muted" style="margin-top:0;">Opens one page the way it prints. Press Ctrl+P and pick "Save as PDF".</p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <% pages.forEach(p => { %><a class="btn btn-secondary" target="_blank" href="/sites/<%= site.id %>/preview<%= p.path %>?print=1"><%= p.label %></a><% }) %>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h3 style="margin-top:0;">What to tell the client</h3>
+      <ul class="pdf-tips">
+        <li>Open the PDF and use the Comment or Note tool to click on anything you'd like changed and type what you want.</li>
+        <li>Save the PDF and email it back.</li>
+      </ul>
+    </div>
+  </div>
+  <script>
+  (function () {
+    var form = document.getElementById('pdfForm'), go = document.getElementById('pdfGo'), st = document.getElementById('pdfStatus');
+    if (!go) return;
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var fd = new FormData(form);
+      var n = fd.getAll('pages').length;
+      if (!n) { st.className = 'pdf-status err'; st.textContent = 'Tick at least one page.'; return; }
+      go.disabled = true;
+      st.className = 'pdf-status';
+      st.innerHTML = '<span class="pdf-spin"></span>Making the PDF. This takes about 5 to 10 seconds a page (' + n + ' page' + (n === 1 ? '' : 's') + ').';
+      fetch(form.action, { method: 'POST', body: new URLSearchParams(fd) }).then(function (r) {
+        if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'The PDF could not be made.'); }, function () { throw new Error('The PDF could not be made.'); });
+        var skipped = r.headers.get('X-SG-Skipped');
+        var cd = r.headers.get('Content-Disposition') || '';
+        var m = /filename="([^"]+)"/.exec(cd);
+        return r.blob().then(function (b) { return { blob: b, name: m ? m[1] : 'website preview.pdf', skipped: skipped ? decodeURIComponent(skipped) : '' }; });
+      }).then(function (out) {
+        var url = URL.createObjectURL(out.blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = out.name; document.body.appendChild(a); a.click(); a.remove();
+        st.innerHTML = '';
+        st.appendChild(document.createTextNode('Done: "' + out.name + '" is in your Downloads folder. Attach it to an email to your client. '));
+        var again = document.createElement('a'); again.href = url; again.download = out.name; again.textContent = 'Download again';
+        st.appendChild(again);
+        if (out.skipped) st.appendChild(document.createTextNode(' (Left out because it would not print: ' + out.skipped + '.)'));
+      }).catch(function (err) {
+        st.className = 'pdf-status err'; st.textContent = err.message + ' You can still use "Print view" below.';
+      }).then(function () { go.disabled = false; });
+    });
+  })();
+  </script>
+</body>
+</html>

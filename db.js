@@ -369,6 +369,22 @@ CREATE TABLE IF NOT EXISTS user_prefs (
   data TEXT NOT NULL DEFAULT '{}',
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+-- notes a client types on the private preview link (/look/:token): what they want changed, and where
+CREATE TABLE IF NOT EXISTS share_feedback (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  site_id INTEGER NOT NULL,
+  page TEXT NOT NULL DEFAULT '',
+  spot TEXT NOT NULL DEFAULT '',
+  x REAL,
+  y REAL,
+  name TEXT NOT NULL DEFAULT '',
+  message TEXT NOT NULL,
+  done INTEGER NOT NULL DEFAULT 0,
+  seen INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (site_id) REFERENCES sites(id)
+);
 `);
 
 // indexes created after columns are guaranteed to exist
@@ -377,6 +393,7 @@ CREATE INDEX IF NOT EXISTS idx_sites_user_id ON sites(user_id);
 CREATE INDEX IF NOT EXISTS idx_sites_custom_domain ON sites(custom_domain);
 CREATE INDEX IF NOT EXISTS idx_versions_site_id ON site_versions(site_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_site_id ON contact_submissions(site_id);
+CREATE INDEX IF NOT EXISTS idx_share_feedback_site ON share_feedback(site_id);
 `);
 
 module.exports = db;

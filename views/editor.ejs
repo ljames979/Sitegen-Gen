@@ -215,11 +215,13 @@
     <div class="row ed-actions">
       <a href="/sites/<%= site.id %>/preview" target="_blank" class="btn-secondary btn" title="Open the full preview in a new tab">Preview</a>
       <details class="menu">
-        <summary class="btn btn-secondary">Show the client</summary>
+        <summary class="btn btn-secondary">Show the client<% if (typeof feedbackNew !== 'undefined' && feedbackNew) { %> <span class="count" title="New notes from the client"><%= feedbackNew %></span><% } %></summary>
         <div class="menu-list">
           <a href="/sites/<%= site.id %>/pitch"><strong>Pitch mode</strong><span>Full-screen show of the site that scrolls itself</span></a>
           <a href="/sites/<%= site.id %>/compare"><strong>Compare 3 designs</strong><span>The same business in three styles, side by side</span></a>
-          <a href="/sites/<%= site.id %>/pitch#share"><strong>Share a preview link</strong><span>A private link the client can open on their phone</span></a>
+          <a href="/sites/<%= site.id %>/pitch#share"><strong>Share a preview link</strong><span>A private link the client can open on their phone and type changes into</span></a>
+          <a href="/sites/<%= site.id %>/feedback"><strong>Client feedback<% if (typeof feedbackNew !== 'undefined' && feedbackNew) { %> (<%= feedbackNew %> new)<% } %></strong><span>The changes the client asked for on the preview link</span></a>
+          <a href="/sites/<%= site.id %>/pdf"><strong>Export PDF</strong><span>Every page in one PDF to email; the client adds comments in any PDF reader</span></a>
         </div>
       </details>
       <details class="menu">
@@ -2179,6 +2181,8 @@
           ['Pitch: show the client full screen', 'With packages and demo sites', '/sites/' + SID + '/pitch'],
           ['Packages and prices for Pitch', 'Your three packages', '/packages?back=/sites/' + SID + '/pitch'],
           ['Demo gallery', 'Your best sites to show other owners', '/demos'],
+          ['Export PDF to email the client (print, save as PDF)', 'Every page in one PDF; the client comments in a PDF reader', '/sites/' + SID + '/pdf'],
+          ['Client feedback and change requests', 'Notes the client typed on the preview link', '/sites/' + SID + '/feedback'],
         ].forEach(([t, h, u]) => add(t, h, go(u)));
         add('Edit photo: select, change color, adjust light (photo editor)', 'Click 🎨 Edit photo on any picture row, or on a photo in the preview', () => { const b = document.querySelector('button[title^="Open the photo editor"]'); if (b) { revealField(b); b.focus(); } });
         return out;
