@@ -294,7 +294,7 @@ function html(site, blk, opts) {
     + `<div class="sg-rv-envf" role="button" tabindex="0" aria-label="Open the invitation"><span class="sg-rv-pocket" aria-hidden="true">${envPocket(r)}</span>`
     + `<span class="sg-rv-flap sg-rv-flapf" aria-hidden="true">${envFlap(r.flap, r.flapEdge)}</span>`
     + `<span class="sg-rv-seal" aria-hidden="true"><i class="sg-rv-sl">${sealSvg(r, r.icon, gid + 'a')}</i><i class="sg-rv-sr">${sealSvg(r, r.icon, gid + 'b')}</i></span></div>`
-    + `<p class="sg-rv-hint" aria-hidden="true"><span>${esc(r.hint)}</span><b>&darr;</b></p>`
+    + `<p class="sg-rv-hint" aria-hidden="true"><span>${esc(r.hint)}</span><small class="sg-rv-tap">or tap the envelope</small><b>&darr;</b></p>`
     + `</div></div><div class="sg-rv-more" aria-hidden="true"></div></section>`;
 }
 // the card shows the heading as plain words ([highlight] marks and {{style|..}} marks dropped)

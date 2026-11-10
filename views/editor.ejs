@@ -738,6 +738,8 @@
           <label>Motion level</label>
           <select name="theme_motionLevel" id="motionLevel"><% motionLib.LEVELS.forEach(l => { %><option value="<%= l.id %>" <%= mTierNow === l.id ? 'selected' : '' %>><%= l.label %>: <%= l.hint %></option><% }) %></select>
           <% if (levelSuggest && levelSuggest.level !== mTierNow) { %><p class="hint">Suggested for this kind of business: <strong><%= motionLib.LEVELS.find(l => l.id === levelSuggest.level).label %></strong>. <%= levelSuggest.why %> <button type="button" class="btn-secondary" id="levelApply" data-level="<%= levelSuggest.level %>">Use <%= motionLib.LEVELS.find(l => l.id === levelSuggest.level).label %></button></p><% } else if (levelSuggest) { %><p class="hint">This level suits this kind of business. <%= levelSuggest.why %></p><% } %>
+          <label class="check" style="margin-top:10px;"><input type="checkbox" name="theme_calmMotion" value="1" <%= site.theme.calmMotion ? 'checked' : '' %>> Calm motion: no scroll effects at all</label>
+          <p class="hint">Turns off every moving effect on the site at once (envelope reveals, pinned blocks, split words, drifting watermarks, smooth scroll, More effects) and shows everything in its finished place, the same as visitors who switch motion off on their phone. Good for clients who want a quiet site. The settings stay, so unticking brings them back.</p>
           <div id="shaderRow" <%- mTierNow === 'showcase' ? '' : 'hidden' %>>
             <label>Animated hero background</label>
             <select name="theme_motionShader"><% motionLib.SHADERS.forEach(sh => { %><option value="<%= sh.id %>" <%= mShNow === sh.id ? 'selected' : '' %>><%= sh.label %>: <%= sh.hint %></option><% }) %></select>

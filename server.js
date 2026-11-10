@@ -1144,6 +1144,7 @@ function parseThemeFromBody(b) {
     motionStyle: app.locals.motionLib.isValid(b.theme_motionStyle) ? b.theme_motionStyle : app.locals.motionLib.DEFAULT,
     motionLevel: app.locals.motionLib.isLevel(b.theme_motionLevel) ? b.theme_motionLevel : app.locals.motionLib.LEVEL_DEFAULT,
     motionShader: app.locals.motionLib.isShader(b.theme_motionShader) ? b.theme_motionShader : 'aurora',
+    calmMotion: b.theme_calmMotion === '1',   // every effect as for visitors who turn motion off (Leo, 2026-11-10)
     hoverLift: b.theme_hoverLift === '1' || b.theme_hoverLift === 'on',
     logoUrl: isSafeUrl(b.theme_logoUrl) ? str(b.theme_logoUrl, 500) : '',
     faviconUrl: isSafeUrl(b.theme_faviconUrl) ? str(b.theme_faviconUrl, 500) : '',

@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <% if (site.theme.calmMotion) { %><script>/* Calm motion (Design > Motion): every effect on this site behaves as it does for visitors who turn motion off */(function(){var d=document.documentElement;d.classList.add('sg-calm');var mm=window.matchMedia;if(!mm)return;window.matchMedia=function(q){if(/prefers-reduced-motion\s*:\s*reduce/.test(String(q))){var r=mm.call(window,q);return{matches:true,media:String(q),onchange:null,addListener:function(){},removeListener:function(){},addEventListener:function(){},removeEventListener:function(){},dispatchEvent:function(){return false}}}if(/prefers-reduced-motion\s*:\s*no-preference/.test(String(q))){return{matches:false,media:String(q),onchange:null,addListener:function(){},removeListener:function(){},addEventListener:function(){},removeEventListener:function(){},dispatchEvent:function(){return false}}}return mm.call(window,q)}})();</script>
+  <style>html.sg-calm{scroll-behavior:auto!important}html.sg-calm .sg-wm-drift{animation:none!important}</style><% } %>
   <%- extraThemes.creditComment(extraThemes.byId[site.theme.style]) %>
   <% const siteMeta = site.sections.meta || {};
      const city = (siteMeta.city || '').trim();

@@ -2480,7 +2480,7 @@ a.sg-so-count:hover .sg-so-ring { transform: scale(1.06); }
 .sg-rv-sheet { position: relative; padding: clamp(48px, 8vw, 96px) 0; }
 .sg-rv-envb, .sg-rv-envf, .sg-rv-hint, .sg-rv-more { display: none; }
 .sg-rv-live .sg-rv-track { position: relative; height: var(--rv-len, 250vh); }
-@media (max-width: 700px) { .sg-rv-live .sg-rv-track { height: min(var(--rv-len, 250vh), 210vh); } }
+@media (max-width: 700px) { .sg-rv-live .sg-rv-track { height: min(var(--rv-len, 250vh), 180vh); } }   /* phones always play it at the Quick length */
 .sg-rv-live .sg-rv-stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow-x: clip; background: var(--rv-glow, none); }
 .sg-rv-live .sg-rv-sheet { position: absolute; left: 0; right: 0; top: 0; z-index: 2; transform-origin: 50% 0; will-change: transform; }
 .sg-rv-live .sg-rv-sheet > .sg-dc-ledge, .sg-rv-live .sg-rv-sheet > [data-sg-pic], .sg-rv-live .sg-rv-sheet > [data-sg-tx] { opacity: var(--rv-x, 1); }
@@ -2499,6 +2499,8 @@ a.sg-so-count:hover .sg-so-ring { transform: scale(1.06); }
 .sg-rv-sr { clip-path: polygon(54% 0, 100% 0, 100% 100%, 47% 100%, 55% 62%, 46% 38%); }
 .sg-rv-live .sg-rv-hint { display: flex; position: absolute; left: 0; right: 0; top: 80%; z-index: 4; margin: 0; flex-direction: column; align-items: center; gap: 2px;
   font: 600 13px/1.2 var(--body-font, system-ui); letter-spacing: .14em; text-transform: uppercase; color: var(--tk-eyebrow, #8e2350); pointer-events: none; }
+.sg-rv-tap { display: none; font-size: 12px; opacity: .8; }
+@media (pointer: coarse) { .sg-rv-tap { display: block; } }   /* phones: tapping the envelope opens it straight away */
 .sg-rv-hint b { font-size: 20px; animation: sg-rv-nudge 1.6s ease-in-out infinite; }
 @keyframes sg-rv-nudge { 50% { transform: translateY(6px); } }
 .sg-rv-live .sg-rv-more { display: block; }
