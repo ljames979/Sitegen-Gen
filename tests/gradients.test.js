@@ -8,14 +8,14 @@ const contrast = require('../contrast');
 const theme = { primaryColor: '#607882', accentColor: '#263840' };
 
 test('gradient gallery: 30 named presets plus four made from the client\'s own colors, in groups for the pickers', () => {
-  assert.equal(g.PRESETS.length, 30); assert.equal(g.GRAD_IDS.length, 34 + 284); assert.equal(g.IDS.length, 34 + 284 + 17);
+  assert.equal(g.PRESETS.length, 30); assert.equal(g.GRAD_IDS.length, 34 + 284); assert.equal(g.IDS.length, 34 + 284 + 17 + 7);
   g.PRESETS.forEach(p => { assert.ok(p[2].length >= 2 && p[2].every(c => /^#[0-9a-f]{6}$/.test(c)), p[0]); });
   assert.deepEqual(g.stopsOf('brand-bold', theme), ['#607882', '#263840']);
   assert.ok(contrast.luminance(g.stopsOf('brand-soft', theme)[0]) > 0.8, 'soft is light');
   assert.ok(contrast.luminance(g.stopsOf('brand-dark', theme)[0]) < 0.05, 'dark is dark');
   assert.equal(g.stopsOf('nope', theme), null);
   const menu = g.menu(theme);
-  assert.equal(menu[0][0], 'From your colors'); assert.equal(g.menu(theme, false).flatMap(m => m[1]).length, 34); assert.equal(menu.flatMap(m => m[1]).length, 51);
+  assert.equal(menu[0][0], 'From your colors'); assert.equal(g.menu(theme, false).flatMap(m => m[1]).length, 34); assert.equal(menu.flatMap(m => m[1]).length, 51 + 7);
 });
 
 test('gradient styles: straight with an angle, circle glow, cone and soft mesh; text color that reads on every stop', () => {
@@ -92,7 +92,7 @@ test('gradient library (coolors.co colors): 284 more, in color families, valid f
   // per-block pickers leave the library out, apart from the pick already made
   assert.equal(g.menu(theme, false).flatMap(m => m[1]).length, 34);
   assert.equal(g.menu(theme, false, false, 'c-neon-lagoon').flatMap(m => m[1]).length, 35);
-  assert.equal(g.menu(theme, true, true).flatMap(m => m[1]).length, 51 + 284);
+  assert.equal(g.menu(theme, true, true).flatMap(m => m[1]).length, 51 + 284 + 7);
 });
 
 test('gradient intensity: 10-150%, weaker fades into the page color, stronger is richer; blocks, blends and cards', () => {

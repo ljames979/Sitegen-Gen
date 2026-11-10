@@ -298,6 +298,8 @@
     '.sg-cl-name { font-size: 12px; color: var(--muted, #64748b); white-space: nowrap; }',
     '.sg-cl-tip { position: absolute; z-index: 2147483000; pointer-events: none; background: #111; color: #fff; border-radius: 8px; padding: 6px 10px 5px; text-align: center; box-shadow: 0 4px 14px rgba(0, 0, 0, .25); }',
     '.sg-cl-tip[hidden] { display: none !important; }',
+    // a picker that is hidden (like the unused color boxes of a texture-colors picker) hides its labels too
+    'input[type=color][hidden] + .sg-cl, input[type=color][style*="display:none"] + .sg-cl, input[type=color][style*="display: none"] + .sg-cl { display: none !important; }',
     '.sg-cl-tip b { display: block; font: 600 14px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .03em; }',
     '.sg-cl-tip span { display: block; font-size: 11.5px; opacity: .8; margin-top: 1px; white-space: nowrap; }',
     '.sg-cl-tip::after { content: ""; position: absolute; left: var(--ax, 50%); top: 100%; margin-left: -6px; border: 6px solid transparent; border-top-color: #111; }',

@@ -1,4 +1,22 @@
 <% const blockItems = (site.sections.blocks && site.sections.blocks.items) || [];
+   // Faster editor (Leo, 2026-11-07): the long background, cards, page and pin menus are written once, in templates
+   // below; each block's menu holds only its current choice until it is opened (public/lazyselect.js fills it).
+   const _lzTheme = typeof site !== 'undefined' ? site.theme : {};
+   const _lzEsc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+   const _lzBgPlain = [['none','Plain background'],['white','Clear white'],['tint','Light tint band'],['brand','Brand color band'],['dark','Dark band']];
+   const _lzBgGroups = gradients.menu(_lzTheme, true, false).map(g => ['Gradient: ' + g[0].toLowerCase(), g[1].map(x => ['g-' + x[0], x[1]])]);
+   const _lzCardGroups = gradients.menu(_lzTheme, false, false).map(g => ['Cards: ' + g[0].toLowerCase(), g[1].map(x => [x[0], x[1]])]);
+   const _lzPages = [['home','On the home page'],['about','On the About page'],['services','On the Services page'],['testimonials','On the Reviews page'],['whyChoose','On the Why Choose Us page'],['gallery','On the Gallery page'],['faq','On the FAQ page'],['blog','On the News & Tips page'],['hours','On the Hours page'],['contact','On the Contact page']];
+   const _lzOpts = (list) => list.map(o => `<option value="${_lzEsc(o[0])}">${_lzEsc(o[1])}</option>`).join('');
+   const _lzGrp = (groups) => groups.map(g => `<optgroup label="${_lzEsc(g[0])}">${_lzOpts(g[1])}</optgroup>`).join('');
+   const _lzAll = { blockbg: _lzOpts(_lzBgPlain) + _lzGrp(_lzBgGroups), cardbg: _lzOpts([['', 'Cards: their own color']]) + _lzGrp(_lzCardGroups), page: _lzOpts(_lzPages), pin: _lzOpts(pinFx.OPTIONS) };
+   // one block's menu: its current choice only (a library gradient keeps its own name)
+   const _lzOne = (key, name, cur, title, libName) => {
+     const flat = key === 'blockbg' ? _lzBgPlain.concat(..._lzBgGroups.map(g => g[1])) : key === 'cardbg' ? [['', 'Cards: their own color']].concat(..._lzCardGroups.map(g => g[1])) : key === 'page' ? _lzPages : pinFx.OPTIONS;
+     const hit = flat.find(o => o[0] === cur) || (cur && libName ? [cur, libName] : null) || flat[0];
+     return `<select name="${name}" data-sg-lazy="${key}"${title ? ` title="${_lzEsc(title)}"` : ''}><option value="${_lzEsc(hit[0])}" selected>${_lzEsc(hit[1])}</option></select>`;
+   };
+   const _lzLib = (id) => { const x = gradients.LIB.find(p => p[0] === id); return x ? x[1] : ''; };
    const renderBlock = (b) => { %>
   <div class="block-row">
     <div class="block-bar">
@@ -1041,10 +1059,7 @@
     </div><% } %>
     <div class="upload-row">
       <% if (b.type === 'patterns') { %><input type="hidden" name="block_bg" value="none"><input type="hidden" name="block_bgmix" value=""><input type="hidden" name="block_gx" value=""><% } else { %>
-      <select name="block_bg">
-        <% [['none','Plain background'],['white','Clear white'],['tint','Light tint band'],['brand','Brand color band'],['dark','Dark band']].forEach(o => { %><option value="<%= o[0] %>" <%= (b.bg || 'none') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
-        <% gradients.menu(typeof site !== 'undefined' ? site.theme : {}, true, false, String(b.bg || '').slice(2)).forEach(g => { %><optgroup label="Gradient: <%= g[0].toLowerCase() %>"><% g[1].forEach(x => { %><option value="g-<%= x[0] %>" <%= b.bg === 'g-' + x[0] ? 'selected' : '' %>><%= x[1] %></option><% }) %></optgroup><% }) %>
-      </select>
+      <%- _lzOne('blockbg', 'block_bg', b.bg || 'none', '', _lzLib(String(b.bg || '').slice(2))) %>
       <select name="block_bgmix" title="For a gradient or texture: replace the block's color, or blend into a plain color">
         <% [['', 'Gradient replaces the color'], ['none', 'Blend into the page color'], ['tint', 'Blend into a light tint'], ['brand', 'Blend into the brand color'], ['dark', 'Blend into a dark band']].forEach(o => { %><option value="<%= o[0] %>" <%= (b.bgmix || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
       </select>
@@ -1052,25 +1067,18 @@
       <button type="button" class="btn btn-secondary btn-sm" data-glib="block_bg" data-glib-pre="g-" title="Pick the block's background from the gradient library (284 gradients)">🎨 Gradient library…</button>
       <%- include('_gx-pick', { name: 'block_gx', value: b.gx, what: 'Background intensity' }) %>
       <% } %>
-      <select name="block_page" title="Which page shows this block">
-        <% [['home','On the home page'],['about','On the About page'],['services','On the Services page'],['testimonials','On the Reviews page'],['whyChoose','On the Why Choose Us page'],['gallery','On the Gallery page'],['faq','On the FAQ page'],['blog','On the News & Tips page'],['hours','On the Hours page'],['contact','On the Contact page']].forEach(o => { %><option value="<%= o[0] %>" <%= (b.page || 'home') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
-      </select>
+      <%- _lzOne('page', 'block_page', b.page || 'home', 'Which page shows this block') %>
       <select name="block_place">
         <% [['bottom','Lower on the page'],['top','Near the top of the page']].forEach(o => { %><option value="<%= o[0] %>" <%= (b.place || 'bottom') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
       </select>
     </div>
     <div class="upload-row" data-sg-cardbg>
-      <select name="block_cardbg" title="A gradient behind each card inside this block (the words take the color that reads on it)">
-        <option value="">Cards: their own color</option>
-        <% gradients.menu(typeof site !== 'undefined' ? site.theme : {}, false, false, b.cardbg || '').forEach(g => { %><optgroup label="Cards: <%= g[0].toLowerCase() %>"><% g[1].forEach(x => { %><option value="<%= x[0] %>" <%= b.cardbg === x[0] ? 'selected' : '' %>><%= x[1] %></option><% }) %></optgroup><% }) %>
-      </select>
+      <%- _lzOne('cardbg', 'block_cardbg', b.cardbg || '', 'A gradient behind each card inside this block (the words take the color that reads on it)', _lzLib(b.cardbg || '')) %>
       <button type="button" class="btn btn-secondary btn-sm" data-glib="block_cardbg" data-glib-pre="" title="Pick the cards' background from the gradient library">🎨 Gradient library…</button>
       <%- include('_gx-pick', { name: 'block_cardgx', value: b.cardgx, what: 'Card intensity' }) %>
     </div>
     <div class="upload-row">
-      <select name="block_pin" title="Pin this block while the page scrolls, or make its cards stack, pile up or fan out">
-        <% pinFx.OPTIONS.forEach(o => { %><option value="<%= o[0] %>" <%= (b.pin || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
-      </select>
+      <%- _lzOne('pin', 'block_pin', b.pin || '', 'Pin this block while the page scrolls, or make its cards stack, pile up or fan out') %>
     </div>
     <div class="upload-row">
       <select name="block_imgfx" title="Put the block's words over its photos, with a movement">
@@ -1210,6 +1218,8 @@
 <div id="blockList">
   <% blockItems.forEach(b => renderBlock(b)); %>
 </div>
+<% Object.entries(_lzAll).forEach(([k, html]) => { %><template id="sg-lazy-<%= k %>"><select><%- html %></select></template>
+<% }) %><script src="/lazyselect.js"></script>
 <template id="tpl-block-photoText"><% renderBlock({ type: 'photoText' }); %></template>
 <template id="tpl-block-steps"><% renderBlock({ type: 'steps' }); %></template>
 <template id="tpl-block-features"><% renderBlock({ type: 'features' }); %></template>
@@ -1295,6 +1305,7 @@
     const tpl = document.getElementById('tpl-block-' + item.block.type);
     if (!tpl) return say('This block type is not available.');
     const node = tpl.content.cloneNode(true), row = node.querySelector('.block-row');
+    if (window.sgLazyFillIn) window.sgLazyFillIn(row);
     FIELDS.forEach(function (f) {
       const el = row.querySelector('[name=' + f[1] + ']');
       if (el && item.block[f[0]] != null && el.type !== 'file') el.value = item.block[f[0]];
@@ -1306,10 +1317,7 @@
     const gpSide = row.querySelector('.gp-side');   // Gradient pattern: its pattern, look, motion and version
     if (gpSide) { const parts = gpSide.value.split(':'); Array.prototype.forEach.call(row.querySelectorAll('.gp-pick select'), function (x, n) { if (parts[n]) x.value = parts[n]; }); }
     Array.prototype.forEach.call(row.querySelectorAll('.sg-inkpick'), function (box) {   // the saved colors back into the picker
-      const v = box.querySelector('input[type=hidden]').value, list = /^#/.test(v) ? v.split(',') : [];
-      box.querySelector('.sg-ink-mode').value = list.length ? ['one', 'two', 'three'][list.length - 1] : v;
-      Array.prototype.forEach.call(box.querySelectorAll('.sg-ink-c'), function (c, i) { if (list[i]) c.value = list[i]; });
-      if (window.sgInkPick) window.sgInkPick(box);
+      if (window.sgInkSet) window.sgInkSet(box, box.querySelector('input[type=hidden]').value);
     });
     const tbBody = row.querySelector('.tb-body');
     if (tbBody) {
@@ -1518,6 +1526,7 @@
     if (open) {
       const row = open.closest('.block-row') || open.parentNode;
       target = row.querySelector('select[name="' + open.dataset.glib + '"]'); pre = open.dataset.glibPre || '';
+      if (target && window.sgLazyFill) window.sgLazyFill(target);
       if (!target) return;
       fam = ''; q.value = ''; draw(); dlg.showModal(); q.focus(); return;
     }

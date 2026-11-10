@@ -6175,7 +6175,7 @@ test('gradients from the editor: a gallery pick per section and per block, and t
   assert.match(editor, /name="bps_services_bg"[\s\S]*?<option value="preset" selected>Gradient from the gallery/);
   assert.match(editor, /name="bps_services_grad"[\s\S]*?<option value="night" data-css="[^"]*" selected>Night<\/option>/);
   assert.match(editor, /name="theme_pageGrad">[\s\S]*?<option value="cloud" selected>/);
-  assert.match(editor, /name="block_bg">[\s\S]*?<option value="g-sunset" selected>Sunset<\/option>/);
+  assert.match(editor, /name="block_bg"[^>]*>[\s\S]*?<option value="g-sunset" selected>Sunset<\/option>/);
   // a bogus pick changes nothing
   await c.post(editPath, { name: 'Grad Plumbing', hero_headline: 'Hello', theme_homeLayout: 'blueprint', meta_businessType: 'plumbing company', service_title: ['Drains', 'Leaks', 'Heaters'], service_description: ['a', 'b', 'c'], service_detail: ['', '', ''], bps_services_bg: 'preset', bps_services_grad: 'lava', theme_pageGrad: 'lava' });
   const plain = await (await c.get(`/sites/${siteId}/preview`)).text();
@@ -6202,7 +6202,7 @@ test('textured backgrounds: offered with the gallery for sections and blocks, dr
   const editor = await (await c.get(editPath)).text();
   assert.match(editor, /name="bps_services_grad"[\s\S]*?<optgroup label="Textures"><option value="tx-contour" data-css="linear-gradient\(180deg, #26282a, #1b1c1e\)"/);
   assert.match(editor, /name="bps_services_grad"[\s\S]*?<option value="tx-globe" data-css="[^"]*" selected>Wire globe<\/option>/);
-  assert.match(editor, /name="block_bg">[\s\S]*?<option value="g-txb-sphere" selected>Glowing dot sphere, your colors<\/option>/);
+  assert.match(editor, /name="block_bg"[^>]*>[\s\S]*?<option value="g-txb-sphere" selected>Glowing dot sphere, your colors<\/option>/);
   assert.doesNotMatch(editor.match(/name="theme_pageGrad">[\s\S]*?<\/select>/)[0], /tx-/);
 });
 
@@ -6239,7 +6239,9 @@ test('gradient library on blocks and on the cards inside them, each with an inte
   assert.match(html, /\.blk\.blk-bg-g-c-neon-lagoon\.blk-gx-60 \{ background: linear-gradient\(135deg, /);
   assert.match(html, /\.blk\.blk-cg-c-digital-sky-x140\.blk-cg-c-digital-sky-x140 :is\(\.card, \.step-card/);
   const editor = await (await c.get(editPath)).text();
-  assert.match(editor, /name="block_bg">[\s\S]*?<optgroup label="Gradient: gradient library"><option value="g-c-neon-lagoon" selected>Neon Lagoon<\/option>/);
+  // (the menu holds only its choice until opened; public/lazyselect.js keeps a library pick under "Gradient library")
+  assert.match(editor, /name="block_bg" data-sg-lazy="blockbg"><option value="g-c-neon-lagoon" selected>Neon Lagoon<\/option><\/select>/);
+  assert.match(editor, /<template id="sg-lazy-blockbg"><select><option value="none">Plain background<\/option>/);
   assert.match(editor, /name="block_gx" min="10" max="150" step="5" value="60"/);
   assert.match(editor, /name="block_cardbg"[\s\S]*?<option value="c-digital-sky" selected>Digital Sky<\/option>/);
   assert.match(editor, /name="block_cardgx" min="10" max="150" step="5" value="140"/);
