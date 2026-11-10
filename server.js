@@ -1776,6 +1776,11 @@ const QUALITY_FIXES = {
     const buf = await brandKit.readLogo(site.theme.logoUrl, { uploadsDir: UPLOADS_DIR, safeFetch }); if (!buf) return '';
     try { const ic = await brandKit.makeIcons(buf, sharpLib, UPLOADS_DIR, site.id); site.theme = { ...site.theme, faviconUrl: ic.faviconUrl, touchIconUrl: ic.touchIconUrl }; return 'icons'; } catch { return ''; }
   },
+  async decor(site) {   // Decorative card words readable, watermarks turned down (quality.js decorChecks)
+    const sections = { ...site.sections };
+    if (!quality.applyDecorFix(sections)) return '';
+    site.sections = sections; return 'decor';
+  },
   async share(site) {
     let sharpLib; try { sharpLib = require('sharp'); } catch { return ''; }
     if (site.sections.seo && site.sections.seo.shareImage) return '';
@@ -1791,7 +1796,7 @@ app.post('/sites/:id/quality/fix', requireAuth, loadOwnedSite, async (req, res) 
   let kinds;
   if (req.body.fix === 'all') {
     const report = await runQuality(req, res, true);
-    kinds = report.score.fixes.filter(k => QUALITY_FIXES[k]);
+    kinds = [...new Set([...report.score.fixes, ...report.items.map(i => i.fix && i.fix.type).filter(Boolean)])].filter(k => QUALITY_FIXES[k]);
   } else kinds = QUALITY_FIXES[req.body.fix] ? [req.body.fix] : [];
   if (!kinds.length) return back();
   const site = { ...orig, theme: { ...orig.theme }, sections: { ...orig.sections } };

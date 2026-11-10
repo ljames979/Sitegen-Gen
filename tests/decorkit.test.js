@@ -79,3 +79,25 @@ test('the generator decorates a pet business home page, and leaves others alone'
   const q = autosite.plan(other, { industryId: 'plumbing', label: 'Plumbing', gallery: [], colors: { primary: '#7a3e9d', accent: '#f2b705' } });
   assert.deepStrictEqual(q.decor, []);
 });
+
+test('Quality flags hard-to-read card words and strong watermarks, and one click fixes them', async () => {
+  const quality = require('../quality');
+  const contrast = require('../contrast');
+  const site = { theme: {}, sections: { blocks: { items: [{ id: 'bdeco001', type: 'decocard', heading: 'Invite', body: 'style: royal\nicon: crown\ntext: Hello\nheadc: #f4f4f4\ncard: #ffffff\nreveal: envelope\nlen: l' }] },
+    texts: { wmarks: [{ id: 'wabcdefg', page: 'home', part: 'b:bdeco001', el: '', icon: 'dog', color: '#123456', op: 25 }] } } };
+  const items = [], passed = [];
+  quality.decorChecks(site, (i) => items.push(i), (t) => passed.push(t));
+  const ids = items.map(i => i.id);
+  assert.ok(ids.includes('deco-headc-bdeco001'), ids.join());
+  assert.ok(ids.includes('deco-len-bdeco001'));
+  assert.ok(ids.includes('wm-strong'));
+  const sec = JSON.parse(JSON.stringify(site.sections));
+  assert.ok(quality.applyDecorFix(sec) >= 3);
+  const p = require('../decocard').parse(sec.blocks.items[0].body);
+  assert.ok(contrast.ratio(p.headc, '#ffffff') >= 4.5);
+  assert.strictEqual(p.len, 'm');
+  assert.strictEqual(sec.texts.wmarks[0].op, 8);
+  const after = [];
+  quality.decorChecks({ theme: {}, sections: sec }, (i) => after.push(i), () => {});
+  assert.deepStrictEqual(after.map(i => i.id), []);
+});

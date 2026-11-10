@@ -11,6 +11,9 @@ const themes = require('./themes');
 const fonts = require('./fonts');
 const motion = require('./motion-presets');
 const zlib = require('zlib');
+const decoCard = require('./decocard');
+const themeTokens = require('./themetokens');
+const fmt = (n) => (Math.floor(n * 10) / 10).toFixed(1);
 
 const KB = 1024;
 const IMG_RE = /\.(png|jpe?g|webp|gif|avif|svg|bmp|tiff?)(\?.*)?$/i;
@@ -218,6 +221,58 @@ function fontChecks(site, add, pass) {
 }
 
 // site = hydrated site row ({ theme, sections, name }), opts = { html, uploadsDir, sharp }
+// The newer decorations (Leo, 2026-11-10): Decorative card colors, watermarks strong enough to get in the way of the
+// words, an envelope reveal that takes a long scroll on a phone, and the Theme tokens' own color warnings.
+const WM_STRONG = 15;   // % opacity; the presets use 5-8
+function decorChecks(site, add, pass) {
+  const s = (site && site.sections) || {}, theme = (site && site.theme) || {};
+  const blocks = ((s.blocks && s.blocks.items) || []).filter(b => b && b.type === 'decocard');
+  let cardIssues = 0;
+  blocks.forEach(b => {
+    const p = decoCard.parse(b.body), name = b.heading ? `"${String(b.heading).replace(/[\[\]]/g, '').slice(0, 40)}"` : 'A Decorative card';
+    // the card's color when it's solid (glass and see-through cards show what's behind them, so they aren't measured)
+    const solid = p.style !== 'glass' && (p.cardop == null || p.cardop >= 85);
+    const card = p.card || '#ffffff';
+    if (solid) {
+      [['headc', 'heading'], ['bodyc', 'words']].forEach(([k, what]) => {
+        if (!p[k]) return;
+        const r = contrast.ratio(p[k], card);
+        if (r < contrast.AA_TEXT) { cardIssues++; add({ id: `deco-${k}-${b.id}`, area: 'decorations', severity: r < contrast.AA_LARGE ? 'error' : 'warn', title: `${name}: the ${what} are hard to read`, detail: `The ${what} color ${p[k]} has ${fmt(r)}:1 against the card color ${card}; the target is 4.5:1.`, fix: { type: 'decor', label: 'Make card words and watermarks readable' } }); }
+      });
+    } else if (p.pat && (p.cardop != null && p.cardop < 70)) {
+      cardIssues++;
+      add({ id: `deco-pat-${b.id}`, area: 'decorations', severity: 'warn', title: `${name}: wallpaper shows through the words`, detail: `The card is ${p.cardop}% solid over a ${p.pat} wallpaper, so the pattern runs behind the words. Make the card at least 85% solid, or turn the wallpaper down.`, fix: { type: 'decor', label: 'Make card words and watermarks readable' } });
+    }
+    if (p.reveal && p.len === 'l') add({ id: `deco-len-${b.id}`, area: 'decorations', severity: 'warn', title: `${name}: the envelope takes a long scroll`, detail: 'The envelope is set to Slow. On phones it now plays at the Quick length, but on computers visitors still scroll a long way before the card is out. Normal suits most sites.', fix: { type: 'decor', label: 'Make card words and watermarks readable' } });
+  });
+  const marks = ((s.texts && s.texts.wmarks) || []).filter(w => w && Number(w.op) > WM_STRONG);
+  if (marks.length) add({ id: 'wm-strong', area: 'decorations', severity: 'warn', title: `${marks.length === 1 ? 'A watermark is' : marks.length + ' watermarks are'} strong enough to get in the way`, detail: `Watermarks over ${WM_STRONG}% show through the words on top of them. 5-10% reads as a texture rather than a picture.`, fix: { type: 'decor', label: 'Make card words and watermarks readable' } });
+  themeTokens.warnings(theme.tokens).forEach((w, i) => add({ id: 'tokens-' + i, area: 'decorations', severity: 'warn', title: 'Theme tokens: a color is too light', detail: w + ' Change it in Design > Theme tokens.' }));
+  if (blocks.length && !cardIssues) pass('Decorative card words are readable');
+  if (((s.texts && s.texts.wmarks) || []).length && !marks.length) pass('Watermarks stay in the background');
+}
+// fix for the above: card words darkened (or lightened) just enough, watermarks turned down to 8%, Slow reveals to Normal
+function applyDecorFix(sections) {
+  let n = 0;
+  const items = ((sections.blocks && sections.blocks.items) || []).map(b => {
+    if (!b || b.type !== 'decocard') return b;
+    const p = decoCard.parse(b.body), card = p.card || '#ffffff';
+    let body = String(b.body || '');
+    const set = (k, v) => { const re = new RegExp('^' + k + '\\s*:.*$', 'm'); body = re.test(body) ? body.replace(re, k + ': ' + v) : body + '\n' + k + ': ' + v; n++; };
+    const solid = p.style !== 'glass' && (p.cardop == null || p.cardop >= 85);
+    if (solid) ['headc', 'bodyc'].forEach(k => { if (p[k] && contrast.ratio(p[k], card) < contrast.AA_TEXT) set(k, contrast.ensureContrast(p[k], card, contrast.AA_TEXT)); });
+    else if (p.pat && p.cardop != null && p.cardop < 70) set('cardop', 85);
+    if (p.reveal && p.len === 'l') set('len', 'm');
+    return body === b.body ? b : { ...b, body: decoCard.cleanBody(body) };
+  });
+  const texts = sections.texts || {};
+  const wmarks = (texts.wmarks || []).map(w => (w && Number(w.op) > WM_STRONG ? (n++, { ...w, op: 8 }) : w));
+  if (!n) return 0;
+  sections.blocks = { ...(sections.blocks || {}), items };
+  sections.texts = { ...texts, wmarks };
+  return n;
+}
+
 async function audit(site, opts = {}) {
   const items = [], passed = [];
   const add = (i) => { if (!items.some(x => x.id === i.id)) items.push(i); };
@@ -227,6 +282,7 @@ async function audit(site, opts = {}) {
   fontChecks(site, add, pass);
   weightChecks(site, opts.html, add, pass, opts.uploadsDir);
   renderChecks(site, opts.html, add, pass);
+  decorChecks(site, add, pass);
   const rank = { error: 0, warn: 1 };
   items.sort((a, b) => rank[a.severity] - rank[b.severity]);
   const errors = items.filter(i => i.severity === 'error').length;
@@ -270,4 +326,4 @@ async function optimiseImages(site, { uploadsDir, sharp }) {
   return { count: Object.keys(map).length, sections: replace(site.sections), theme: { ...site.theme, logoUrl: map[site.theme && site.theme.logoUrl] || (site.theme && site.theme.logoUrl) || '' } };
 }
 
-module.exports = { audit, weightChecks, scriptWeight, stylePalette, onPrimary, collectImages, applyColorFix, optimiseImages, fixedPrimary };
+module.exports = { decorChecks, applyDecorFix, audit, weightChecks, scriptWeight, stylePalette, onPrimary, collectImages, applyColorFix, optimiseImages, fixedPrimary };

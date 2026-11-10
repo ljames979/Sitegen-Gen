@@ -32,7 +32,7 @@
 <body>
   <nav><div class="row"><a href="/sites/<%= site.id %>/edit" class="muted">&larr; Back to editor</a><strong>Quality check</strong></div></nav>
   <div class="container">
-    <% const doneList = String(done || '').split('.').filter(Boolean); const doneWords = doneList.map(d => d === 'colors' ? 'brand color adjusted' : d === 'motion' ? 'Motion level switched to Premium' : d === 'icons' ? 'browser icon made from the logo' : d === 'share' ? 'share picture made' : /^images\d+$/.test(d) ? (d.slice(6) === '0' ? 'no photos needed changing' : d.slice(6) + ' photo' + (d.slice(6) === '1' ? '' : 's') + ' optimized (originals kept)') : '').filter(Boolean); %>
+    <% const doneList = String(done || '').split('.').filter(Boolean); const doneWords = doneList.map(d => d === 'colors' ? 'brand color adjusted' : d === 'motion' ? 'Motion level switched to Premium' : d === 'icons' ? 'browser icon made from the logo' : d === 'share' ? 'share picture made' : d === 'decor' ? 'card words and watermarks made readable' : /^images\d+$/.test(d) ? (d.slice(6) === '0' ? 'no photos needed changing' : d.slice(6) + ' photo' + (d.slice(6) === '1' ? '' : 's') + ' optimized (originals kept)') : '').filter(Boolean); %>
     <% if (doneWords.length) { %><div class="card" style="margin-bottom:14px;background:#ecfdf5;">Done: <%= doneWords.join(', ') %>. The earlier version is in the editor's history.</div><% } %>
 
     <% if (report.score) { const sc = report.score; %>
