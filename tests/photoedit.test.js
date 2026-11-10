@@ -125,7 +125,7 @@ test('photo editor saves: the original, the changes and their masks stay with th
       { id: 'ly03', type: 'script', mask: 'mk01' },                               // not a kind of change
     ] });
   assert.deepEqual(e.masks, { mk01: '/uploads/pe-x1.png' });
-  assert.deepEqual(e.layers, [{ id: 'ly01', type: 'recolor', name: 'Towel b', mask: 'mk01', hidden: false, color: '#fdeef4', strength: 1, shading: 0 }]);
+  assert.deepEqual(e.layers, [{ id: 'ly01', type: 'recolor', name: 'Towel b', mask: 'mk01', hidden: false, opacity: 1, locked: false, color: '#fdeef4', strength: 1, shading: 0 }]);
   assert.equal(pe.cleanEdit({ src: 'x', out: 'https://evil.example/a.webp' }), null);   // the finished photo is always an upload
   const all = pe.cleanEdits({ abcd1234: e, 'NOT OK': e });
   assert.deepEqual(Object.keys(all), ['abcd1234']);
@@ -164,4 +164,25 @@ test('Change color keeps the shading: darker stays darker, the average takes the
   assert.deepEqual([...o.slice(12, 16)], [40, 150, 150, 255]);          // outside the mask: untouched
   const hidden = await ask({ cmd: 'render', layers: [{ id: 'l', type: 'recolor', mask: 'm1', color: '#fdeef4', hidden: true }] });
   assert.deepEqual([...new Uint8Array(hidden.px)], [...px]);            // a hidden change shows the original
+});
+
+test('part 3: Adjust changes and the Changes list settings are kept, and the worker draws them', () => {
+  const pe = require('../photoedit');
+  const e = pe.cleanEdit({ src: '/uploads/a.png', out: '/uploads/b.webp', w: 2, h: 1, masks: { m1234: '/uploads/pe-1.png' },
+    layers: [{ id: 'l1234', type: 'adjust', mask: 'm1234', bright: 250, contrast: -20, sat: 10, warm: 5, opacity: 0.5, locked: true, name: 'Lighter<b>' }] });
+  assert.equal(e.layers.length, 1);
+  assert.deepEqual([e.layers[0].bright, e.layers[0].contrast, e.layers[0].opacity, e.layers[0].locked, e.layers[0].name], [100, -20, 0.5, true, 'Lighterb']);
+  const vm = require('node:vm'), fs = require('node:fs'), path = require('node:path');
+  const ctx = { self: {}, module: { exports: {} }, Math, Object, Uint8Array, Uint8ClampedArray, Map, Promise };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'public', 'photoedit-worker.js'), 'utf8'), ctx);
+  const { render } = ctx.module.exports;
+  const px = new Uint8ClampedArray([100, 100, 100, 255, 100, 100, 100, 255]);
+  render(px, 2, 1, [{ type: 'adjust', mask: 'm', bright: 50 }], () => new Uint8Array([255, 0]));
+  assert.ok(px[0] > 150 && px[4] === 100, 'only the masked pixel got lighter');
+  const half = new Uint8ClampedArray([100, 100, 100, 255]);
+  render(half, 1, 1, [{ type: 'adjust', mask: 'm', bright: 50, opacity: 0.5 }], () => new Uint8Array([255]));
+  assert.ok(half[0] > 110 && half[0] < px[0], 'half strength is in between');
+  const warm = new Uint8ClampedArray([120, 120, 120, 255]);
+  render(warm, 1, 1, [{ type: 'adjust', mask: 'm', warm: 100 }], () => new Uint8Array([255]));
+  assert.ok(warm[0] > warm[2]);
 });

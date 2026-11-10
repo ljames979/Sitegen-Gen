@@ -1,4 +1,6 @@
 // Photo editor (Leo, 2026-11-09). Part 1: Smart Select. Part 2: Change color, saved as changes (layers) on the original.
+// Part 3 (2026-11-10): Adjust (brightness, contrast, color strength, warmth) for the selection or the whole photo, and a
+// fuller Changes panel: rename, strength (opacity), lock, and move a change up or down (later changes draw on top).
 // SGPhotoEdit.open({ siteId, src }) opens a full-screen editor over the page for one photo:
 //   Select  click anything (the dog, the towel, the brush, a bubble, the foam) and it is outlined. Shift+click adds
 //           another thing, Alt/Option+click takes one away
@@ -56,6 +58,9 @@
 .sgpe-layers li .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sgpe-layers li .dot{width:14px;height:14px;border-radius:50%;border:1px solid #475569;flex:none}
 .sgpe-layers li button{padding:3px 7px;font-size:12.5px}.sgpe-layers li.off .nm{opacity:.5;text-decoration:line-through}
 .sgpe-view.t-pick{cursor:copy}
+.sgpe-layers li{flex-wrap:wrap}.sgpe-layers li input.nm{flex:1;min-width:0;font:inherit;color:inherit;background:transparent;border:1px solid transparent;border-radius:6px;padding:2px 4px}.sgpe-layers li input.nm:hover,.sgpe-layers li input.nm:focus{border-color:#334155;background:#0b1220;outline:none}
+.sgpe-layers li .lop{flex-basis:100%;display:flex;align-items:center;gap:6px;font-size:12px;color:#94a3b8}.sgpe-layers li .lop input{flex:1}
+.sgpe-layers li.lock{border-color:#475569}.sgpe-layers li.lock input.nm{pointer-events:none}
 @media (max-width:820px){.sgpe{grid-template-columns:52px 1fr;grid-template-rows:auto 1fr auto}.sgpe-top{flex-wrap:wrap;gap:6px}.sgpe-top h2,.sgpe-top [data-a=fit],.sgpe-top [data-a=zin],.sgpe-top [data-a=zout]{display:none}.sgpe-top .sgpe-msg{order:9;flex-basis:100%;max-width:none}.sgpe-side{grid-column:1/-1;max-height:38vh;border-left:0;border-top:1px solid #1e293b}.sgpe-msg{max-width:30vw}}
 `;
 
@@ -89,7 +94,7 @@
 </div>
 <div class="sgpe-view t-select">
   <div class="sgpe-stage"><canvas class="sgpe-photo"></canvas><canvas class="sgpe-ov"></canvas><canvas class="sgpe-ui"></canvas></div>
-  <div class="sgpe-float" hidden><span class="sgpe-fl-info"></span><button type="button" data-a="recolor" title="Give the selection a new color, keeping its shading">🎨 Change color</button><button type="button" data-a="invert" title="Select everything else">Invert</button><button type="button" data-a="clear" title="Clear the selection (Esc)">Clear</button></div>
+  <div class="sgpe-float" hidden><span class="sgpe-fl-info"></span><button type="button" data-a="recolor" title="Give the selection a new color, keeping its shading">🎨 Change color</button><button type="button" data-a="adjust" title="Brightness, contrast, color strength and warmth of the selection">☀ Adjust</button><button type="button" data-a="invert" title="Select everything else">Invert</button><button type="button" data-a="clear" title="Clear the selection (Esc)">Clear</button></div>
   <div class="sgpe-busy"><div><div class="sgpe-busy-t">Opening the photo…</div><div class="bar"><i></i></div></div></div>
 </div>
 <div class="sgpe-side">
@@ -111,9 +116,19 @@
     <label>Keep its shading <span class="val sgpe-rc-sh-v">100%</span><input type="range" class="sgpe-rc-sh" min="0" max="100" value="100" aria-label="Keep its shading"></label>
     <div class="row"><button type="button" data-a="rc-apply" class="primary">Apply</button><button type="button" data-a="rc-reset">Reset</button><button type="button" data-a="compare" title="Hold to see the photo before (or hold the \\ key)">Hold to compare</button></div>
   </div>
+  <div class="sgpe-panel sgpe-adj" hidden>
+    <h3>Adjust <span class="sgpe-adj-where" style="text-transform:none;letter-spacing:0;font-weight:400"></span></h3>
+    <label>Brightness <span class="val sgpe-adj-bright-v">0</span><input type="range" class="sgpe-adj-in" data-k="bright" min="-100" max="100" value="0" aria-label="Brightness"></label>
+    <label>Contrast <span class="val sgpe-adj-contrast-v">0</span><input type="range" class="sgpe-adj-in" data-k="contrast" min="-100" max="100" value="0" aria-label="Contrast"></label>
+    <label>Color strength <span class="val sgpe-adj-sat-v">0</span><input type="range" class="sgpe-adj-in" data-k="sat" min="-100" max="100" value="0" aria-label="Color strength"></label>
+    <label>Warmth <span class="val sgpe-adj-warm-v">0</span><input type="range" class="sgpe-adj-in" data-k="warm" min="-100" max="100" value="0" aria-label="Warmth"></label>
+    <div class="row"><button type="button" data-a="adj-apply" class="primary">Apply</button><button type="button" data-a="adj-reset">Reset</button><button type="button" data-a="compare2" title="Hold to see the photo before">Hold to compare</button></div>
+  </div>
   <h3>Changes</h3>
+  <div class="row"><button type="button" data-a="adjust-all" title="Brightness, contrast, color strength and warmth of the whole photo">☀ Adjust the whole photo</button></div>
   <ul class="sgpe-layers" aria-label="Changes to this photo"></ul>
-  <p class="hint sgpe-nolayers">No changes yet. Select something, then choose 🎨 Change color.</p>
+  <p class="hint sgpe-nolayers">No changes yet. Select something, then choose 🎨 Change color or ☀ Adjust.</p>
+  <p class="hint">Later changes draw on top of earlier ones. Click a name to rename it; 🔒 stops a change being moved, renamed or removed by mistake.</p>
   <h3>Keys</h3>
   <p class="hint"><kbd>S</kbd> select · <kbd>B</kbd> brush · <kbd>L</kbd> lasso · <kbd>[</kbd> <kbd>]</kbd> brush size · <kbd>Esc</kbd> clear · hold <kbd>Space</kbd> and drag to move around · scroll to zoom</p>
 </div>`;
@@ -369,11 +384,22 @@
       if (a === 'all') return simple('all', 'Selected all…');
       if (a === 'clear') return clearSel();
       if (a === 'recolor') return openRecolor();
+      if (a === 'adjust') return openAdjust(false);
+      if (a === 'adjust-all') return openAdjust(true);
+      if (a === 'adj-apply') return applyTrial();
+      if (a === 'adj-reset') return resetAdjust();
       if (a === 'rc-apply') return applyRecolor();
       if (a === 'rc-reset') return resetRecolor();
       if (a === 'pick') { S.picking = !S.picking; view.classList.toggle('t-pick', S.picking); b.setAttribute('aria-pressed', String(S.picking)); return say(S.picking ? 'Click the photo to pick its color' : ''); }
       if (b.dataset.lhide) { const L = S.layers.find(x => x.id === b.dataset.lhide); if (L) { L.hidden = !L.hidden; changed(); } return; }
-      if (b.dataset.ldel) { S.layers = S.layers.filter(x => x.id !== b.dataset.ldel); changed(); return say('Change removed'); }
+      if (b.dataset.ldel) { const L = S.layers.find(x => x.id === b.dataset.ldel); if (L && L.locked) return say('That change is locked. Unlock it (🔒) to remove it', true); S.layers = S.layers.filter(x => x.id !== b.dataset.ldel); changed(); return say('Change removed'); }
+      if (b.dataset.llock) { const L = S.layers.find(x => x.id === b.dataset.llock); if (L) { L.locked = !L.locked; changed(); say(L.locked ? 'Locked' : 'Unlocked'); } return; }
+      if (b.dataset.lmove) {   // up = later (drawn on top); the list shows the top one first
+        const i = S.layers.findIndex(x => x.id === b.dataset.lmove), j = i + (b.dataset.dir === 'up' ? 1 : -1);
+        if (i < 0 || j < 0 || j >= S.layers.length) return;
+        if (S.layers[i].locked || S.layers[j].locked) return say('A locked change stays where it is', true);
+        const t = S.layers[i]; S.layers[i] = S.layers[j]; S.layers[j] = t; changed(); return;
+      }
       if (b.dataset.sw) { rcColor.value = b.dataset.sw; rcColor.dispatchEvent(new Event('input', { bubbles: true })); return; }
     });
     softIn.addEventListener('input', () => { S.soft = +softIn.value; softV.textContent = S.soft + ' px'; clearTimeout(softIn.t); softIn.t = setTimeout(restyle, 120); });
@@ -385,7 +411,7 @@
     // ---- changes (layers): each one has its own mask; the original photo is never changed ----
     const rcPanel = $(root, '.sgpe-rc'), rcColor = $(root, '.sgpe-rc-color'), rcStr = $(root, '.sgpe-rc-str'), rcSh = $(root, '.sgpe-rc-sh');
     const uid = () => Math.random().toString(36).slice(2, 10);
-    const NAMES = { recolor: 'Color' };
+    const NAMES = { recolor: 'Color', adjust: 'Adjust' };
     async function rerender() {
       if (!S.base) return;
       const t = S.trial;
@@ -401,17 +427,36 @@
     function listLayers() {
       const ul = $(root, '.sgpe-layers');
       ul.innerHTML = '';
-      S.layers.slice().reverse().forEach(L => {
-        const li = document.createElement('li'); if (L.hidden) li.className = 'off';
-        const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = L.color || '#888';
-        const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = L.name || NAMES[L.type] || 'Change';
-        const eye = document.createElement('button'); eye.type = 'button'; eye.dataset.lhide = L.id; eye.textContent = L.hidden ? 'Show' : 'Hide'; eye.setAttribute('aria-label', (L.hidden ? 'Show ' : 'Hide ') + nm.textContent);
-        const del = document.createElement('button'); del.type = 'button'; del.dataset.ldel = L.id; del.textContent = '✕'; del.title = 'Remove this change'; del.setAttribute('aria-label', 'Remove ' + nm.textContent);
-        li.append(dot, nm, eye, del); ul.appendChild(li);
+      const n = S.layers.length;
+      S.layers.slice().reverse().forEach((L, k) => {
+        const li = document.createElement('li'); li.className = (L.hidden ? 'off' : '') + (L.locked ? ' lock' : '');
+        const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = L.type === 'adjust' ? 'linear-gradient(135deg,#fde68a,#1e293b)' : (L.color || '#888');
+        const nm = document.createElement('input'); nm.className = 'nm'; nm.value = L.name || NAMES[L.type] || 'Change'; nm.maxLength = 60; nm.dataset.lname = L.id; nm.readOnly = !!L.locked; nm.setAttribute('aria-label', 'Name of this change');
+        const mk = (data, val, text, label, title) => { const b = document.createElement('button'); b.type = 'button'; b.dataset[data] = val; b.textContent = text; b.setAttribute('aria-label', label); if (title) b.title = title; return b; };
+        const up = mk('lmove', L.id, '↑', 'Move ' + nm.value + ' up', 'Move up (drawn on top)'); up.dataset.dir = 'up'; up.disabled = k === 0;
+        const dn = mk('lmove', L.id, '↓', 'Move ' + nm.value + ' down', 'Move down'); dn.dataset.dir = 'down'; dn.disabled = k === n - 1;
+        const eye = mk('lhide', L.id, L.hidden ? 'Show' : 'Hide', (L.hidden ? 'Show ' : 'Hide ') + nm.value);
+        const lock = mk('llock', L.id, L.locked ? '🔒' : '🔓', (L.locked ? 'Unlock ' : 'Lock ') + nm.value, L.locked ? 'Locked: click to unlock' : 'Lock this change');
+        const del = mk('ldel', L.id, '✕', 'Remove ' + nm.value, 'Remove this change'); del.disabled = !!L.locked;
+        const op = document.createElement('label'); op.className = 'lop';
+        const opIn = document.createElement('input'); opIn.type = 'range'; opIn.min = 0; opIn.max = 100; opIn.value = Math.round((L.opacity == null ? 1 : L.opacity) * 100); opIn.dataset.lop = L.id; opIn.disabled = !!L.locked; opIn.setAttribute('aria-label', 'Strength of ' + nm.value);
+        const opV = document.createElement('span'); opV.textContent = opIn.value + '%';
+        op.append('Strength', opIn, opV);
+        li.append(dot, nm, up, dn, eye, lock, del, op); ul.appendChild(li);
       });
       $(root, '.sgpe-nolayers').hidden = S.layers.length > 0;
       $(root, '[data-a=save]').disabled = !S.dirty;
     }
+    // renaming and the strength slider, straight from the list
+    const layersEl = $(root, '.sgpe-layers');
+    layersEl.addEventListener('input', (e) => {
+      const t = e.target, L = S.layers.find(x => x.id === (t.dataset.lop || t.dataset.lname));
+      if (!L || L.locked) return;
+      if (t.dataset.lop) { L.opacity = +t.value / 100; t.nextSibling.textContent = t.value + '%'; S.dirty = true; $(root, '[data-a=save]').disabled = false; rerenderSoon(); }
+      if (t.dataset.lname) { L.name = t.value.replace(/[<>]/g, '').slice(0, 60); S.dirty = true; $(root, '[data-a=save]').disabled = false; }
+    });
+    layersEl.addEventListener('change', (e) => { if (e.target.dataset.lop || e.target.dataset.lname) remember(); });
+    layersEl.addEventListener('keydown', (e) => { if (e.target.dataset.lname && e.key === 'Enter') { e.preventDefault(); e.target.blur(); } e.stopPropagation(); });
     function swatches() {
       const box = $(root, '.sgpe-sw'); if (box.childElementCount) return;
       const seen = new Set();
@@ -424,13 +469,51 @@
       document.querySelectorAll('input[name^="theme_"][name$="Color"]').forEach(i => add(i.value, 'Site color'));
       ['#fdeef4', '#f9a8d4', '#ec4899', '#fde68a', '#d4af37', '#93c5fd', '#2563eb', '#86efac', '#ffffff', '#111827'].forEach(c => add(c, 'Color'));
     }
+    const adjPanel = $(root, '.sgpe-adj'), adjIns = Array.prototype.slice.call(root.querySelectorAll('.sgpe-adj-in'));
     function trialLayer() {
+      if (S.trial && S.trial.kind === 'adjust') {
+        const o = { id: '__t', type: 'adjust', mask: '__trial' };
+        adjIns.forEach(i => { o[i.dataset.k] = +i.value; });
+        return o;
+      }
       return { id: '__t', type: 'recolor', mask: '__trial', color: rcColor.value, strength: +rcStr.value / 100, shading: +rcSh.value / 100 };
+    }
+    // Adjust: light and color for the selection, or the whole photo (no selection needed)
+    function openAdjust(whole) {
+      if (!whole && !S.sel) return say('Select something first, or use Adjust the whole photo', true);
+      if (S.trial) { rcPanel.hidden = true; S.trial = null; }
+      adjIns.forEach(i => { i.value = 0; $(root, '.sgpe-adj-' + i.dataset.k + '-v').textContent = '0'; });
+      const m = whole ? new Uint8Array(S.w * S.h).fill(255) : (S.shown || S.sel).slice();
+      S.trial = { kind: 'adjust', whole, mask: m, layer: null };
+      S.trial.layer = trialLayer();
+      $(root, '.sgpe-adj-where').textContent = whole ? '(whole photo)' : '(selection)';
+      adjPanel.hidden = false;
+      say('Move the sliders: the photo shows the change as you go. Apply keeps it');
+      rerender();
+      adjIns[0].focus();
+    }
+    function resetAdjust() { S.trial = null; adjPanel.hidden = true; rerender(); say('Adjustment dropped'); }
+    adjIns.forEach(i => i.addEventListener('input', () => {
+      $(root, '.sgpe-adj-' + i.dataset.k + '-v').textContent = (+i.value > 0 ? '+' : '') + i.value;
+      if (S.trial && S.trial.kind === 'adjust') { S.trial.layer = trialLayer(); rerenderSoon(); }
+    }));
+    const cmp2 = $(root, '[data-a=compare2]');
+    cmp2.addEventListener('pointerdown', (e) => { e.preventDefault(); compare(true); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => cmp2.addEventListener(t, () => compare(false)));
+    function applyTrial() {
+      if (!S.trial) return;
+      if (S.trial.kind !== 'adjust') return applyRecolor();
+      const L0 = trialLayer();
+      if (!L0.bright && !L0.contrast && !L0.sat && !L0.warm) return resetAdjust();
+      const mid = uid(), L = { ...L0, id: uid(), mask: mid, name: 'Adjust ' + (S.trial.whole ? 'whole photo' : 'selection') };
+      S.masks[mid] = S.trial.mask; S.trial = null; adjPanel.hidden = true;
+      work('mask', { mid, mask: S.masks[mid].slice().buffer }).then(() => { S.layers.push(L); changed(); say('Adjusted. Save photo keeps it; the original stays as it was'); });
     }
     function openRecolor() {
       if (!S.sel) return say('Select something first', true);
+      if (S.trial && S.trial.kind === 'adjust') { adjPanel.hidden = true; S.trial = null; }
       swatches(); rcPanel.hidden = false;
-      S.trial = { mask: (S.shown || S.sel).slice(), layer: trialLayer() };
+      S.trial = { kind: 'recolor', mask: (S.shown || S.sel).slice(), layer: trialLayer() };
       // with a hard edge, reach 2 px past the outline so no rim of the old color is left
       if (!S.soft) work('grow', { mask: S.trial.mask.slice().buffer, r: 2 }).then(r => { if (S.trial) { S.trial.mask = new Uint8Array(r.mask); rerender(); } }).catch(() => {});
       say('Pick the new color: the photo shows it as you go. Apply keeps it');
@@ -446,7 +529,7 @@
     }
     [rcColor, rcStr, rcSh].forEach(i => i.addEventListener('input', () => {
       $(root, '.sgpe-rc-str-v').textContent = rcStr.value + '%'; $(root, '.sgpe-rc-sh-v').textContent = rcSh.value + '%';
-      if (S.trial) { S.trial.layer = trialLayer(); rerenderSoon(); }
+      if (S.trial && S.trial.kind !== 'adjust') { S.trial.layer = trialLayer(); rerenderSoon(); }
     }));
     function pickAt(p) {
       const x = Math.max(0, Math.min(S.w - 1, Math.floor(p.x))), y = Math.max(0, Math.min(S.h - 1, Math.floor(p.y)));
@@ -499,7 +582,7 @@
     // Save: the finished photo is rendered full size and uploaded like any photo; the original and the changes are kept
     async function save() {
       if (!S.key || !S.dirty) return;
-      if (S.trial) applyRecolor();
+      if (S.trial) applyTrial();
       const r = await busy('Saving the photo…', async () => {
         const used = new Set(S.layers.map(L => L.mask));
         for (const mid of used) if (!S.maskUrl[mid]) S.maskUrl[mid] = (await post('keep-mask', await maskPng(S.masks[mid]), 'image/png')).url;
