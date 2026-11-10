@@ -123,16 +123,35 @@ function apply(site, kitIn) {
   const mix = mixOf(theme).map(it => ({ ...it }));
   theme.mix = mix;
   const at = places(theme, sections);
-  kit.scenes.forEach(s => { const i = at.indexOf(s.at); if (i < 0) { report.skipped++; return; } mix[i].scene = s.scene; report.added++; });
-  kit.bgs.forEach(s => { const i = at.indexOf(s.at); if (i < 0 || mix[i].k !== 'lib') { report.skipped++; return; } mix[i].bg = s.bg; report.added++; });
+  // where a decoration goes: the same section if this site has one, otherwise the closest stand-in (another content
+  // block for a content block, the same kind of library section, or any library section), each used once per kind
+  const placeFor = (want, used, libOnly) => {
+    let i = at.indexOf(want);
+    if (i >= 0 && !used.has(i) && (!libOnly || mix[i].k === 'lib')) { used.add(i); return i; }
+    const kind = want.split('#')[0], fam = kind.split(':')[0];
+    const ok = (j) => !used.has(j) && (!libOnly || mix[j].k === 'lib');
+    i = at.findIndex((p, j) => ok(j) && p.split('#')[0] === kind);
+    if (i < 0 && fam === 'blk') i = at.findIndex((p, j) => ok(j) && p.startsWith('blk:'));
+    if (i < 0 && fam !== 'blk') i = at.findIndex((p, j) => ok(j) && p.startsWith(fam + ':') && j > 0);
+    if (i >= 0) used.add(i);
+    return i;
+  };
+  const usedScene = new Set(), usedBg = new Set();
+  kit.scenes.forEach(s => { const i = placeFor(s.at, usedScene); if (i < 0) { report.skipped++; return; } mix[i].scene = s.scene; report.added++; });
+  kit.bgs.forEach(s => { const i = placeFor(s.at, usedBg, true); if (i < 0) { report.skipped++; return; } mix[i].bg = s.bg; report.added++; });
   theme.mix = mixPage.clean(mix);
   if (kit.wmarks.length) {
     const texts = sections.texts = { ...(sections.texts || {}) };
     let list = watermark.clean(texts.wmarks);
-    kit.wmarks.forEach(w => {
-      const part = placePart(w.at, theme, sections);
+    const usedMark = new Set();
+    kit.wmarks.forEach(w0 => {
+      let w = w0;
+      let part = placePart(w.at, theme, sections), el = part && w.el ? part + '|' + w.el : '';
+      if (!part) {   // no such section here: the stand-in content block gets it, behind the whole block
+        const i = placeFor(w.at, usedMark);
+        if (i >= 0 && mix[i].k === 'blk') { part = 'b:' + mix[i].v; el = ''; w = { ...w, kind: 'block', size: Math.max(w.size || 0, 420) }; }
+      }
       if (!part) { report.skipped++; return; }
-      const el = w.el ? part + '|' + w.el : '';
       list = list.filter(x => !(x.page === 'home' && x.part === part && x.el === el && (x.slot || 1) === (w.slot || 1)));
       const t = watermark.cleanOne({ ...w, id: rid(), page: 'home', part, el });
       if (t) { list.push(t); report.added++; } else report.skipped++;

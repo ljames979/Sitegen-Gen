@@ -398,7 +398,7 @@ function plan(site, opts) {
 // grass under the About block for cut-out pets to stand on, a faint paw watermark behind the services, and a paw-print
 // pattern over the reviews or FAQ section. Only looks, never words. Returns what it added, in the owner's words.
 const DECOR = {
-  pets: { scene: 'grass:garden:m', mark: 'dog-section', pattern: { g: 'txp-paws', c: 'brand' }, patternOn: ['testimonials', 'faq', 'why'] },
+  pets: { scene: 'grass:garden:m', mark: 'dog-section', pattern: { g: 'txp-paws', c: 'brand_o20', b: 1 }, patternOn: ['testimonials', 'faq', 'why'] },
 };
 function addDecor(group, s, mix, colors, blocks) {
   const d = DECOR[group];
@@ -411,7 +411,9 @@ function addDecor(group, s, mix, colors, blocks) {
     const w = watermark.fromPreset(d.mark, { id: 'w' + nanoId(), page: 'home', part: 'b:' + blocks.service.id, el: '', color: HEX.test(String(colors && colors.primary)) ? colors.primary.toLowerCase() : watermark.DEFAULT_COLOR });
     if (w) { s.texts = { ...(s.texts || {}) }; s.texts.wmarks = watermark.clean([...(s.texts.wmarks || []), w]); done.push('A faint paw watermark behind the services'); }
   }
-  const pat = d.pattern && d.patternOn.map(f => mix.find(m => m.k === 'lib' && m.f === f && !m.bg)).find(Boolean);
+  // only on a section that will show (one with nothing in it is left off the page)
+  const has = { testimonials: ((s.testimonials || {}).items || []).length, faq: ((s.faq || {}).items || []).length, why: ((s.whyChoose || {}).items || []).length };
+  const pat = d.pattern && d.patternOn.filter(f => has[f]).map(f => mix.find(m => m.k === 'lib' && m.f === f && !m.bg)).find(Boolean);
   if (pat) { pat.bg = d.pattern; done.push('A paw-print pattern on the ' + (mixPage.TYPES[pat.f] || pat.f) + ' section'); }
   return done;
 }

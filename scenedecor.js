@@ -87,8 +87,9 @@ function attrs(v) { const p = parse(v); return p ? { cls: ' sg-has-scene', style
 const CSS = [
   '.sg-has-scene{position:relative}',
   // the block keeps room at its bottom for the scene, so its words never sit behind it
-  '.sg-has-scene > :is(section, div):first-child{padding-bottom:calc(var(--sc-room, 190px) + 28px) !important}',
-  '@media (max-width:700px){.sg-has-scene > :is(section, div):first-child{padding-bottom:calc(var(--sc-roomm, 130px) + 20px) !important}}',
+  // (the block is the first section or div in the box: a watermark's svg can come before it, Leo 2026-11-10)
+  '.sg-has-scene > :is(section, div):first-child, .sg-has-scene > :nth-child(1 of section, div){padding-bottom:calc(var(--sc-room, 190px) + 28px) !important}',
+  '@media (max-width:700px){.sg-has-scene > :is(section, div):first-child, .sg-has-scene > :nth-child(1 of section, div){padding-bottom:calc(var(--sc-roomm, 130px) + 20px) !important}}',
   '.sg-scene{position:absolute;left:0;right:0;bottom:0;height:var(--sc-h);z-index:5;pointer-events:none;background-position:left bottom}',
   '@media (max-width:700px){.sg-scene{height:var(--sc-hm)}}'
 ].join('\n');

@@ -366,7 +366,8 @@ const REVEAL_SCRIPT = `(function () {
     var fits = sh <= av, tyF = fits ? hd + (av - sh) / 2 : hd + 14 - ct;
     o.more.style.height = Math.max(0, Math.ceil(tyF + sh - vh)) + 'px';
     [o.envb, o.envf].forEach(function (e) { e.style.left = ex + 'px'; e.style.top = ey + 'px'; e.style.width = ew + 'px'; e.style.height = eh + 'px'; });
-    o.hint.style.top = (ey + eh + 58) + 'px';
+    // on phones the hint goes above the envelope: below it, the phone's call bar along the bottom would hide it
+    o.hint.style.top = (W < 700 ? Math.max(hd + 8, ey - 74) : ey + eh + 58) + 'px';
     return { vh: vh, ey: ey, eh: eh, sh: sh, k0: k0, k1: k1, ty0: ty0, ty1: ty1, tyF: tyF };
   }
   function frame(o) {

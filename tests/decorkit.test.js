@@ -72,6 +72,7 @@ test('the generator decorates a pet business home page, and leaves others alone'
   assert.ok(p.mix && p.mix.length);
   assert.ok(p.decor.length >= 2, p.decor.join('; '));
   assert.ok(p.mix.some(m => m.scene === 'grass:garden:m'));
+  assert.ok(p.mix.some(m => m.f === 'faq' && m.bg && m.bg.g === 'txp-paws'), 'the pattern goes on a section that shows');
   assert.strictEqual(site.sections.texts.wmarks[0].color, '#7a3e9d');
   autosite.recolorDecor(site.sections, { primary: '#7a3e9d' }, { primary: '#112233' });
   assert.strictEqual(site.sections.texts.wmarks[0].color, '#112233');
@@ -100,4 +101,14 @@ test('Quality flags hard-to-read card words and strong watermarks, and one click
   const after = [];
   quality.decorChecks({ theme: {}, sections: sec }, (i) => after.push(i), () => {});
   assert.deepStrictEqual(after.map(i => i.id), []);
+});
+
+test('copying to a site built differently uses stand-in sections', () => {
+  const kit = decorKit.capture(from);
+  const other = { theme: { mix: [{ k: 'lib', f: 'hero', v: 'split' }, { k: 'blk', f: 'own', v: 'beeeeeee' }] }, sections: { blocks: { items: [{ id: 'beeeeeee', type: 'aboutstory', heading: 'About' }] } } };
+  const r = decorKit.apply(other, kit);
+  assert.strictEqual(r.theme.mix[1].scene, 'fence:glassblue:l');
+  assert.strictEqual(r.sections.texts.wmarks[0].part, 'b:beeeeeee');
+  assert.strictEqual(r.report.added, 2);
+  assert.strictEqual(r.report.skipped, 1);   // the card look: this site has no Decorative card
 });

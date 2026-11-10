@@ -78,7 +78,7 @@
     </span>
     <% if (pitch.oldShot) { %><button type="button" class="btn-secondary" id="oldNewBtn" aria-pressed="false">Old site vs new</button><% } %>
     <span class="sp"></span>
-    <% if (demos.length) { %><select id="demoSel" aria-label="Show a demo site"><option value="">Demo sites…</option><% demos.forEach(d => { %><option value="<%= d.id %>"><%= d.name %></option><% }) %></select><% } %>
+    <% if (demos.length) { %><select id="demoSel" aria-label="Show a demo site" style="max-width:150px;"><option value="">Demo sites…</option><% demos.forEach(d => { %><option value="<%= d.id %>"><%= d.name %></option><% }) %></select><% } %>
     <button type="button" class="btn-secondary" id="pkBtn" aria-expanded="false">Packages</button>
     <button type="button" class="btn-secondary" id="shareBtn" aria-expanded="false">Share link</button>
     <button type="button" class="btn-secondary" id="fsBtn">Full screen</button>
