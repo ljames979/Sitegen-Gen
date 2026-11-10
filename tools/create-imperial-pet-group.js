@@ -9,7 +9,7 @@
 // It makes a NEW site (your old "Imperial Pet Grooming" site is not touched) and prints its editor address.
 // Running it again makes nothing new while a site with the address imperial-pet-group exists.
 // The welcome card is a Decorative card in Invitation Reveal mode (it comes out of a pink envelope as you scroll).
-// Still to come: the Scene Decor picket fence (the banner shows a labeled placeholder where it goes).
+// The royalty banner has a Glass Blue picket fence along its bottom (Blocks page > Effects > Scene decor).
 const fs = require('fs');
 const path = require('path');
 const db = require('../db');
@@ -176,7 +176,7 @@ const cta = block('cta', {
 const order = [hero, welcome, why, dogs, cats, menu, extras, reviews, team, faq, banner, cta];
 const sections = defaultSections();
 sections.blocks.items = order;
-const mix = mixPage.clean(order.map((b) => ({ k: 'blk', f: 'own', v: b.id, ...(b === cta ? { a: 'book' } : b === menu ? { a: 'services' } : b === faq ? { a: 'faq' } : b === welcome ? { a: 'about' } : {}) })));
+const mix = mixPage.clean(order.map((b) => ({ k: 'blk', f: 'own', v: b.id, ...(b === cta ? { a: 'book' } : b === menu ? { a: 'services' } : b === faq ? { a: 'faq' } : b === welcome ? { a: 'about' } : b === banner ? { scene: 'fence:glassblue:l' } : {}) })));
 theme.mix = mix;
 
 // header, footer, contact, hours, SEO (section 2, 14, 15)
@@ -225,9 +225,7 @@ const pics = [
 ];
 sections.texts = sections.texts || {};
 sections.texts.pics = picBoxes.clean(pics);
-sections.texts.items = textBoxes.clean([
-  { id: tid(), page: 'home', at: at(banner), x: 24, y: 90, w: 52, text: '[SCENE DECOR: Glass Blue picket fence goes here, 190px tall (coming next)]', size: 13, color: 'white', bold: true }
-]);
+sections.texts.items = textBoxes.clean([]);
 // watermarks (section 5, 6, 7, 10)
 sections.texts.wmarks = watermark.clean([
   watermark.fromPreset('dog-section', { id: 'w' + Math.random().toString(36).slice(2, 9).padEnd(7, '0'), page: 'home', part: at(why), el: at(why) + '|section-1' }),

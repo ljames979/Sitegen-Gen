@@ -204,18 +204,27 @@
     var CAT = {}; D.catalog.forEach(function (c) { CAT[c.k + '|' + c.f + '|' + c.v] = c; });
     var key = function (b) { return b.k + '|' + b.f + '|' + b.v; };
     var info = function (b) { return CAT[key(b)] || { label: b.v, type: '', source: '', empty: false }; };
-    var strip = function (b) { var o = { k: b.k, f: b.f, v: b.v }; if (b.k === 'sl' && b.own) o.own = true; if (b.pin) o.pin = b.pin; if (b.film) o.film = b.film; if (b.imgfx) o.imgfx = b.imgfx; if (b.height) o.height = b.height; if (b.glass) o.glass = b.glass; if (b.bg) o.bg = JSON.parse(JSON.stringify(b.bg)); if (b.xfx && b.xfx.length) o.xfx = b.xfx.slice(); if (b.lay) o.lay = JSON.parse(JSON.stringify(b.lay)); return o; };
-    var PINS = <%- JSON.stringify(pinOptions) %>, FILMS = <%- JSON.stringify(filmStrengths) %>, IMGS = <%- JSON.stringify(imgOptions) %>, HTS = <%- JSON.stringify(heightOptions) %>, XFX = <%- JSON.stringify(extraFx.blockMenu()) %>, XFX_SITE = <%- JSON.stringify(extraFx.list(site.theme)) %>, BRAND = <%- JSON.stringify(site.theme.primaryColor || '#2563eb') %>, GRADS = <%- JSON.stringify(gradients.menu(site.theme, true, true)).replace(/</g, '\\u003c') %>, GSTYLES = <%- JSON.stringify(Object.entries(gradients.STYLES)) %>, GLASS = <%- JSON.stringify(glassFx.OPTIONS) %>, INKS = <%- JSON.stringify(gradients.textures.INK_MODES) %>, ACCENT = <%- JSON.stringify(site.theme.accentColor || '#f59e0b') %>;
+    var strip = function (b) { var o = { k: b.k, f: b.f, v: b.v }; if (b.k === 'sl' && b.own) o.own = true; if (b.pin) o.pin = b.pin; if (b.film) o.film = b.film; if (b.imgfx) o.imgfx = b.imgfx; if (b.height) o.height = b.height; if (b.glass) o.glass = b.glass; if (b.scene) o.scene = b.scene; if (b.bg) o.bg = JSON.parse(JSON.stringify(b.bg)); if (b.xfx && b.xfx.length) o.xfx = b.xfx.slice(); if (b.lay) o.lay = JSON.parse(JSON.stringify(b.lay)); return o; };
+    var PINS = <%- JSON.stringify(pinOptions) %>, FILMS = <%- JSON.stringify(filmStrengths) %>, IMGS = <%- JSON.stringify(imgOptions) %>, HTS = <%- JSON.stringify(heightOptions) %>, XFX = <%- JSON.stringify(extraFx.blockMenu()) %>, XFX_SITE = <%- JSON.stringify(extraFx.list(site.theme)) %>, BRAND = <%- JSON.stringify(site.theme.primaryColor || '#2563eb') %>, GRADS = <%- JSON.stringify(gradients.menu(site.theme, true, true)).replace(/</g, '\\u003c') %>, GSTYLES = <%- JSON.stringify(Object.entries(gradients.STYLES)) %>, GLASS = <%- JSON.stringify(glassFx.OPTIONS) %>, SCENES = <%- JSON.stringify(sceneDecor.menu()) %>, SCSIZES = <%- JSON.stringify(sceneDecor.SIZES) %>, INKS = <%- JSON.stringify(gradients.textures.INK_MODES) %>, ACCENT = <%- JSON.stringify(site.theme.accentColor || '#f59e0b') %>;
     // a see-through color layer over the block: "brand:30" or "#1b2a4a:30"
     // a block's effects (pin, color film, photo words, height) fold under one Effects button; the count says how many are on
     var fxOpen = {};
+    // a picket fence, hedge, grass or hills along the block's bottom (scenedecor.js): "fence:glassblue:l"
+    function sceneRow(b) {
+      var p = String(b.scene || '').split(':'), pick = p.length === 3 ? p[0] + ':' + p[1] : '', size = p[2] || 'l';
+      var own = /^own-/.test(p[1] || ''), cols = own ? p[1].slice(4).split('-').map(function (c) { return '#' + c; }) : ['#d6ebf8', '#a9d0ea', '#ffffff'];
+      var opts = SCENES.slice(); if (own) opts.push([pick, 'My own colors']);
+      return '<label class="own pin" title="A drawn picket fence, hedge, grass or hills along the bottom of the block. Pictures you add sit in front of it.">Scene decor <select data-a="scene">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (pick === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
+        (pick ? '<label class="own pin">Height <select data-a="scene-size">' + SCSIZES.map(function (o) { return '<option value="' + o[0] + '"' + (size === o[0] ? ' selected' : '') + '>' + esc(o[1] + ' (' + o[2] + 'px, ' + o[3] + 'px on phones)') + '</option>'; }).join('') + '</select></label>' +
+          '<span class="own pin" data-sg-cl="off" style="display:flex;align-items:center;gap:6px">Own colors' + ['Fill', 'Shade', 'Highlight'].map(function (t, n) { return '<input type="color" data-a="scene-c" data-sg-cl="off" value="' + cols[n] + '" title="' + t + '" aria-label="Scene decor ' + t.toLowerCase() + '" style="width:34px;height:26px;padding:1px">'; }).join('') + '</span>' : '');
+    }
     function fxBox(b, i) {
-      var on = ['pin', 'film', 'imgfx', 'height', 'bg', 'glass'].filter(function (k) { return b[k]; }).length + ((b.xfx || []).length);
+      var on = ['pin', 'film', 'imgfx', 'height', 'bg', 'glass', 'scene'].filter(function (k) { return b[k]; }).length + ((b.xfx || []).length);
       return '<details class="fx" data-fx="' + i + '"' + (fxOpen[i] ? ' open' : '') + '><summary>Effects' + (on ? ' <b>' + on + ' on</b>' : '') + '</summary>' +
         '<label class="own pin">Pin and cards <select data-a="pin">' + PINS.map(function (o) { return '<option value="' + o[0] + '"' + ((b.pin || '') === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' + filmRow(b) +
         '<label class="own pin">Photo words <select data-a="imgfx">' + IMGS.map(function (o) { return '<option value="' + o[0] + '"' + ((b.imgfx || '') === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
         '<label class="own pin" title="Its words and cards sit on a pane of glass. Looks best over a photo or gradient background.">Glass panel <select data-a="glass">' + GLASS.map(function (o) { return '<option value="' + o[0] + '"' + ((b.glass || '') === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
-        gradRow(b) + xfxRows(b) +
+        sceneRow(b) + gradRow(b) + xfxRows(b) +
         '<span class="own fxcp"><button type="button" class="ui-btn sm" data-a="fx-copy" title="Remember these effects, to give them to other blocks (on any site)">Copy effects</button>' +
         (fxClip() ? '<button type="button" class="ui-btn sm" data-a="fx-paste" title="Give this block the effects you copied">Paste</button><button type="button" class="ui-btn sm" data-a="fx-all" title="Give every block on the page the effects you copied (the hero is left out of pins)">Paste to all</button>' : '') + '</span>' +
         '</details>';
@@ -248,7 +257,7 @@
       }).join('') + '</div>';
     }
     // copied effects are kept in this browser, so they can be pasted on another site too
-    var FX_KEYS = ['pin', 'film', 'imgfx', 'height', 'glass', 'xfx'];
+    var FX_KEYS = ['pin', 'film', 'imgfx', 'height', 'glass', 'scene', 'xfx'];
     function fxClip() { try { return JSON.parse(localStorage.getItem('sg-fx-clip') || 'null'); } catch (e) { return null; } }
     function fxGive(b, c) {
       FX_KEYS.forEach(function (k) { if (c[k] && !(k === 'pin' && b.f === 'hero')) b[k] = k === 'xfx' ? c[k].filter(function (id) { return id !== 'zoom' || b.f === 'hero'; }) : c[k]; else delete b[k]; });
@@ -344,7 +353,7 @@
       else if (a === 'own') change(function () { blocks[i].own = e.target.checked; if (!blocks[i].own) delete blocks[i].own; sel = i; }, true);
       else if (a === 'sz-' || a === 'sz+') arr.sizeStep(i, a === 'sz+' ? 40 : -40);
       else if (a === 'sz0') arr.sizeAuto(i);
-      else if (a === 'pin' || a === 'imgfx' || a === 'height' || a === 'glass' || a === 'xfx' || a === 'sz' || /^film/.test(a) || /^gbg/.test(a)) return;
+      else if (a === 'pin' || a === 'imgfx' || a === 'height' || a === 'glass' || /^scene/.test(a) || a === 'xfx' || a === 'sz' || /^film/.test(a) || /^gbg/.test(a)) return;
       else if (!a) select(i, true);
     });
     // pin a block in place while the page scrolls
@@ -364,6 +373,14 @@
       var s = e.target.closest('[data-a="imgfx"]'); if (!s) return;
       var i = +s.closest('.blk').dataset.i;
       change(function () { if (s.value) blocks[i].imgfx = s.value; else delete blocks[i].imgfx; sel = i; }, true);
+    });
+    // scene decor: the kind and colors, its height, or the owner's own three colors
+    list.addEventListener('change', function (e) {
+      var s = e.target.closest('[data-a^="scene"]'); if (!s) return;
+      var li = s.closest('.blk'), i = +li.dataset.i, k = s.getAttribute('data-a');
+      var pick = li.querySelector('[data-a="scene"]').value, sz = li.querySelector('[data-a="scene-size"]');
+      if (k === 'scene-c' && pick) { var c = Array.prototype.map.call(li.querySelectorAll('[data-a="scene-c"]'), function (x) { return x.value.slice(1).toLowerCase(); }); pick = pick.split(':')[0] + ':own-' + c.join('-'); }
+      change(function () { if (pick) blocks[i].scene = pick + ':' + (sz ? sz.value : 'l'); else delete blocks[i].scene; sel = i; fxOpen[i] = true; }, true);
     });
     // a pane of glass under the block's content
     list.addEventListener('change', function (e) {
