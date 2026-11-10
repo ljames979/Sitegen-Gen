@@ -43,9 +43,33 @@ module.exports = function (app, deps) {
   const shareRow = (siteId) => db.prepare('SELECT token, created_at, views, last_viewed_at FROM share_links WHERE site_id = ?').get(siteId) || null;
   const shareUrl = (req, token) => `${req.protocol}://${req.get('host')}/look/${token}`;
 
+  const salesLib = require('../packages');
+  const kindOf = (r) => { try { return String((JSON.parse(r.sections || '{}').meta || {}).businessType || '').slice(0, 60); } catch { return ''; } };
   app.get('/sites/:id/pitch', requireAuth, loadOwnedSite, (req, res) => {
     const share = shareRow(req.site.id);
-    res.render('pitch', { site: req.site, motions: PITCH_MOTION, share, shareLink: share ? shareUrl(req, share.token) : '' });
+    const sales = salesLib.read(db, req.session.userId);
+    const demos = sales.demos.length ? db.prepare(`SELECT id, name FROM sites WHERE user_id = ? AND id IN (${sales.demos.map(() => '?').join(',')})`).all(req.session.userId, ...sales.demos).filter(d => d.id !== req.site.id) : [];
+    res.render('pitch', { site: req.site, motions: PITCH_MOTION, share, shareLink: share ? shareUrl(req, share.token) : '', sales, demos, placeholder: salesLib.PLACEHOLDER });
+  });
+
+  // ---- what Leo sells: three packages for the Pitch screen, and a demo gallery of his best sites (packages.js) ----
+  const safeBack = (v) => (/^\/(?:sites\/\d+\/(?:pitch|edit)|dashboard|demos)$/.test(String(v || '')) ? String(v) : '/dashboard');
+  app.get('/packages', requireAuth, (req, res) => {
+    const mySites = db.prepare('SELECT id, name, sections FROM sites WHERE user_id = ? ORDER BY updated_at DESC LIMIT 200').all(req.session.userId).map(r => ({ id: r.id, name: r.name, kind: kindOf(r) }));
+    res.render('packages', { sales: salesLib.read(db, req.session.userId), mySites, saved: req.query.saved === '1', back: safeBack(req.query.back), placeholder: salesLib.PLACEHOLDER });
+  });
+  app.post('/packages', requireAuth, (req, res) => {
+    const sales = salesLib.fromForm(req.body);
+    const mine = new Set(db.prepare('SELECT id FROM sites WHERE user_id = ?').all(req.session.userId).map(r => r.id));
+    sales.demos = sales.demos.filter(id => mine.has(id));
+    salesLib.write(db, req.session.userId, sales);
+    res.redirect(`/packages?saved=1&back=${encodeURIComponent(safeBack(req.body.back))}`);
+  });
+  app.get('/demos', requireAuth, (req, res) => {
+    const sales = salesLib.read(db, req.session.userId);
+    const rows = sales.demos.length ? db.prepare(`SELECT id, name, sections FROM sites WHERE user_id = ? AND id IN (${sales.demos.map(() => '?').join(',')})`).all(req.session.userId, ...sales.demos) : [];
+    const demos = sales.demos.map(id => rows.find(r => r.id === id)).filter(Boolean).map(r => { const sh = shareRow(r.id); return { id: r.id, name: r.name, kind: kindOf(r), share: sh ? shareUrl(req, sh.token) : '' }; });
+    res.render('demos', { demos });
   });
 
   app.get('/sites/:id/compare', requireAuth, loadOwnedSite, (req, res) => {

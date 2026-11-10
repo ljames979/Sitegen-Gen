@@ -362,6 +362,13 @@ CREATE TABLE IF NOT EXISTS mix_saved (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 CREATE INDEX IF NOT EXISTS idx_mix_saved_user ON mix_saved(user_id);
+
+-- the SiteGen user's own settings that belong to no one site (packages.js: Pitch packages and the demo gallery)
+CREATE TABLE IF NOT EXISTS user_prefs (
+  user_id INTEGER PRIMARY KEY,
+  data TEXT NOT NULL DEFAULT '{}',
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
 `);
 
 // indexes created after columns are guaranteed to exist

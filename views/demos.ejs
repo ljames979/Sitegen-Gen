@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Demo gallery — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .dm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+    .dm-card { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
+    .dm-shot { position: relative; height: 230px; overflow: hidden; background: #f1f5f9; }
+    .dm-shot iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 920px; border: 0; transform: scale(.25); transform-origin: 0 0; pointer-events: none; }
+    .dm-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .dm-body .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .dm-kind { color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <nav><div class="row"><a href="/dashboard" class="muted">&larr; Dashboard</a><strong>Demo gallery</strong><span style="flex:1"></span><a href="/packages?back=/demos">Choose the sites</a></div></nav>
+  <div class="container">
+    <p class="muted">Your best sites, to show a business owner what theirs could look like. Open one in Pitch to tour it full screen, or share its private preview link.</p>
+    <% if (!demos.length) { %><div class="card"><p style="margin:0;">No demo sites picked yet. <a href="/packages?back=/demos">Pick your best sites</a>, ideally one per kind of business.</p></div><% } %>
+    <div class="dm-grid">
+      <% demos.forEach(d => { %>
+      <div class="dm-card">
+        <div class="dm-shot"><iframe title="<%= d.name %>" src="/sites/<%= d.id %>/preview?bar=0" loading="lazy" tabindex="-1" aria-hidden="true"></iframe></div>
+        <div class="dm-body">
+          <strong><%= d.name %></strong>
+          <% if (d.kind) { %><span class="dm-kind"><%= d.kind %></span><% } %>
+          <div class="row">
+            <a class="btn" href="/sites/<%= d.id %>/pitch">Show in Pitch</a>
+            <a class="btn btn-secondary" href="/sites/<%= d.id %>/preview" target="_blank" rel="noopener">Open</a>
+            <% if (d.share) { %><a class="btn btn-secondary" href="<%= d.share %>" target="_blank" rel="noopener">Preview link</a><% } %>
+          </div>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+  </div>
+</body>
+</html>
