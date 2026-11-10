@@ -2163,6 +2163,24 @@
         document.querySelectorAll('.ed-top a[href]').forEach(a => { const t = a.querySelector('strong'), d = t && t.nextElementSibling; if (a.getAttribute('href') !== '#') add(t ? t.textContent : a.textContent, d ? d.textContent : 'Open', () => { location.href = a.href; }); });
         add('Undo', 'Ctrl+Z', () => undoBtn.click());
         add('Redo', 'Ctrl+Shift+Z', () => redoBtn.click());
+        // the tools on the bar over the preview (Watermark, Move & size, + Add picture ...), with their own words as hints
+        document.querySelectorAll('#addTextBtn, #addPicBtn, #addCutBtn, #addPawBtn, #addCatPawBtn, #addTrailBtn, #addShapeBtn, #addStampBtn, #styleTextBtn, #moveSizeBtn, #watermarkBtn').forEach(b => {
+          add(b.textContent.replace(/^[+✂✥🐾]\s*/u, ''), 'Tool over the preview · ' + clean(b.title).slice(0, 70), () => { b.scrollIntoView({ block: 'center' }); b.click(); });
+        });
+        // tools on other pages, under the words people use for them (Leo, 2026-11-10: "find a tool")
+        const SID = <%= site.id %>, go = (u) => () => { location.href = u; };
+        [['Scene decor: picket fence, hedge, grass, hills', 'Blocks page › a block › Effects › Scene decor', '/sites/' + SID + '/blocks'],
+          ['Decorative card and Invitation Reveal envelope', 'Blocks page › add a Decorative card block, or edit one', '/sites/' + SID + '/blocks'],
+          ['Pet pattern backgrounds (paws, bones, dogs, cats)', 'Blocks page › a section › background, or any background picker', '/sites/' + SID + '/blocks'],
+          ['Effects for one block (pin, film, glass, height, more effects)', 'Blocks page › a block › Effects', '/sites/' + SID + '/blocks'],
+          ['Copy decorations from another site', 'Brand kit page › Copy decorations', '/sites/' + SID + '/brand#decor'],
+          ['Brand kit: colors, fonts and icon from the logo', 'Brand kit page', '/sites/' + SID + '/brand'],
+          ['Quality check before publishing', 'Contrast, photos, phones, decorations', '/sites/' + SID + '/quality'],
+          ['Pitch: show the client full screen', 'With packages and demo sites', '/sites/' + SID + '/pitch'],
+          ['Packages and prices for Pitch', 'Your three packages', '/packages?back=/sites/' + SID + '/pitch'],
+          ['Demo gallery', 'Your best sites to show other owners', '/demos'],
+        ].forEach(([t, h, u]) => add(t, h, go(u)));
+        add('Edit photo: select, change color, adjust light (photo editor)', 'Click 🎨 Edit photo on any picture row, or on a photo in the preview', () => { const b = document.querySelector('button[title^="Open the photo editor"]'); if (b) { revealField(b); b.focus(); } });
         return out;
       }
       function render() {
