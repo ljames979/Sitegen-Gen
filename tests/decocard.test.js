@@ -108,4 +108,5 @@ test('Invitation Reveal markup: an envelope around the card, open without the sc
   const plain = dc.html({ theme: {} }, { ...blk, body: 'style: royal\nledge: #fbd9e7' }, {});
   assert.doesNotMatch(plain, /sg-rv/); assert.match(plain, /sg-dc-ledge/); assert.match(plain, /data-reveal/);
   assert.ok(dc.REVEAL_SCRIPT.includes('.sg-rv.sg-rv-live') && !/<\//.test(dc.REVEAL_SCRIPT));
+  assert.ok(dc.REVEAL_SCRIPT.includes('window.sgReveal'), 'the editor can play it in the preview');
 });

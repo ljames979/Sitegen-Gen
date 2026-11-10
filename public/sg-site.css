@@ -2502,6 +2502,10 @@ a.sg-so-count:hover .sg-so-ring { transform: scale(1.06); }
 .sg-rv-hint b { font-size: 20px; animation: sg-rv-nudge 1.6s ease-in-out infinite; }
 @keyframes sg-rv-nudge { 50% { transform: translateY(6px); } }
 .sg-rv-live .sg-rv-more { display: block; }
+/* played from the editor (Play it in the preview): no scrolling needed, the stage just fills the preview */
+.sg-rv-live.sg-rv-demo .sg-rv-track { height: auto; }
+.sg-rv-live.sg-rv-demo .sg-rv-stage { position: relative; }
+.sg-rv-demo .sg-rv-envf { cursor: default; }
 @media (max-width: 640px) {
   .sg-dc { --dc-curl: 30px; }
   .sg-dc-royal .sg-dc-inner { inset: calc(var(--dc-w) + 4px); }

@@ -191,6 +191,67 @@
     build(row);
   }, true);
 
+  // Invitation Reveal: play the envelope opening in the preview (or step through it with the slider), then put the
+  // card back the way the preview shows it for editing. The preview page has window.sgReveal (decocard.js).
+  var demo = { row: null, sec: null, raf: 0, timer: 0 };
+  function previewSec(row) {
+    var f = document.getElementById('previewFrame'), w, d;
+    try { w = f && f.contentWindow; d = f && f.contentDocument; } catch (e) { return null; }
+    var idBox = q(row, '[name="block_id"]'), id = idBox ? idBox.value : '';
+    if (!w || !d || !id) return null;
+    var sec = d.querySelector('section.sg-rv[data-sg-bid="' + id.replace(/[^a-z0-9_-]/gi, '') + '"]');
+    return sec && w.sgReveal ? { w: w, sec: sec } : null;
+  }
+  function say(row, msg) { var m = q(row, '.dc-rvmsg'); if (m) m.textContent = msg || ''; }
+  function demoAt(row, p, scroll) {
+    var t = previewSec(row);
+    if (!t) { say(row, 'The preview is still catching up with your changes. Give it a moment, then try again.'); return false; }
+    if (scroll || demo.sec !== t.sec) { try { t.sec.scrollIntoView({ block: 'start' }); } catch (e) {} }
+    if (!t.w.sgReveal.demo(t.sec, p)) { say(row, 'The preview is still catching up with your changes. Give it a moment, then try again.'); return false; }
+    demo.row = row; demo.sec = t.sec; demo.w = t.w;
+    q(row, '.dc-rvstop').hidden = false; say(row, '');
+    return true;
+  }
+  function demoStop(row) {
+    cancelAnimationFrame(demo.raf); clearTimeout(demo.timer);
+    if (demo.sec && demo.w && demo.w.sgReveal) { try { demo.w.sgReveal.stop(demo.sec); } catch (e) {} }
+    demo.sec = null;
+    if (row) { q(row, '.dc-rvstop').hidden = true; q(row, '.dc-rvscrub').value = 0; var b = q(row, '.dc-rvplay'); if (b) b.disabled = false; }
+  }
+  function demoPlay(row) {
+    demoStop(row);
+    if (!demoAt(row, 0, true)) return;
+    var b = q(row, '.dc-rvplay'), r = q(row, '.dc-rvscrub'), t0 = 0, dur = 5200;
+    if (b) b.disabled = true;
+    var step = function (ts) {
+      if (!t0) t0 = ts;
+      var p = Math.min(1, (ts - t0) / dur);
+      if (!demo.sec || !demo.w.sgReveal.demo(demo.sec, p)) return;
+      r.value = Math.round(p * 100);
+      if (p < 1) demo.raf = requestAnimationFrame(step);
+      else { if (b) b.disabled = false; demo.timer = setTimeout(function () { demoStop(row); }, 2500); }
+    };
+    demo.raf = requestAnimationFrame(step);
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('.dc-rvplay, .dc-rvstop'); if (!t) return;
+    var row = t.closest('.block-row'); if (!isDeco(row)) return;
+    e.preventDefault();
+    if (t.classList.contains('dc-rvplay')) demoPlay(row); else demoStop(row);
+  });
+  // the slider: its moves are not changes to the card, so they must not reach the editor's autosave
+  document.addEventListener('input', function (e) {
+    if (!e.target.classList || !e.target.classList.contains('dc-rvscrub')) return;
+    e.stopPropagation();
+    var row = e.target.closest('.block-row'); if (!row) return;
+    cancelAnimationFrame(demo.raf); clearTimeout(demo.timer);
+    var b = q(row, '.dc-rvplay'); if (b) b.disabled = false;
+    demoAt(row, e.target.value / 100, !demo.sec);
+  }, true);
+  document.addEventListener('change', function (e) { if (e.target.classList && e.target.classList.contains('dc-rvscrub')) e.stopPropagation(); }, true);
+  // turning the envelope off (or the preview reloading) ends a demo
+  document.addEventListener('change', function (e) { if (e.target.classList && e.target.classList.contains('dc-reveal') && !e.target.value) demoStop(e.target.closest('.block-row')); }, true);
+
   window.sgDecoFill = fill;
   window.sgDecoBuild = build;
 
@@ -206,7 +267,9 @@
     '.dc-presets{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 6px}.dc-preset{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 6px;border:1px solid var(--border,#e2e8f0);border-radius:999px;background:#fff;cursor:pointer;font:500 12.5px system-ui,sans-serif}' +
     '.dc-preset i,.dc-fix i{width:16px;height:16px;border-radius:50%;display:inline-block;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}' +
     '.dc-warn{background:#fff7ed;border:1px solid #fdba74;color:#7c2d12;border-radius:10px;padding:8px 10px;margin-top:8px;font-size:13px}.dc-warn p{margin:4px 0}' +
-    '.dc-fix{display:inline-flex;align-items:center;gap:6px;margin-left:4px;padding:3px 10px !important;font-size:12.5px !important}';
+    '.dc-fix{display:inline-flex;align-items:center;gap:6px;margin-left:4px;padding:3px 10px !important;font-size:12.5px !important}' +
+    '.dc-rvdemo{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:6px 0 10px;padding:10px 12px;border-radius:10px;background:#fdf2f8;border:1px solid #fbcfe8}' +
+    '.dc-rvstep{display:flex;align-items:center;gap:8px;font-weight:400;margin:0;flex:1;min-width:200px}.dc-rvstep input{flex:1}.dc-rvmsg{flex-basis:100%;margin:0}.dc-rvmsg:empty{display:none}';
   function start() {
     if (!document.getElementById('dc-edit-css')) { var st = document.createElement('style'); st.id = 'dc-edit-css'; st.textContent = css; document.head.appendChild(st); }
     qa(document, '.block-row').forEach(function (row) { if (isDeco(row) && !row.closest('template')) { refresh(row); warn(row); } });

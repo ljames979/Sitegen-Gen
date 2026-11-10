@@ -581,7 +581,13 @@
           <legend>Invitation Reveal <span class="muted">(the card comes out of an envelope)</span></legend>
           <select class="dc-reveal" aria-label="Invitation Reveal"><% decoCard.REVEALS.forEach(o => { %><option value="<%= o[0] %>" <%= dcO.reveal === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
           <div class="dc-rvbox"<%= dcO.reveal ? '' : ' hidden' %>>
-            <p class="hint">As visitors scroll, the wax seal breaks, the flap opens and the card slides out and grows into place. Visitors can also click the envelope to open it. People who turn motion off see the card open. The preview here shows the card open; open your live site to watch it.</p>
+            <p class="hint">As visitors scroll, the wax seal breaks, the flap opens and the card slides out and grows into place. Visitors can also click the envelope to open it. People who turn motion off see the card open. The preview shows the card open so you can edit it; play the opening here to watch it.</p>
+            <div class="dc-rvdemo">
+              <button type="button" class="btn-secondary dc-rvplay">&#9654; Play it in the preview</button>
+              <label class="dc-rvstep">Step through it <input type="range" class="dc-rvscrub" min="0" max="100" step="1" value="0" aria-label="Step through the opening: sealed at the left, open at the right"></label>
+              <button type="button" class="btn-secondary dc-rvstop" hidden>Back to editing</button>
+              <p class="dc-rvmsg hint" role="status" aria-live="polite"></p>
+            </div>
             <% [['env', 'Envelope'], ['flap', 'Flap'], ['seal', 'Wax seal'], ['liner', 'Inside of the envelope']].forEach(x => { %>
             <div class="upload-row dc-c"><label><%= x[1] %></label><input type="color" class="dc-col" data-key="<%= x[0] %>" data-sg-cl="full" value="<%= dcO[x[0]] || decoCard.RV_DEFAULTS[x[0]] %>"></div>
             <% }) %>

@@ -334,23 +334,26 @@ function thumb(style, color) {
 // grows while the envelope drops away). Clicking the envelope (or Enter / Space on it) scrolls straight to the open
 // card. public-site.ejs adds it when a page has an envelope card.
 const REVEAL_SCRIPT = `(function () {
-  var secs = Array.prototype.slice.call(document.querySelectorAll('.sg-rv.sg-rv-live')); if (!secs.length) return;
   var cl = function (v) { return v < 0 ? 0 : v > 1 ? 1 : v; };
   var seg = function (p, a, b) { return cl((p - a) / (b - a)); };
   var ease = function (t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; };
   var lerp = function (a, b, t) { return a + (b - a) * t; };
   var top = function () { var n = document.querySelector('nav.site-nav'); if (!n) return 0; var c = getComputedStyle(n).position; return c === 'sticky' || c === 'fixed' ? Math.max(0, Math.min(160, n.getBoundingClientRect().bottom)) : 0; };
-  var all = secs.map(function (sec) {
+  var all = [];
+  function make(sec) {
     var o = { sec: sec, track: sec.querySelector('.sg-rv-track'), stage: sec.querySelector('.sg-rv-stage'), sheet: sec.querySelector('.sg-rv-sheet'),
       card: sec.querySelector('.sg-dc'), envb: sec.querySelector('.sg-rv-envb'), envf: sec.querySelector('.sg-rv-envf'), more: sec.querySelector('.sg-rv-more'),
       fb: sec.querySelector('.sg-rv-flapb'), ff: sec.querySelector('.sg-rv-flapf'), sl: sec.querySelector('.sg-rv-sl'), sr: sec.querySelector('.sg-rv-sr'),
-      hint: sec.querySelector('.sg-rv-hint'), once: sec.querySelector('[data-once]'), done: false, g: null };
+      hint: sec.querySelector('.sg-rv-hint'), once: sec.querySelector('[data-once]'), done: false, g: null, demo: null, moved: [] };
+    if (!o.track || !o.sheet || !o.card || !o.envf) return null;
     // a sticky box stops working inside a box that hides its overflow; "clip" still hides it but lets sticky work
     for (var el = sec.parentElement; el && el !== document.body; el = el.parentElement) { var cs = getComputedStyle(el); if (cs.overflow !== 'visible' || cs.overflowY !== 'visible') el.style.overflow = 'clip'; }
-    var go = function (e) { if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return; e.preventDefault(); var r = o.track.getBoundingClientRect(); window.scrollTo({ top: window.pageYOffset + r.top + o.track.offsetHeight - o.stage.offsetHeight + 2, behavior: 'smooth' }); };
+    var go = function (e) { if (o.demo != null) return; if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return; e.preventDefault(); var r = o.track.getBoundingClientRect(); window.scrollTo({ top: window.pageYOffset + r.top + o.track.offsetHeight - o.stage.offsetHeight + 2, behavior: 'smooth' }); };
     o.envf.addEventListener('click', go); o.envf.addEventListener('keydown', go);
+    if (window.ResizeObserver) new ResizeObserver(function () { if (all.indexOf(o) >= 0) { o.g = measure(o); frame(o); } }).observe(o.card);
+    all.push(o);
     return o;
-  });
+  }
   function measure(o) {
     var W = o.stage.clientWidth, vh = o.stage.clientHeight, hd = top(), av = vh - hd;
     var cw = o.card.offsetWidth, ch = o.card.offsetHeight, ct = o.card.offsetTop, sh = o.sheet.offsetHeight;
@@ -368,10 +371,14 @@ const REVEAL_SCRIPT = `(function () {
   }
   function frame(o) {
     var g = o.g; if (!g) return;
-    var r = o.track.getBoundingClientRect(), dist = o.track.offsetHeight - g.vh;
-    if (r.bottom < -g.vh || r.top > g.vh * 2) return;
-    var p = dist > 0 ? cl(-r.top / dist) : 1;
-    if (o.once) { if (p >= 1) o.done = true; if (o.done) p = 1; }
+    var p;
+    if (o.demo != null) p = cl(o.demo);   // the editor is playing it
+    else {
+      var r = o.track.getBoundingClientRect(), dist = o.track.offsetHeight - g.vh;
+      if (r.bottom < -g.vh || r.top > g.vh * 2) return;
+      p = dist > 0 ? cl(-r.top / dist) : 1;
+      if (o.once) { if (p >= 1) o.done = true; if (o.done) p = 1; }
+    }
     var s1 = ease(seg(p, 0, .08)), s2 = seg(p, .08, .22), s3 = ease(seg(p, .22, .42)), s4 = ease(seg(p, .42, .7)), s5 = ease(seg(p, .7, .94));
     var envY = (1 - s1) * 24 + s5 * (g.vh - g.ey + 60), envS = .94 + .06 * s1, envO = cl(1 - (s5 - .35) * 2.2);
     [o.envb, o.envf].forEach(function (e) { e.style.transform = 'translateY(' + envY.toFixed(1) + 'px) scale(' + envS.toFixed(3) + ')'; e.style.opacity = envO.toFixed(3); });
@@ -395,23 +402,38 @@ const REVEAL_SCRIPT = `(function () {
     o.hint.style.opacity = (1 - seg(p, .01, .07)).toFixed(3);
     o.sec.classList.toggle('sg-rv-open', p >= .94);
   }
+  // pictures and text boxes pinned to this section go on the card's sheet, so they stay where the owner put them
+  function adopt(o) {
+    var part = o.sec.parentElement; if (!part) return;
+    Array.prototype.forEach.call(part.querySelectorAll(':scope > [data-sg-pic], :scope > [data-sg-tx]'), function (n) { o.moved.push(n); o.sheet.appendChild(n); });
+  }
   var run = function () { all.forEach(frame); };
   var size = function () { all.forEach(function (o) { o.g = measure(o); }); run(); };
-  // pictures and text boxes pinned to this section go on the card's sheet, so they stay where the owner put them
-  var adopt = function () {
-    all.forEach(function (o) {
-      var part = o.sec.parentElement; if (!part) return;
-      Array.prototype.forEach.call(part.querySelectorAll(':scope > [data-sg-pic], :scope > [data-sg-tx]'), function (n) { o.sheet.appendChild(n); });
-    });
-    size();
-  };
-  size();
+  Array.prototype.forEach.call(document.querySelectorAll('.sg-rv.sg-rv-live'), make);
   if (window.sgOnScroll) window.sgOnScroll(run); else { addEventListener('scroll', run, { passive: true }); addEventListener('resize', run); }
   addEventListener('resize', size);
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', adopt); else adopt();
+  var ready = function () { all.forEach(adopt); size(); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ready); else ready();
   addEventListener('load', size);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(size);
-  if (window.ResizeObserver) all.forEach(function (o) { new ResizeObserver(function () { o.g = measure(o); frame(o); }).observe(o.card); });
+  // the editor's "Play it in the preview" and its slider (public/decocard-edit.js): show the envelope at a given
+  // point (0 = sealed, 1 = open) without scrolling, then put the card back the way the preview shows it
+  var find = function (sec) { for (var i = 0; i < all.length; i++) if (all[i].sec === sec) return all[i]; return null; };
+  window.sgReveal = {
+    demo: function (sec, p) {
+      if (!sec || !sec.classList.contains('sg-rv')) return false;
+      var o = find(sec);
+      if (!o) { sec.classList.add('sg-rv-live', 'sg-rv-demo'); o = make(sec); if (!o) { sec.classList.remove('sg-rv-live', 'sg-rv-demo'); return false; } adopt(o); }
+      o.demo = p; if (!o.g) o.g = measure(o); frame(o); return true;
+    },
+    stop: function (sec) {
+      var o = find(sec); if (!o || !sec.classList.contains('sg-rv-demo')) return;
+      all.splice(all.indexOf(o), 1);
+      o.moved.forEach(function (n) { sec.parentElement.appendChild(n); });
+      sec.classList.remove('sg-rv-live', 'sg-rv-demo', 'sg-rv-open');
+      [o.sheet, o.more].forEach(function (e) { e.removeAttribute('style'); });
+    }
+  };
 })();`;
 
 module.exports = { REVEAL_SCRIPT, REVEALS, SEAL_ICONS, LENS, PATS, RV_DEFAULTS, patTile,  STYLES, STYLE_IDS, ICONS, ICON_SVG, SLOTS, SLOT_IDS, PRESETS, PADS, WIDTHS, SHADOWS, SECS, MAX_TEXT, MAX_DETAIL, parse, cleanBody, view, html, fontsOf, thumb, styleOf };
