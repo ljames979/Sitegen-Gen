@@ -78,7 +78,7 @@
 A: <%= x.a %>
 
 <% }) %></dd><% } %>
-        <% row('Stock photos OK', d.stockOk ? 'Yes' : 'No'); row('Notes', d.notes); %>
+        <% row('Stock photos OK', d.stockOk ? 'Yes' : 'No'); row('Package they want', d.pkg); row('Notes', d.notes); %>
         <% if (d.logo) { %><dt>Logo</dt><dd class="thumbs"><img src="<%= d.logo %>" alt="Logo"></dd><% } %>
         <% if (d.photos.length) { %><dt>Photos</dt><dd class="thumbs"><% d.photos.forEach(p => { %><img src="<%= p %>" alt=""><% }) %></dd><% } %>
         <% row('Contact name', d.contactName); row('Contact email', d.contactEmail); row('Contact phone', d.contactPhone); %>

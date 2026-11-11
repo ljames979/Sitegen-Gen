@@ -91,6 +91,7 @@
     <input type="text" id="shareUrl" readonly value="<%= shareLink %>" placeholder="No link yet">
     <p id="shareInfo"><%= share ? 'Opened ' + share.views + ' time' + (share.views === 1 ? '' : 's') + (share.last_viewed_at ? ', last on ' + share.last_viewed_at + ' (UTC)' : '') + '.' : '' %></p>
     <p>The client can click "Suggest a change" on the link to type what they want changed. <a href="/sites/<%= site.id %>/feedback"><%= notes.n ? 'See their notes (' + notes.open + ' to do of ' + notes.n + ')' : 'Client feedback' %></a> · <a href="/sites/<%= site.id %>/pdf">Export PDF</a></p>
+    <p>When they're happy they press "Approve", pick a package and pay the deposit you set on Packages. <a href="/sites/<%= site.id %>/launch">Approval, deposit and launch</a> · <a href="/intake">Send a questionnaire</a></p>
     <div class="row">
       <button type="button" id="shareCopy" <%= share ? '' : 'hidden' %>>Copy link</button>
       <button type="button" class="btn-secondary" id="shareMake"><%= share ? 'Replace link' : 'Create link' %></button>

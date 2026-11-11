@@ -39,6 +39,18 @@
     .sv-note .num { display: inline-flex; width: 20px; height: 20px; border-radius: 50%; background: #ef4444; color: #fff; font-size: 11px; font-weight: 700; align-items: center; justify-content: center; margin-right: 6px; }
     .sv-note.done { opacity: .65; } .sv-note .ok { color: #166534; font-weight: 700; }
     .sv-hp { position: absolute; left: -9999px; }
+    .sv-bar .sv-ap-btn { background: #22c55e; color: #052e16; font-weight: 700; padding: 7px 14px; font-size: 14px; min-height: 36px; border-radius: 8px; }
+    .sv-bar .sv-ap-btn.done { background: #dcfce7; }
+    .sv-pk { display: block; border: 2px solid #e2e8f0; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; font-weight: 400; }
+    .sv-pk:has(input:checked) { border-color: #16a34a; background: #f0fdf4; }
+    .sv-pk input { width: auto; margin: 0 6px 0 0; } .sv-pk .nm { font-weight: 700; } .sv-pk .pr { float: right; font-weight: 700; color: #0f172a; }
+    .sv-pk ul { margin: 6px 0 0 18px; padding: 0; font-size: 13px; color: #475569; } .sv-pk .dep { font-size: 13px; color: #166534; margin-top: 4px; }
+    .sv-pk .best { background: #fef3c7; color: #92400e; border-radius: 999px; font-size: 11px; padding: 1px 8px; margin-left: 6px; }
+    .sv-agree { display: flex; gap: 8px; align-items: flex-start; font-weight: 400 !important; font-size: 13.5px !important; margin: 10px 0; } .sv-agree input { width: auto; margin-top: 3px; }
+    .sv-done { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px; font-size: 14px; margin-bottom: 12px; }
+    .sv-paybtn { width: 100%; background: #635bff; color: #fff; font-weight: 700; }
+    .sv-banner { background: #dcfce7; color: #14532d; padding: 9px 14px; font-size: 14px; text-align: center; }
+    .sv-banner.warn { background: #fef3c7; color: #78350f; }
     @media (max-width: 760px) {
       .sv-bar .seg { display: none; }
       .sv-main { flex-direction: column; }
@@ -51,8 +63,10 @@
     <span><strong><%= site.name %></strong>: preview of the new website. It is not live yet.</span>
     <span class="sp"></span>
     <span class="seg" role="group" aria-label="Screen"><button type="button" class="on" data-dev="desktop" aria-pressed="true">Computer</button><button type="button" data-dev="phone" aria-pressed="false">Phone</button></span>
+    <button type="button" class="sv-ap-btn" id="apBtn" aria-expanded="false" aria-controls="apPanel">&#9989; Approve</button>
     <button type="button" class="sv-fb-btn" id="fbBtn" aria-expanded="false" aria-controls="fbPanel">&#128172; Suggest a change<span class="n" id="fbCount" hidden></span></button>
   </div>
+  <div class="sv-banner" id="payBanner" hidden></div>
   <div class="sv-main">
     <div class="sv-stage" id="stage">
       <div class="sv-point-tip" id="pointTip" hidden>Click the part of the page you mean (Esc to cancel)</div>
@@ -78,7 +92,108 @@
         </div>
       </div>
     </aside>
+    <aside class="sv-fb" id="apPanel" hidden aria-label="Approve the design">
+      <div class="sv-fb-head"><h2>Approve the design</h2><button type="button" id="apClose" aria-label="Close">&times;</button></div>
+      <div class="sv-fb-body">
+        <div id="apDone" hidden></div>
+        <form id="apForm" autocomplete="on">
+          <p class="help">Happy with it? Approve it here and we'll get it ready to go live. Anything you asked to change is still done first.</p>
+          <div id="apPkgs"></div>
+          <label for="apName">Your name</label>
+          <input type="text" id="apName" name="name" maxlength="100" required autocomplete="name">
+          <label for="apEmail">Your email</label>
+          <input type="email" id="apEmail" name="email" maxlength="254" required autocomplete="email">
+          <label for="apNote">Anything to add? (optional)</label>
+          <textarea id="apNote" name="note" maxlength="1000" style="min-height:60px;"></textarea>
+          <label class="sv-agree"><input type="checkbox" id="apAgree" name="agree" value="1"> <span>I approve this design for <strong><%= site.name %></strong>.</span></label>
+          <input type="text" name="website" class="sv-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button type="submit" id="apSend">Approve</button>
+          <div class="sv-fb-status" id="apStatus" aria-live="polite"></div>
+        </form>
+      </div>
+    </aside>
   </div>
+  <script>
+  // Approve and pay (routes/sales.js): the client approves, picks one of the packages, and pays the deposit online when one is set
+  (function () {
+    var token = <%- JSON.stringify(token) %>;
+    var btn = document.getElementById('apBtn'), panel = document.getElementById('apPanel'), form = document.getElementById('apForm');
+    var done = document.getElementById('apDone'), pk = document.getElementById('apPkgs'), status = document.getElementById('apStatus');
+    var fbPanel = document.getElementById('fbPanel'), banner = document.getElementById('payBanner');
+    function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+    function show(on) {
+      panel.hidden = !on; btn.setAttribute('aria-expanded', String(on));
+      if (on && !fbPanel.hidden) document.getElementById('fbClose').click();
+    }
+    btn.addEventListener('click', function () { show(panel.hidden); });
+    document.getElementById('apClose').addEventListener('click', function () { show(false); });
+    document.getElementById('fbBtn').addEventListener('click', function () { if (!panel.hidden) show(false); });
+    try { var nm = localStorage.getItem('sg-fb-name'); if (nm) document.getElementById('apName').value = nm; } catch (e) { /* private window */ }
+
+    function pay(b) {
+      b.disabled = true; b.textContent = 'Opening the secure payment page…';
+      fetch('/look/' + token + '/deposit', { method: 'POST', headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { if (d.ok && d.url) { location.href = d.url; return; } throw new Error(d.error || 'Please try again.'); })
+        .catch(function (e) { b.disabled = false; b.textContent = 'Try again'; status.className = 'sv-fb-status err'; status.textContent = e.message; done.appendChild(status); });
+    }
+    function render(d) {
+      if (d.approved) {
+        form.hidden = true; done.hidden = false; done.innerHTML = '';
+        btn.classList.add('done'); btn.textContent = '✅ Approved';
+        var box = el('div', 'sv-done');
+        box.appendChild(el('div', '', 'Approved by ' + d.approved.name + ' on ' + String(d.approved.at).slice(0, 10) + '.'));
+        if (d.approved.package) box.appendChild(el('div', '', 'Package: ' + d.approved.package));
+        if (d.pay.status === 'paid') box.appendChild(el('div', '', 'Deposit paid (' + d.pay.amount + '). Thank you!'));
+        done.appendChild(box);
+        if (d.pay.can) {
+          var b = el('button', 'sv-paybtn', 'Pay the ' + d.pay.amount + ' deposit');
+          b.type = 'button'; b.addEventListener('click', function () { pay(b); });
+          done.appendChild(b);
+          done.appendChild(el('p', 'help', 'Card payment through Stripe. We never see your card number.'));
+        } else if (d.pay.status !== 'paid') {
+          done.appendChild(el('p', 'help', 'Thank you! We\'ll be in touch about the next steps.'));
+        }
+        return;
+      }
+      pk.innerHTML = '';
+      if (d.packages && d.packages.length) {
+        pk.appendChild(el('label', '', 'Pick your package'));
+        d.packages.concat([{ i: -1, name: 'Not sure yet', price: '', items: [], deposit: '' }]).forEach(function (p) {
+          var l = el('label', 'sv-pk'), r = document.createElement('input');
+          r.type = 'radio'; r.name = 'pkg'; r.value = String(p.i);
+          if ((d.chosen && d.chosen === p.name) || (!d.chosen && p.best)) r.checked = true;
+          l.appendChild(r); l.appendChild(el('span', 'nm', p.name));
+          if (p.best) l.appendChild(el('span', 'best', 'Most popular'));
+          if (p.price) l.appendChild(el('span', 'pr', p.price));
+          if (p.items && p.items.length) { var ul = el('ul'); p.items.forEach(function (x) { ul.appendChild(el('li', '', x)); }); l.appendChild(ul); }
+          if (p.deposit) l.appendChild(el('div', 'dep', 'Deposit to get started: ' + p.deposit));
+          pk.appendChild(l);
+        });
+      }
+    }
+    function load() {
+      fetch('/look/' + token + '/approval', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (d) { if (d && d.ok) render(d); }).catch(function () {});
+    }
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var picked = form.querySelector('input[name=pkg]:checked');
+      var body = { name: document.getElementById('apName').value.trim(), email: document.getElementById('apEmail').value.trim(), note: document.getElementById('apNote').value.trim(), agree: document.getElementById('apAgree').checked ? '1' : '', pkg: picked ? picked.value : '-1', website: form.website.value };
+      if (!body.agree) { status.className = 'sv-fb-status err'; status.textContent = 'Please tick the box to approve the design.'; return; }
+      var send = document.getElementById('apSend'); send.disabled = true; status.className = 'sv-fb-status'; status.textContent = 'Sending…';
+      fetch('/look/' + token + '/approve', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+        .then(function (d) { if (!d.ok) throw new Error(d.error || 'That did not send. Please try again.'); status.textContent = ''; render(d); })
+        .catch(function (err) { status.className = 'sv-fb-status err'; status.textContent = err.message; })
+        .then(function () { send.disabled = false; });
+    });
+    var q = new URLSearchParams(location.search).get('pay');
+    if (q === 'paid') { banner.hidden = false; banner.textContent = 'Thank you! Your deposit is paid.'; show(true); }
+    else if (q === 'checking') { banner.hidden = false; banner.className = 'sv-banner warn'; banner.textContent = 'Thank you! We are confirming your payment with Stripe; this page will show it shortly.'; show(true); }
+    else if (q === 'canceled') { banner.hidden = false; banner.className = 'sv-banner warn'; banner.textContent = 'The payment was not completed. You can try again any time.'; show(true); }
+    load();
+  })();
+  </script>
   <script>
   (function () {
     var token = <%- JSON.stringify(token) %>;

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Google basics — <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .flashbar { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; }
+    .flashbar.bad { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+    .card { margin-bottom: 18px; } .card h3 { margin-top: 0; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    ul.ck { list-style: none; margin: 0; padding: 0; }
+    ul.ck li { display: grid; grid-template-columns: 24px 1fr; gap: 8px; padding: 7px 0; border-bottom: 1px solid #e2e8f0; font-size: 14.5px; }
+    ul.ck .i { font-weight: 700; } ul.ck .ok { color: #16a34a; } ul.ck .no { color: #d97706; }
+    ul.ck .fix { display: block; font-size: 13px; color: #475569; }
+    .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    table.nap { border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 10px; }
+    table.nap th, table.nap td { text-align: left; padding: 7px 9px; border-bottom: 1px solid #e2e8f0; vertical-align: top; word-break: break-word; }
+    .st { font-weight: 700; } .st.ok { color: #16a34a; } .st.differs, .st.missing { color: #b91c1c; } .st.unknown { color: #64748b; font-weight: 400; }
+    .check { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; margin: 6px 0; } .check input { width: auto; margin-top: 3px; }
+    code { background: #f1f5f9; padding: 2px 6px; border-radius: 6px; word-break: break-all; }
+    textarea.desc { min-height: 110px; font-size: 14px; }
+    .small { font-size: 13px; }
+  </style>
+</head>
+<body>
+  <nav><div class="row"><a href="/sites/<%= site.id %>/edit" class="muted">&larr; <%= site.name %></a><strong>Google basics</strong><a href="/sites/<%= site.id %>/launch" class="muted">Sell and launch</a></div></nav>
+  <div class="container">
+    <% if (saved) { %><div class="flashbar">Saved.<%= onNetlify ? ' Press Launch (publish again) so the Netlify copy gets the changes.' : '' %></div><% } %>
+    <% if (bad) { %><div class="flashbar bad">That Search Console tag did not look right, so it was not saved. Paste the whole &lt;meta name="google-site-verification" ...&gt; line, or just the code inside content="...".</div><% } %>
+
+    <div class="card">
+      <h3>What the site already gives Google</h3>
+      <p class="muted" style="margin-top:-6px;">Every page carries the business's details in Google's format (name, phone, address, hours, areas served), page titles with the city, and a sitemap. These checks show what's missing.</p>
+      <ul class="ck">
+        <% auto.checks.forEach(c => { %>
+          <li><span class="i <%= c.ok ? 'ok' : 'no' %>"><%= c.ok ? '✓' : '!' %></span><span><%= c.text %><% if (c.fix) { %><span class="fix"><%= c.fix %></span><% } %></span></li>
+        <% }) %>
+      </ul>
+      <% if (sitemap) { %><p style="margin:12px 0 0;">Sitemap to submit in Search Console: <code><%= sitemap %></code></p><% } %>
+    </div>
+
+    <form method="POST" action="/sites/<%= site.id %>/google">
+      <div class="card">
+        <h3>Google Business Profile listing</h3>
+        <p class="muted" style="margin-top:-6px;">The listing is what shows on Google Maps and in the map box of local searches. It is made at <a href="https://business.google.com" target="_blank" rel="noopener">business.google.com</a> by the business owner (or by you as a manager). Its name, phone and address should match the site exactly: type what the listing shows and SiteGen compares them.</p>
+        <div class="grid3">
+          <label>Name on the listing<input type="text" name="gbp_name" value="<%= ext.gbp.name %>" maxlength="100" placeholder="<%= site.name %>"></label>
+          <label>Phone on the listing<input type="text" name="gbp_phone" value="<%= ext.gbp.phone %>" maxlength="40"></label>
+          <label>Address on the listing<input type="text" name="gbp_address" value="<%= ext.gbp.address %>" maxlength="200"></label>
+        </div>
+        <label>Primary category<input type="text" name="gbp_category" value="<%= ext.gbp.category %>" maxlength="80" placeholder="<%= auto.category || 'Pick the closest in Google' %>"></label>
+        <% if (auto.category) { %><p class="small muted" style="margin:-4px 0 8px;">Suggested for this kind of business: <strong><%= auto.category %></strong>. Pick the closest one Google offers.</p><% } %>
+        <table class="nap">
+          <tr><th></th><th>On the site</th><th>On Google</th><th></th></tr>
+          <% nap.forEach(n => { %><tr><td><%= n.field %></td><td><%= n.onSite || '—' %></td><td><%= n.onGoogle || '—' %></td><td class="st <%= n.state %>"><%= { ok: 'Match', differs: 'Different', missing: 'Not on the site', unknown: 'Type it above' }[n.state] %></td></tr><% }) %>
+        </table>
+        <% if (description) { %>
+          <label style="margin-top:12px;">Description for the listing (from the About text, up to 750 characters; copy it)<textarea class="desc" readonly onclick="this.select()"><%= description %></textarea></label>
+        <% } %>
+        <% if (auto.reviewLink) { %><p class="small" style="margin:6px 0 0;">After the listing is verified, Google gives a "Get more reviews" link: put it in the editor (Trust, Google reviews link). SiteGen's own review page is <a href="<%= auto.reviewLink %>" target="_blank" rel="noopener"><%= auto.reviewLink %></a>.</p><% } %>
+      </div>
+
+      <div class="card">
+        <h3>Google Search Console</h3>
+        <p class="muted" style="margin-top:-6px;">Search Console shows which searches find the site and lets you send Google the sitemap. At <a href="https://search.google.com/search-console" target="_blank" rel="noopener">search.google.com/search-console</a> add the site as a <strong>URL prefix</strong> property, choose the <strong>HTML tag</strong> method and paste the tag here. SiteGen puts it on every page.</p>
+        <label>Search Console tag<input type="text" name="gsv" value="<%= ext.gsv ? '<meta name=&quot;google-site-verification&quot; content=&quot;' + ext.gsv + '&quot;>' : '' %>" maxlength="300" placeholder='<meta name="google-site-verification" content="...">'></label>
+        <% if (onNetlify) { %><p class="small muted" style="margin:-4px 0 0;">The site is on Netlify: after saving, publish again (Launch page) before pressing Verify in Search Console.</p><% } %>
+      </div>
+
+      <div class="card">
+        <h3>Checklist</h3>
+        <p class="muted" style="margin-top:-6px;">The steps only a person can do in Google. Tick them as they're done.</p>
+        <% manual.forEach(m => { %><label class="check"><input type="checkbox" name="done" value="<%= m[0] %>" <%= ext.gbp.done.includes(m[0]) ? 'checked' : '' %>> <%= m[1] %></label><% }) %>
+      </div>
+      <button type="submit">Save</button>
+    </form>
+  </div>
+</body>
+</html>

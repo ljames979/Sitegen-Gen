@@ -296,7 +296,8 @@ module.exports = function (app, deps) {
   async function sendDueReports() {
     if (!mailer.isConfigured()) return;
     const prev = reports.previousMonth();
-    for (const row of db.prepare('SELECT * FROM sites WHERE published = 1').all()) {
+    // sites SiteGen serves itself, and sites launched on Netlify (their visits are counted back to SiteGen, routes/sales.js)
+    for (const row of db.prepare("SELECT * FROM sites WHERE published = 1 OR netlify_site_id != ''").all()) {
       if (billing.isSuspended(row)) continue;
       try {
         const site = hydrateSite(row);

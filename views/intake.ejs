@@ -21,6 +21,9 @@
          pdfunreadable: 'The AI could not read answers from that PDF. Check it is the filled-out questionnaire and that the scan is clear.',
          pdfempty: 'No business name was found in that PDF, so nothing was added. Check it is the filled-out copy (and that the client saved it after filling it in).' }[flash]; %>
     <% if (pdfMsg) { %><div class="flashbar bad"><%= pdfMsg %></div><% } %>
+    <% if (flash === 'emailed') { %><div class="flashbar">Link created and emailed to your client.</div><% } %>
+    <% if (flash === 'nomail') { %><div class="flashbar bad">The link is ready, but it could not be emailed (email sending is not set up, see the README, "Email alerts"). Copy it below and send it yourself.</div><% } %>
+    <% if (flash === 'bademail') { %><div class="flashbar bad">That email address does not look right.</div><% } %>
     <% if (flash === 'toomany') { %><div class="flashbar bad">You have too many links. Delete some you no longer use.</div><% } %>
 
     <div class="card" style="margin-bottom:20px;">
@@ -28,6 +31,7 @@
       <p class="muted" style="margin-top:-8px;">Make a link, send it to a client, and they answer a friendly step-by-step form (business, services, story, contact, look and feel, photos). When they finish you get an email and their answers appear below. Review them, then press <strong>Build the website</strong>. The site uses only what the client wrote.</p>
       <form method="POST" action="/intake/links" class="row">
         <input type="text" name="label" maxlength="80" placeholder="Who is this for? (e.g. Maria's Bakery)" style="margin:0; flex:1;">
+        <input type="email" name="email" maxlength="254" placeholder="Client's email (optional: we email it)" style="margin:0; flex:1;">
         <button type="submit">Create a link</button>
       </form>
     </div>
@@ -54,6 +58,7 @@
         <div style="margin-top:8px; font-size:13px;">
           <a href="/start/<%= l.token %>" target="_blank">Preview</a> ·
           <form method="POST" action="/intake/links/<%= l.id %>/toggle"><button type="submit" class="btn-secondary" style="padding:2px 10px;"><%= l.closed ? 'Reopen' : 'Close' %></button></form>
+          <% if (!l.closed) { %><form method="POST" action="/intake/links/<%= l.id %>/send" style="display:inline-flex; gap:6px;"><input type="email" name="email" required maxlength="254" placeholder="client@email.com" style="margin:0; width:200px; padding:2px 8px;"><button type="submit" class="btn-secondary" style="padding:2px 10px;">Email it</button></form><% } %>
           <% if (!l.n) { %><form method="POST" action="/intake/links/<%= l.id %>/delete" onsubmit="return confirm('Delete this link?');"><button type="submit" class="btn-secondary" style="padding:2px 10px;">Delete</button></form><% } %>
         </div>
       </div>

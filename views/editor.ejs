@@ -221,6 +221,7 @@
           <a href="/sites/<%= site.id %>/compare"><strong>Compare 3 designs</strong><span>The same business in three styles, side by side</span></a>
           <a href="/sites/<%= site.id %>/pitch#share"><strong>Share a preview link</strong><span>A private link the client can open on their phone and type changes into</span></a>
           <a href="/sites/<%= site.id %>/feedback"><strong>Client feedback<% if (typeof feedbackNew !== 'undefined' && feedbackNew) { %> (<%= feedbackNew %> new)<% } %></strong><span>The changes the client asked for on the preview link</span></a>
+          <a href="/sites/<%= site.id %>/launch"><strong>Approve, pay and launch</strong><span>Client approval and deposit, one-click launch on their domain, leads to a CRM</span></a>
           <a href="/sites/<%= site.id %>/pdf"><strong>Export PDF</strong><span>Every page in one PDF to email; the client adds comments in any PDF reader</span></a>
         </div>
       </details>
@@ -244,6 +245,8 @@
           <% if (site.sections.booking.enabled || pendingBookings) { %><a href="/sites/<%= site.id %>/bookings">Bookings<% if (pendingBookings) { %> (<%= pendingBookings %> new)<% } %></a><% } %>
           <a href="/sites/<%= site.id %>/payments">Payments</a>
           <a href="/sites/<%= site.id %>/report">Report</a>
+          <a href="/sites/<%= site.id %>/google">Google basics</a>
+          <a href="/sites/<%= site.id %>/launch">Sell and launch</a>
           <a href="/sites/<%= site.id %>/billing">Billing</a>
         </div>
       </details>
@@ -258,6 +261,7 @@
           <summary class="btn <%= site.published ? 'btn-danger' : '' %>" aria-label="More publishing options">&#9662;</summary>
           <div class="menu-list">
             <% if (site.published) { %><a href="/site/<%= site.slug %>" target="_blank">View live</a><% } %>
+            <a href="/sites/<%= site.id %>/launch" title="Quality check, publish, domain, HTTPS and an email to the client, in one click">Launch on the client's domain</a>
             <a href="/sites/<%= site.id %>/hosting" title="Publish to Netlify with your own domain and HTTPS">Publish online (Netlify)</a>
             <a href="/sites/<%= site.id %>/export" title="Download the finished site as a zip of plain HTML files">Export as a zip</a>
             <a href="/sites/<%= site.id %>/history" title="Look at and roll back to an earlier publish">Publish history</a>
@@ -2183,6 +2187,11 @@
           ['Demo gallery', 'Your best sites to show other owners', '/demos'],
           ['Export PDF to email the client (print, save as PDF)', 'Every page in one PDF; the client comments in a PDF reader', '/sites/' + SID + '/pdf'],
           ['Client feedback and change requests', 'Notes the client typed on the preview link', '/sites/' + SID + '/feedback'],
+          ['Approve and pay: client approval and deposit', 'Sell and launch page', '/sites/' + SID + '/launch#approval'],
+          ['Launch on the client\'s own domain (publish, HTTPS, email the client)', 'Sell and launch page', '/sites/' + SID + '/launch#launch'],
+          ['Send leads to a CRM (webhook, Zapier)', 'Sell and launch page › Leads and the CRM', '/sites/' + SID + '/launch#leads'],
+          ['Google Business Profile checklist and Search Console', 'Google basics page', '/sites/' + SID + '/google'],
+          ['Client questionnaire (email the link)', 'Client questionnaires page', '/intake'],
         ].forEach(([t, h, u]) => add(t, h, go(u)));
         add('Edit photo: select, change color, adjust light (photo editor)', 'Click 🎨 Edit photo on any picture row, or on a photo in the preview', () => { const b = document.querySelector('button[title^="Open the photo editor"]'); if (b) { revealField(b); b.focus(); } });
         return out;

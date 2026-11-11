@@ -67,7 +67,7 @@ function clean(b) {
     logo: urls(b.logo, 1)[0] || '', photos: urls(b.photos, 8), stockOk: b.stock_ok === '1' || b.stock_ok === 'on',
     inspo: str(b.inspo, 600), inspoLike: str(b.inspo_like, 400),
     goal: GOAL_IDS.includes(b.goal) ? b.goal : '', features: arr(b.features).filter(f => FEATURE_IDS.includes(f)),
-    faq, notes: str(b.notes, 1500),
+    faq, notes: str(b.notes, 1500), pkg: str(b.pkg, 40), // pkg is checked against the owner's packages by the route
     contactName: str(b.contact_name, 100), contactEmail: isValidEmail(b.contact_email || '') ? str(b.contact_email, 254) : '', contactPhone: str(b.contact_phone, 40),
     agree: b.agree === '1' || b.agree === 'on'
   };
