@@ -231,6 +231,31 @@ function frameCanvas(c, W, H, f) {
   return { canvas: o, w: ow, h: oh };
 }
 
+// the part of a mask joined to one spot (4-way), everything else dropped
+function keepJoined(m, w, h, at) {
+  const x0 = Math.max(0, Math.min(w - 1, Math.round(at.x))), y0 = Math.max(0, Math.min(h - 1, Math.round(at.y)));
+  let start = y0 * w + x0;
+  if (m[start] < 128) {   // the click landed on a gap in the outline: start from the nearest selected pixel close by
+    let best = -1, bd = 1e9;
+    for (let dy = -12; dy <= 12; dy++) for (let dx = -12; dx <= 12; dx++) {
+      const x = x0 + dx, y = y0 + dy; if (x < 0 || y < 0 || x >= w || y >= h) continue;
+      const d = dx * dx + dy * dy, i = y * w + x; if (m[i] >= 128 && d < bd) { bd = d; best = i; }
+    }
+    if (best < 0) return m;
+    start = best;
+  }
+  const out = new Uint8Array(m.length), stack = new Int32Array(m.length); let n = 0;
+  stack[n++] = start; out[start] = 255;
+  while (n) {
+    const i = stack[--n], x = i % w;
+    if (x > 0 && !out[i - 1] && m[i - 1] >= 128) { out[i - 1] = 255; stack[n++] = i - 1; }
+    if (x < w - 1 && !out[i + 1] && m[i + 1] >= 128) { out[i + 1] = 255; stack[n++] = i + 1; }
+    if (i >= w && !out[i - w] && m[i - w] >= 128) { out[i - w] = 255; stack[n++] = i - w; }
+    if (i + w < m.length && !out[i + w] && m[i + w] >= 128) { out[i + w] = 255; stack[n++] = i + w; }
+  }
+  return out;
+}
+
 self.onmessage = async (e) => {
   const q = e.data || {}, id = q.id;
   const send = (res, transfer) => self.postMessage({ id, ok: true, ...res }, transfer || []);
@@ -259,6 +284,7 @@ self.onmessage = async (e) => {
     if (q.cmd === 'part' || q.cmd === 'subject') {
       const r = await readMask(q.url, q.body, w, h);
       let part = r.mask;
+      if (q.keepAt) part = keepJoined(part, w, h, q.keepAt);   // ✨ Auto: only the piece under the click, no specks elsewhere
       if (q.invert) for (let i = 0; i < part.length; i++) part[i] = 255 - part[i];
       sel = combine(q.op || 'set', sel, part);
       const d = describe(sel, w, h, q.t, q.soft);

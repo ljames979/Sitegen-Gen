@@ -239,3 +239,15 @@ test('Change color spec (2026-11-12): tolerance slider, hex code box, target hue
   const avg = out.reduce((a, o) => a + o[2], 0) / n;
   assert.ok(Math.abs(avg - 0.727) < 0.08, 'average lightness near the target, got ' + avg.toFixed(3));
 });
+
+test('✨ Auto (2026-11-12): tunes the tolerance by color, keeps only the clicked piece, soft edge', () => {
+  const js = fs.readFileSync(path.join(__dirname, '..', 'public', 'photoedit.js'), 'utf8');
+  assert.match(js, /class="sgpe-auto" checked/);
+  assert.match(js, /async function autoTune\(p\)/);
+  assert.match(js, /alike \/ added < 0\.75/);
+  const box = { self: {}, module: { exports: {} }, Uint8Array, Uint8ClampedArray, Int32Array, Math, String, Map, Number };
+  vm.createContext(box); vm.runInContext(read('public/photoedit-worker.js') + '\nmodule.exports.keepJoined = keepJoined;', box);
+  // two pieces on a 5x1 strip: only the one under the click stays
+  const out = box.module.exports.keepJoined(new Uint8Array([255, 255, 0, 255, 255]), 5, 1, { x: 0, y: 0 });
+  assert.deepEqual(Array.from(out), [255, 255, 0, 0, 0]);
+});

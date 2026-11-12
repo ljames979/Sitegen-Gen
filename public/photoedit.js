@@ -115,6 +115,7 @@
     <h3>What do you want to do?</h3>
     <div class="row"><button type="button" data-a="recolor-start" title="Change the color of one thing in the photo, like the towel">🎨 Change a color</button><button type="button" data-a="crop-start" title="Cut the edges off, or turn the photo">⛶ Crop &amp; turn</button></div>
     <div class="row"><button type="button" data-a="adjust-all" title="Brightness, contrast, color strength and warmth of the whole photo">☀ Light &amp; color of the whole photo</button></div>
+    <label style="margin-top:2px"><input type="checkbox" class="sgpe-auto" checked> ✨ Auto: SiteGen picks the tolerance and the edge for the thing you click</label>
     <p class="hint sgpe-howto" hidden></p>
   </div>
   <div class="sgpe-panel sgpe-crop-p" hidden>
@@ -330,20 +331,62 @@
       const r = await busy(op === 'add' ? 'Adding…' : (op === 'sub' ? 'Taking away…' : 'Selecting…'), () =>
         work('part', { url: api('mask'), body: { key: S.key, points: [{ x: p.x, y: p.y, on: true }], thr: tolThr() }, op }));
       if (!r) return;
-      take(r);
+      S.clicking = true; take(r); S.clicking = false;
       S.lastClick = { p, op, before };
+      if (S.autoNext) {   // the click after 🎨 Change a color, with ✨ Auto on: tune it, then open the colors
+        S.autoNext = false;
+        await autoTune(p);
+        S.lastClick = { p, op: 'set', before: null, joined: true };
+        howto.hidden = true; return openRecolor();
+      }
       say(S.sel ? (op === 'set' ? 'Selected. Shift+click adds more, ' + (isMac ? 'Option' : 'Alt') + '+click takes a part away' : (op === 'add' ? 'Added' : 'Taken away')) : 'Nothing is selected');
     }
     // Tolerance 0..100 -> the outline model's cut-off (+8 .. -10); 50 is the model's usual answer
     const tolThr = () => (50 - S.tol) / 50 * (S.tol > 50 ? 10 : 8);
     // a new Tolerance redoes the last click from the selection as it was before that click
+    // one click's outline at a given tolerance, joined to a given selection (not the one showing)
+    function partAt(p, thr, before, op, joined) {
+      const id = ++seq;
+      const msg = { id, cmd: 'part', w: S.w, h: S.h, t: antWidth(), soft: S.soft, sel: before ? before.slice().buffer : null, url: api('mask'), body: { key: S.key, points: [{ x: p.x, y: p.y, on: true }], thr }, op: before ? op : 'set', keepAt: joined ? p : null };
+      return new Promise((res, rej) => { waiting.set(id, { res, rej }); worker.postMessage(msg, msg.sel ? [msg.sel] : []); });
+    }
+    // ✨ Auto (Leo, 2026-11-12: "a smart feature that does the shading and such"): raise the tolerance step by step while the
+    // outline only grows a little (the rest of the towel, its folds); stop before it jumps into the next thing (the dog).
+    // Then a soft 2 px edge for photos, so the new color fades into the fur instead of ending in a hard line.
+    async function autoTune(p) {
+      // a higher tolerance is kept only while what it adds looks like the thing itself (same color as its middle);
+      // it stops before the outline spills into a bubble, an ear or the brush
+      const steps = [50, 58, 66, 74, 82, 90], px = S.base.data;
+      let best = 50, prev = null, mean = null;
+      await busy('✨ Finding the whole thing you clicked…', async () => {
+        for (const t of steps) {
+          const r = await partAt(p, (50 - t) / 50 * (t > 50 ? 10 : 8), null, 'set', true);
+          const m = r.sel ? new Uint8Array(r.sel) : null, a = r.area || 0;
+          if (!m || !a || a > 0.6) break;
+          if (!prev) {   // the middle color of what the model is sure of
+            let R = 0, G = 0, B = 0, n = 0;
+            for (let i = 0; i < m.length; i++) if (m[i] >= 128 && px[i * 4 + 3] > 16) { R += px[i * 4]; G += px[i * 4 + 1]; B += px[i * 4 + 2]; n++; }
+            if (!n) break;
+            mean = [R / n, G / n, B / n]; prev = m; continue;
+          }
+          let added = 0, alike = 0;
+          for (let i = 0; i < m.length; i++) if (m[i] >= 128 && prev[i] < 128) {
+            added++;
+            if (px[i * 4 + 3] > 16) { const dr = px[i * 4] - mean[0], dg = px[i * 4 + 1] - mean[1], db = px[i * 4 + 2] - mean[2]; if (dr * dr + dg * dg + db * db < 70 * 70) alike++; }
+          }
+          if (added && alike / added < 0.75) break;
+          best = t; prev = m;
+        }
+      });
+      S.tol = best; tolIn.value = best; $(root, '.sgpe-tol-v').textContent = best;
+      if (!S.soft) { S.soft = 2; softIn.value = 2; softV.textContent = '2 px'; }
+      const r = await busy('✨ Selecting…', () => partAt(p, tolThr(), null, 'set', true));
+      if (r) take(r);
+      say('✨ Auto chose tolerance ' + best + ' and a 2 px soft edge: selected ' + (S.area * 100).toFixed(1) + '% of the photo. Shift+click adds more');
+    }
     async function redoClick() {
       const c = S.lastClick; if (!c || !S.key) return;
-      const r = await busy('Selecting again with the new tolerance…', () => {
-        const id = ++seq;
-        const msg = { id, cmd: 'part', w: S.w, h: S.h, t: antWidth(), soft: S.soft, sel: c.before ? c.before.slice().buffer : null, url: api('mask'), body: { key: S.key, points: [{ x: c.p.x, y: c.p.y, on: true }], thr: tolThr() }, op: c.before ? c.op : 'set' };
-        return new Promise((res, rej) => { waiting.set(id, { res, rej }); worker.postMessage(msg, msg.sel ? [msg.sel] : []); });
-      });
+      const r = await busy('Selecting again with the new tolerance…', () => partAt(c.p, tolThr(), c.before, c.op, c.joined));
       if (r) { take(r); say('Tolerance ' + S.tol + ': ' + (S.sel ? 'selected ' + (S.area * 100).toFixed(1) + '% of the photo' : 'nothing selected')); }
     }
     async function subject(invert) {
@@ -587,10 +630,14 @@
     }
     // a change being tried follows the selection, so Shift+click (or the brush) can add the rest of the towel
     function followSel() {
-      if (S.wantRecolor) { S.wantRecolor = false; howto.hidden = true; return openRecolor(); }
+      if (S.wantRecolor) {
+        S.wantRecolor = false;
+        if ($(root, '.sgpe-auto').checked && S.clicking) { S.autoNext = true; return; }   // clickSelect finishes it
+        howto.hidden = true; return openRecolor();
+      }
       if (S.trial && !S.trial.whole && (S.trial.kind === 'recolor' || S.trial.kind === 'adjust')) {
         S.trial.mask = (S.shown || S.sel).slice();
-        if (S.trial.kind === 'recolor' && !S.soft) work('grow', { mask: S.trial.mask.slice().buffer, r: 2 }).then(r => { if (S.trial) { S.trial.mask = new Uint8Array(r.mask); rerender(); } }).catch(() => {});
+        if (S.trial.kind === 'recolor') work('grow', { mask: S.trial.mask.slice().buffer, r: 2 }).then(r => { if (S.trial) { S.trial.mask = new Uint8Array(r.mask); rerender(); } }).catch(() => {});
         rerender();
       }
     }
@@ -774,8 +821,8 @@
       if (S.trial && S.trial.kind === 'adjust') { adjPanel.hidden = true; S.trial = null; }
       swatches(); rcPanel.hidden = false;
       S.trial = { kind: 'recolor', mask: (S.shown || S.sel).slice(), layer: trialLayer() };
-      // with a hard edge, reach 2 px past the outline so no rim of the old color is left
-      if (!S.soft) work('grow', { mask: S.trial.mask.slice().buffer, r: 2 }).then(r => { if (S.trial) { S.trial.mask = new Uint8Array(r.mask); rerender(); } }).catch(() => {});
+      // reach 2 px past the outline (soft or hard edge) so no rim of the old color is left
+      work('grow', { mask: S.trial.mask.slice().buffer, r: 2 }).then(r => { if (S.trial) { S.trial.mask = new Uint8Array(r.mask); rerender(); } }).catch(() => {});
       say('Pick the new color: the photo shows it as you go. Apply keeps it');
       rerender();
       rcColor.focus();
