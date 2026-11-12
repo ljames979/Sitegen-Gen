@@ -121,6 +121,21 @@
         <label style="font-weight: 400; margin: 0;"><input type="checkbox" class="pb-own"<%= pbOwn.color ? ' checked' : '' %>> Use my own color for the block (instead of matching the photo):</label>
         <input type="color" class="pb-color" oninput="this.parentNode.querySelector('.pb-own').checked = true" value="<%= pbOwn.color || '#eeeeee' %>" style="width: 64px; height: 36px; padding: 2px;">
       </div>
+      <% const pbDisc = pbOwn.disc && pbOwn.disc !== 'off' ? pbOwn.disc : (photoBlend.themeDisc(site) || { in: '#eaf5fc', out: '#d6ebf8', ...photoBlend.DISC }); const pbDiscOn = pbOwn.disc ? pbOwn.disc !== 'off' : !!photoBlend.themeDisc(site); %>
+      <% const pbTheme = photoBlend.themeDisc(site); %><fieldset class="pb-discbox" data-theme="<%= pbTheme ? [pbTheme.in, pbTheme.out, pbTheme.size, pbTheme.x, pbTheme.y].join(' ') : '' %>" style="border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; margin: 10px 0;">
+        <legend style="font-weight: 600; padding: 0 4px;">Circle behind the pets</legend>
+        <p class="hint" style="margin-top: 0;">The round glow the cut-out pets stand in front of (only when "how it blends in" is "Pets cut out"). You can also click it on the page: drag it to move it, and pick its colors and size from the bar.</p>
+        <input type="hidden" class="pb-disc-own" value="<%= pbOwn.disc ? '1' : '' %>">
+        <label style="font-weight: 400;"><input type="checkbox" class="pb-disc-on"<%= pbDiscOn ? ' checked' : '' %>> Show the circle</label>
+        <div class="upload-row" style="align-items: center; flex-wrap: wrap; gap: 10px;">
+          <label style="font-weight: 400; margin: 0;">Middle color <input type="color" class="pb-disc-in" value="<%= pbDisc.in %>" style="width: 56px; height: 34px; padding: 2px; vertical-align: middle;"></label>
+          <label style="font-weight: 400; margin: 0;">Edge color <input type="color" class="pb-disc-out" value="<%= pbDisc.out %>" style="width: 56px; height: 34px; padding: 2px; vertical-align: middle;"></label>
+        </div>
+        <label style="font-weight: 400;">Size <input type="range" class="pb-disc-size" min="<%= photoBlend.DISC_LIMITS.size[0] %>" max="<%= photoBlend.DISC_LIMITS.size[1] %>" value="<%= pbDisc.size %>"></label>
+        <label style="font-weight: 400;">Left ↔ right <input type="range" class="pb-disc-x" min="0" max="100" value="<%= pbDisc.x %>"></label>
+        <label style="font-weight: 400;">Up ↕ down <input type="range" class="pb-disc-y" min="0" max="100" value="<%= pbDisc.y %>"></label>
+        <button type="button" class="btn-secondary pb-disc-reset">Back to the theme's circle</button>
+      </fieldset>
       <p class="hint">The Button boxes below add a button under the words (optional).</p>
     <% } else if (b.type === 'advice') { %>
       <% const adOwn = adviceBlock.parse(b.body); %>

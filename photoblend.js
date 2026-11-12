@@ -13,6 +13,9 @@
 //   note: ONLY TODAY                (the line under the box)
 //   photos: /uploads/a.jpg ...      (1 to 4)
 //   color: #ececec                  (the block's color; empty = matched from the photo)
+//   disc: #eaf5fc #d6ebf8 56 50 46  (cut-out pets: the round glow behind them: center color, edge color, size in % of
+//                                    the photo side's width, then its center across and down in %; "disc: off" hides
+//                                    it; no line = the theme's glass blue circle when the theme tokens have one)
 // side: "<photo side>:<blend>", e.g. right:both
 const content = require('./library/content');
 const contrast = require('./contrast');
@@ -23,16 +26,39 @@ const HEX = /^#[0-9a-f]{6}$/i;
 const MAX_PHOTOS = 4;
 const SIDES = [['right', 'Photo on the right'], ['left', 'Photo on the left']];
 const BLENDS = [['both', 'Match the photo\'s color and fade its edge'], ['match', 'Match the photo\'s color only'], ['fade', 'Fade the photo\'s edge only'], ['cut', 'Pets cut out, standing on any color']];
+// the circle behind cut-out pets (Leo, 2026-11-12: "i can edit all the bubbles but not the big blue dot behind the dog")
+const DISC = { size: 56, x: 50, y: 46 };   // the look the theme's circle always had
+const DISC_LIMITS = { size: [10, 140], x: [0, 100], y: [0, 100] };
+const discNum = (v, k) => { const n = Number(v); return Number.isFinite(n) ? Math.round(Math.min(DISC_LIMITS[k][1], Math.max(DISC_LIMITS[k][0], n))) : DISC[k]; };
+function parseDisc(v) {
+  const t = String(v || '').trim().toLowerCase();
+  if (t === 'off') return 'off';
+  const [a, b, size, x, y] = t.split(/\s+/);
+  if (!HEX.test(a || '')) return null;
+  return { in: a, out: HEX.test(b || '') ? b : a, size: discNum(size, 'size'), x: discNum(x, 'x'), y: discNum(y, 'y') };
+}
+const discLine = (d) => d === 'off' ? 'disc: off' : d ? `disc: ${d.in} ${d.out} ${d.size} ${d.x} ${d.y}` : '';
+// the theme's own circle: its light and mid glass blue (themetokens.js), else none
+function themeDisc(site) {
+  const cs = ((((site || {}).theme || {}).tokens || {}).colors) || [];
+  const hex = (k) => { const c = Array.isArray(cs) ? cs.find(x => x && x.key === k) : null; return c && HEX.test(String(c.hex || '')) ? String(c.hex).toLowerCase() : ''; };
+  const a = hex('glass-blue-light'), b = hex('glass-blue');
+  return a && b ? { in: a, out: b, ...DISC } : null;
+}
+// what the page draws: the owner's circle, none ("off"), or the theme's
+function discFor(site, blk) { const own = parse((blk || {}).body).disc; return own === 'off' ? null : own || themeDisc(site); }
+const discStyle = (d) => `--d-in:${d.in};--d-out:${d.out};--d-size:${d.size}%;--d-x:${d.x}%;--d-y:${d.y}%`;
 const flat = (v, n) => String(v || '').replace(/[|\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
 
 function parse(v) {
-  const out = { top: '', badge: '', note: '', photos: [], color: '', cutouts: {} };
+  const out = { top: '', badge: '', note: '', photos: [], color: '', cutouts: {}, disc: null };
   String(v || '').split('\n').forEach(l => {
-    const m = /^(top|badge|note|photos|color|cutouts):\s?(.*)$/.exec(l.trim());
+    const m = /^(top|badge|note|photos|color|cutouts|disc):\s?(.*)$/.exec(l.trim());
     if (!m) return;
     // cut-out copies of the photos (cutout.js): photo|cut-out pairs; only cut-outs made here (/uploads/cut-...)
     if (m[1] === 'cutouts') m[2].split(/\s+/).forEach(pr => { const [a, c] = pr.split('|'); if (a && PHOTO.test(a) && a.length <= 500 && /^\/uploads\/cut-[a-z0-9]+\.(webp|png)$/.test(c || '')) out.cutouts[a] = c; });
     else if (m[1] === 'photos') out.photos = m[2].split(/\s+/).filter(u => PHOTO.test(u) && u.length <= 500).slice(0, MAX_PHOTOS);
+    else if (m[1] === 'disc') out.disc = parseDisc(m[2]);
     else if (m[1] === 'color') out.color = HEX.test(m[2].trim()) ? m[2].trim().toLowerCase() : '';
     else out[m[1]] = flat(m[2], m[1] === 'badge' ? 60 : 120);
   });
@@ -41,7 +67,7 @@ function parse(v) {
 function cleanBody(v) {
   const p = parse(v);
   return [].concat(p.top ? [`top: ${p.top}`] : [], p.badge ? [`badge: ${p.badge}`] : [], p.note ? [`note: ${p.note}`] : [],
-    p.photos.length ? [`photos: ${p.photos.join(' ')}`] : [], p.color ? [`color: ${p.color}`] : [], cutLine(p)).join('\n');
+    p.photos.length ? [`photos: ${p.photos.join(' ')}`] : [], p.color ? [`color: ${p.color}`] : [], cutLine(p), p.disc ? [discLine(p.disc)] : []).join('\n');
 }
 // the cut-outs of the photos still in the list
 function cutLine(p) { const prs = p.photos.filter(u => p.cutouts[u]).map(u => u + '|' + p.cutouts[u]); return prs.length ? [`cutouts: ${prs.join(' ')}`] : []; }
@@ -58,7 +84,9 @@ function view(site, blk, services) {
   const cut = blend === 'cut';
   if (cut) photos = photos.map(u => own.cutouts[u] || u);
   const cutColor = own.color || mixHex('#ffffff', /^#[0-9a-f]{6}$/i.test(String(((site || {}).theme || {}).primaryColor || '')) ? site.theme.primaryColor : '#2563eb', 0.18);
+  const disc = cut ? discFor(site, b) : null;
   return {
+    disc: disc ? discStyle(disc) : '',
     cut, uncut: cut ? photos.filter(u => !/^\/uploads\/cut-/.test(u)).length : 0,
     headingHtml: content.hlHtml(b.heading || ''),
     top: own.top, badge: own.badge, note: own.note,
@@ -73,4 +101,4 @@ function view(site, blk, services) {
 
 const mixHex = (a, b, w) => { const x = contrast.parseHex(a), y = contrast.parseHex(b); return contrast.toHex(x.map((v, i) => v + (y[i] - v) * w)); };
 
-module.exports = { parse, cleanBody, cleanSide, view, SIDES, BLENDS, MAX_PHOTOS };
+module.exports = { parse, cleanBody, cleanSide, view, SIDES, BLENDS, MAX_PHOTOS, DISC, DISC_LIMITS, parseDisc, discLine, themeDisc, discFor };

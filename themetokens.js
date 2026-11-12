@@ -224,8 +224,7 @@ function blockCss(t, r) {
   s += `${B}.sg-pb-cta{order:4}${B}.sg-pb-h{order:2}${B}.sg-pb-top{order:1}`;
   s += `@media (max-width:760px){${B}.sg-pb-words{order:-1}}`;   // phones: the words first, then the photo
   s += `${B}.sg-pb-btn{background:${p.bg};color:${p.text};${pill}}${B}.sg-pb-btn:hover{${p.hover ? 'background:' + p.hover + ';' : ''}opacity:1;transform:translateY(-${p.lift}px)}`;
-  const gl = t.colors.find(c => c.key === 'glass-blue-light'), gb = t.colors.find(c => c.key === 'glass-blue');
-  if (gl && gb) s += `${B}.sg-pb-cut .sg-pb-photo{background:radial-gradient(circle at 50% 46%,${gl.hex} 0,${gb.hex} 38%,transparent 39%)}`;
+  // the glass blue circle behind cut-out pets is now a real piece the owner can edit (photoblend.js discFor)
   // Photo over a card: heading and button in the theme's colors on a white card (an own card color keeps its own)
   if (r.heading) s += `${B}.sg-oc-h{color:var(--oc-text,${r.heading})}`;
   s += `${B}.sg-oc-btn{background:var(--oc-btn,${p.bg});color:var(--oc-btn-ink,${p.text});${pill}}${B}.sg-oc-btn:hover{background:var(--oc-btn,${p.hover || p.bg})}`;

@@ -464,7 +464,7 @@
           <% if (pb.button) { %><p class="sg-pb-cta"><a class="sg-pb-btn" href="<%= pb.button.url %>"><%= pb.button.text %></a></p><% } %>
         </div>
         <% if (_pv && pb.uncut) { %><p class="sg-pb-cutnote">Only you see this: <%= pb.uncut %> photo<%= pb.uncut > 1 ? 's are' : ' is' %> not cut out yet. Use "Cut out the pets" in the editor.</p><% } %>
-        <% if (pb.photos.length) { %><div class="sg-tb-pic sg-pb-photo" aria-hidden="true"><% pb.photos.forEach((u, i) => { %><img src="<%= u %>" alt="" decoding="async"<%- i ? ' loading="lazy"' : ' class="on"' %>><% }) %></div><% } %>
+        <% if (pb.photos.length) { %><div class="sg-tb-pic sg-pb-photo" aria-hidden="true"><% if (pb.disc) { %><span class="sg-pb-disc" data-sg-still style="<%= pb.disc %>"></span><% } %><% pb.photos.forEach((u, i) => { %><img src="<%= u %>" alt="" decoding="async"<%- i ? ' loading="lazy"' : ' class="on"' %>><% }) %></div><% } %>
       </div>
     </section>
   <% } %>
