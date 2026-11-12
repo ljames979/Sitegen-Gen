@@ -134,7 +134,9 @@ const imagePath = (key, full) => { if (!keyOk(key)) return ''; const f = fileFor
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 // points: [{x, y, on}] in working-copy px (on=false marks "not this"); box: optional {x0, y0, x1, y1}
-async function mask(key, points, box) {
+// thr (2026-11-12, Leo's Tolerance slider): the model's own cut-off. Below 0 takes in more of the parts it is less sure
+// of (a bigger selection), above 0 keeps only what it is sure of. 0 is the model's usual answer.
+async function mask(key, points, box, thr) {
   need();
   const v = load(key);
   const pts = (Array.isArray(points) ? points : []).slice(0, 12).map(p => ({ x: clamp(+p.x || 0, 0, v.w), y: clamp(+p.y || 0, 0, v.h), on: p.on !== false }));
@@ -155,7 +157,8 @@ async function mask(key, points, box) {
   });
   const m = r.masks.data, size = v.w * v.h, a = Buffer.alloc(size);
   let on = 0;
-  for (let i = 0; i < size; i++) if (m[i] > 0) { a[i] = 255; on++; }
+  const cut = Number.isFinite(+thr) ? Math.max(-16, Math.min(16, +thr)) : 0;
+  for (let i = 0; i < size; i++) if (m[i] > cut) { a[i] = 255; on++; }
   const png = await sharp(a, { raw: { width: v.w, height: v.h, channels: 1 } }).png({ compressionLevel: 3 }).toBuffer();
   return { png, score: +(r.iou_predictions.data[0] || 0).toFixed(3), area: on / size };
 }

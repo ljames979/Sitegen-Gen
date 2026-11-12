@@ -147,7 +147,8 @@ function recolor(px, mask, L) {
       ? (l >= Lm ? Lt + (l - Lm) * (1 - Lt) / Math.max(0.02, 1 - Lm) : Lt - (Lm - l))
       : (l <= Lm ? Lt - (Lm - l) * Lt / Math.max(0.02, Lm) : Lt + (l - Lm));
     const l2 = clamp01(rel * shade + Lt * (1 - shade));
-    const s2 = clamp01(St * (Sm > 0.06 ? Math.max(0.6, Math.min(1.4, hs[1] / Sm)) : 1));
+    // hue and saturation are the target's (Leo's spec, 2026-11-12); the lightness is the pixel's own, moved as above
+    const s2 = St;
     hslToRgb(Ht, s2, l2, rgb);
     px[j] += (rgb[0] - px[j]) * a; px[j + 1] += (rgb[1] - px[j + 1]) * a; px[j + 2] += (rgb[2] - px[j + 2]) * a;
   }

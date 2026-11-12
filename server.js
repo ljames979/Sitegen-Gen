@@ -1673,7 +1673,7 @@ app.get('/sites/:id/photo-edit/image/:key', requireAuth, loadOwnedSite, (req, re
 app.post('/sites/:id/photo-edit/mask', requireAuth, loadOwnedSite, photoEditLimiter, express.json({ limit: '8kb' }), async (req, res) => {
   try {
     const b = req.body || {};
-    const r = await photoedit.mask(String(b.key || ''), b.points, b.box && typeof b.box === 'object' ? b.box : null);
+    const r = await photoedit.mask(String(b.key || ''), b.points, b.box && typeof b.box === 'object' ? b.box : null, b.thr);
     res.set('X-Sg-Score', String(r.score)); res.set('X-Sg-Area', r.area.toFixed(4)); res.type('png'); res.send(r.png);
   } catch (e) { photoEditErr(res, e, 'Could not select that.'); }
 });

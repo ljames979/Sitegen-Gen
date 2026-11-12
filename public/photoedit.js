@@ -132,6 +132,8 @@
   <div class="row"><button type="button" data-a="invert">Invert</button><button type="button" data-a="all">Select all</button><button type="button" data-a="clear">Clear</button></div>
   <p class="hint sgpe-tip"></p>
   <div class="row" role="group" aria-label="What a click, stroke or lasso does"><button type="button" data-mode="set" aria-pressed="true" title="A click starts a new selection">New</button><button type="button" data-mode="add" aria-pressed="false" title="Add to the selection (or hold Shift)">＋ Add</button><button type="button" data-mode="sub" aria-pressed="false" title="Take away from the selection (or hold ${isMac ? 'Option' : 'Alt'})">− Remove</button></div>
+  <label>Tolerance <span class="val sgpe-tol-v">50</span><input type="range" class="sgpe-tol" min="0" max="100" value="50" aria-label="Tolerance: how far a click reaches"></label>
+  <p class="hint">Tolerance: higher takes in more around the spot you click (the whole towel), lower keeps it tight. Changing it redoes your last click.</p>
   <div class="sgpe-brush" hidden>
     <label class="sgpe-size-l">Brush size <span class="val sgpe-size-v"></span><input type="range" class="sgpe-size" min="2" max="200" value="40" aria-label="Brush size"></label>
   </div>
@@ -175,7 +177,7 @@
 
     const S = {
       key: '', w: 0, h: 0, img: null,
-      tool: 'select', mode: 'set', brush: 40, soft: 0,
+      tool: 'select', mode: 'set', brush: 40, soft: 0, tol: 50, lastClick: null,
       sel: null, shown: null, edges: null, area: 0, box: null,
       zoom: 1, tx: 0, ty: 0, space: false,
       busy: 0, closed: false,
@@ -250,7 +252,9 @@
       if (!S.sel || !S.area) { floatEl.hidden = true; stopAnts(); return; }
       ovData = x.createImageData(S.w, S.h);
       const d = ovData.data, m = S.shown || S.sel;
-      for (let i = 0, j = 0; i < m.length; i++, j += 4) if (m[i]) { d[j] = 37; d[j + 1] = 99; d[j + 2] = 235; d[j + 3] = Math.round(m[i] * 0.34); }
+      // while a new color (or an adjustment) is being tried, only the ants show, so the blue tint can't mix into it
+      S.tinted = !S.trial; const ta = S.tinted ? 0.34 : 0;
+      for (let i = 0, j = 0; i < m.length; i++, j += 4) if (m[i]) { d[j] = 37; d[j + 1] = 99; d[j + 2] = 235; d[j + 3] = Math.round(m[i] * ta); }
       tintCopy = new Uint8ClampedArray(d);
       startAnts();
       floatInfo.textContent = 'Selected ' + (S.area < 0.001 ? '<0.1' : (S.area * 100).toFixed(S.area < 0.1 ? 1 : 0)) + '% of the photo';
@@ -305,6 +309,7 @@
     function histButtons() { $(root, '[data-a=undo]').disabled = hist.at <= 0; $(root, '[data-a=redo]').disabled = hist.at >= hist.list.length - 1; }
     async function stepTo(i) {
       if (i < 0 || i >= hist.list.length) return;
+      S.lastClick = null;
       const from = hist.at; hist.at = i; const h = hist.list[i]; histButtons();
       S.soft = h.soft; softIn.value = h.soft; softV.textContent = h.soft + ' px';
       S.sel = h.sel ? h.sel.slice() : null;
@@ -321,11 +326,25 @@
       if (!S.key) return;
       if (op !== 'set' && !S.sel) op = op === 'sub' ? null : 'set';
       if (!op) return say('Nothing is selected to take away from');
+      const before = S.sel ? S.sel.slice() : null;
       const r = await busy(op === 'add' ? 'Adding…' : (op === 'sub' ? 'Taking away…' : 'Selecting…'), () =>
-        work('part', { url: api('mask'), body: { key: S.key, points: [{ x: p.x, y: p.y, on: true }] }, op }));
+        work('part', { url: api('mask'), body: { key: S.key, points: [{ x: p.x, y: p.y, on: true }], thr: tolThr() }, op }));
       if (!r) return;
       take(r);
+      S.lastClick = { p, op, before };
       say(S.sel ? (op === 'set' ? 'Selected. Shift+click adds more, ' + (isMac ? 'Option' : 'Alt') + '+click takes a part away' : (op === 'add' ? 'Added' : 'Taken away')) : 'Nothing is selected');
+    }
+    // Tolerance 0..100 -> the outline model's cut-off (+8 .. -10); 50 is the model's usual answer
+    const tolThr = () => (50 - S.tol) / 50 * (S.tol > 50 ? 10 : 8);
+    // a new Tolerance redoes the last click from the selection as it was before that click
+    async function redoClick() {
+      const c = S.lastClick; if (!c || !S.key) return;
+      const r = await busy('Selecting again with the new tolerance…', () => {
+        const id = ++seq;
+        const msg = { id, cmd: 'part', w: S.w, h: S.h, t: antWidth(), soft: S.soft, sel: c.before ? c.before.slice().buffer : null, url: api('mask'), body: { key: S.key, points: [{ x: c.p.x, y: c.p.y, on: true }], thr: tolThr() }, op: c.before ? c.op : 'set' };
+        return new Promise((res, rej) => { waiting.set(id, { res, rej }); worker.postMessage(msg, msg.sel ? [msg.sel] : []); });
+      });
+      if (r) { take(r); say('Tolerance ' + S.tol + ': ' + (S.sel ? 'selected ' + (S.area * 100).toFixed(1) + '% of the photo' : 'nothing selected')); }
     }
     async function subject(invert) {
       if (!S.key) return;
@@ -643,6 +662,8 @@
     softIn.addEventListener('input', () => { S.soft = +softIn.value; softV.textContent = S.soft + ' px'; clearTimeout(softIn.t); softIn.t = setTimeout(restyle, 120); });
     softIn.addEventListener('change', () => { if (hist.list[hist.at] && hist.list[hist.at].soft !== S.soft) remember(); });
     sizeIn.addEventListener('input', () => setBrush(+sizeIn.value));
+    const tolIn = $(root, '.sgpe-tol');
+    tolIn.addEventListener('input', () => { S.tol = +tolIn.value; $(root, '.sgpe-tol-v').textContent = S.tol; clearTimeout(tolIn.t); tolIn.t = setTimeout(redoClick, 250); });
     setBrush(40); setTool('select');
 
 
@@ -652,6 +673,7 @@
     const NAMES = { recolor: 'Color', adjust: 'Adjust' };
     async function rerender() {
       if (!S.base) return;
+      if (S.sel && S.tinted !== !S.trial) drawSel();
       const t = S.trial;
       const layers = S.layers.concat(t ? [t.layer] : []);
       if (!layers.length) { cPhoto.getContext('2d').putImageData(S.base, 0, 0); return; }
@@ -850,9 +872,10 @@
     // keys go to the editor only, while it is open (the page under it has its own Ctrl+Z, Esc ...)
     function onKey(e) {
       if (S.closed) return;
-      e.stopPropagation();
       const mod = e.ctrlKey || e.metaKey, k = (e.key || '').toLowerCase();
-      if (e.target && /^(input|textarea|select)$/i.test(e.target.tagName) && e.target.type !== 'range') return;
+      // typing in a box (the color's hex code, a change's name): no shortcuts; only Ctrl/Cmd keys are kept from the page
+      if (e.target && (e.target.isContentEditable || /^(input|textarea|select)$/i.test(e.target.tagName) && e.target.type !== 'range')) { if (mod) e.stopPropagation(); return; }
+      e.stopPropagation();
       if (mod && k === 'z') { e.preventDefault(); return stepTo(hist.at + (e.shiftKey ? 1 : -1)); }
       if (mod && k === 'y') { e.preventDefault(); return stepTo(hist.at + 1); }
       if (mod && k === 'a') { e.preventDefault(); return S.key && simple('all', 'Selected all…'); }

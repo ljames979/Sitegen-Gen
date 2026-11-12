@@ -216,3 +216,26 @@ test('fixes: Change a color and Crop & turn in the editor, kept with the saved e
   assert.match(wk, /function frameCanvas\(c, W, H, f\)/);
   assert.match(wk, /frameCanvas\(c, W, H, q\.frame\)/);
 });
+
+test('Change color spec (2026-11-12): tolerance slider, hex code box, target hue and saturation, no tint over the preview', () => {
+  const js = fs.readFileSync(path.join(__dirname, '..', 'public', 'photoedit.js'), 'utf8');
+  assert.match(js, /class="sgpe-tol" min="0" max="100" value="50"/);
+  assert.match(js, /thr: tolThr\(\)/);
+  assert.match(js, /async function redoClick\(\)/);
+  assert.match(js, /e\.target\.isContentEditable/, 'typing a hex code is not a shortcut');
+  assert.match(js, /S\.tinted = !S\.trial/);
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'photoedit.js'), 'utf8'), /async function mask\(key, points, box, thr\)/);
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8'), /photoedit\.mask\([^\n]*, b\.thr\)/);
+  // every pixel takes the target's hue and saturation; its lightness keeps its order, with the average near the target's
+  const box = { self: {}, module: { exports: {} }, Uint8Array, Uint8ClampedArray, Int32Array, Math, String, Map, Number };
+  vm.createContext(box); vm.runInContext(read('public/photoedit-worker.js'), box);
+  const { recolor } = box.module.exports;
+  const n = 4, px = new Uint8ClampedArray([30, 60, 120, 255, 60, 100, 180, 255, 90, 140, 220, 255, 120, 170, 240, 255]), m = new Uint8Array(n).fill(255);
+  recolor(px, m, { color: '#DD96B5', strength: 1, shading: 1 });
+  const hsl = (r, g, b) => { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn; let h = 0; if (d) { h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360; } return [h, d ? d / (1 - Math.abs(2 * l - 1)) : 0, l]; };
+  const out = [0, 1, 2, 3].map(i => hsl(px[i * 4], px[i * 4 + 1], px[i * 4 + 2]));
+  out.forEach(([h]) => assert.ok(Math.abs(h - 330) < 6, 'hue of #DD96B5, got ' + h));
+  for (let i = 1; i < n; i++) assert.ok(out[i][2] > out[i - 1][2], 'lighter stays lighter');
+  const avg = out.reduce((a, o) => a + o[2], 0) / n;
+  assert.ok(Math.abs(avg - 0.727) < 0.08, 'average lightness near the target, got ' + avg.toFixed(3));
+});
