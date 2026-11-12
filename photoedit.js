@@ -185,7 +185,7 @@ async function subject(key) {
 // A mask is a black and white PNG the working size, kept with the uploads. Opening the finished photo in the editor
 // opens the original with every change still there to change, hide or remove.
 const MAX_EDITS = 120, MAX_LAYERS = 60;
-const LAYER_TYPES = ['recolor', 'adjust'];
+const LAYER_TYPES = ['recolor', 'adjust', 'enhance'];
 const isUp = (u) => /^\/uploads\/[A-Za-z0-9._-]+$/.test(String(u || ''));
 const hex = (v) => (/^#[0-9a-f]{6}$/i.test(String(v || '')) ? String(v).toLowerCase() : '');
 const num = (v, lo, hi, d) => { const n = +v; return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : d; };
@@ -196,6 +196,12 @@ function cleanLayer(L) {
     opacity: num(L.opacity, 0, 1, 1), locked: !!L.locked };   // part 3: Strength in the Changes list, and 🔒
   if (L.type === 'recolor') Object.assign(out, { color: hex(L.color) || '#ff69b4', strength: num(L.strength, 0, 1, 1), shading: num(L.shading, 0, 1, 1) });
   if (L.type === 'adjust') ['bright', 'contrast', 'sat', 'warm'].forEach(k => { out[k] = Math.round(num(L[k], -100, 100, 0)); });
+  // ✨ Auto enhance (2026-11-12): levels, white-balance gains, midtone lift and color strength
+  if (L.type === 'enhance') {
+    const g = Array.isArray(L.gain) ? L.gain : [];
+    Object.assign(out, { lo: Math.round(num(L.lo, 0, 120, 0)), hi: Math.round(num(L.hi, 135, 255, 255)), gain: [0, 1, 2].map(i => +num(g[i], 0.7, 1.4, 1).toFixed(3)),
+      gamma: +num(L.gamma, 0.5, 2, 1).toFixed(2), sat: Math.round(num(L.sat, -100, 100, 0)) });
+  }
   return out;
 }
 function cleanEdit(e) {
@@ -216,9 +222,11 @@ function cleanFrame(f) {
   const x = num(f.x, 0, 1, 0), y = num(f.y, 0, 1, 0);
   const w = Math.min(num(f.w, 0.01, 1, 1), 1 - x), h = Math.min(num(f.h, 0.01, 1, 1), 1 - y);
   const rot = [0, 90, 180, 270].includes(+f.rot) ? +f.rot : 0;
+  const tilt = Math.round(num(f.tilt, -15, 15, 0) * 10) / 10;   // Straighten (✨ Auto enhance or the slider), degrees
   const out = { x: +x.toFixed(5), y: +y.toFixed(5), w: +w.toFixed(5), h: +h.toFixed(5), rot, fh: !!f.fh, fv: !!f.fv, ratio: /^(free|orig|\d{1,2}:\d{1,2})$/.test(String(f.ratio || '')) ? String(f.ratio) : 'free' };
+  if (tilt) out.tilt = tilt;
   if (w < 0.01 || h < 0.01) return null;
-  if (out.x === 0 && out.y === 0 && out.w === 1 && out.h === 1 && !rot && !out.fh && !out.fv) return null;   // nothing to do
+  if (out.x === 0 && out.y === 0 && out.w === 1 && out.h === 1 && !rot && !out.fh && !out.fv && !tilt) return null;   // nothing to do
   return out;
 }
 function cleanEdits(all) {

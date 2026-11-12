@@ -115,6 +115,7 @@
     <h3>What do you want to do?</h3>
     <div class="row"><button type="button" data-a="recolor-start" title="Change the color of one thing in the photo, like the towel">🎨 Change a color</button><button type="button" data-a="crop-start" title="Cut the edges off, or turn the photo">⛶ Crop &amp; turn</button></div>
     <div class="row"><button type="button" data-a="adjust-all" title="Brightness, contrast, color strength and warmth of the whole photo">☀ Light &amp; color of the whole photo</button></div>
+    <div class="row"><button type="button" data-a="auto-enhance" title="One click: fixes the light, the white balance and a tilted photo. Undo, or turn it down with Strength in Changes">✨ Auto enhance</button><button type="button" data-a="brand-match" title="One click: the photo's colorful things (a towel, a sign, a wall) take the site's brand colors; the pet and people are left alone. Press again to swap the colors. Click a thing first to change just that">✨ Match to brand</button></div>
     <label style="margin-top:2px"><input type="checkbox" class="sgpe-auto" checked> ✨ Auto: SiteGen picks the tolerance and the edge for the thing you click</label>
     <p class="hint sgpe-howto" hidden></p>
   </div>
@@ -125,6 +126,7 @@
     <div class="row" role="group" aria-label="Shape of the photo"><button type="button" data-ratio="free" aria-pressed="true">Free</button><button type="button" data-ratio="1:1" aria-pressed="false" title="Square">1:1</button><button type="button" data-ratio="4:3" aria-pressed="false">4:3</button><button type="button" data-ratio="16:9" aria-pressed="false" title="Wide">16:9</button><button type="button" data-ratio="3:4" aria-pressed="false" title="Tall">3:4</button><button type="button" data-ratio="orig" aria-pressed="false" title="The photo's own shape">Original</button></div>
     <label>Turn</label>
     <div class="row"><button type="button" data-a="rot-l" title="Turn left (a quarter turn)">⟲ Left</button><button type="button" data-a="rot-r" title="Turn right (a quarter turn)">⟳ Right</button><button type="button" data-a="flip-h" title="Mirror left to right">↔ Mirror</button><button type="button" data-a="flip-v" title="Flip upside down">↕ Flip</button></div>
+    <label>Straighten <span class="val sgpe-tilt-v">0°</span><input type="range" class="sgpe-tilt" min="-15" max="15" step="0.1" value="0" aria-label="Straighten: turn the photo a little"></label>
     <p class="hint sgpe-crop-info"></p>
     <div class="row"><button type="button" data-a="crop-reset" title="The whole photo again, not turned">Reset</button><button type="button" data-a="crop-done" class="primary">Done</button></div>
   </div>
@@ -207,21 +209,22 @@
 
     // ---- view: fit, zoom, pan ----
     // the photo is turned and mirrored round its middle (Crop & turn), so the view and the pointer use the same sums
-    const F = () => S.frame || { rot: 0, fh: false, fv: false };
+    const F = () => S.frame || { rot: 0, fh: false, fv: false, tilt: 0 };
+    const angle = () => F().rot + (+F().tilt || 0);   // the quarter turn plus Straighten
     const sideways = () => F().rot === 90 || F().rot === 270;
     function place() {
       const f = F();
-      stage.style.transform = `translate(${S.tx}px,${S.ty}px) scale(${S.zoom}) translate(${S.w / 2}px,${S.h / 2}px) rotate(${f.rot}deg) scale(${f.fh ? -1 : 1},${f.fv ? -1 : 1}) translate(${-S.w / 2}px,${-S.h / 2}px)`;
+      stage.style.transform = `translate(${S.tx}px,${S.ty}px) scale(${S.zoom}) translate(${S.w / 2}px,${S.h / 2}px) rotate(${angle()}deg) scale(${f.fh ? -1 : 1},${f.fv ? -1 : 1}) translate(${-S.w / 2}px,${-S.h / 2}px)`;
       placeFloat();
     }
     // a spot in the photo's own pixels -> a spot in the view, and back
     function toView(x, y) {
-      const f = F(), a = f.rot * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+      const f = F(), a = angle() * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
       const dx = (x - S.w / 2) * (f.fh ? -1 : 1), dy = (y - S.h / 2) * (f.fv ? -1 : 1);
       return { x: S.tx + S.zoom * (S.w / 2 + dx * c - dy * sn), y: S.ty + S.zoom * (S.h / 2 + dx * sn + dy * c) };
     }
     function fromView(vx, vy) {
-      const f = F(), a = f.rot * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+      const f = F(), a = angle() * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
       const rx = (vx - S.tx) / S.zoom - S.w / 2, ry = (vy - S.ty) / S.zoom - S.h / 2;
       const dx = (rx * c + ry * sn) * (f.fh ? -1 : 1), dy = (-rx * sn + ry * c) * (f.fv ? -1 : 1);
       return { x: dx + S.w / 2, y: dy + S.h / 2 };
@@ -472,8 +475,21 @@
     // ---- Crop & turn: a box over the photo (in its own pixels), then a quarter turn and mirrors ----
     // Nothing is cut until Save photo, and the saved edit keeps the box, so a crop can be changed or taken off later.
     const RATIOS = { '1:1': 1, '4:3': 4 / 3, '16:9': 16 / 9, '3:4': 3 / 4 };
-    const fullFrame = () => ({ x: 0, y: 0, w: S.w, h: S.h, rot: S.frame ? S.frame.rot : 0, fh: S.frame ? S.frame.fh : false, fv: S.frame ? S.frame.fv : false, ratio: 'free' });
-    const frameIsFull = () => !S.frame || (S.frame.x <= 0.5 && S.frame.y <= 0.5 && S.frame.w >= S.w - 1 && S.frame.h >= S.h - 1 && !S.frame.rot && !S.frame.fh && !S.frame.fv);
+    const fullFrame = () => ({ x: 0, y: 0, w: S.w, h: S.h, rot: S.frame ? S.frame.rot : 0, fh: S.frame ? S.frame.fh : false, fv: S.frame ? S.frame.fv : false, tilt: S.frame ? (+S.frame.tilt || 0) : 0, ratio: 'free' });
+    const frameIsFull = () => !S.frame || (S.frame.x <= 0.5 && S.frame.y <= 0.5 && S.frame.w >= S.w - 1 && S.frame.h >= S.h - 1 && !S.frame.rot && !S.frame.fh && !S.frame.fv && !S.frame.tilt);
+    // Straighten: the finished photo keeps only what is still inside after the small turn (made a little bigger so no
+    // corner is empty, the same sums as the worker's frameCanvas). These are its corners in the photo's own pixels.
+    function keptCorners() {
+      const f = S.frame, t = +f.tilt || 0, ow = sideways() ? f.h : f.w, oh = sideways() ? f.w : f.h;
+      const ra = Math.abs(t) * Math.PI / 180, ts = Math.cos(ra) + Math.sin(ra) * Math.max(ow / oh, oh / ow);
+      const a = -(f.rot + t) * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a), cx = f.x + f.w / 2, cy = f.y + f.h / 2;
+      return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([kx, ky]) => {
+        const dx = kx * ow / 2, dy = ky * oh / 2;
+        let x = (dx * c - dy * sn) / ts, y = (dx * sn + dy * c) / ts;
+        if (f.fh) x = -x; if (f.fv) y = -y;
+        return [cx + x, cy + y];
+      });
+    }
     // the shape the finished photo should have (width / height), as a box shape in the photo's own pixels
     function boxRatio(name) {
       const f = S.frame || {}; name = name || f.ratio;
@@ -490,7 +506,10 @@
       const on = S.tool === 'crop';
       if (!on && frameIsFull()) return;
       x.fillStyle = on ? 'rgba(2,6,23,.6)' : 'rgba(11,18,32,.82)';
-      x.beginPath(); x.rect(0, 0, S.w, S.h); x.rect(f.x, f.y, f.w, f.h); x.fill('evenodd');
+      x.beginPath(); x.rect(0, 0, S.w, S.h);
+      if (f.tilt) { const k = keptCorners(); x.moveTo(k[0][0], k[0][1]); k.slice(1).forEach(p => x.lineTo(p[0], p[1])); x.closePath(); }
+      else x.rect(f.x, f.y, f.w, f.h);
+      x.fill('evenodd');
       if (!on) return;
       const lw = 1.5 / S.zoom;
       x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = lw; x.beginPath();
@@ -506,11 +525,12 @@
       const ow = Math.round(sideways() ? f.h : f.w), oh = Math.round(sideways() ? f.w : f.h);
       const kept = Math.round(f.w * f.h / (S.w * S.h) * 100);
       el.textContent = (kept >= 100 ? 'The whole photo' : 'Keeps ' + kept + '% of the photo') + ' · ' + (ow > oh * 1.05 ? 'wide' : (oh > ow * 1.05 ? 'tall' : 'square')) + ' (' + ow + ' × ' + oh + ' here)' +
-        (f.rot ? ' · turned ' + f.rot + '°' : '') + (f.fh || f.fv ? ' · mirrored' : '');
+        (f.rot ? ' · turned ' + f.rot + '°' : '') + (f.tilt ? ' · straightened ' + Math.abs(f.tilt) + '°' : '') + (f.fh || f.fv ? ' · mirrored' : '');
     }
     function cropButtons() {
       const r = (S.frame && S.frame.ratio) || 'free';
       root.querySelectorAll('[data-ratio]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ratio === r)));
+      const t = S.frame ? (+S.frame.tilt || 0) : 0; tiltIn.value = t; $(root, '.sgpe-tilt-v').textContent = (t > 0 ? '+' : '') + t + '°';
       cropInfo();
     }
     function frameChanged(record) {
@@ -610,11 +630,11 @@
     function frameOut() {
       if (frameIsFull()) return null;
       const f = S.frame;
-      return { x: f.x / S.w, y: f.y / S.h, w: f.w / S.w, h: f.h / S.h, rot: f.rot, fh: !!f.fh, fv: !!f.fv, ratio: f.ratio || 'free' };
+      return { x: f.x / S.w, y: f.y / S.h, w: f.w / S.w, h: f.h / S.h, rot: f.rot, fh: !!f.fh, fv: !!f.fv, tilt: +f.tilt || 0, ratio: f.ratio || 'free' };
     }
     function frameIn(fr) {
       if (!fr) return;
-      S.frame = { x: fr.x * S.w, y: fr.y * S.h, w: fr.w * S.w, h: fr.h * S.h, rot: fr.rot || 0, fh: !!fr.fh, fv: !!fr.fv, ratio: fr.ratio || 'free' };
+      S.frame = { x: fr.x * S.w, y: fr.y * S.h, w: fr.w * S.w, h: fr.h * S.h, rot: fr.rot || 0, fh: !!fr.fh, fv: !!fr.fv, tilt: +fr.tilt || 0, ratio: fr.ratio || 'free' };
     }
 
     // ---- 🎨 Change a color, from the "What do you want to do?" box: one click on the thing, then the colors ----
@@ -682,9 +702,11 @@
       if (a === 'clear') return clearSel();
       if (a === 'recolor') return openRecolor();
       if (a === 'recolor-start') return startRecolor();
+      if (a === 'auto-enhance') return autoEnhance();
+      if (a === 'brand-match') return brandMatch();
       if (a === 'crop-start') { setTool('crop'); return say('Drag the corners of the box. Pick a shape (1:1, 4:3 ...) to keep it that shape'); }
       if (a === 'crop-done') { setTool('select'); fit(); return say(frameIsFull() ? 'No crop' : 'Cropped. Save photo keeps it; the original stays whole'); }
-      if (a === 'crop-reset') { S.frame = { x: 0, y: 0, w: S.w, h: S.h, rot: 0, fh: false, fv: false, ratio: 'free' }; frameChanged(true); cropButtons(); fit(); return say('The whole photo again'); }
+      if (a === 'crop-reset') { S.frame = { x: 0, y: 0, w: S.w, h: S.h, rot: 0, fh: false, fv: false, tilt: 0, ratio: 'free' }; frameChanged(true); cropButtons(); fit(); return say('The whole photo again'); }
       if (a === 'rot-l' || a === 'rot-r') return turn(a === 'rot-r' ? 90 : -90);
       if (a === 'flip-h' || a === 'flip-v') return mirror(a === 'flip-h');
       if (a === 'adjust') return openAdjust(false);
@@ -711,13 +733,22 @@
     sizeIn.addEventListener('input', () => setBrush(+sizeIn.value));
     const tolIn = $(root, '.sgpe-tol');
     tolIn.addEventListener('input', () => { S.tol = +tolIn.value; $(root, '.sgpe-tol-v').textContent = S.tol; clearTimeout(tolIn.t); tolIn.t = setTimeout(redoClick, 250); });
+    const tiltIn = $(root, '.sgpe-tilt');
+    tiltIn.addEventListener('input', () => {
+      if (!S.w) return;
+      if (!S.frame) S.frame = fullFrame();
+      S.frame.tilt = Math.round(+tiltIn.value * 10) / 10;
+      $(root, '.sgpe-tilt-v').textContent = (S.frame.tilt > 0 ? '+' : '') + S.frame.tilt + '°';
+      frameChanged(false); place();
+    });
+    tiltIn.addEventListener('change', () => remember());
     setBrush(40); setTool('select');
 
 
     // ---- changes (layers): each one has its own mask; the original photo is never changed ----
     const rcPanel = $(root, '.sgpe-rc'), rcColor = $(root, '.sgpe-rc-color'), rcStr = $(root, '.sgpe-rc-str'), rcSh = $(root, '.sgpe-rc-sh');
     const uid = () => Math.random().toString(36).slice(2, 10);
-    const NAMES = { recolor: 'Color', adjust: 'Adjust' };
+    const NAMES = { recolor: 'Color', adjust: 'Adjust', enhance: '✨ Auto enhance' };
     async function rerender() {
       if (!S.base) return;
       if (S.sel && S.tinted !== !S.trial) drawSel();
@@ -737,7 +768,7 @@
       const n = S.layers.length;
       S.layers.slice().reverse().forEach((L, k) => {
         const li = document.createElement('li'); li.className = (L.hidden ? 'off' : '') + (L.locked ? ' lock' : '');
-        const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = L.type === 'adjust' ? 'linear-gradient(135deg,#fde68a,#1e293b)' : (L.color || '#888');
+        const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = L.type === 'adjust' ? 'linear-gradient(135deg,#fde68a,#1e293b)' : (L.type === 'enhance' ? 'linear-gradient(135deg,#a78bfa,#fde68a,#38bdf8)' : (L.color || '#888'));
         const nm = document.createElement('input'); nm.className = 'nm'; nm.value = L.name || NAMES[L.type] || 'Change'; nm.maxLength = 60; nm.dataset.lname = L.id; nm.readOnly = !!L.locked; nm.setAttribute('aria-label', 'Name of this change');
         const mk = (data, val, text, label, title) => { const b = document.createElement('button'); b.type = 'button'; b.dataset[data] = val; b.textContent = text; b.setAttribute('aria-label', label); if (title) b.title = title; return b; };
         const up = mk('lmove', L.id, '↑', 'Move ' + nm.value + ' up', 'Move up (drawn on top)'); up.dataset.dir = 'up'; up.disabled = k === 0;
@@ -846,6 +877,99 @@
       rcColor.value = hex; rcColor.dispatchEvent(new Event('input', { bubbles: true }));
       say('Picked ' + hex.toUpperCase());
     }
+    // ---- ✨ Auto enhance (Leo, 2026-11-12): one click for the light, the white balance and a tilted photo ----
+    // It adds one "✨ Auto enhance" change (its Strength in Changes turns it down) and sets Straighten in Crop & turn.
+    // Pressing it again replaces the earlier one. Nothing is sent anywhere: the sums run in the editor's helper.
+    async function autoEnhance() {
+      if (S.trial) applyTrial();
+      const r = await busy('✨ Looking at the light, the colors and the level…', () => work('autofix', {}));
+      if (!r) return;
+      const kept = S.layers.filter(L => L.type === 'enhance' && L.locked);
+      if (kept.length) return say('✨ Auto enhance is locked in Changes: unlock it (🔒) to run it again', true);
+      S.layers = S.layers.filter(L => L.type !== 'enhance');
+      const did = [];
+      if (r.fix) {
+        const mid = uid(); S.masks[mid] = new Uint8Array(S.w * S.h).fill(255);
+        await work('mask', { mid, mask: S.masks[mid].slice().buffer });
+        S.layers.unshift({ id: uid(), type: 'enhance', mask: mid, name: '✨ Auto enhance', ...r.fix });   // first, so later changes draw on top
+        const f = r.fix;
+        if (f.lo > 0 || f.hi < 255) did.push('more depth');
+        if (f.gamma < 1) did.push('brighter'); else if (f.gamma > 1) did.push('less glare');
+        if (f.gain.some(k => k !== 1)) did.push('white balance fixed');
+        if (f.sat > 0) did.push('livelier colors');
+      }
+      const was = S.frame ? (+S.frame.tilt || 0) : 0;
+      if (r.tilt) {
+        if (!S.frame) S.frame = fullFrame();
+        S.frame.tilt = r.tilt; did.push('straightened ' + Math.abs(r.tilt) + '°');
+        cropButtons(); drawCrop(); fit();
+      }
+      if (!did.length) { if (was !== (S.frame ? S.frame.tilt : 0)) remember(); listLayers(); rerender(); return say('✨ This photo already looks good: nothing to fix'); }
+      changed();
+      say('✨ ' + did.join(', ') + '. Turn it down with Strength in Changes' + (r.tilt ? ', or change Straighten in Crop & turn' : '') + '. Undo takes it off');
+    }
+
+    // ---- ✨ Match to brand (Leo, 2026-11-12): the photo's colorful things take the site's brand colors ----
+    // With nothing selected it finds up to two colorful things that aren't the main subject (fur, skin and wood are left
+    // alone) and gives each a brand color with Change color (shading kept). Pressing again swaps which color goes where.
+    // With a selection, just that thing takes the next brand color.
+    const isBrand = (L) => L.type === 'recolor' && /^✨ Brand/.test(L.name || '') && !L.locked;
+    function brandColors() {
+      const out = [], seen = new Set();
+      const add = (hex) => {
+        hex = String(hex || '').trim().toLowerCase(); if (!/^#[0-9a-f]{6}$/.test(hex) || seen.has(hex)) return; seen.add(hex);
+        const n = parseInt(hex.slice(1), 16), r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+        const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, s = mx === mn ? 0 : (mx - mn) / (1 - Math.abs(2 * l - 1));
+        if (s >= 0.2 && l > 0.1 && l < 0.9) out.push(hex);   // white, black and greys are page colors, not brand colors
+      };
+      (opts.brandColors || opts.swatches || []).forEach(add);
+      ['theme_primaryColor', 'theme_accentColor', 'theme_nameColor', 'theme_headerColor'].forEach(n => { const i = document.querySelector('[name="' + n + '"]'); if (i) add(i.value); });
+      return out;
+    }
+    let brandTurn = 0, brandSelId = '';
+    async function brandMatch() {
+      const cols = brandColors();
+      if (!cols.length) return say('This site has no brand colors yet: set its Primary and Accent colors in Design, then try again', true);
+      if (S.trial) applyTrial();
+      if (S.sel) {   // just the selected thing; pressed again straight away, it tries the next brand color
+        const last = S.layers[S.layers.length - 1];
+        if (last && last.id === brandSelId && isBrand(last)) { S.layers.pop(); brandTurn++; } else brandTurn = 0;
+        const g = await busy('✨ Matching to your brand…', () => work('grow', { mask: (S.shown || S.sel).slice().buffer, r: 2 }));
+        if (!g) return;
+        const mid = uid(), color = cols[brandTurn % cols.length]; S.masks[mid] = new Uint8Array(g.mask);
+        await work('mask', { mid, mask: S.masks[mid].slice().buffer });
+        brandSelId = uid();
+        S.layers.push({ id: brandSelId, type: 'recolor', mask: mid, color, strength: 1, shading: 1, name: '✨ Brand ' + color.toUpperCase() });
+        changed();
+        return say('✨ The selection is now ' + color.toUpperCase() + (cols.length > 1 ? '. Press ✨ Match to brand again for your next brand color' : ''));
+      }
+      const again = S.layers.some(isBrand);
+      brandTurn = again ? brandTurn + 1 : 0;
+      if (!S.brandGroups) {
+        const found = await busy('✨ Finding the colorful things in the photo… (the first time takes a little longer)', async () => {
+          // the main subject (the pet) is kept out; if it can't be found, the fur and skin rule still keeps it out
+          const sub = await work('part', { url: api('subject'), body: { key: S.key }, op: 'set' }).catch(() => null);
+          return work('brandareas', { subj: sub && sub.sel ? sub.sel : null, max: 2 });
+        });
+        if (!found) return;
+        S.brandGroups = found.groups.map(x => ({ mask: new Uint8Array(x.mask), color: x.color, area: x.area }));
+        for (const gr of S.brandGroups) { const g = await work('grow', { mask: gr.mask.slice().buffer, r: 2 }); gr.mask = new Uint8Array(g.mask); }
+      }
+      if (!S.brandGroups.length) return say('✨ No colorful things to match were found. Click the thing you want, then press ✨ Match to brand', true);
+      S.layers = S.layers.filter(L => !isBrand(L));
+      const names = [];
+      for (let i = 0; i < S.brandGroups.length; i++) {
+        const gr = S.brandGroups[i], color = cols[(i + brandTurn) % cols.length], mid = uid();
+        S.masks[mid] = gr.mask.slice();
+        await work('mask', { mid, mask: S.masks[mid].slice().buffer });
+        S.layers.push({ id: uid(), type: 'recolor', mask: mid, color, strength: 1, shading: 1, name: '✨ Brand ' + gr.color.toUpperCase() + ' → ' + color.toUpperCase() });
+        names.push(color.toUpperCase());
+      }
+      changed();
+      say('✨ Matched ' + names.length + (names.length > 1 ? ' colorful things' : ' colorful thing') + ' to your brand (' + names.join(', ') + ')' +
+        (cols.length > 1 ? '. Press again to swap the colors' : '') + '. Missed one? Click it, then press ✨ Match to brand');
+    }
+
     // hold to compare: the photo as it was, while the button (or the \ key) is held
     function compare(on) {
       if (!S.base) return;
