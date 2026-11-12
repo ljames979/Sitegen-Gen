@@ -1,6 +1,10 @@
 // Photo editor (Leo, 2026-11-09). Part 1: Smart Select. Part 2: Change color, saved as changes (layers) on the original.
 // Part 3 (2026-11-10): Adjust (brightness, contrast, color strength, warmth) for the selection or the whole photo, and a
 // fuller Changes panel: rename, strength (opacity), lock, and move a change up or down (later changes draw on top).
+// 2026-11-12 (Leo: "the towel wrap on the dog is blue ... the option to change the color"; "not able to crop"):
+// a "What do you want to do?" box at the top of the side panel (🎨 Change a color waits for one click on the thing,
+// then opens the colors), and Crop & turn: shapes Free, 1:1, 4:3, 16:9, 3:4 and Original, turn left/right, mirror and
+// flip. The crop is kept with the changes (the original is never cut), so it can be undone or redone later.
 // SGPhotoEdit.open({ siteId, src }) opens a full-screen editor over the page for one photo:
 //   Select  click anything (the dog, the towel, the brush, a bubble, the foam) and it is outlined. Shift+click adds
 //           another thing, Alt/Option+click takes one away
@@ -58,6 +62,14 @@
 .sgpe-layers li .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sgpe-layers li .dot{width:14px;height:14px;border-radius:50%;border:1px solid #475569;flex:none}
 .sgpe-layers li button{padding:3px 7px;font-size:12.5px}.sgpe-layers li.off .nm{opacity:.5;text-decoration:line-through}
 .sgpe-view.t-pick{cursor:copy}
+.sgpe-view.t-crop{cursor:crosshair}
+.sgpe-start{border:1px solid #3b82f6;border-radius:10px;padding:10px;background:#0f1d3a;margin-bottom:6px}
+.sgpe-start h3{margin-top:0!important;color:#bfdbfe!important}
+.sgpe-start .row button{flex:1 1 auto}
+.sgpe-start .sgpe-howto{color:#fde68a;font-size:13px}
+.sgpe-crop-p .row button[aria-pressed=true]{background:#2563eb}
+.sgpe-flash{animation:sgpe-flash 1s ease 2}@keyframes sgpe-flash{50%{box-shadow:0 0 0 3px #fde68a}}
+@media (prefers-reduced-motion:reduce){.sgpe-flash{animation:none}}
 .sgpe-layers li{flex-wrap:wrap}.sgpe-layers li input.nm{flex:1;min-width:0;font:inherit;color:inherit;background:transparent;border:1px solid transparent;border-radius:6px;padding:2px 4px}.sgpe-layers li input.nm:hover,.sgpe-layers li input.nm:focus{border-color:#334155;background:#0b1220;outline:none}
 .sgpe-layers li .lop{flex-basis:100%;display:flex;align-items:center;gap:6px;font-size:12px;color:#94a3b8}.sgpe-layers li .lop input{flex:1}
 .sgpe-layers li.lock{border-color:#475569}.sgpe-layers li.lock input.nm{pointer-events:none}
@@ -91,13 +103,30 @@
   <button type="button" data-tool="select" aria-pressed="true" title="Select: click anything in the photo (S)">⌖</button>
   <button type="button" data-tool="brush" aria-pressed="false" title="Brush: paint the selection (B)">🖌</button>
   <button type="button" data-tool="lasso" aria-pressed="false" title="Lasso: draw round an area (L)">➰</button>
+  <button type="button" data-tool="crop" aria-pressed="false" title="Crop &amp; turn: cut the edges off, turn or mirror the photo (C)">⛶</button>
 </div>
 <div class="sgpe-view t-select">
-  <div class="sgpe-stage"><canvas class="sgpe-photo"></canvas><canvas class="sgpe-ov"></canvas><canvas class="sgpe-ui"></canvas></div>
+  <div class="sgpe-stage"><canvas class="sgpe-photo"></canvas><canvas class="sgpe-ov"></canvas><canvas class="sgpe-ui"></canvas><canvas class="sgpe-crop"></canvas></div>
   <div class="sgpe-float" hidden><span class="sgpe-fl-info"></span><button type="button" data-a="recolor" title="Give the selection a new color, keeping its shading">🎨 Change color</button><button type="button" data-a="adjust" title="Brightness, contrast, color strength and warmth of the selection">☀ Adjust</button><button type="button" data-a="invert" title="Select everything else">Invert</button><button type="button" data-a="clear" title="Clear the selection (Esc)">Clear</button></div>
   <div class="sgpe-busy"><div><div class="sgpe-busy-t">Opening the photo…</div><div class="bar"><i></i></div></div></div>
 </div>
 <div class="sgpe-side">
+  <div class="sgpe-start">
+    <h3>What do you want to do?</h3>
+    <div class="row"><button type="button" data-a="recolor-start" title="Change the color of one thing in the photo, like the towel">🎨 Change a color</button><button type="button" data-a="crop-start" title="Cut the edges off, or turn the photo">⛶ Crop &amp; turn</button></div>
+    <div class="row"><button type="button" data-a="adjust-all" title="Brightness, contrast, color strength and warmth of the whole photo">☀ Light &amp; color of the whole photo</button></div>
+    <p class="hint sgpe-howto" hidden></p>
+  </div>
+  <div class="sgpe-panel sgpe-crop-p" hidden>
+    <h3>Crop &amp; turn</h3>
+    <p class="hint">Drag the box's corners (or its sides, with Free) to choose what to keep; drag inside the box to move it, or draw a new box.</p>
+    <label>Shape</label>
+    <div class="row" role="group" aria-label="Shape of the photo"><button type="button" data-ratio="free" aria-pressed="true">Free</button><button type="button" data-ratio="1:1" aria-pressed="false" title="Square">1:1</button><button type="button" data-ratio="4:3" aria-pressed="false">4:3</button><button type="button" data-ratio="16:9" aria-pressed="false" title="Wide">16:9</button><button type="button" data-ratio="3:4" aria-pressed="false" title="Tall">3:4</button><button type="button" data-ratio="orig" aria-pressed="false" title="The photo's own shape">Original</button></div>
+    <label>Turn</label>
+    <div class="row"><button type="button" data-a="rot-l" title="Turn left (a quarter turn)">⟲ Left</button><button type="button" data-a="rot-r" title="Turn right (a quarter turn)">⟳ Right</button><button type="button" data-a="flip-h" title="Mirror left to right">↔ Mirror</button><button type="button" data-a="flip-v" title="Flip upside down">↕ Flip</button></div>
+    <p class="hint sgpe-crop-info"></p>
+    <div class="row"><button type="button" data-a="crop-reset" title="The whole photo again, not turned">Reset</button><button type="button" data-a="crop-done" class="primary">Done</button></div>
+  </div>
   <h3>Select</h3>
   <div class="row"><button type="button" data-a="subject" title="Select the main subject (the pet)">Select subject</button><button type="button" data-a="background" title="Select everything except the main subject">Select background</button></div>
   <div class="row"><button type="button" data-a="invert">Invert</button><button type="button" data-a="all">Select all</button><button type="button" data-a="clear">Clear</button></div>
@@ -107,7 +136,7 @@
     <label class="sgpe-size-l">Brush size <span class="val sgpe-size-v"></span><input type="range" class="sgpe-size" min="2" max="200" value="40" aria-label="Brush size"></label>
   </div>
   <label>Edge softness <span class="val sgpe-soft-v">0 px</span><input type="range" class="sgpe-soft" min="0" max="40" value="0" aria-label="Edge softness"></label>
-  <p class="hint">The softness blends the selection's edge, so changes made to it (coming next) fade into the photo instead of ending in a hard line.</p>
+  <p class="hint">The softness blends the selection's edge, so a color change fades into the photo instead of ending in a hard line.</p>
   <div class="sgpe-panel sgpe-rc" hidden>
     <h3>Change color</h3>
     <div class="sgpe-color"><input type="color" class="sgpe-rc-color" value="#fdeef4" aria-label="New color"><button type="button" data-a="pick" title="Pick a color from the photo">💧 Pick from photo</button></div>
@@ -127,7 +156,7 @@
   <h3>Changes</h3>
   <div class="row"><button type="button" data-a="adjust-all" title="Brightness, contrast, color strength and warmth of the whole photo">☀ Adjust the whole photo</button></div>
   <ul class="sgpe-layers" aria-label="Changes to this photo"></ul>
-  <p class="hint sgpe-nolayers">No changes yet. Select something, then choose 🎨 Change color or ☀ Adjust.</p>
+  <p class="hint sgpe-nolayers">No changes yet. Use 🎨 Change a color above, or select something and choose ☀ Adjust.</p>
   <p class="hint">Later changes draw on top of earlier ones. Click a name to rename it; 🔒 stops a change being moved, renamed or removed by mistake.</p>
   <h3>Keys</h3>
   <p class="hint"><kbd>S</kbd> select · <kbd>B</kbd> brush · <kbd>L</kbd> lasso · <kbd>[</kbd> <kbd>]</kbd> brush size · <kbd>Esc</kbd> clear · hold <kbd>Space</kbd> and drag to move around · scroll to zoom</p>
@@ -138,7 +167,7 @@
     document.documentElement.style.overflow = 'hidden';
 
     const view = $(root, '.sgpe-view'), stage = $(root, '.sgpe-stage');
-    const cPhoto = $(root, '.sgpe-photo'), cOv = $(root, '.sgpe-ov'), cUi = $(root, '.sgpe-ui');
+    const cPhoto = $(root, '.sgpe-photo'), cOv = $(root, '.sgpe-ov'), cUi = $(root, '.sgpe-ui'), cCrop = $(root, '.sgpe-crop');
     const msgEl = $(root, '.sgpe-msg'), busyEl = $(root, '.sgpe-busy'), busyT = $(root, '.sgpe-busy-t'), busyBar = $(root, '.sgpe-busy .bar i');
     const floatEl = $(root, '.sgpe-float'), floatInfo = $(root, '.sgpe-fl-info');
     const softIn = $(root, '.sgpe-soft'), softV = $(root, '.sgpe-soft-v'), sizeIn = $(root, '.sgpe-size'), sizeV = $(root, '.sgpe-size-v');
@@ -151,6 +180,7 @@
       zoom: 1, tx: 0, ty: 0, space: false,
       busy: 0, closed: false,
       layers: [], masks: {}, maskUrl: {}, editId: '', origSrc: src, trial: null, picking: false, dirty: false, base: null,
+      frame: null, wantRecolor: false,   // frame: crop box in the working photo's pixels + turn and mirror (see Crop & turn)
     };
     const hist = { list: [], at: -1 };
 
@@ -173,22 +203,42 @@
     }
 
     // ---- view: fit, zoom, pan ----
-    function place() { stage.style.transform = `translate(${S.tx}px,${S.ty}px) scale(${S.zoom})`; placeFloat(); }
+    // the photo is turned and mirrored round its middle (Crop & turn), so the view and the pointer use the same sums
+    const F = () => S.frame || { rot: 0, fh: false, fv: false };
+    const sideways = () => F().rot === 90 || F().rot === 270;
+    function place() {
+      const f = F();
+      stage.style.transform = `translate(${S.tx}px,${S.ty}px) scale(${S.zoom}) translate(${S.w / 2}px,${S.h / 2}px) rotate(${f.rot}deg) scale(${f.fh ? -1 : 1},${f.fv ? -1 : 1}) translate(${-S.w / 2}px,${-S.h / 2}px)`;
+      placeFloat();
+    }
+    // a spot in the photo's own pixels -> a spot in the view, and back
+    function toView(x, y) {
+      const f = F(), a = f.rot * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+      const dx = (x - S.w / 2) * (f.fh ? -1 : 1), dy = (y - S.h / 2) * (f.fv ? -1 : 1);
+      return { x: S.tx + S.zoom * (S.w / 2 + dx * c - dy * sn), y: S.ty + S.zoom * (S.h / 2 + dx * sn + dy * c) };
+    }
+    function fromView(vx, vy) {
+      const f = F(), a = f.rot * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+      const rx = (vx - S.tx) / S.zoom - S.w / 2, ry = (vy - S.ty) / S.zoom - S.h / 2;
+      const dx = (rx * c + ry * sn) * (f.fh ? -1 : 1), dy = (-rx * sn + ry * c) * (f.fv ? -1 : 1);
+      return { x: dx + S.w / 2, y: dy + S.h / 2 };
+    }
     function fit() {
       if (!S.w) return;
-      const r = view.getBoundingClientRect(), pad = 28;
-      S.zoom = Math.min((r.width - pad * 2) / S.w, (r.height - pad * 2) / S.h, 4);
-      S.tx = (r.width - S.w * S.zoom) / 2; S.ty = (r.height - S.h * S.zoom) / 2; place();
+      const r = view.getBoundingClientRect(), pad = 28, dw = sideways() ? S.h : S.w, dh = sideways() ? S.w : S.h;
+      S.zoom = Math.min((r.width - pad * 2) / dw, (r.height - pad * 2) / dh, 4);
+      S.tx = r.width / 2 - S.zoom * S.w / 2; S.ty = r.height / 2 - S.zoom * S.h / 2; place();
+      drawCrop();
       if (S.sel) restyle();   // the ants' width depends on the zoom
     }
     function zoomAt(f, cx, cy) {
       const r = view.getBoundingClientRect(); cx = cx == null ? r.width / 2 : cx; cy = cy == null ? r.height / 2 : cy;
       const z = Math.max(0.05, Math.min(16, S.zoom * f)); f = z / S.zoom;
       S.tx = cx - (cx - S.tx) * f; S.ty = cy - (cy - S.ty) * f; S.zoom = z; place();
-      clearTimeout(zoomAt.t); zoomAt.t = setTimeout(() => { if (S.sel) restyle(); }, 180);
+      clearTimeout(zoomAt.t); zoomAt.t = setTimeout(() => { drawCrop(); if (S.sel) restyle(); }, 180);
     }
     // a pointer's spot in the photo's own pixels
-    function toImg(e) { const r = cPhoto.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * S.w, y: (e.clientY - r.top) / r.height * S.h }; }
+    function toImg(e) { const r = view.getBoundingClientRect(); return fromView(e.clientX - r.left, e.clientY - r.top); }
     const antWidth = () => Math.max(1, Math.round(1.6 / (S.zoom || 1)));
 
     // ---- drawing the selection: a tint over it, and marching ants on its edge ----
@@ -204,7 +254,7 @@
       tintCopy = new Uint8ClampedArray(d);
       startAnts();
       floatInfo.textContent = 'Selected ' + (S.area < 0.001 ? '<0.1' : (S.area * 100).toFixed(S.area < 0.1 ? 1 : 0)) + '% of the photo';
-      floatEl.hidden = false; placeFloat();
+      floatEl.hidden = S.tool === 'crop'; placeFloat();
     }
     let tintCopy = null;
     function ants() {
@@ -223,9 +273,11 @@
     function placeFloat() {
       if (floatEl.hidden || !S.box) return;
       const vr = view.getBoundingClientRect(), fw = floatEl.offsetWidth, fh = floatEl.offsetHeight;
-      let left = S.tx + ((S.box.x0 + S.box.x1) / 2) * S.zoom - fw / 2;
-      let top = S.ty + S.box.y1 * S.zoom + 12;
-      if (top + fh > vr.height - 8) top = S.ty + S.box.y0 * S.zoom - fh - 12;
+      const cs = [toView(S.box.x0, S.box.y0), toView(S.box.x1, S.box.y0), toView(S.box.x0, S.box.y1), toView(S.box.x1, S.box.y1)];
+      const bx0 = Math.min(...cs.map(q => q.x)), bx1 = Math.max(...cs.map(q => q.x)), by0 = Math.min(...cs.map(q => q.y)), by1 = Math.max(...cs.map(q => q.y));
+      let left = (bx0 + bx1) / 2 - fw / 2;
+      let top = by1 + 12;
+      if (top + fh > vr.height - 8) top = by0 - fh - 12;
       left = Math.max(8, Math.min(vr.width - fw - 8, left)); top = Math.max(8, Math.min(vr.height - fh - 8, top));
       floatEl.style.left = left + 'px'; floatEl.style.top = top + 'px';
     }
@@ -238,6 +290,7 @@
       if (S.sel && !S.area) { S.sel = null; S.shown = null; }
       drawSel();
       if (record !== false) remember();
+      if (record !== false && S.sel) followSel();
     }
     // re-draw the same selection (new softness or zoom), without an undo step
     async function restyle() { if (!S.sel) return drawSel(); const r = await work('restyle', {}).catch(() => null); if (r) take(r, false); }
@@ -245,7 +298,7 @@
     // ---- undo / redo: each step keeps the selection and its softness ----
     function remember() {
       hist.list = hist.list.slice(0, hist.at + 1);
-      hist.list.push({ sel: S.sel ? S.sel.slice() : null, soft: S.soft, layers: JSON.stringify(S.layers) });
+      hist.list.push({ sel: S.sel ? S.sel.slice() : null, soft: S.soft, layers: JSON.stringify(S.layers), frame: JSON.stringify(S.frame) });
       if (hist.list.length > 25) hist.list.shift();
       hist.at = hist.list.length - 1; histButtons();
     }
@@ -256,6 +309,7 @@
       S.soft = h.soft; softIn.value = h.soft; softV.textContent = h.soft + ' px';
       S.sel = h.sel ? h.sel.slice() : null;
       if (h.layers !== JSON.stringify(S.layers)) { S.layers = JSON.parse(h.layers); S.dirty = true; listLayers(); rerender(); }
+      if (h.frame !== undefined && h.frame !== JSON.stringify(S.frame)) { S.frame = JSON.parse(h.frame); S.dirty = true; listLayers(); cropButtons(); fit(); }
       const word = i < from ? 'Undone' : 'Redone';
       if (!S.sel) { take({ sel: null }, false); return say(word); }
       const r = await work('restyle', {}).catch(() => null); if (r) { take(r, false); say(word); }
@@ -337,6 +391,7 @@
       e.preventDefault();
       const p = toImg(e);
       if (S.picking) { pickAt(p); return; }
+      if (S.tool === 'crop') { view.setPointerCapture(e.pointerId); cropDown(p); return; }
       if (S.tool === 'select') { if (p.x >= 0 && p.y >= 0 && p.x < S.w && p.y < S.h) clickSelect(p, opFrom(e, S.mode)); return; }
       view.setPointerCapture(e.pointerId); strokeStart(e, p);
     });
@@ -344,23 +399,199 @@
       if (pan) { S.tx = pan.tx + e.clientX - pan.x; S.ty = pan.ty + e.clientY - pan.y; return place(); }
       if (!S.w) return;
       const p = toImg(e);
+      if (S.tool === 'crop') return cropMove(p);
       if (stroke) strokeMove(p); else brushCursor(p);
     });
-    const up = () => { if (pan) { pan = null; return; } if (stroke) strokeEnd(); };
+    const up = () => { if (pan) { pan = null; return; } if (cropDrag) return cropUp(); if (stroke) strokeEnd(); };
     view.addEventListener('pointerup', up); view.addEventListener('pointercancel', up);
     view.addEventListener('pointerleave', () => brushCursor(null));
     view.addEventListener('wheel', (e) => { e.preventDefault(); const r = view.getBoundingClientRect(); zoomAt(Math.exp(-e.deltaY * 0.0015), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+
+    // ---- Crop & turn: a box over the photo (in its own pixels), then a quarter turn and mirrors ----
+    // Nothing is cut until Save photo, and the saved edit keeps the box, so a crop can be changed or taken off later.
+    const RATIOS = { '1:1': 1, '4:3': 4 / 3, '16:9': 16 / 9, '3:4': 3 / 4 };
+    const fullFrame = () => ({ x: 0, y: 0, w: S.w, h: S.h, rot: S.frame ? S.frame.rot : 0, fh: S.frame ? S.frame.fh : false, fv: S.frame ? S.frame.fv : false, ratio: 'free' });
+    const frameIsFull = () => !S.frame || (S.frame.x <= 0.5 && S.frame.y <= 0.5 && S.frame.w >= S.w - 1 && S.frame.h >= S.h - 1 && !S.frame.rot && !S.frame.fh && !S.frame.fv);
+    // the shape the finished photo should have (width / height), as a box shape in the photo's own pixels
+    function boxRatio(name) {
+      const f = S.frame || {}; name = name || f.ratio;
+      let r = name === 'orig' ? (sideways() ? S.h / S.w : S.w / S.h) : RATIOS[name];
+      if (!r) return 0;
+      return sideways() ? 1 / r : r;
+    }
+    let cropDrag = null;
+    function drawCrop() {
+      const x = cCrop.getContext('2d');
+      if (cCrop.width !== S.w || cCrop.height !== S.h) { cCrop.width = S.w || 1; cCrop.height = S.h || 1; }
+      x.clearRect(0, 0, cCrop.width, cCrop.height);
+      const f = S.frame; if (!S.w || !f) return;
+      const on = S.tool === 'crop';
+      if (!on && frameIsFull()) return;
+      x.fillStyle = on ? 'rgba(2,6,23,.6)' : 'rgba(11,18,32,.82)';
+      x.beginPath(); x.rect(0, 0, S.w, S.h); x.rect(f.x, f.y, f.w, f.h); x.fill('evenodd');
+      if (!on) return;
+      const lw = 1.5 / S.zoom;
+      x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = lw; x.beginPath();
+      for (let k = 1; k < 3; k++) { x.moveTo(f.x + f.w * k / 3, f.y); x.lineTo(f.x + f.w * k / 3, f.y + f.h); x.moveTo(f.x, f.y + f.h * k / 3); x.lineTo(f.x + f.w, f.y + f.h * k / 3); }
+      x.stroke();
+      x.strokeStyle = '#fff'; x.lineWidth = 2 * lw; x.strokeRect(f.x, f.y, f.w, f.h);
+      const hs = 9 / S.zoom; x.fillStyle = '#fff'; x.strokeStyle = '#2563eb'; x.lineWidth = lw;
+      [[f.x, f.y], [f.x + f.w, f.y], [f.x, f.y + f.h], [f.x + f.w, f.y + f.h]].forEach(([cx, cy]) => { x.fillRect(cx - hs, cy - hs, hs * 2, hs * 2); x.strokeRect(cx - hs, cy - hs, hs * 2, hs * 2); });
+      if (f.ratio === 'free') [[f.x + f.w / 2, f.y], [f.x + f.w / 2, f.y + f.h], [f.x, f.y + f.h / 2], [f.x + f.w, f.y + f.h / 2]].forEach(([cx, cy]) => { x.fillRect(cx - hs * 0.7, cy - hs * 0.7, hs * 1.4, hs * 1.4); });
+    }
+    function cropInfo() {
+      const f = S.frame, el = $(root, '.sgpe-crop-info'); if (!el || !f) return;
+      const ow = Math.round(sideways() ? f.h : f.w), oh = Math.round(sideways() ? f.w : f.h);
+      const kept = Math.round(f.w * f.h / (S.w * S.h) * 100);
+      el.textContent = (kept >= 100 ? 'The whole photo' : 'Keeps ' + kept + '% of the photo') + ' · ' + (ow > oh * 1.05 ? 'wide' : (oh > ow * 1.05 ? 'tall' : 'square')) + ' (' + ow + ' × ' + oh + ' here)' +
+        (f.rot ? ' · turned ' + f.rot + '°' : '') + (f.fh || f.fv ? ' · mirrored' : '');
+    }
+    function cropButtons() {
+      const r = (S.frame && S.frame.ratio) || 'free';
+      root.querySelectorAll('[data-ratio]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ratio === r)));
+      cropInfo();
+    }
+    function frameChanged(record) {
+      S.dirty = true; $(root, '[data-a=save]').disabled = false;
+      drawCrop(); cropInfo();
+      if (record) remember();
+    }
+    // the biggest box of a shape that fits the photo, kept round the middle of the box there now
+    function fitRatio(ar) {
+      const f = S.frame, cx = f.x + f.w / 2, cy = f.y + f.h / 2;
+      let w = Math.min(S.w, S.h * ar), h = w / ar;
+      f.w = w; f.h = h;
+      f.x = Math.max(0, Math.min(S.w - w, cx - w / 2)); f.y = Math.max(0, Math.min(S.h - h, cy - h / 2));
+    }
+    function setRatio(name) {
+      if (!S.frame) S.frame = fullFrame();
+      S.frame.ratio = name;
+      const ar = boxRatio(name);
+      if (ar) fitRatio(ar);
+      cropButtons(); frameChanged(true);
+      say(name === 'free' ? 'Free shape: drag any corner or side' : 'Shape ' + (name === 'orig' ? 'of the photo' : name) + ': drag a corner to make it smaller, or drag inside to move it');
+    }
+    function turn(deg) {
+      if (!S.frame) S.frame = fullFrame();
+      S.frame.rot = (((S.frame.rot + deg) % 360) + 360) % 360;
+      if (boxRatio()) {   // a fixed shape stays that shape on screen: the box swaps its sides round its middle (smaller if it must)
+        const f = S.frame, cx = f.x + f.w / 2, cy = f.y + f.h / 2;
+        let w = f.h, h = f.w; const k = Math.min(1, S.w / w, S.h / h); w *= k; h *= k;
+        f.w = w; f.h = h; f.x = Math.max(0, Math.min(S.w - w, cx - w / 2)); f.y = Math.max(0, Math.min(S.h - h, cy - h / 2));
+      }
+      frameChanged(true); fit(); say('Turned ' + (deg > 0 ? 'right' : 'left'));
+    }
+    // mirror left-to-right (or upside down) as it looks on screen, whichever way the photo is turned
+    function mirror(across) {
+      if (!S.frame) S.frame = fullFrame();
+      const k = (across !== sideways()) ? 'fh' : 'fv';
+      S.frame[k] = !S.frame[k];
+      frameChanged(true); place(); say(across ? 'Mirrored' : 'Flipped');
+    }
+    function cropHit(p) {
+      const f = S.frame, t = 14 / S.zoom;
+      const near = (a, b) => Math.abs(a - b) <= t;
+      const L = near(p.x, f.x), R = near(p.x, f.x + f.w), T = near(p.y, f.y), B = near(p.y, f.y + f.h);
+      const inX = p.x > f.x - t && p.x < f.x + f.w + t, inY = p.y > f.y - t && p.y < f.y + f.h + t;
+      if ((L || R) && (T || B)) return { kind: 'corner', ax: L ? f.x + f.w : f.x, ay: T ? f.y + f.h : f.y };
+      if (f.ratio === 'free' && inX && inY && (L || R || T || B)) return { kind: 'side', side: L ? 'l' : (R ? 'r' : (T ? 't' : 'b')) };
+      const whole = f.w >= S.w - 1 && f.h >= S.h - 1;   // the box is the whole photo: dragging inside draws a new box
+      if (!whole && p.x > f.x && p.x < f.x + f.w && p.y > f.y && p.y < f.y + f.h) return { kind: 'move' };
+      return { kind: 'new', ax: Math.max(0, Math.min(S.w, p.x)), ay: Math.max(0, Math.min(S.h, p.y)) };
+    }
+    const MIN_BOX = 16;
+    function boxFrom(ax, ay, px, py) {   // a box from a fixed corner to the pointer, in the chosen shape, inside the photo
+      const f = S.frame, ar = boxRatio();
+      px = Math.max(0, Math.min(S.w, px)); py = Math.max(0, Math.min(S.h, py));
+      const sx = px >= ax ? 1 : -1, sy = py >= ay ? 1 : -1;
+      let w = Math.abs(px - ax), h = Math.abs(py - ay);
+      if (ar) {
+        if (w / Math.max(h, 1e-6) > ar) w = h * ar; else h = w / ar;
+        const mw = sx > 0 ? S.w - ax : ax, mh = sy > 0 ? S.h - ay : ay;
+        if (w > mw) { w = mw; h = w / ar; }
+        if (h > mh) { h = mh; w = h * ar; }
+        if (w < MIN_BOX || h < MIN_BOX) { const k = Math.max(MIN_BOX / Math.max(w, 1e-6), MIN_BOX / Math.max(h, 1e-6)); w *= k; h *= k; }
+      } else { w = Math.max(MIN_BOX, w); h = Math.max(MIN_BOX, h); }
+      f.x = Math.max(0, sx > 0 ? ax : ax - w); f.y = Math.max(0, sy > 0 ? ay : ay - h);
+      f.w = Math.min(w, S.w - f.x); f.h = Math.min(h, S.h - f.y);
+    }
+    function cropDown(p) {
+      if (!S.frame) S.frame = fullFrame();
+      const hit = cropHit(p);
+      cropDrag = { ...hit, p0: p, f0: { ...S.frame }, moved: false };
+    }
+    function cropMove(p) {
+      if (!cropDrag) {   // the pointer shows what a drag would do
+        if (!S.frame) return;
+        const h = cropHit(p);
+        view.style.cursor = h.kind === 'move' ? 'move' : (h.kind === 'corner' ? ((h.ax > p.x) === (h.ay > p.y) ? 'nwse-resize' : 'nesw-resize') : (h.kind === 'side' ? (/[lr]/.test(h.side) ? 'ew-resize' : 'ns-resize') : 'crosshair'));
+        return;
+      }
+      const d = cropDrag, f = S.frame, f0 = d.f0;
+      d.moved = true;
+      if (d.kind === 'move') {
+        f.x = Math.max(0, Math.min(S.w - f0.w, f0.x + p.x - d.p0.x)); f.y = Math.max(0, Math.min(S.h - f0.h, f0.y + p.y - d.p0.y));
+      } else if (d.kind === 'corner' || d.kind === 'new') {
+        if (d.kind === 'new' && Math.hypot(p.x - d.p0.x, p.y - d.p0.y) < 4 / S.zoom) return;
+        boxFrom(d.ax, d.ay, p.x, p.y);
+      } else if (d.kind === 'side') {
+        const x = Math.max(0, Math.min(S.w, p.x)), y = Math.max(0, Math.min(S.h, p.y));
+        if (d.side === 'l') { const r = f0.x + f0.w; f.x = Math.min(x, r - MIN_BOX); f.w = r - f.x; }
+        if (d.side === 'r') { f.w = Math.max(MIN_BOX, x - f0.x); }
+        if (d.side === 't') { const b = f0.y + f0.h; f.y = Math.min(y, b - MIN_BOX); f.h = b - f.y; }
+        if (d.side === 'b') { f.h = Math.max(MIN_BOX, y - f0.y); }
+      }
+      frameChanged(false);
+    }
+    function cropUp() { const d = cropDrag; cropDrag = null; if (d && d.moved) { remember(); say('Done? Press Done, or keep dragging'); } }
+    // the crop as saved: fractions of the photo, so the full-size photo is cropped the same way
+    function frameOut() {
+      if (frameIsFull()) return null;
+      const f = S.frame;
+      return { x: f.x / S.w, y: f.y / S.h, w: f.w / S.w, h: f.h / S.h, rot: f.rot, fh: !!f.fh, fv: !!f.fv, ratio: f.ratio || 'free' };
+    }
+    function frameIn(fr) {
+      if (!fr) return;
+      S.frame = { x: fr.x * S.w, y: fr.y * S.h, w: fr.w * S.w, h: fr.h * S.h, rot: fr.rot || 0, fh: !!fr.fh, fv: !!fr.fv, ratio: fr.ratio || 'free' };
+    }
+
+    // ---- 🎨 Change a color, from the "What do you want to do?" box: one click on the thing, then the colors ----
+    const howto = $(root, '.sgpe-howto');
+    function startRecolor() {
+      if (S.tool !== 'select') setTool('select');
+      if (S.sel) { howto.hidden = true; return openRecolor(); }
+      S.wantRecolor = true;
+      howto.hidden = false;
+      howto.textContent = 'Now click the thing in the photo you want in a new color (for example the towel). The colors open as soon as it is outlined. Shift+click adds more of it.';
+      howto.classList.remove('sgpe-flash'); void howto.offsetWidth; howto.classList.add('sgpe-flash');
+      say('Click the thing you want to recolor');
+    }
+    // a change being tried follows the selection, so Shift+click (or the brush) can add the rest of the towel
+    function followSel() {
+      if (S.wantRecolor) { S.wantRecolor = false; howto.hidden = true; return openRecolor(); }
+      if (S.trial && !S.trial.whole && (S.trial.kind === 'recolor' || S.trial.kind === 'adjust')) {
+        S.trial.mask = (S.shown || S.sel).slice();
+        if (S.trial.kind === 'recolor' && !S.soft) work('grow', { mask: S.trial.mask.slice().buffer, r: 2 }).then(r => { if (S.trial) { S.trial.mask = new Uint8Array(r.mask); rerender(); } }).catch(() => {});
+        rerender();
+      }
+    }
 
     // ---- buttons ----
     function setTool(t) {
       S.tool = t; view.className = 'sgpe-view t-' + t;
       root.querySelectorAll('[data-tool]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === t)));
-      $(root, '.sgpe-brush').hidden = t === 'select';
+      $(root, '.sgpe-brush').hidden = t === 'select' || t === 'crop';
       $(root, '.sgpe-size-l').hidden = t !== 'brush';
+      $(root, '.sgpe-crop-p').hidden = t !== 'crop';
+      if (t === 'crop') { if (!S.frame && S.w) S.frame = fullFrame(); if (S.picking) { S.picking = false; view.classList.remove('t-pick'); } cropButtons(); }
+      else view.style.cursor = '';
+      floatEl.hidden = t === 'crop' || !S.sel || !S.area; if (!floatEl.hidden) placeFloat();
+      drawCrop();
       $(root, '.sgpe-tip').textContent = t === 'select'
         ? 'Click anything in the photo to select it. Shift+click adds another thing, ' + (isMac ? 'Option' : 'Alt') + '+click takes a part away.'
         : (t === 'brush' ? 'Paint over the photo to add to the selection, or switch to Remove. Shift adds, ' + (isMac ? 'Option' : 'Alt') + ' removes while you hold it.'
-          : 'Draw round an area. When you let go it is added to the selection (or taken away with Remove).');
+          : (t === 'crop' ? 'Crop & turn: choose a shape, drag the box, then press Done. Selections and color changes still work afterwards.'
+            : 'Draw round an area. When you let go it is added to the selection (or taken away with Remove).'));
       brushCursor(null);
     }
     function setMode(m) { S.mode = m; root.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m))); }
@@ -384,6 +615,12 @@
       if (a === 'all') return simple('all', 'Selected all…');
       if (a === 'clear') return clearSel();
       if (a === 'recolor') return openRecolor();
+      if (a === 'recolor-start') return startRecolor();
+      if (a === 'crop-start') { setTool('crop'); return say('Drag the corners of the box. Pick a shape (1:1, 4:3 ...) to keep it that shape'); }
+      if (a === 'crop-done') { setTool('select'); fit(); return say(frameIsFull() ? 'No crop' : 'Cropped. Save photo keeps it; the original stays whole'); }
+      if (a === 'crop-reset') { S.frame = { x: 0, y: 0, w: S.w, h: S.h, rot: 0, fh: false, fv: false, ratio: 'free' }; frameChanged(true); cropButtons(); fit(); return say('The whole photo again'); }
+      if (a === 'rot-l' || a === 'rot-r') return turn(a === 'rot-r' ? 90 : -90);
+      if (a === 'flip-h' || a === 'flip-v') return mirror(a === 'flip-h');
       if (a === 'adjust') return openAdjust(false);
       if (a === 'adjust-all') return openAdjust(true);
       if (a === 'adj-apply') return applyTrial();
@@ -400,6 +637,7 @@
         if (S.layers[i].locked || S.layers[j].locked) return say('A locked change stays where it is', true);
         const t = S.layers[i]; S.layers[i] = S.layers[j]; S.layers[j] = t; changed(); return;
       }
+      if (b.dataset.ratio) return setRatio(b.dataset.ratio);
       if (b.dataset.sw) { rcColor.value = b.dataset.sw; rcColor.dispatchEvent(new Event('input', { bubbles: true })); return; }
     });
     softIn.addEventListener('input', () => { S.soft = +softIn.value; softV.textContent = S.soft + ' px'; clearTimeout(softIn.t); softIn.t = setTimeout(restyle, 120); });
@@ -571,6 +809,7 @@
         await work('mask', { mid, mask: m.slice().buffer });
       }
       S.layers = (edit.layers || []).filter(L => S.masks[L.mask]);
+      frameIn(edit.frame);
       await rerender();
     }
     const post = async (path, body, type) => {
@@ -586,13 +825,14 @@
       const r = await busy('Saving the photo…', async () => {
         const used = new Set(S.layers.map(L => L.mask));
         for (const mid of used) if (!S.maskUrl[mid]) S.maskUrl[mid] = (await post('keep-mask', await maskPng(S.masks[mid]), 'image/png')).url;
-        const full = await work('full', { url: api('full/' + S.key), layers: S.layers, type: 'image/webp' });
+        const frame = frameOut();
+        const full = await work('full', { url: api('full/' + S.key), layers: S.layers, frame, type: 'image/webp' });
         const fd = new FormData(); fd.append('image', full.blob, 'edited-photo.webp');
         const up = await fetch('/sites/' + siteId + '/upload', { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
         const uj = await up.json().catch(() => ({ ok: false }));
         if (!uj.ok) throw new Error(uj.error || 'Could not upload the finished photo');
         const masks = {}; used.forEach(mid => { masks[mid] = S.maskUrl[mid]; });
-        const sj = await post('save', JSON.stringify({ id: S.editId, src: S.origSrc, out: uj.url, w: S.w, h: S.h, layers: S.layers, masks }));
+        const sj = await post('save', JSON.stringify({ id: S.editId, src: S.origSrc, out: uj.url, w: S.w, h: S.h, layers: S.layers, masks, frame }));
         return { url: uj.url, edit: sj.edit };
       });
       if (!r) return;
@@ -619,13 +859,15 @@
       if (mod && k === 'd') { e.preventDefault(); return clearSel(); }
       if (mod && e.shiftKey && k === 'i') { e.preventDefault(); return S.key && simple('invert', 'Inverted…'); }
       if (mod) return;
-      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); return clearSel(); }
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (S.wantRecolor) { S.wantRecolor = false; howto.hidden = true; return say(''); } if (S.tool === 'crop') { setTool('select'); return fit(); } return clearSel(); }
       if (e.key === ' ') { e.preventDefault(); if (!S.space) { S.space = true; view.classList.add('pan'); } return; }
       if (e.key === 'Alt') e.preventDefault();   // Windows would otherwise move focus to the browser menu
       if (e.key === '\\') { if (!e.repeat) compare(true); return; }
       if (k === 's') return setTool('select');
       if (k === 'b') return setTool('brush');
       if (k === 'l') return setTool('lasso');
+      if (k === 'c') return setTool('crop');
+      if (e.key === 'Enter' && S.tool === 'crop') { e.preventDefault(); setTool('select'); return fit(); }
       if (e.key === '[') return setBrush(S.brush * 0.8);
       if (e.key === ']') return setBrush(S.brush * 1.25 + 1);
     }
@@ -669,13 +911,13 @@
         await img.decode();
         Object.assign(S, { key: j.key, w: j.w, h: j.h, img });
         if (j.edit) { S.editId = j.edit.id; S.origSrc = j.edit.src; }
-        [cPhoto, cOv, cUi].forEach(c => { c.width = j.w; c.height = j.h; });
+        [cPhoto, cOv, cUi, cCrop].forEach(c => { c.width = j.w; c.height = j.h; });
         stage.style.width = j.w + 'px'; stage.style.height = j.h + 'px';
         const px = cPhoto.getContext('2d', { willReadFrequently: true }); px.drawImage(img, 0, 0);
         S.base = px.getImageData(0, 0, j.w, j.h);
         await work('base', { px: S.base.data.slice().buffer });
         if (j.edit) await loadEdit(j.edit);
-        busyEl.hidden = true; fit(); remember(); listLayers();
+        busyEl.hidden = true; fit(); remember(); listLayers(); cropButtons();
         say('Ready. Click anything in the photo to select it' + (j.cached ? '' : ' (' + ((j.ms || 0) / 1000).toFixed(1) + ' s to get ready)'));
       } catch (err) {
         busyT.textContent = err.message || 'Could not open that photo'; busyBar.parentNode.hidden = true;

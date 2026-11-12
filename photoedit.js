@@ -202,7 +202,21 @@ function cleanEdit(e) {
   const masks = {};
   Object.entries(e.masks || {}).slice(0, MAX_LAYERS).forEach(([k, u]) => { if (idOk(k) && isUp(u)) masks[k] = u; });
   const layers = (Array.isArray(e.layers) ? e.layers : []).slice(0, MAX_LAYERS).map(cleanLayer).filter(L => L && masks[L.mask]);
-  return { src, out, w: num(e.w, 1, 10000, 0) | 0, h: num(e.h, 1, 10000, 0) | 0, layers, masks, at: String(e.at || '').slice(0, 30) };
+  const res = { src, out, w: num(e.w, 1, 10000, 0) | 0, h: num(e.h, 1, 10000, 0) | 0, layers, masks, at: String(e.at || '').slice(0, 30) };
+  const fr = cleanFrame(e.frame); if (fr) res.frame = fr;
+  return res;
+}
+// crop and turn (2026-11-12): the part of the original to keep (x, y, w, h as fractions of it), then a quarter turn
+// (rot 0/90/180/270, clockwise) and mirror flips. The original stays as it was; only the finished photo is cropped.
+function cleanFrame(f) {
+  if (!f || typeof f !== 'object') return null;
+  const x = num(f.x, 0, 1, 0), y = num(f.y, 0, 1, 0);
+  const w = Math.min(num(f.w, 0.01, 1, 1), 1 - x), h = Math.min(num(f.h, 0.01, 1, 1), 1 - y);
+  const rot = [0, 90, 180, 270].includes(+f.rot) ? +f.rot : 0;
+  const out = { x: +x.toFixed(5), y: +y.toFixed(5), w: +w.toFixed(5), h: +h.toFixed(5), rot, fh: !!f.fh, fv: !!f.fv, ratio: /^(free|orig|\d{1,2}:\d{1,2})$/.test(String(f.ratio || '')) ? String(f.ratio) : 'free' };
+  if (w < 0.01 || h < 0.01) return null;
+  if (out.x === 0 && out.y === 0 && out.w === 1 && out.h === 1 && !rot && !out.fh && !out.fv) return null;   // nothing to do
+  return out;
 }
 function cleanEdits(all) {
   const out = {};
@@ -227,4 +241,4 @@ async function saveMask(buf) {
   return '/uploads/' + name;
 }
 
-module.exports = { ready, missing, prepare, mask, subject, imagePath, status, keyOk, MODELS, BASE, WORK, FULL, cleanEdit, cleanEdits, editFor, saveMask, idOk, LAYER_TYPES };
+module.exports = { ready, missing, prepare, mask, subject, imagePath, status, keyOk, MODELS, BASE, WORK, FULL, cleanEdit, cleanEdits, cleanFrame, editFor, saveMask, idOk, LAYER_TYPES };

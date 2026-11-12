@@ -1453,7 +1453,14 @@
       if (!row || row.querySelector('.cut-btn')) return;
       const url = row.querySelector('input[type=url]'), fi = row.querySelector('.file-input'), up = row.querySelector('.upload-btn');
       if (!url || !fi || !up || !/image/.test(fi.getAttribute('accept') || '') || CUT_SKIP.test(url.name || '')) return;
-      if (url.classList.contains('pb-url')) return;   // that block has its own "Cut out the pets" button
+      if (url.classList.contains('pb-url')) {   // that block has its own "Cut out the pets" button, but its photos can be edited too (Leo, 2026-11-12: the hero block)
+        if (window.SGPhotoEdit && !row.querySelector('.pe-btn')) {
+          const pe = document.createElement('button'); pe.type = 'button'; pe.className = 'btn-secondary pe-btn';
+          pe.textContent = '🎨 Edit photo'; pe.title = 'Open the photo editor: change the color of one thing (like a towel), crop or turn the photo';
+          (row.querySelector('.pick-btn') || up).after(pe);
+        }
+        return;
+      }
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-secondary cut-btn';
       b.title = 'Cut out the subject of this photo (pet, person or thing) and make its backdrop see-through';
       (row.querySelector('.pick-btn') || up).after(b);
@@ -1501,12 +1508,29 @@
       }
       if (typeof scheduleAutosave === 'function') scheduleAutosave();
     });
+    // a "Photo that blends in" block that shows its photo cut out (the hero on Imperial): after an edit, the new photo is
+    // cut out too, so the block keeps looking the same with the changes in it
+    async function recutBlend(url, oldUrl, newUrl) {
+      const row = url.closest('.block-row'), hid = row && row.querySelector('.pb-cuts'), msg = row && row.querySelector('.pb-cutmsg');
+      if (!hid) return;
+      const pairs = hid.value.split(/\s+/).filter(Boolean);
+      if (!pairs.some(x => x.split('|')[0] === oldUrl)) return;
+      if (msg) msg.textContent = 'Cutting out the edited photo…';
+      statusEl.textContent = 'Photo saved. Cutting out the edited photo for this block…';
+      try {
+        const cut = await cutPhoto(newUrl);
+        hid.value = pairs.filter(x => x.split('|')[0] !== oldUrl && x.split('|')[0] !== newUrl).concat([newUrl + '|' + cut]).join(' ');
+        url.dispatchEvent(new Event('input', { bubbles: true })); url.dispatchEvent(new Event('change', { bubbles: true })); scheduleAutosave();
+        if (msg) msg.textContent = 'The edited photo is cut out too.';
+        statusEl.textContent = 'Photo saved with your changes, and cut out for this block. 🎨 Edit photo opens the changes again';
+      } catch (err) { if (msg) msg.textContent = (err.message || 'Could not cut out the edited photo') + '. Press ✂ Cut out the pets to try again.'; }
+    }
     document.addEventListener('click', (e) => {
       const b = e.target.closest('.pe-btn'); if (!b) return;
       const url = b.closest('.upload-row').querySelector('input[type=url]'), v = url.value.trim();
       if (!v) { statusEl.textContent = 'Add a photo first, then edit it'; return; }
       // Save photo puts the finished photo in the box (the original and the changes stay with the site)
-      const onSave = (u) => { url.value = u; url.dispatchEvent(new Event('input', { bubbles: true })); url.dispatchEvent(new Event('change', { bubbles: true })); scheduleAutosave(); statusEl.textContent = 'Photo saved with your changes. 🎨 Edit photo opens them again'; };
+      const onSave = (u) => { url.value = u; url.dispatchEvent(new Event('input', { bubbles: true })); url.dispatchEvent(new Event('change', { bubbles: true })); scheduleAutosave(); statusEl.textContent = 'Photo saved with your changes. 🎨 Edit photo opens them again'; if (url.classList.contains('pb-url')) recutBlend(url, v, u); };
       try { window.SGPhotoEdit.open({ siteId, src: v, onSave }); } catch (err) { statusEl.textContent = err.message || 'Could not open the photo editor'; }
     });
     document.addEventListener('click', async (e) => {

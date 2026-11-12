@@ -1651,7 +1651,7 @@ app.post('/sites/:id/photo-edit/save', requireAuth, loadOwnedSite, cutoutLimiter
     const id = photoedit.idOk(b.id) && all[b.id] ? b.id : nanoid(12).toLowerCase().replace(/[^a-z0-9]/g, 'x');
     const masks = {};
     for (const [mid, v] of Object.entries(b.masks || {}).slice(0, 60)) if (photoedit.idOk(mid) && /^\/uploads\/pe-[a-z0-9]+\.png$/.test(String(v))) masks[mid] = String(v);
-    const edit = photoedit.cleanEdit({ src: b.src, out: b.out, w: b.w, h: b.h, layers: b.layers, masks, at: new Date().toISOString() });
+    const edit = photoedit.cleanEdit({ src: b.src, out: b.out, w: b.w, h: b.h, layers: b.layers, masks, frame: b.frame, at: new Date().toISOString() });
     if (!edit) return res.status(400).json({ ok: false, error: 'Nothing to save.' });
     all[id] = edit;
     sections.photoEdits = photoedit.cleanEdits(all);

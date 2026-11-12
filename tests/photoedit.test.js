@@ -141,8 +141,8 @@ test('photo editor page: Change color with the shared color picker, eyedropper, 
   assert.match(js, /input\[name\^="theme_"\]\[name\$="Color"\]/);         // the site's own colors as swatches
   for (const a of ['rc-apply', 'rc-reset', 'compare', 'save']) assert.match(js, new RegExp('data-a="' + a + '"'));
   assert.match(js, /post\('keep-mask', await maskPng\(S\.masks\[mid\]\), 'image\/png'\)/);
-  assert.match(js, /work\('full', \{ url: api\('full\/' \+ S\.key\), layers: S\.layers, type: 'image\/webp' \}\)/);
-  assert.match(js, /hist\.list\.push\(\{ sel: S\.sel \? S\.sel\.slice\(\) : null, soft: S\.soft, layers: JSON\.stringify\(S\.layers\) \}\)/);
+  assert.match(js, /work\('full', \{ url: api\('full\/' \+ S\.key\), layers: S\.layers, frame, type: 'image\/webp' \}\)/);
+  assert.match(js, /hist\.list\.push\(\{ sel: S\.sel \? S\.sel\.slice\(\) : null, soft: S\.soft, layers: JSON\.stringify\(S\.layers\), frame: JSON\.stringify\(S\.frame\) \}\)/);
   const ed = read('views/editor.ejs');
   assert.match(ed, /window\.SGPhotoEdit\.open\(\{ siteId, src: v, onSave \}\)/);
   assert.match(ed, /window\.SGPhotoEdit\.open\(\{ siteId, src: v, onSave: \(u\) => setPhoto\(field, u\) \}\)/);
@@ -185,4 +185,34 @@ test('part 3: Adjust changes and the Changes list settings are kept, and the wor
   const warm = new Uint8ClampedArray([120, 120, 120, 255]);
   render(warm, 1, 1, [{ type: 'adjust', mask: 'm', warm: 100 }], () => new Uint8Array([255]));
   assert.ok(warm[0] > warm[2]);
+});
+
+// 2026-11-12 (Leo): the hero block's photo could not be edited, Change color was hard to find, and there was no crop
+test('fixes: the hero blend block gets 🎨 Edit photo and re-cuts after a save', () => {
+  const ed = fs.readFileSync(path.join(__dirname, '..', 'views', 'editor.ejs'), 'utf8');
+  const i = ed.indexOf("url.classList.contains('pb-url')");
+  assert.ok(i > 0 && /pe-btn/.test(ed.slice(i, i + 600)), 'a pb-url row gets the Edit photo button');
+  assert.match(ed, /async function recutBlend\(url, oldUrl, newUrl\)/);
+  assert.match(ed, /if \(url\.classList\.contains\('pb-url'\)\) recutBlend\(url, v, u\)/);
+});
+
+test('fixes: Change a color and Crop & turn in the editor, kept with the saved edit', () => {
+  const js = fs.readFileSync(path.join(__dirname, '..', 'public', 'photoedit.js'), 'utf8');
+  new vm.Script(js);
+  for (const s of ['data-a="recolor-start"', 'data-a="crop-start"', 'data-tool="crop"', 'data-ratio="1:1"', 'data-ratio="4:3"', 'data-ratio="16:9"', 'data-ratio="3:4"', 'data-ratio="free"', 'data-a="rot-l"', 'data-a="rot-r"', 'data-a="flip-h"', 'data-a="flip-v"'])
+    assert.ok(js.includes(s), s);
+  assert.match(js, /frame: frameOut\(\)|layers: S\.layers, frame, type/);
+  const pe = require('../photoedit');
+  assert.equal(pe.cleanFrame({ x: 0, y: 0, w: 1, h: 1, rot: 0 }), null, 'the whole photo, not turned, is no crop');
+  const f = pe.cleanFrame({ x: 0.1, y: 0.2, w: 2, h: 0.5, rot: 90, fh: 1, ratio: '4:3' });
+  assert.deepEqual(f, { x: 0.1, y: 0.2, w: 0.9, h: 0.5, rot: 90, fh: true, fv: false, ratio: '4:3' });
+  assert.equal(pe.cleanFrame({ x: 0, y: 0, w: 1, h: 1, rot: 45 }), null, 'only quarter turns');
+  assert.equal(pe.cleanFrame({ x: 0, y: 0, w: 0.5, h: 1, ratio: '<b>' }).ratio, 'free');
+  const e = pe.cleanEdit({ src: '/uploads/a.png', out: '/uploads/b.webp', w: 10, h: 10, layers: [], masks: {}, frame: { x: 0.25, y: 0, w: 0.5, h: 1 } });
+  assert.equal(e.frame.w, 0.5);
+  const srv = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  assert.match(srv, /masks, frame: b\.frame, at:/);
+  const wk = fs.readFileSync(path.join(__dirname, '..', 'public', 'photoedit-worker.js'), 'utf8');
+  assert.match(wk, /function frameCanvas\(c, W, H, f\)/);
+  assert.match(wk, /frameCanvas\(c, W, H, q\.frame\)/);
 });

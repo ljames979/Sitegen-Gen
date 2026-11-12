@@ -211,8 +211,23 @@ async function renderFull(q) {
   };
   render(img.data, W, H, q.layers, maskOf);
   x.putImageData(img, 0, 0);
-  const blob = await c.convertToBlob({ type: q.type || 'image/webp', quality: 0.9 });
-  return { blob, w: W, h: H };
+  const out = frameCanvas(c, W, H, q.frame);
+  const blob = await out.canvas.convertToBlob({ type: q.type || 'image/webp', quality: 0.9 });
+  return { blob, w: out.w, h: out.h };
+}
+// crop and turn (2026-11-12): keep the frame's part of the photo (fractions of it), then mirror and turn it.
+// The same order as the editor's view: mirror first, then the quarter turn (clockwise).
+function frameCanvas(c, W, H, f) {
+  if (!f) return { canvas: c, w: W, h: H };
+  const sx = Math.max(0, Math.round((f.x || 0) * W)), sy = Math.max(0, Math.round((f.y || 0) * H));
+  const cw = Math.max(1, Math.min(W - sx, Math.round((f.w == null ? 1 : f.w) * W))), ch = Math.max(1, Math.min(H - sy, Math.round((f.h == null ? 1 : f.h) * H)));
+  const rot = [90, 180, 270].includes(+f.rot) ? +f.rot : 0, side = rot === 90 || rot === 270;
+  const ow = side ? ch : cw, oh = side ? cw : ch;
+  if (!rot && !f.fh && !f.fv && sx === 0 && sy === 0 && cw === W && ch === H) return { canvas: c, w: W, h: H };
+  const o = new OffscreenCanvas(ow, oh), ox = o.getContext('2d');
+  ox.translate(ow / 2, oh / 2); ox.rotate(rot * Math.PI / 180); ox.scale(f.fh ? -1 : 1, f.fv ? -1 : 1);
+  ox.drawImage(c, sx, sy, cw, ch, -cw / 2, -ch / 2, cw, ch);
+  return { canvas: o, w: ow, h: oh };
 }
 
 self.onmessage = async (e) => {
