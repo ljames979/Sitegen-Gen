@@ -4996,6 +4996,7 @@ test('export PDF: the page lists the site pages, the print view holds motion sti
   const page = await (await c.get(`/sites/${siteId}/pdf`)).text();
   assert.match(page, /Make the PDF|No Chrome or Edge/);
   assert.match(page, /value="home" checked/); assert.match(page, /value="services" checked/);
+  assert.match(page, /name="editable" value="1" checked/, 'type-in boxes are on by default');
   const pv = await (await c.get(`/sites/${siteId}/preview/services?print=1&size=phone`)).text();
   assert.match(pv, /id="sg-print"/); assert.match(pv, /@page\{size:390px 844px;margin:0\}/); assert.match(pv, /sg-calm/);
   assert.doesNotMatch(await (await c.get(`/sites/${siteId}/preview`)).text(), /id="sg-print"/);

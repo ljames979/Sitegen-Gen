@@ -10,6 +10,8 @@
     .pdf-size { display: flex; gap: 18px; flex-wrap: wrap; margin: 6px 0 18px; }
     .pdf-size label { display: flex; gap: 8px; align-items: center; margin: 0; font-weight: 500; }
     .pdf-size input { width: auto; margin: 0; }
+    .pdf-edit { display: flex; gap: 10px; align-items: flex-start; margin: 6px 0 18px; font-weight: 500; }
+    .pdf-edit input { width: auto; margin: 3px 0 0; }
     .pdf-status { margin-top: 14px; font-size: 14.5px; }
     .pdf-status.err { color: #b91c1c; }
     .pdf-tips li { margin-bottom: 6px; }
@@ -37,6 +39,8 @@
       <div class="pdf-size">
         <% Object.keys(sizes).forEach((k, i) => { %><label><input type="radio" name="size" value="<%= k %>" <%= i === 0 ? 'checked' : '' %>> <%= sizes[k].label %> (<%= sizes[k].w %> px wide)</label><% }) %>
       </div>
+      <h3>Boxes the client can type in</h3>
+      <label class="pdf-edit"><input type="checkbox" name="editable" value="1" checked> Add a "changes" box and a "Looks good" tick under every part, and a last page for their name, overall changes and approval. They fill it in with the free Adobe Reader, Edge, Chrome or Preview on a Mac, save it and email it back.</label>
       <% if (browser) { %>
         <button type="submit" id="pdfGo">Make the PDF</button>
       <% } else { %>
@@ -56,7 +60,7 @@
     <div class="card" style="margin-top:16px;">
       <h3 style="margin-top:0;">What to tell the client</h3>
       <ul class="pdf-tips">
-        <li>Open the PDF and use the Comment or Note tool to click on anything you'd like changed and type what you want.</li>
+        <li>Type what you'd like changed in the box under each part (or tick Looks good), then fill in the last page. You can also use the Comment tool to click on any spot.</li>
         <li>Save the PDF and email it back.</li>
       </ul>
     </div>
