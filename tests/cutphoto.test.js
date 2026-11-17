@@ -16,7 +16,7 @@ test('cut out: every picture box in the panel gets the button, except the tab ic
   assert.match(ed, /t\.content\.querySelectorAll\('\.upload-row'\)\.forEach\(cutBtnFor\)/);
   assert.match(ed, /new MutationObserver\(/);
   // the Photo that blends in block keeps its own "Cut out the pets"
-  assert.match(ed, /url\.classList\.contains\('pb-url'\)\) return;/);
+  assert.match(ed, /url\.classList\.contains\('pb-url'\)\) \{[\s\S]{0,700}?\n        return;\n      \}/);
   // undo puts the original back; the photo bar on the page has it too
   assert.match(ed, /'↩ Undo cut' : '✂ Cut out'/);
   assert.match(ed, /data-ph="cut"[\s\S]*data-ph="uncut"|data-ph="uncut"[\s\S]*data-ph="cut"/);

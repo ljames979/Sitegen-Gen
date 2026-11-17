@@ -134,7 +134,9 @@ const imagePath = (key, full) => { if (!keyOk(key)) return ''; const f = fileFor
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 // points: [{x, y, on}] in working-copy px (on=false marks "not this"); box: optional {x0, y0, x1, y1}
-async function mask(key, points, box) {
+// thr (2026-11-12, Leo's Tolerance slider): the model's own cut-off. Below 0 takes in more of the parts it is less sure
+// of (a bigger selection), above 0 keeps only what it is sure of. 0 is the model's usual answer.
+async function mask(key, points, box, thr) {
   need();
   const v = load(key);
   const pts = (Array.isArray(points) ? points : []).slice(0, 12).map(p => ({ x: clamp(+p.x || 0, 0, v.w), y: clamp(+p.y || 0, 0, v.h), on: p.on !== false }));
@@ -155,7 +157,8 @@ async function mask(key, points, box) {
   });
   const m = r.masks.data, size = v.w * v.h, a = Buffer.alloc(size);
   let on = 0;
-  for (let i = 0; i < size; i++) if (m[i] > 0) { a[i] = 255; on++; }
+  const cut = Number.isFinite(+thr) ? Math.max(-16, Math.min(16, +thr)) : 0;
+  for (let i = 0; i < size; i++) if (m[i] > cut) { a[i] = 255; on++; }
   const png = await sharp(a, { raw: { width: v.w, height: v.h, channels: 1 } }).png({ compressionLevel: 3 }).toBuffer();
   return { png, score: +(r.iou_predictions.data[0] || 0).toFixed(3), area: on / size };
 }
@@ -182,7 +185,7 @@ async function subject(key) {
 // A mask is a black and white PNG the working size, kept with the uploads. Opening the finished photo in the editor
 // opens the original with every change still there to change, hide or remove.
 const MAX_EDITS = 120, MAX_LAYERS = 60;
-const LAYER_TYPES = ['recolor', 'adjust'];
+const LAYER_TYPES = ['recolor', 'adjust', 'enhance'];
 const isUp = (u) => /^\/uploads\/[A-Za-z0-9._-]+$/.test(String(u || ''));
 const hex = (v) => (/^#[0-9a-f]{6}$/i.test(String(v || '')) ? String(v).toLowerCase() : '');
 const num = (v, lo, hi, d) => { const n = +v; return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : d; };
@@ -193,6 +196,12 @@ function cleanLayer(L) {
     opacity: num(L.opacity, 0, 1, 1), locked: !!L.locked };   // part 3: Strength in the Changes list, and 🔒
   if (L.type === 'recolor') Object.assign(out, { color: hex(L.color) || '#ff69b4', strength: num(L.strength, 0, 1, 1), shading: num(L.shading, 0, 1, 1) });
   if (L.type === 'adjust') ['bright', 'contrast', 'sat', 'warm'].forEach(k => { out[k] = Math.round(num(L[k], -100, 100, 0)); });
+  // ✨ Auto enhance (2026-11-12): levels, white-balance gains, midtone lift and color strength
+  if (L.type === 'enhance') {
+    const g = Array.isArray(L.gain) ? L.gain : [];
+    Object.assign(out, { lo: Math.round(num(L.lo, 0, 120, 0)), hi: Math.round(num(L.hi, 135, 255, 255)), gain: [0, 1, 2].map(i => +num(g[i], 0.7, 1.4, 1).toFixed(3)),
+      gamma: +num(L.gamma, 0.5, 2, 1).toFixed(2), sat: Math.round(num(L.sat, -100, 100, 0)) });
+  }
   return out;
 }
 function cleanEdit(e) {
@@ -202,7 +211,23 @@ function cleanEdit(e) {
   const masks = {};
   Object.entries(e.masks || {}).slice(0, MAX_LAYERS).forEach(([k, u]) => { if (idOk(k) && isUp(u)) masks[k] = u; });
   const layers = (Array.isArray(e.layers) ? e.layers : []).slice(0, MAX_LAYERS).map(cleanLayer).filter(L => L && masks[L.mask]);
-  return { src, out, w: num(e.w, 1, 10000, 0) | 0, h: num(e.h, 1, 10000, 0) | 0, layers, masks, at: String(e.at || '').slice(0, 30) };
+  const res = { src, out, w: num(e.w, 1, 10000, 0) | 0, h: num(e.h, 1, 10000, 0) | 0, layers, masks, at: String(e.at || '').slice(0, 30) };
+  const fr = cleanFrame(e.frame); if (fr) res.frame = fr;
+  return res;
+}
+// crop and turn (2026-11-12): the part of the original to keep (x, y, w, h as fractions of it), then a quarter turn
+// (rot 0/90/180/270, clockwise) and mirror flips. The original stays as it was; only the finished photo is cropped.
+function cleanFrame(f) {
+  if (!f || typeof f !== 'object') return null;
+  const x = num(f.x, 0, 1, 0), y = num(f.y, 0, 1, 0);
+  const w = Math.min(num(f.w, 0.01, 1, 1), 1 - x), h = Math.min(num(f.h, 0.01, 1, 1), 1 - y);
+  const rot = [0, 90, 180, 270].includes(+f.rot) ? +f.rot : 0;
+  const tilt = Math.round(num(f.tilt, -15, 15, 0) * 10) / 10;   // Straighten (✨ Auto enhance or the slider), degrees
+  const out = { x: +x.toFixed(5), y: +y.toFixed(5), w: +w.toFixed(5), h: +h.toFixed(5), rot, fh: !!f.fh, fv: !!f.fv, ratio: /^(free|orig|\d{1,2}:\d{1,2})$/.test(String(f.ratio || '')) ? String(f.ratio) : 'free' };
+  if (tilt) out.tilt = tilt;
+  if (w < 0.01 || h < 0.01) return null;
+  if (out.x === 0 && out.y === 0 && out.w === 1 && out.h === 1 && !rot && !out.fh && !out.fv && !tilt) return null;   // nothing to do
+  return out;
 }
 function cleanEdits(all) {
   const out = {};
@@ -227,4 +252,4 @@ async function saveMask(buf) {
   return '/uploads/' + name;
 }
 
-module.exports = { ready, missing, prepare, mask, subject, imagePath, status, keyOk, MODELS, BASE, WORK, FULL, cleanEdit, cleanEdits, editFor, saveMask, idOk, LAYER_TYPES };
+module.exports = { ready, missing, prepare, mask, subject, imagePath, status, keyOk, MODELS, BASE, WORK, FULL, cleanEdit, cleanEdits, cleanFrame, editFor, saveMask, idOk, LAYER_TYPES };

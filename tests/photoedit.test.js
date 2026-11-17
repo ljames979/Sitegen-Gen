@@ -141,8 +141,8 @@ test('photo editor page: Change color with the shared color picker, eyedropper, 
   assert.match(js, /input\[name\^="theme_"\]\[name\$="Color"\]/);         // the site's own colors as swatches
   for (const a of ['rc-apply', 'rc-reset', 'compare', 'save']) assert.match(js, new RegExp('data-a="' + a + '"'));
   assert.match(js, /post\('keep-mask', await maskPng\(S\.masks\[mid\]\), 'image\/png'\)/);
-  assert.match(js, /work\('full', \{ url: api\('full\/' \+ S\.key\), layers: S\.layers, type: 'image\/webp' \}\)/);
-  assert.match(js, /hist\.list\.push\(\{ sel: S\.sel \? S\.sel\.slice\(\) : null, soft: S\.soft, layers: JSON\.stringify\(S\.layers\) \}\)/);
+  assert.match(js, /work\('full', \{ url: api\('full\/' \+ S\.key\), layers: S\.layers, frame, type: 'image\/webp' \}\)/);
+  assert.match(js, /hist\.list\.push\(\{ sel: S\.sel \? S\.sel\.slice\(\) : null, soft: S\.soft, layers: JSON\.stringify\(S\.layers\), frame: JSON\.stringify\(S\.frame\) \}\)/);
   const ed = read('views/editor.ejs');
   assert.match(ed, /window\.SGPhotoEdit\.open\(\{ siteId, src: v, onSave \}\)/);
   assert.match(ed, /window\.SGPhotoEdit\.open\(\{ siteId, src: v, onSave: \(u\) => setPhoto\(field, u\) \}\)/);
@@ -185,4 +185,141 @@ test('part 3: Adjust changes and the Changes list settings are kept, and the wor
   const warm = new Uint8ClampedArray([120, 120, 120, 255]);
   render(warm, 1, 1, [{ type: 'adjust', mask: 'm', warm: 100 }], () => new Uint8Array([255]));
   assert.ok(warm[0] > warm[2]);
+});
+
+// 2026-11-12 (Leo): the hero block's photo could not be edited, Change color was hard to find, and there was no crop
+test('fixes: the hero blend block gets 🎨 Edit photo and re-cuts after a save', () => {
+  const ed = fs.readFileSync(path.join(__dirname, '..', 'views', 'editor.ejs'), 'utf8');
+  const i = ed.indexOf("url.classList.contains('pb-url')");
+  assert.ok(i > 0 && /pe-btn/.test(ed.slice(i, i + 600)), 'a pb-url row gets the Edit photo button');
+  assert.match(ed, /async function recutBlend\(url, oldUrl, newUrl\)/);
+  assert.match(ed, /if \(url\.classList\.contains\('pb-url'\)\) recutBlend\(url, v, u\)/);
+});
+
+test('fixes: Change a color and Crop & turn in the editor, kept with the saved edit', () => {
+  const js = fs.readFileSync(path.join(__dirname, '..', 'public', 'photoedit.js'), 'utf8');
+  new vm.Script(js);
+  for (const s of ['data-a="recolor-start"', 'data-a="crop-start"', 'data-tool="crop"', 'data-ratio="1:1"', 'data-ratio="4:3"', 'data-ratio="16:9"', 'data-ratio="3:4"', 'data-ratio="free"', 'data-a="rot-l"', 'data-a="rot-r"', 'data-a="flip-h"', 'data-a="flip-v"'])
+    assert.ok(js.includes(s), s);
+  assert.match(js, /frame: frameOut\(\)|layers: S\.layers, frame, type/);
+  const pe = require('../photoedit');
+  assert.equal(pe.cleanFrame({ x: 0, y: 0, w: 1, h: 1, rot: 0 }), null, 'the whole photo, not turned, is no crop');
+  const f = pe.cleanFrame({ x: 0.1, y: 0.2, w: 2, h: 0.5, rot: 90, fh: 1, ratio: '4:3' });
+  assert.deepEqual(f, { x: 0.1, y: 0.2, w: 0.9, h: 0.5, rot: 90, fh: true, fv: false, ratio: '4:3' });
+  assert.equal(pe.cleanFrame({ x: 0, y: 0, w: 1, h: 1, rot: 45 }), null, 'only quarter turns');
+  assert.equal(pe.cleanFrame({ x: 0, y: 0, w: 0.5, h: 1, ratio: '<b>' }).ratio, 'free');
+  const e = pe.cleanEdit({ src: '/uploads/a.png', out: '/uploads/b.webp', w: 10, h: 10, layers: [], masks: {}, frame: { x: 0.25, y: 0, w: 0.5, h: 1 } });
+  assert.equal(e.frame.w, 0.5);
+  const srv = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  assert.match(srv, /masks, frame: b\.frame, at:/);
+  const wk = fs.readFileSync(path.join(__dirname, '..', 'public', 'photoedit-worker.js'), 'utf8');
+  assert.match(wk, /function frameCanvas\(c, W, H, f\)/);
+  assert.match(wk, /frameCanvas\(c, W, H, q\.frame\)/);
+});
+
+test('Change color spec (2026-11-12): tolerance slider, hex code box, target hue and saturation, no tint over the preview', () => {
+  const js = fs.readFileSync(path.join(__dirname, '..', 'public', 'photoedit.js'), 'utf8');
+  assert.match(js, /class="sgpe-tol" min="0" max="100" value="50"/);
+  assert.match(js, /thr: tolThr\(\)/);
+  assert.match(js, /async function redoClick\(\)/);
+  assert.match(js, /e\.target\.isContentEditable/, 'typing a hex code is not a shortcut');
+  assert.match(js, /S\.tinted = !S\.trial/);
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'photoedit.js'), 'utf8'), /async function mask\(key, points, box, thr\)/);
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8'), /photoedit\.mask\([^\n]*, b\.thr\)/);
+  // every pixel takes the target's hue and saturation; its lightness keeps its order, with the average near the target's
+  const box = { self: {}, module: { exports: {} }, Uint8Array, Uint8ClampedArray, Int32Array, Math, String, Map, Number };
+  vm.createContext(box); vm.runInContext(read('public/photoedit-worker.js'), box);
+  const { recolor } = box.module.exports;
+  const n = 4, px = new Uint8ClampedArray([30, 60, 120, 255, 60, 100, 180, 255, 90, 140, 220, 255, 120, 170, 240, 255]), m = new Uint8Array(n).fill(255);
+  recolor(px, m, { color: '#DD96B5', strength: 1, shading: 1 });
+  const hsl = (r, g, b) => { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn; let h = 0; if (d) { h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360; } return [h, d ? d / (1 - Math.abs(2 * l - 1)) : 0, l]; };
+  const out = [0, 1, 2, 3].map(i => hsl(px[i * 4], px[i * 4 + 1], px[i * 4 + 2]));
+  out.forEach(([h]) => assert.ok(Math.abs(h - 330) < 6, 'hue of #DD96B5, got ' + h));
+  for (let i = 1; i < n; i++) assert.ok(out[i][2] > out[i - 1][2], 'lighter stays lighter');
+  const avg = out.reduce((a, o) => a + o[2], 0) / n;
+  assert.ok(Math.abs(avg - 0.727) < 0.08, 'average lightness near the target, got ' + avg.toFixed(3));
+});
+
+test('✨ Auto (2026-11-12): tunes the tolerance by color, keeps only the clicked piece, soft edge', () => {
+  const js = fs.readFileSync(path.join(__dirname, '..', 'public', 'photoedit.js'), 'utf8');
+  assert.match(js, /class="sgpe-auto" checked/);
+  assert.match(js, /async function autoTune\(p\)/);
+  assert.match(js, /alike \/ added < 0\.75/);
+  const box = { self: {}, module: { exports: {} }, Uint8Array, Uint8ClampedArray, Int32Array, Math, String, Map, Number };
+  vm.createContext(box); vm.runInContext(read('public/photoedit-worker.js') + '\nmodule.exports.keepJoined = keepJoined;', box);
+  // two pieces on a 5x1 strip: only the one under the click stays
+  const out = box.module.exports.keepJoined(new Uint8Array([255, 255, 0, 255, 255]), 5, 1, { x: 0, y: 0 });
+  assert.deepEqual(Array.from(out), [255, 255, 0, 0, 0]);
+});
+
+// 2026-11-12 (Leo picked these from the automation ideas): ✨ Auto enhance and ✨ Match to brand
+test('✨ Auto enhance: levels, white balance and lift for a dull photo, a tilt found and straightened, kept with the edit', () => {
+  const vm = require('node:vm');
+  const ctx = { self: {}, module: { exports: {} }, Math, Object, Uint8Array, Uint8ClampedArray, Float32Array, Uint32Array, Int32Array, Map, Promise };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'public', 'photoedit-worker.js'), 'utf8'), ctx);
+  const { autoFix, findTilt, render, tiltScale } = ctx.module.exports;
+  // a dark, bluish, flat photo: 60x40 of a soft grey gradient pushed toward blue
+  const w = 60, h = 40, px = new Uint8ClampedArray(w * h * 4);
+  for (let i = 0; i < w * h; i++) { const v = 40 + (i % w); px[i * 4] = v; px[i * 4 + 1] = v + 4; px[i * 4 + 2] = v + 22; px[i * 4 + 3] = 255; }
+  const r = autoFix(px, w, h);
+  assert.ok(r && r.fix, 'a dull photo gets a fix');
+  assert.ok(r.fix.lo > 0, 'levels stretch it');
+  assert.ok(r.fix.gamma < 1, 'a dark photo is lifted');
+  assert.ok(r.fix.gain[2] < 1 && r.fix.gain[0] > 1, 'the blue cast is taken out');
+  const out = new Uint8ClampedArray(px);
+  render(out, w, h, [{ type: 'enhance', mask: 'm', ...r.fix }], () => new Uint8Array(w * h).fill(255));
+  const avg = (a, c) => { let s = 0; for (let i = 0; i < w * h; i++) s += a[i * 4 + c]; return s / (w * h); };
+  assert.ok(avg(out, 0) > avg(px, 0) + 10, 'brighter');
+  assert.ok(Math.abs(avg(out, 2) - avg(out, 0)) < Math.abs(avg(px, 2) - avg(px, 0)), 'less blue');
+  // a good photo is left alone
+  const ok = new Uint8ClampedArray(w * h * 4);
+  for (let i = 0; i < w * h; i++) { const v = Math.round((i % w) / (w - 1) * 255); ok[i * 4] = ok[i * 4 + 1] = ok[i * 4 + 2] = v; ok[i * 4 + 3] = 255; }
+  assert.equal(autoFix(ok, w, h).fix, null);
+  // see-through pixels (a cut-out's backdrop) don't count
+  assert.equal(autoFix(new Uint8ClampedArray(w * h * 4), w, h), null);
+  // tilt: stripes running at +3° are found, and the answer turns them back
+  const W = 300, H = 200, st = new Uint8ClampedArray(W * H * 4), t = Math.tan(3 * Math.PI / 180);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const j = (y * W + x) * 4, band = Math.floor((y - x * t) / 25) % 2 === 0; st[j] = st[j + 1] = st[j + 2] = band ? 230 : 40; st[j + 3] = 255; }
+  const f = findTilt(st, W, H);
+  assert.ok(Math.abs(f.tilt + 3) <= 0.3, 'found ' + f.tilt);
+  const flat = new Uint8ClampedArray(W * H * 4);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const j = (y * W + x) * 4, band = Math.floor(y / 25) % 2 === 0; flat[j] = flat[j + 1] = flat[j + 2] = band ? 230 : 40; flat[j + 3] = 255; }
+  assert.equal(findTilt(flat, W, H).tilt, 0, 'level stripes need nothing');
+  assert.ok(Math.abs(tiltScale(0, 4, 3) - 1) < 1e-9 && tiltScale(5, 4, 3) > 1.1);
+  // saved: the change and the straighten survive the server's checks
+  const pe = require('../photoedit');
+  const e = pe.cleanEdit({ src: '/uploads/a.png', out: '/uploads/b.webp', w: 10, h: 10, masks: { m1234: '/uploads/pe-1.png' },
+    layers: [{ id: 'l1234', type: 'enhance', mask: 'm1234', lo: 14, hi: 300, gain: [1.5, 1, 0.9], gamma: 0.8, sat: 12 }], frame: { x: 0, y: 0, w: 1, h: 1, tilt: 2.34 } });
+  assert.deepEqual([e.layers[0].lo, e.layers[0].hi, e.layers[0].gain, e.layers[0].gamma, e.layers[0].sat], [14, 255, [1.4, 1, 0.9], 0.8, 12]);
+  assert.equal(e.frame.tilt, 2.3, 'a straighten alone is kept');
+  assert.equal(pe.cleanFrame({ x: 0, y: 0, w: 1, h: 1, tilt: 99 }).tilt, 15);
+  const js = fs.readFileSync(path.join(__dirname, '..', 'public', 'photoedit.js'), 'utf8');
+  for (const s of ['data-a="auto-enhance"', 'data-a="brand-match"', 'class="sgpe-tilt"', "work('autofix'", "work('brandareas'"]) assert.ok(js.includes(s), s);
+  const wk = fs.readFileSync(path.join(__dirname, '..', 'public', 'photoedit-worker.js'), 'utf8');
+  assert.match(wk, /ox\.rotate\(\(rot \+ t\) \* Math\.PI \/ 180\)/, 'Save turns the photo by the straighten too');
+});
+
+test('✨ Match to brand: finds the colorful thing, leaves fur and grey alone, and ignores a subject that is the whole photo', () => {
+  const vm = require('node:vm');
+  const ctx = { self: {}, module: { exports: {} }, Math, Object, Uint8Array, Uint8ClampedArray, Float32Array, Uint32Array, Int32Array, Map, Promise };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'public', 'photoedit-worker.js'), 'utf8'), ctx);
+  const { brandAreas } = ctx.module.exports;
+  // 80x60: left third teal towel, middle third golden fur, right third white foam
+  const w = 80, h = 60, px = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const j = (y * w + x) * 4, n = ((x * 7 + y * 13) % 9) - 4;   // a little texture
+    const c = x < 27 ? [37, 124, 137] : (x < 54 ? [194, 156, 110] : [240, 240, 238]);
+    px[j] = c[0] + n; px[j + 1] = c[1] + n; px[j + 2] = c[2] + n; px[j + 3] = 255;
+  }
+  const g = brandAreas(px, w, h, null, 2);
+  assert.equal(g.length, 1, 'only the towel: fur and foam are not brand-colored');
+  assert.ok(g[0].hue > 170 && g[0].hue < 200, 'teal ' + g[0].hue);
+  let inTowel = 0, outside = 0;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { if (g[0].mask[y * w + x] < 128) continue; if (x < 27) inTowel++; else outside++; }
+  assert.ok(inTowel > 27 * 60 * 0.9 && outside < 60 * 3, inTowel + ' / ' + outside);
+  // the main subject is kept out
+  const subj = new Uint8Array(w * h); for (let y = 0; y < h; y++) for (let x = 0; x < 27; x++) subj[y * w + x] = 255;
+  assert.equal(brandAreas(px, w, h, subj, 2).length, 0);
+  // a "subject" that is the whole photo (a cut-out) is ignored
+  assert.equal(brandAreas(px, w, h, new Uint8Array(w * h).fill(255), 2).length, 1);
 });

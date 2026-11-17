@@ -1651,7 +1651,7 @@ app.post('/sites/:id/photo-edit/save', requireAuth, loadOwnedSite, cutoutLimiter
     const id = photoedit.idOk(b.id) && all[b.id] ? b.id : nanoid(12).toLowerCase().replace(/[^a-z0-9]/g, 'x');
     const masks = {};
     for (const [mid, v] of Object.entries(b.masks || {}).slice(0, 60)) if (photoedit.idOk(mid) && /^\/uploads\/pe-[a-z0-9]+\.png$/.test(String(v))) masks[mid] = String(v);
-    const edit = photoedit.cleanEdit({ src: b.src, out: b.out, w: b.w, h: b.h, layers: b.layers, masks, at: new Date().toISOString() });
+    const edit = photoedit.cleanEdit({ src: b.src, out: b.out, w: b.w, h: b.h, layers: b.layers, masks, frame: b.frame, at: new Date().toISOString() });
     if (!edit) return res.status(400).json({ ok: false, error: 'Nothing to save.' });
     all[id] = edit;
     sections.photoEdits = photoedit.cleanEdits(all);
@@ -1673,7 +1673,7 @@ app.get('/sites/:id/photo-edit/image/:key', requireAuth, loadOwnedSite, (req, re
 app.post('/sites/:id/photo-edit/mask', requireAuth, loadOwnedSite, photoEditLimiter, express.json({ limit: '8kb' }), async (req, res) => {
   try {
     const b = req.body || {};
-    const r = await photoedit.mask(String(b.key || ''), b.points, b.box && typeof b.box === 'object' ? b.box : null);
+    const r = await photoedit.mask(String(b.key || ''), b.points, b.box && typeof b.box === 'object' ? b.box : null, b.thr);
     res.set('X-Sg-Score', String(r.score)); res.set('X-Sg-Area', r.area.toFixed(4)); res.type('png'); res.send(r.png);
   } catch (e) { photoEditErr(res, e, 'Could not select that.'); }
 });
@@ -1703,7 +1703,9 @@ const HISTORY_MSG = { rollback: 'Rolled back. The site now shows that earlier ve
 app.get('/sites/:id/bg-previews', requireAuth, loadOwnedSite, (req, res) => {
   const theme = req.site.theme || {};
   const groups = gradients.menu(theme, true, false).map(([label, list]) => [label, list.map(([id, name, css]) => [id, name, gradients.textures.isTexture(id) ? gradients.textures.image(id, theme) : css])]);
-  res.set('Cache-Control', 'private, max-age=60').json({ groups });
+  // card gradients (no textures) and the 284-gradient library, for the one picker (public/bgpick.js)
+  const cards = gradients.menu(theme, false, false);
+  res.set('Cache-Control', 'private, max-age=60').json({ groups, cards, lib: gradients.libMenu() });
 });
 app.get('/sites/:id/history', requireAuth, loadOwnedSite, (req, res) => {
   const rows = db.prepare('SELECT id, kind, deploy_id, label, created_at FROM publish_history WHERE site_id = ? ORDER BY id DESC').all(req.site.id);

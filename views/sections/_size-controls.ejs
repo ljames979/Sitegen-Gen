@@ -1,55 +1,61 @@
 <%# Size (and optionally photo) controls for one home-page section.
     Expects: pre (field-name prefix, e.g. "bps_services_" or "cs_"), o (current options), photo (show the photo controls) %>
 <% const _g = (k) => (o && o[k] != null ? o[k] : ''); const _sel = (name, list, cur) => '<select name="' + pre + name + '">' + list.map(x => '<option value="' + x[0] + '"' + (cur === x[0] ? ' selected' : '') + '>' + x[1] + '</option>').join('') + '</select>'; %>
-<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border,#e2e8f0);">
-  <p style="margin:0 0 4px; font-size:13px; font-weight:600;">Size</p>
-  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
-    <div style="flex:1; min-width:210px; font-weight:400;"><label style="font-weight:400;">Height (space above and below)</label>
-      <div style="display:flex; gap:6px;"><%- _sel('space', [['', 'Normal'], ['compact', 'Compact'], ['roomy', 'Roomy'], ['tall', 'Extra tall']], _g('space')) %><input type="number" name="<%= pre %>padY" value="<%= _g('padY') %>" min="0" max="400" step="4" placeholder="px" style="width:80px;" title="Exact space in pixels (overrides the choice)"></div></div>
-    <div style="flex:1; min-width:210px; font-weight:400;"><label style="font-weight:400;">Content width</label>
-      <div style="display:flex; gap:6px;"><%- _sel('width', [['', 'Normal'], ['narrow', 'Narrow'], ['wide', 'Wide'], ['full', 'Full width']], _g('width')) %><input type="number" name="<%= pre %>maxW" value="<%= _g('maxW') %>" min="320" max="1920" step="10" placeholder="px" style="width:80px;" title="Exact width in pixels (overrides the choice)"></div></div>
-    <div style="flex:1; min-width:210px; font-weight:400;"><label style="font-weight:400;">Text size</label>
-      <div style="display:flex; gap:6px;"><%- _sel('text', [['', 'Normal'], ['small', 'Smaller'], ['large', 'Larger']], _g('text')) %><input type="number" name="<%= pre %>fs" value="<%= _g('fs') %>" min="70" max="160" step="5" placeholder="%" style="width:80px;" title="Exact text size in percent (overrides the choice)"></div></div>
+<%# Tidied 2026-11-17 (Leo, "lets do all"): Size and Background each fold, like a content block's look panel
+    (styles in sections/_blocks.ejs, .blk-look). One Background fold holds the gallery pick and your own colors.
+    Every field name is the same as before. %>
+<% const _gm = gradients.menu(typeof site !== 'undefined' ? site.theme : {}), _gcur = _g('grad'), _ghit = _gm.flatMap(g => g[1]).find(x => x[0] === _gcur) || (gradients.LIB.find(p => p[0] === _gcur) ? [_gcur, gradients.LIB.find(p => p[0] === _gcur)[1], gradients.libMenu().flatMap(g => g[1]).find(x => x[0] === _gcur)[2]] : null), _gcss = _ghit ? _ghit[2] : '';
+   const _szSum = [['space', { compact: 'compact', roomy: 'roomy', tall: 'extra tall' }], ['width', { narrow: 'narrow', wide: 'wide', full: 'full width' }], ['text', { small: 'smaller text', large: 'larger text' }]].map(([k, m]) => m[_g(k)] || '').concat(_g('padY') !== '' ? [_g('padY') + 'px space'] : [], _g('maxW') !== '' ? [_g('maxW') + 'px wide'] : [], _g('fs') !== '' ? [_g('fs') + '% text'] : []).filter(Boolean).join(' · ') || 'normal';
+   const _bgSum = _ghit ? _ghit[1] : ''; %>
+<details class="blk-look sec-look" data-look="secsize">
+  <summary><span class="blk-look-t">📐 Size</span><span class="blk-look-sum"><%= _szSum %></span></summary>
+  <div class="blk-look-body">
+    <div class="blk-look-grp"><span class="blk-look-h">Height</span>
+      <div class="blk-look-line"><%- _sel('space', [['', 'Normal'], ['compact', 'Compact'], ['roomy', 'Roomy'], ['tall', 'Extra tall']], _g('space')) %><input type="number" name="<%= pre %>padY" value="<%= _g('padY') %>" min="0" max="400" step="4" placeholder="px" style="width:80px; margin:0;" title="Exact space above and below, in pixels (overrides the choice)"></div></div>
+    <div class="blk-look-grp"><span class="blk-look-h">Content width</span>
+      <div class="blk-look-line"><%- _sel('width', [['', 'Normal'], ['narrow', 'Narrow'], ['wide', 'Wide'], ['full', 'Full width']], _g('width')) %><input type="number" name="<%= pre %>maxW" value="<%= _g('maxW') %>" min="320" max="1920" step="10" placeholder="px" style="width:80px; margin:0;" title="Exact width in pixels (overrides the choice)"></div></div>
+    <div class="blk-look-grp"><span class="blk-look-h">Text size</span>
+      <div class="blk-look-line"><%- _sel('text', [['', 'Normal'], ['small', 'Smaller'], ['large', 'Larger']], _g('text')) %><input type="number" name="<%= pre %>fs" value="<%= _g('fs') %>" min="70" max="160" step="5" placeholder="%" style="width:80px; margin:0;" title="Exact text size in percent (overrides the choice)"></div></div>
+    <p class="muted" style="font-size:12px; margin:2px 0 0;">Leave the boxes empty for the normal size. A number in the box wins over the choice next to it.</p>
   </div>
-  <p class="muted" style="font-size:12px; margin:4px 0 0;">Leave the boxes empty to use the normal size. A number in the box wins over the choice next to it.</p>
-</div>
-<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border,#e2e8f0);">
-  <p style="margin:0 0 4px; font-size:13px; font-weight:600;">Your own color or gradient</p>
-  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
-    <label style="font-weight:400;">Color 1 <input type="color" name="<%= pre %>bgColor" value="<%= _g('bgColor') || '#1f6f5c' %>" style="width:64px; height:38px; padding:2px;"></label>
-    <label style="font-weight:400;">Color 2 <input type="color" name="<%= pre %>bgColor2" value="<%= _g('bgColor2') || '#14342c' %>" style="width:64px; height:38px; padding:2px;"></label>
-    <label style="flex:1; min-width:170px; font-weight:400;">Gradient direction <%- _sel('gradDir', [['diag', 'Diagonal'], ['down', 'Top to bottom'], ['up', 'Bottom to top'], ['right', 'Left to right'], ['radial', 'Glow from the top']], _g('gradDir') || 'diag') %></label>
-  </div>
-  <p class="muted" style="font-size:12px; margin:4px 0 0;">These apply when Background (above) is set to "Your color" or "Your gradient" (a gradient uses both colors). The text turns light or dark on its own so it stays readable.</p>
-</div>
-<% const _gm = gradients.menu(typeof site !== 'undefined' ? site.theme : {}), _gcur = _g('grad'), _gcss = (_gm.flatMap(g => g[1]).find(x => x[0] === _gcur) || [])[2] || ''; %>
-<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border,#e2e8f0);">
-  <p style="margin:0 0 4px; font-size:13px; font-weight:600;">Gallery: gradients, textures and pet patterns</p>
-  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
-    <label style="flex:2; min-width:200px; font-weight:400;">Pick from the gallery
-      <select name="<%= pre %>grad" class="grad-pick" onchange="var o=this.options[this.selectedIndex];this.closest('div').querySelector('.grad-swatch').style.background=o.getAttribute('data-css')||'transparent'">
-        <option value="" data-css="">None</option>
-        <% _gm.forEach(g => { %><optgroup label="<%= g[0] %>"><% g[1].forEach(x => { %><option value="<%= x[0] %>" data-css="<%= x[2] %>" <%= _gcur === x[0] ? 'selected' : '' %>><%= x[1] %></option><% }) %></optgroup><% }) %>
-      </select></label>
-    <span class="grad-swatch" aria-hidden="true" style="width:64px; height:38px; border-radius:8px; border:1px solid var(--border,#e2e8f0); background:<%= _gcss || 'transparent' %>;"></span>
-    <label style="flex:3; min-width:260px; font-weight:400;">Colors of the texture or pattern <%- include('_ink-pick', { name: pre + 'gradInk', value: _g('gradInk'), theme: typeof site !== 'undefined' ? site.theme : {} }) %></label>
-  </div>
-  <%# the finer gradient settings, folded away (Leo, 2026-11-07: one simple Background choice, extras under "More") %>
-  <details class="sg-grad-more"<%= _g('gradStyle') || _g('gradAngle') !== '' || _g('gradMove') || _g('gradBlend') || _g('grain') ? ' open' : '' %> style="margin-top:6px;">
-    <summary style="cursor:pointer; font-size:13px; color:var(--primary,#2563eb);">More: style, angle, movement, blend and grain</summary>
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-top:6px;">
-      <label style="flex:1; min-width:150px; font-weight:400;">Style <%- _sel('gradStyle', [['', 'Automatic']].concat(Object.entries(gradients.STYLES)), _g('gradStyle')) %></label>
-      <label style="width:110px; font-weight:400;">Angle <input type="number" name="<%= pre %>gradAngle" value="<%= _g('gradAngle') %>" min="0" max="359" step="5" placeholder="135" title="Degrees, for straight and cone gradients"></label>
-      <label style="flex:1; min-width:150px; font-weight:400;">Movement <%- _sel('gradMove', [['', 'Still'], ['1', 'Slowly drifting']], _g('gradMove') ? '1' : '') %></label>
-      <label style="flex:2; min-width:200px; font-weight:400;">With the section's color <%- _sel('gradBlend', [['', 'Replace it with the gallery pick'], ['1', 'Blend the pick into it']], _g('gradBlend') ? '1' : '') %></label>
-      <label style="flex:1; min-width:150px; font-weight:400;">Grain <%- _sel('grain', [['', 'Smooth'], ['1', 'Grain over it (print-like)']], _g('grain') ? '1' : '') %></label>
+</details>
+<details class="blk-look sec-look" data-look="secbg">
+  <summary><span class="blk-look-t">🎨 Background colors</span><span class="blk-look-sum"><% if (_bgSum) { %><span class="chip"><i><b style="background:<%= _gcss %>"></b></i><span><%= _bgSum %></span></span><% } else { %>your colors or the gallery<% } %></span></summary>
+  <div class="blk-look-body">
+    <div class="blk-look-grp"><span class="blk-look-h">From the gallery</span>
+      <div class="blk-look-line">
+        <span class="grad-swatch blk-sw" aria-hidden="true" style="cursor:default;"><i style="background:<%= _gcss || 'transparent' %>"></i></span>
+        <select name="<%= pre %>grad" class="grad-pick" title="Gradients, textures, pet patterns and the 284-gradient library" onchange="var o=this.options[this.selectedIndex];var w=this.closest('div').querySelector('.grad-swatch i');if(w)w.style.background=o.getAttribute('data-css')||'transparent'">
+          <option value="" data-css="">None</option>
+          <% _gm.forEach(g => { %><optgroup label="<%= g[0] %>"><% g[1].forEach(x => { %><option value="<%= x[0] %>" data-css="<%= x[2] %>" <%= _gcur === x[0] ? 'selected' : '' %>><%= x[1] %></option><% }) %></optgroup><% }) %>
+          <% if (_ghit && !_gm.some(g => g[1].some(x => x[0] === _gcur))) { %><optgroup label="Gradient library" data-glib="1"><option value="<%= _gcur %>" data-css="<%= _gcss %>" selected><%= _ghit[1] %></option></optgroup><% } %>
+        </select>
+      </div>
+      <div class="blk-look-line" data-look-when="secink"<%= /^txp?-|^txb-/.test(_gcur) ? '' : ' hidden' %>><%- include('_ink-pick', { name: pre + 'gradInk', value: _g('gradInk'), theme: typeof site !== 'undefined' ? site.theme : {} }) %></div>
     </div>
-  </details>
-  <p class="muted" style="font-size:12px; margin:4px 0 0;">Picking from the gallery sets Background (above) for you; pet patterns keep your Background color and go on top of it. Style, angle, movement and grain work with any gradient background, including "Brand gradient" and "Your gradient"; movement stays still for visitors who turn motion off. Textures are drawn as they are, so style and angle do not change them. "Blend the pick into it" keeps the section's own color and text: a gradient glows in from the corners and a texture's lines and dots are drawn over it. Texture colors: your brand color, colors you pick (two or three sweep across it), a rainbow, all black, all white or a matching palette; pet patterns also take a size and a see-through amount.</p>
-</div>
+    <div class="blk-look-grp"><span class="blk-look-h">Or your own</span>
+      <div class="blk-look-line">
+        <label style="font-weight:400; margin:0; display:inline-flex; gap:6px; align-items:center;">Color 1 <input type="color" name="<%= pre %>bgColor" value="<%= _g('bgColor') || '#1f6f5c' %>"></label>
+        <label style="font-weight:400; margin:0; display:inline-flex; gap:6px; align-items:center;">Color 2 <input type="color" name="<%= pre %>bgColor2" value="<%= _g('bgColor2') || '#14342c' %>"></label>
+        <%- _sel('gradDir', [['diag', 'Diagonal'], ['down', 'Top to bottom'], ['up', 'Bottom to top'], ['right', 'Left to right'], ['radial', 'Glow from the top']], _g('gradDir') || 'diag') %>
+      </div>
+    </div>
+    <div class="blk-look-grp"><span class="blk-look-h">Finish</span>
+      <div class="blk-look-line">
+        <%- _sel('gradStyle', [['', 'Style: automatic']].concat(Object.entries(gradients.STYLES)), _g('gradStyle')) %>
+        <input type="number" name="<%= pre %>gradAngle" value="<%= _g('gradAngle') %>" min="0" max="359" step="5" placeholder="Angle 135" style="width:110px; margin:0;" title="Degrees, for straight and cone gradients">
+        <%- _sel('gradMove', [['', 'Still'], ['1', 'Slowly drifting']], _g('gradMove') ? '1' : '') %>
+        <%- _sel('gradBlend', [['', 'Replace the section color'], ['1', 'Blend into the section color']], _g('gradBlend') ? '1' : '') %>
+        <%- _sel('grain', [['', 'Smooth'], ['1', 'Grain over it (print-like)']], _g('grain') ? '1' : '') %>
+      </div>
+    </div>
+    <p class="muted" style="font-size:12px; margin:2px 0 0;">Picking from the gallery, or one of your own colors, sets Background (above) for you. Pet patterns keep your Background color and go on top of it. Finish works with any gradient, including "Brand gradient" and "Your gradient"; movement stays still for visitors who turn motion off.</p>
+  </div>
+</details>
 <% if (typeof photo !== 'undefined' && photo) { %>
-<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border,#e2e8f0);">
-  <p style="margin:0 0 4px; font-size:13px; font-weight:600;">Photo for this section</p>
+<details class="blk-look sec-look" data-look="secphoto"<%= _g('photo') ? ' open' : '' %>>
+  <summary><span class="blk-look-t">📷 Photo for this section</span><span class="blk-look-sum"><%= _g('photo') ? 'a photo is set' : 'none' %></span></summary>
+  <div class="blk-look-body">
   <div class="upload-row">
     <input type="url" name="<%= pre %>photo" value="<%= _g('photo') %>" placeholder="https://... or upload (leave empty for no photo)">
     <input type="file" accept="image/*" class="file-input" hidden>
@@ -62,5 +68,6 @@
     <label style="flex:1; min-width:140px; font-weight:400;">Darkness behind text <%- _sel('photoOverlay', [['medium', 'Medium'], ['light', 'Light'], ['dark', 'Dark']], _g('photoOverlay') || 'medium') %></label>
   </div>
   <p class="muted" style="font-size:12px; margin:4px 0 0;">Side photos need a wide screen; on phones they sit on top. "Darkness" applies to a background photo, which turns the section's text light. Works best on text sections like About, FAQ and Why choose us.</p>
-</div>
+  </div>
+</details>
 <% } %>

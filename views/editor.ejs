@@ -1144,12 +1144,19 @@
           sb.value = lines('.sh-roll', 'roll: ').concat(lines('.sh-sub', 'sub: '), pics.length ? ['photos: ' + pics.join(' ')] : []).join('\n');
           return;
         }
+        // the circle behind cut-out pets: written only once the owner changed it (else the theme's circle stays)
+        var pbDiscLine = function (r) {
+          if (!r.querySelector('.pb-disc-own') || r.querySelector('.pb-disc-own').value !== '1') return [];
+          if (!r.querySelector('.pb-disc-on').checked) return ['disc: off'];
+          var v = function (k) { return r.querySelector('.pb-disc-' + k).value; };
+          return ['disc: ' + [v('in'), v('out'), v('size'), v('x'), v('y')].join(' ')];
+        };
         var pbb = row.querySelector('textarea.pb-body');   // Photo that blends in: the words, the photos, the owner's color
         if (pbb) {
           var pw = function (k) { var v = row.querySelector('.pb-' + k).value.replace(/[|\r\n]+/g, ' ').replace(/\s+/g, ' ').trim(); return v ? [k + ': ' + v] : []; };
           var pp = Array.prototype.map.call(row.querySelectorAll('.pb-url'), function (i) { return i.value.trim(); }).filter(Boolean);
           var pcut = row.querySelector('.pb-cuts').value.split(/\s+/).filter(function (x) { return x && pp.indexOf(x.split('|')[0]) >= 0; });   // cut-outs of the photos still listed
-          pbb.value = pw('top').concat(pw('badge'), pw('note'), pp.length ? ['photos: ' + pp.join(' ')] : [], row.querySelector('.pb-own').checked ? ['color: ' + row.querySelector('.pb-color').value] : [], pcut.length ? ['cutouts: ' + pcut.join(' ')] : []).join('\n');
+          pbb.value = pw('top').concat(pw('badge'), pw('note'), pp.length ? ['photos: ' + pp.join(' ')] : [], row.querySelector('.pb-own').checked ? ['color: ' + row.querySelector('.pb-color').value] : [], pcut.length ? ['cutouts: ' + pcut.join(' ')] : [], pbDiscLine(row)).join('\n');
           return;
         }
         var adb = row.querySelector('textarea.ad-body');   // Photo with round-photo points: the big photos, then each point
@@ -1399,6 +1406,10 @@
     document.addEventListener('input', syncStrips, true);
     // Photo that blends in: cut out the pets (cutout.js on the server), one photo at a time, then switch the block to
     // "Pets cut out". Photos already cut out are kept; the originals stay in the list (switch back any time).
+    // the circle behind cut-out pets: a change in its boxes makes it the block's own; the button gives back the theme's
+    document.addEventListener('input', function (e) { var box = e.target.closest && e.target.closest('.pb-discbox'); if (box) box.querySelector('.pb-disc-own').value = '1'; }, true);
+    document.addEventListener('change', function (e) { var box = e.target.closest && e.target.closest('.pb-discbox'); if (box && e.target.classList.contains('pb-disc-on')) box.querySelector('.pb-disc-own').value = '1'; }, true);
+    document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('.pb-disc-reset'); if (b && window.sgDiscReset) { e.preventDefault(); window.sgDiscReset(b.closest('.block-row')); } });
     document.addEventListener('click', async function (e) {
       var btn = e.target.closest('.pb-cutbtn'); if (!btn) return;
       var row = btn.closest('.block-row'), msg = row.querySelector('.pb-cutmsg'), hid = row.querySelector('.pb-cuts');
@@ -1453,7 +1464,14 @@
       if (!row || row.querySelector('.cut-btn')) return;
       const url = row.querySelector('input[type=url]'), fi = row.querySelector('.file-input'), up = row.querySelector('.upload-btn');
       if (!url || !fi || !up || !/image/.test(fi.getAttribute('accept') || '') || CUT_SKIP.test(url.name || '')) return;
-      if (url.classList.contains('pb-url')) return;   // that block has its own "Cut out the pets" button
+      if (url.classList.contains('pb-url')) {   // that block has its own "Cut out the pets" button, but its photos can be edited too (Leo, 2026-11-12: the hero block)
+        if (window.SGPhotoEdit && !row.querySelector('.pe-btn')) {
+          const pe = document.createElement('button'); pe.type = 'button'; pe.className = 'btn-secondary pe-btn';
+          pe.textContent = '🎨 Edit photo'; pe.title = 'Open the photo editor: change the color of one thing (like a towel), crop or turn the photo';
+          (row.querySelector('.pick-btn') || up).after(pe);
+        }
+        return;
+      }
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-secondary cut-btn';
       b.title = 'Cut out the subject of this photo (pet, person or thing) and make its backdrop see-through';
       (row.querySelector('.pick-btn') || up).after(b);
@@ -1501,12 +1519,29 @@
       }
       if (typeof scheduleAutosave === 'function') scheduleAutosave();
     });
+    // a "Photo that blends in" block that shows its photo cut out (the hero on Imperial): after an edit, the new photo is
+    // cut out too, so the block keeps looking the same with the changes in it
+    async function recutBlend(url, oldUrl, newUrl) {
+      const row = url.closest('.block-row'), hid = row && row.querySelector('.pb-cuts'), msg = row && row.querySelector('.pb-cutmsg');
+      if (!hid) return;
+      const pairs = hid.value.split(/\s+/).filter(Boolean);
+      if (!pairs.some(x => x.split('|')[0] === oldUrl)) return;
+      if (msg) msg.textContent = 'Cutting out the edited photo…';
+      statusEl.textContent = 'Photo saved. Cutting out the edited photo for this block…';
+      try {
+        const cut = await cutPhoto(newUrl);
+        hid.value = pairs.filter(x => x.split('|')[0] !== oldUrl && x.split('|')[0] !== newUrl).concat([newUrl + '|' + cut]).join(' ');
+        url.dispatchEvent(new Event('input', { bubbles: true })); url.dispatchEvent(new Event('change', { bubbles: true })); scheduleAutosave();
+        if (msg) msg.textContent = 'The edited photo is cut out too.';
+        statusEl.textContent = 'Photo saved with your changes, and cut out for this block. 🎨 Edit photo opens the changes again';
+      } catch (err) { if (msg) msg.textContent = (err.message || 'Could not cut out the edited photo') + '. Press ✂ Cut out the pets to try again.'; }
+    }
     document.addEventListener('click', (e) => {
       const b = e.target.closest('.pe-btn'); if (!b) return;
       const url = b.closest('.upload-row').querySelector('input[type=url]'), v = url.value.trim();
       if (!v) { statusEl.textContent = 'Add a photo first, then edit it'; return; }
       // Save photo puts the finished photo in the box (the original and the changes stay with the site)
-      const onSave = (u) => { url.value = u; url.dispatchEvent(new Event('input', { bubbles: true })); url.dispatchEvent(new Event('change', { bubbles: true })); scheduleAutosave(); statusEl.textContent = 'Photo saved with your changes. 🎨 Edit photo opens them again'; };
+      const onSave = (u) => { url.value = u; url.dispatchEvent(new Event('input', { bubbles: true })); url.dispatchEvent(new Event('change', { bubbles: true })); scheduleAutosave(); statusEl.textContent = 'Photo saved with your changes. 🎨 Edit photo opens them again'; if (url.classList.contains('pb-url')) recutBlend(url, v, u); };
       try { window.SGPhotoEdit.open({ siteId, src: v, onSave }); } catch (err) { statusEl.textContent = err.message || 'Could not open the photo editor'; }
     });
     document.addEventListener('click', async (e) => {
@@ -2544,6 +2579,9 @@
           e.stopPropagation();
           if (editing) endInline(true);
           endPhoto();
+          if (discBar && !discBar.disc.contains(e.target)) endDisc();
+          const hitDisc = pbDiscAt(e);
+          if (hitDisc) { startDisc(doc, hitDisc); return; }
           const el = findField(e.target, preview.contentWindow);
           const block = window.sgPreviewBlock ? window.sgPreviewBlock(e.target) : null;
           // words that can't be typed on the page (drawn in pieces, or without a box of their own) still get an exact
@@ -2606,6 +2644,7 @@
           (field.closest('.upload-row').querySelector('.pick-btn') ? '<button type="button" data-ph="find">Find a free photo</button>' : '') +
           (field.closest('.upload-row').querySelector('.cut-btn') && field.value.trim() ? (isCut(field.value) ? (cutOrig.get(field.value.trim()) ? '<button type="button" data-ph="uncut">↩ Undo cut</button>' : '') : '<button type="button" data-ph="cut" title="Cut out the subject and make the backdrop see-through">✂ Cut out</button>') : '') +
           (window.SGPhotoEdit && field.value.trim() ? '<button type="button" data-ph="edit" title="Open the photo editor">🎨 Edit photo</button>' : '') +
+          (pbDiscOf(node) ? '<button type="button" data-ph="disc" title="The round glow behind the cut-out pets: its colors, size and spot">⬤ Circle behind</button>' : '') +
           '<button type="button" data-ph="close">Done</button>';
         doc.body.appendChild(bar);
         const place = () => {
@@ -2621,6 +2660,7 @@
           const b = ev.target.closest('button'); if (!b) return;
           ev.preventDefault(); ev.stopPropagation();
           if (b.dataset.ph === 'close') return endPhoto();
+          if (b.dataset.ph === 'disc') { const dc = pbDiscOf(node); endPhoto(); if (dc) startDisc(doc, dc); return; }
           if (b.dataset.ph === 'edit') { const v = field.value.trim(); endPhoto(); try { window.SGPhotoEdit.open({ siteId, src: v, onSave: (u) => setPhoto(field, u) }); } catch (err) { statusEl.textContent = err.message || 'Could not open the photo editor'; } return; }
           if (b.dataset.ph === 'find') { endPhoto(); return field.closest('.upload-row').querySelector('.pick-btn').click(); }   // the photo search opens over the editor
           if (b.dataset.pick != null) return setPhoto(field, others[+b.dataset.pick]);
@@ -2658,6 +2698,143 @@
           }
         });
       }
+
+      // ---- the circle behind cut-out pets (photoblend.js disc; Leo, 2026-11-12: "i can edit all the bubbles but not
+      // the big blue dot behind the dog"): click it on the page (anywhere the pets don't cover it), or "⬤ Circle behind"
+      // on the photo's bar. Drag it to move it, pull its round handle to size it, and pick its colors from the bar.
+      // Everything feeds the block's "Circle behind the pets" boxes in the panel, so it saves like any other change. ----
+      let discBar = null;
+      const pbDiscOf = (node) => { const ph = node && node.closest && node.closest('.sg-pb-photo'); return ph ? ph.querySelector('.sg-pb-disc') : null; };
+      // the block's row in the panel (the page marks each block with its place in the list)
+      const pbRowOf = (node) => { const b = node.closest('[data-sg-blk]'); const row = b ? document.querySelectorAll('#editorForm .block-row')[+b.dataset.sgBlk] : null; return row && row.querySelector('.pb-discbox') ? row : null; };
+      // is the click on the circle, where the cut-out photo over it is see-through?
+      const alphaCache = new WeakMap();
+      function seeThrough(img, cx, cy) {
+        const r = img.getBoundingClientRect(), nw = img.naturalWidth, nh = img.naturalHeight;
+        if (!nw || !nh || !img.complete) return true;
+        const k = Math.min(r.width / nw, r.height / nh), w = nw * k, h = nh * k, left = r.left + (r.width - w) / 2, top = r.top + r.height - h;   // contain, center bottom
+        const x = (cx - left) / w, y = (cy - top) / h;
+        if (x < 0 || x > 1 || y < 0 || y > 1) return true;
+        let c = alphaCache.get(img);
+        if (!c || c.src !== img.currentSrc) {
+          try {
+            const W = Math.min(400, nw), H = Math.max(1, Math.round(nh * W / nw)), cv = img.ownerDocument.createElement('canvas'); cv.width = W; cv.height = H;
+            const g = cv.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0, W, H);
+            c = { src: img.currentSrc, W, H, data: g.getImageData(0, 0, W, H).data };
+          } catch (err) { c = { src: img.currentSrc, W: 0 }; }
+          alphaCache.set(img, c);
+        }
+        if (!c.W) return false;
+        const px = Math.min(c.W - 1, Math.floor(x * c.W)), py = Math.min(c.H - 1, Math.floor(y * c.H));
+        return c.data[(py * c.W + px) * 4 + 3] < 40;
+      }
+      function pbDiscAt(e) {
+        const disc = pbDiscOf(e.target); if (!disc || !pbRowOf(disc)) return null;
+        const r = disc.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+        if (Math.hypot(dx, dy) > r.width / 2) return null;
+        if (e.target.tagName === 'IMG' && e.target.classList.contains('on') && !seeThrough(e.target, e.clientX, e.clientY)) return null;   // that's the pet: its photo bar opens
+        return disc;
+      }
+      // the panel's boxes for the circle, and the page's circle drawn from them right away
+      const discBox = (row, k) => row.querySelector('.pb-disc-' + k);
+      function discApply(row, disc) {
+        const v = (k) => discBox(row, k).value;
+        disc.style.cssText = '--d-in:' + v('in') + ';--d-out:' + v('out') + ';--d-size:' + v('size') + '%;--d-x:' + v('x') + '%;--d-y:' + v('y') + '%';
+        disc.style.visibility = discBox(row, 'on').checked ? '' : 'hidden';
+      }
+      function discSet(row, vals) {
+        Object.keys(vals).forEach((k) => { const f = discBox(row, k); if (k === 'on') f.checked = vals[k]; else f.value = vals[k]; });
+        discBox(row, 'own').value = '1';
+        scheduleAutosave();
+      }
+      function startDisc(doc, disc) {
+        endDisc();
+        const row = pbRowOf(disc); if (!row) return;
+        const blk = disc.closest('.sg-pb'), photo = disc.closest('.sg-pb-photo');
+        if (!doc.getElementById('sg-discbar-style')) {
+          const st = doc.createElement('style'); st.id = 'sg-discbar-style';
+          st.textContent = '.sg-pb-discedit .sg-pb-photo img{pointer-events:none!important}' +
+            '.sg-pb-discedit .sg-pb-disc{pointer-events:auto!important;cursor:move;outline:2px dashed #2563eb;outline-offset:3px;visibility:visible!important}' +
+            '.sg-pb-disc-h{position:absolute;right:14.6%;bottom:14.6%;width:18px;height:18px;translate:50% 50%;border-radius:50%;background:#fff;border:2px solid #2563eb;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:nwse-resize;touch-action:none}' +
+            '.sg-ie.sg-discbar{position:absolute;z-index:2147483001;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 8px;background:#0f172a;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.25);font:600 12.5px system-ui,sans-serif;color:#fff;max-width:min(620px,calc(100vw - 16px))}' +
+            '.sg-discbar label{display:flex;align-items:center;gap:5px;color:#e2e8f0;font-weight:500}.sg-discbar input[type=color]{width:30px;height:24px;padding:0;border:1px solid #475569;border-radius:5px;background:none;cursor:pointer}' +
+            '.sg-discbar input[type=range]{width:110px}.sg-discbar .hint{color:#94a3b8;padding:0 4px}' +
+            '.sg-discbar button{all:unset;cursor:pointer;color:#fff;padding:6px 10px;border-radius:7px;line-height:1}.sg-discbar button:hover,.sg-discbar button:focus-visible{background:#334155}';
+          doc.head.appendChild(st);
+        }
+        inlineEditing = true;   // the preview is not swapped while the bar is open; it catches up when it closes
+        blk.classList.add('sg-pb-discedit');
+        const handle = doc.createElement('span'); handle.className = 'sg-pb-disc-h'; handle.title = 'Pull to make the circle bigger or smaller'; disc.appendChild(handle);
+        const v = (k) => discBox(row, k).value;
+        const bar = doc.createElement('div'); bar.className = 'sg-ie sg-discbar';
+        bar.innerHTML = '<span class="hint">Circle behind the pets</span>' +
+          '<label>Middle <input type="color" data-dc="in" value="' + v('in') + '"></label>' +
+          '<label>Edge <input type="color" data-dc="out" value="' + v('out') + '"></label>' +
+          '<label>Size <input type="range" data-dc="size" min="' + discBox(row, 'size').min + '" max="' + discBox(row, 'size').max + '" value="' + v('size') + '"></label>' +
+          '<button type="button" data-dc="toggle">' + (discBox(row, 'on').checked ? 'Hide it' : 'Show it') + '</button>' +
+          '<button type="button" data-dc="reset" title="The theme\'s own glass blue circle">Theme circle</button>' +
+          '<button type="button" data-dc="close">Done</button>';
+        doc.body.appendChild(bar);
+        const place = () => {
+          const r = photo.getBoundingClientRect(), win = doc.defaultView;
+          bar.style.top = Math.max(win.scrollY + 4, r.top + win.scrollY + 12) + 'px';
+          bar.style.left = Math.max(4, Math.min(r.left + win.scrollX + 12, win.scrollX + win.innerWidth - bar.offsetWidth - 8)) + 'px';
+        };
+        place();
+        const sync = () => { discApply(row, disc); ['in', 'out', 'size'].forEach((k) => { bar.querySelector('[data-dc=' + k + ']').value = v(k); }); bar.querySelector('[data-dc=toggle]').textContent = discBox(row, 'on').checked ? 'Hide it' : 'Show it'; };
+        bar.addEventListener('input', (ev) => { const k = ev.target.dataset.dc; if (!k) return; discSet(row, { [k]: ev.target.value }); discApply(row, disc); });
+        bar.addEventListener('click', (ev) => {
+          const b = ev.target.closest('button'); if (!b) return;
+          ev.preventDefault(); ev.stopPropagation();
+          if (b.dataset.dc === 'close') return endDisc();
+          if (b.dataset.dc === 'toggle') discSet(row, { on: !discBox(row, 'on').checked });
+          if (b.dataset.dc === 'reset') discReset(row);
+          sync();
+        });
+        // drag the circle to move it; pull its handle to size it (both in % of the photo side, so phones follow)
+        let drag = null;
+        const down = (ev) => {
+          if (ev.button !== 0) return;
+          ev.preventDefault(); ev.stopPropagation();
+          drag = { size: ev.target === handle, x0: ev.clientX, y0: ev.clientY, vx: +v('x'), vy: +v('y') };
+          disc.setPointerCapture && disc.setPointerCapture(ev.pointerId);
+        };
+        const move = (ev) => {
+          if (!drag) return;
+          const r = photo.getBoundingClientRect();
+          if (drag.size) {
+            const d = disc.getBoundingClientRect(), cx = d.left + d.width / 2, cy = d.top + d.height / 2;
+            const lim = [+discBox(row, 'size').min, +discBox(row, 'size').max];
+            discSet(row, { size: Math.round(Math.min(lim[1], Math.max(lim[0], 2 * Math.hypot(ev.clientX - cx, ev.clientY - cy) / r.width * 100))) });
+          } else {
+            const nx = drag.vx + (ev.clientX - drag.x0) / r.width * 100, ny = drag.vy + (ev.clientY - drag.y0) / r.height * 100;
+            discSet(row, { x: Math.round(Math.min(100, Math.max(0, nx))), y: Math.round(Math.min(100, Math.max(0, ny))) });
+          }
+          sync();
+        };
+        const up = () => { if (drag) { drag = null; doc.__sgRzAt = Date.now(); } };
+        disc.addEventListener('pointerdown', down); disc.addEventListener('pointermove', move); disc.addEventListener('pointerup', up); disc.addEventListener('pointercancel', up);
+        const onKey = (ev) => { if (ev.key === 'Escape') { ev.preventDefault(); endDisc(); } };
+        doc.addEventListener('keydown', onKey, true);
+        discBar = { bar, disc, handle, blk, doc, onKey, off: () => { disc.removeEventListener('pointerdown', down); disc.removeEventListener('pointermove', move); disc.removeEventListener('pointerup', up); disc.removeEventListener('pointercancel', up); } };
+        statusEl.textContent = 'Drag the circle to move it, pull its round handle to size it';
+      }
+      function endDisc() {
+        if (!discBar) return;
+        const c = discBar; discBar = null;
+        c.off(); c.bar.remove(); c.handle.remove(); c.blk.classList.remove('sg-pb-discedit'); c.doc.removeEventListener('keydown', c.onKey, true);
+        inlineEditing = false;
+        if (pvStale) { pvStale = false; flushSave().then(() => freshPreview()); }
+      }
+      // back to the theme's circle (the block keeps no circle line of its own)
+      function discReset(row) {
+        const t = row.querySelector('.pb-discbox').dataset.theme;
+        if (t) { const [a, b, size, x, y] = t.split(' '); Object.entries({ in: a, out: b, size, x, y }).forEach(([k, val]) => { discBox(row, k).value = val; }); discBox(row, 'on').checked = true; }
+        else discBox(row, 'on').checked = false;
+        discBox(row, 'own').value = '';
+        scheduleAutosave();
+      }
+      window.sgDiscReset = discReset;
 
       // ---- type on the page: the clicked words become editable in place and feed the same box in the panel ----
       // Only when one element shows exactly that box's words (headlines, short texts, button labels); anything

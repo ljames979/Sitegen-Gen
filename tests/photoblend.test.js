@@ -43,3 +43,19 @@ test('cutting out: only this app\'s uploads or stock photos, and a clear message
     await assert.rejects(cut.cutout(bad), e => /Only your uploads|Not a photo|not in this app|Cutting out needs/.test(e.message), bad);
   }
 });
+
+test('photo that blends in: the circle behind cut-out pets is the owner\'s to change (colors, size, spot) or hide', () => {
+  const site = { theme: { tokens: { colors: [{ key: 'glass-blue-light', hex: '#EAF5FC' }, { key: 'glass-blue', hex: '#D6EBF8' }] } }, sections: {} };
+  const view = (body, side = 'right:cut') => pb.view(site, { body: 'photos: /uploads/a.png\n' + body, side }, []);
+  assert.equal(view('').disc, '--d-in:#eaf5fc;--d-out:#d6ebf8;--d-size:56%;--d-x:50%;--d-y:46%', 'no line: the theme\'s glass blue circle, as it always looked');
+  assert.equal(view('disc: #FFE4EF #c9e4f5 70 40 52').disc, '--d-in:#ffe4ef;--d-out:#c9e4f5;--d-size:70%;--d-x:40%;--d-y:52%');
+  assert.equal(view('disc: off').disc, '', 'hidden');
+  assert.equal(view('', 'right:both').disc, '', 'only behind cut-out pets');
+  assert.equal(pb.view({ theme: {} }, { body: 'photos: /uploads/a.png', side: 'right:cut' }, []).disc, '', 'no theme circle: none unless the owner adds one');
+  assert.equal(pb.view({ theme: {} }, { body: 'photos: /uploads/a.png\ndisc: #ffe4ef', side: 'right:cut' }, []).disc, '--d-in:#ffe4ef;--d-out:#ffe4ef;--d-size:56%;--d-x:50%;--d-y:46%');
+  assert.deepEqual(pb.parseDisc('#aaaaaa #bbbbbb 999 -5 abc'), { in: '#aaaaaa', out: '#bbbbbb', size: 140, x: 0, y: 46 }, 'numbers kept in range');
+  assert.equal(pb.parseDisc('red; background:url(x) 1 2 3'), null);
+  assert.equal(pb.cleanBody('photos: /uploads/a.png\ndisc: #EAF5FC #c9e4f5 70 40 50'), 'photos: /uploads/a.png\ndisc: #eaf5fc #c9e4f5 70 40 50');
+  assert.equal(pb.cleanBody('disc: OFF'), 'disc: off');
+  assert.equal(pb.cleanBody('disc: nonsense'), '');
+});

@@ -729,14 +729,16 @@
   var blocks = document.querySelectorAll('[data-sg-tb-turns]');
   if (!blocks.length || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
   Array.prototype.forEach.call(blocks, function (blk) {
-    var seen = false, spots = Array.prototype.filter.call(blk.querySelectorAll('.sg-tb-pic'), function (s) { return s.children.length > 1; });
+    // the photos taking turns (a piece marked data-sg-still, like the circle behind cut-out pets, stays put)
+    var kids = function (s) { return Array.prototype.filter.call(s.children, function (c) { return !c.hasAttribute('data-sg-still'); }); };
+    var seen = false, spots = Array.prototype.map.call(blk.querySelectorAll('.sg-tb-pic'), kids).filter(function (k) { return k.length > 1; });
     if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { seen = es[0].isIntersecting; }).observe(blk); else seen = true;
     spots.forEach(function (s, k) {
       var i = 0;
       setTimeout(function () {
         setInterval(function () {
           if (!seen || document.hidden) return;
-          s.children[i].classList.remove('on'); i = (i + 1) % s.children.length; s.children[i].classList.add('on');
+          s[i].classList.remove('on'); i = (i + 1) % s.length; s[i].classList.add('on');
         }, 5000);
       }, k * 2500);
     });

@@ -1636,6 +1636,8 @@ body.sg-mh-top.sg-mh-past nav.site-nav { transform: none; visibility: visible; t
 /* pets cut out (cutout.js): see-through photos standing on the block's color, feet on the bottom edge, no fade */
 .sg-pb-cut .sg-pb-photo { background: transparent; }
 .sg-pb-cut .sg-pb-photo img { object-fit: contain; object-position: center bottom; -webkit-mask-image: none !important; mask-image: none !important; }
+/* the round glow behind cut-out pets (photoblend.js disc): its colors, size and spot are the owner's; it never takes turns */
+.sg-pb-disc { position: absolute; left: var(--d-x, 50%); top: var(--d-y, 46%); width: var(--d-size, 56%); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; background: radial-gradient(circle closest-side, var(--d-in, #eaf5fc) 0, var(--d-out, #d6ebf8) 98%, transparent 100%); pointer-events: none; }
 .sg-pb-cutnote { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 3; margin: 0; padding: 4px 10px; border-radius: 6px; background: #fef3c7; color: #78350f; font-size: 12px; }
 @media (max-width: 760px) {
   .sg-pb, .sg-pb-left { grid-template-columns: 1fr; min-height: 0; }
