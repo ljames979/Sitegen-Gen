@@ -415,7 +415,8 @@ module.exports = function (app, deps) {
     try {
       const out = await pdfExport.makePdf({
         pages: pages.map(p => ({ label: p.label, url: `${base}${p.path}?size=${size}` })),
-        size, title: `${req.site.name}: website preview`
+        size, title: `${req.site.name}: website preview`,
+        editable: req.body.editable === '1', siteName: req.site.name
       });
       const name = `${pdfExport.safeName(req.site.name)} - website preview${size === 'phone' ? ' (phone)' : ''}.pdf`;
       res.set('Content-Type', 'application/pdf');
