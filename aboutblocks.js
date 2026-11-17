@@ -147,7 +147,7 @@ ABOUT_TYPES.forEach(t => { SPECS[t].group = 'about'; });
 Object.assign(SPECS, socialBlocks.SPECS, petListBlocks.SPECS, appBlocks.SPECS);
 const TYPES = Object.keys(SPECS);
 const GROUP_NAMES = { about: 'About us', social: 'Social media', words: 'Words and lists', tops: 'Page tops' };
-const LINK_OK = (v) => { const u = String(v || '').trim(); return (/^https:\/\/[^\s"'<>|]+$/.test(u) || /^\/[^\s"'<>|]*$/.test(u) || /^#[\w-]*$/.test(u)) && u.length <= 300 ? u : ''; };
+const LINK_OK = (v) => { const u = String(v || '').trim(); return (/^https:\/\/[^\s"'<>|]+$/.test(u) || /^~?\/[^\s"'<>|]*$/.test(u) || /^#[\w-]*$/.test(u)) && u.length <= 300 ? u : ''; };
 
 function parse(type, v) {
   const spec = SPECS[type], out = {};

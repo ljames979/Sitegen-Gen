@@ -25,7 +25,7 @@ const MAX_TEXT = 1500;
 const flat = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
 // words as the visitor's browser compares them: spaces folded, the same quote marks
 const norm = (v) => flat(v, MAX_TEXT).replace(/[‘’]/g, "'").replace(/[“”]/g, '"');
-const LINK = /^(https?:\/\/[^\s"'<>]+|\/[^\s"'<>]*|#[\w-]*|tel:\+?[0-9][0-9 ()-]{2,30}|mailto:[^\s"'<>@]+@[^\s"'<>]+)$/i;
+const LINK = /^(https?:\/\/[^\s"'<>]+|~?\/[^\s"'<>]*|#[\w-]*|tel:\+?[0-9][0-9 ()-]{2,30}|mailto:[^\s"'<>@]+@[^\s"'<>]+)$/i;
 const link = (v) => { const u = flat(v, 400); return LINK.test(u) ? u : ''; };
 const https = (v) => { const u = flat(v, 400); return /^https:\/\/[^\s"'<>]+$/i.test(u) ? u : ''; };
 
@@ -96,7 +96,14 @@ function langData(site) {
   l.words.forEach(([a, b]) => { if (b) words[a] = b; });
   return { code: l.code, first: l.first, second: l.second, words };
 }
+// Links to the site's own pages written as ~/about, ~/services#plans (block buttons, the menu button): they become
+// <this site's address>/about, so the same link works in the editor's preview, on /site/<name>, on the owner's domain
+// and in an exported copy (which then turns /about into about.html)
+function pageLinks(html, basePath) {
+  const b = String(basePath || '');
+  return String(html).replace(/(href=")~(\/[^"]*)?"/g, (m, pre, rest) => `${pre}${b}${rest && rest !== '/' ? rest : (b ? '' : '/')}"`);
+}
 // as a script tag's JSON, safe inside HTML
-const langJson = (site) => JSON.stringify(langData(site) || {}).replace(/</g, '\\u003c').replace(/ /g, '\\u2028').replace(/ /g, '\\u2029');
+const langJson = (site) => JSON.stringify(langData(site) || {}).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 
-module.exports = { PAGES, LANGS, MAX_WORDS, defaults, clean, of, parse, isBlockPage, navButton, langData, langJson, norm };
+module.exports = { PAGES, LANGS, MAX_WORDS, defaults, clean, of, parse, isBlockPage, navButton, langData, langJson, norm, pageLinks };

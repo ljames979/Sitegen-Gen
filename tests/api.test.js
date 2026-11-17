@@ -5808,7 +5808,7 @@ test('Content blocks in Page sections and on the Blocks screen: fixed ids, own e
   // the add-a-block picker: every design as a card, in its group
   assert.match(editor, /<div class="blkpick-group" data-group="words"[\s\S]*?data-newblock="steps"/);
   // every design is one card, except the Decorative card: one card per card style (6), and its Invitation Reveal card
-  assert.equal((editor.match(/class="blkpick-card" data-newblock=/g) || []).length, 69);
+  assert.equal((editor.match(/class="blkpick-card" data-newblock=/g) || []).length, 72);
   assert.equal((editor.match(/data-newblock="decocard" data-dcstyle="(royal|minimal|deco|stamp|ribbon|glass)" data-find/g) || []).length, 6);
   assert.equal((editor.match(/data-newblock="decocard" data-dcstyle="royal" data-dcreveal="envelope"/g) || []).length, 1);
   const order = `hero,blk:${ids[1]},about,services,testimonials,whyChoose,gallery,faq,blog,extraPages,hours,contact,blk:${ids[0]}`;

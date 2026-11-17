@@ -2601,3 +2601,10 @@ a.sg-so-count:hover .sg-so-ring { transform: scale(1.06); }
 .sg-ab-apphero.sg-ab-nopic { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; padding-block: clamp(2rem, 5vw, 3.6rem); }
 .sg-ab-apphero.sg-ab-nopic .sg-ap-p { margin-inline: auto; }
 .sg-ab-apphero.sg-ab-nopic .sg-ap-btns { justify-content: center; }
+/* phones with the Site kit menu: the menu bar keeps the name, the language switch and the menu button; the menu bar's
+   own button moves to the bar at the bottom of the screen */
+@media (max-width: 720px) {
+  body.sg-kit-pm.has-mobile-bar nav.site-nav .links a.nav-cta { display: none; }
+  body.sg-kit-pm nav.site-nav { gap: 8px; }
+}
+.blk .sg-sp-t { font-weight: 700; }

@@ -4,7 +4,7 @@ const ab = require('../aboutblocks');
 const op = require('../offsetphoto');
 
 test('about us blocks: every spec has a name, a picture, sides and known field kinds', () => {
-  assert.equal(ab.ABOUT_TYPES.length, 7); assert.equal(ab.TYPES.length, 16);
+  assert.equal(ab.ABOUT_TYPES.length, 7); assert.equal(ab.TYPES.length, 19);
   ab.TYPES.forEach(t => {
     const s = ab.SPECS[t];
     assert.ok(s.name && s.desc && s.pic && s.hint && s.group, t);

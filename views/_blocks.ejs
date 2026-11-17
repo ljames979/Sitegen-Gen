@@ -7,7 +7,7 @@
    const _blocks = ((site.sections.blocks && site.sections.blocks.items) || []).map((b, i) => (_pv ? { ...b, _i: i } : b))
      .filter(b => !(b.id && _hid.includes('blk:' + b.id)))
      .filter(b => _only ? b.id === _only : !(b.id && _skip.includes(b.id)) && (b.place || 'bottom') === place && (b.page || 'home') === (typeof pageKey !== 'undefined' ? pageKey : 'home')); %>
-<% let _photoIdx = 0; %>
+<% let _photoIdx = 0; var _sfFormId = false; %>
 <% _blocks.forEach(blk => { %>
   <% const _pin = pinFx.attrs(blk.pin); if (_pin.cls) { %><div class="<%= _pin.cls.trim() %>"<% if (_pin.style) { %> style="<%= _pin.style %>"<% } %>><% } %>
   <% const _film = filmFx.attrs(blk.film, site.theme); if (_film.cls) { %><div class="<%= _film.cls.trim() %>" style="<%= _film.style %>"><% } %>
@@ -719,14 +719,14 @@
               <% if (r.tag) { %><p class="sg-sp-tag"><%= r.tag %></p><% } %>
               <% if (r.title) { %><h3 class="sg-sp-t"><% if (r.link) { %><a href="<%= r.link %>"<%- /^https?:/i.test(r.link) ? ' target="_blank" rel="noopener"' : '' %>><%= r.title %></a><% } else { %><%= r.title %><% } %></h3><% } %>
               <% if (r.words) { %><p class="sg-sp-w"><%= r.words %></p><% } %>
-              <% if (r.link) { %><span class="sg-sp-more" aria-hidden="true"><%= ab.more || 'Order' %> →</span><% } %>
+              <% if (r.link) { %><span class="sg-sp-more" aria-hidden="true"><span><%= ab.more || 'Order' %></span> →</span><% } %>
             </div>
           </li><% }) %>
         </ul><% } %>
         <% if (ab.button) { %><div class="sg-sp-head"><% abWords('b') %></div><% } %>
       <% } else if (at === 'compare') { %>
         <% const cc = (ab.cols || [])[0] || {}; %>
-        <% if (ab.label || blk.heading || (ab.text || []).length) { %><div class="sg-cm-head"><% abWords('ht') %></div><% } %>
+        <% if (ab.label || blk.heading || (ab.text || []).length) { %><div class="sg-cm-head"><% abWords('h') %><% (ab.text || []).forEach(t => { %><p class="sg-ab-p"><%= t %></p><% }) %></div><% } %>
         <% if (ab.row.length) { %><div class="sg-cm-wrap" data-reveal><table class="sg-cm-table">
           <% if (cc.what || cc.them || cc.us) { %><thead><tr><th scope="col"><%= cc.what || '' %></th><th scope="col"><%= cc.them || '' %></th><th scope="col" class="sg-cm-us"><%= cc.us || '' %></th></tr></thead><% } %>
           <tbody><% ab.row.forEach(r => { %><tr><th scope="row"><%= r.what %></th><td><%= r.them %></td><td class="sg-cm-us"><%= r.us %></td></tr><% }) %></tbody>
@@ -791,7 +791,8 @@
     <% const sf = shapeForm.view(site, blk, _mbSvc);
        const _sfNl = typeof netlifyForms !== 'undefined' && netlifyForms, _sfForm = !!(site.sections.contact || {}).acceptSubmissions && (!(typeof staticExport !== 'undefined' && staticExport) || _sfNl);
        const _sfStyle = '--sf-c: ' + sf.color + '; --sf-h: ' + sf.headColor + '; --sf-on: ' + sf.colorOn + ';' + (sf.accent ? ' --sf-a: ' + sf.accent + ';' : '') + (sf.panel ? ' --sf-p: ' + sf.panel + ';' : '') + (sf.bg ? ' --sf-bg: ' + sf.bg + '; --edge: ' + sf.bg + ';' : ''); %>
-    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-shapeform blk-bg-<%= bg %><%= ec %><%= sf.bg ? ' sg-sf-ownbg' : '' %>" style="<%= _sfStyle %>">
+    <%# the page's first contact form block can be reached with a #form link (e.g. a "Sign up" button higher on the page) %>
+    <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %><%- (typeof _sfFormId === 'undefined' || !_sfFormId) && (_sfFormId = true) ? ' id="form"' : '' %> class="blk blk-shapeform blk-bg-<%= bg %><%= ec %><%= sf.bg ? ' sg-sf-ownbg' : '' %>" style="<%= _sfStyle %>">
       <div class="blk-inner sg-sf sg-sf-card-<%= sf.side %><%= sf.cut ? ' sg-sf-cut' : '' %>">
         <% if (sf.shapes) { %><span class="sg-sf-dot" aria-hidden="true"></span><span class="sg-sf-block" aria-hidden="true"></span><span class="sg-sf-stripes" aria-hidden="true"></span><% } %>
         <div class="sg-sf-pic"><span class="sg-sf-panel" aria-hidden="true"></span><% if (sf.photo) { %><img src="<%= sf.photo %>" alt="" loading="lazy" decoding="async"><% } %></div>

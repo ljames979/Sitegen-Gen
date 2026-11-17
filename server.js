@@ -695,7 +695,7 @@ function renderSitePage(req, res, next, { site: siteIn, page, basePath, preview,
       if (next) return next(err);
       return res.status(500).send('Something went wrong rendering this page.');
     }
-    html = wordStyle.apply(images.optimizeHtml(html, { onVariants: () => cache.clear() }));
+    html = siteKit.pageLinks(wordStyle.apply(images.optimizeHtml(html, { onVariants: () => cache.clear() })), basePath);
     if (!skipCache) cache.set(cacheKey, html);
     res.send(html);
   });

@@ -2,6 +2,7 @@
 // server.js calls this where these routes belong in its route order and hands it the shared helpers they use.
 const ROOT = require('path').join(__dirname, '..');
 const salesFlow = require('../salesflow');
+const siteKit = require('../sitekit');
 const gbpLib = require('../gbp');
 
 module.exports = function (app, deps) {
@@ -302,7 +303,7 @@ module.exports = function (app, deps) {
           post: entry.page === 'post' ? entry.item : null, extra: entry.page === 'extra' ? entry.item : null,
           navPages: buildNavPages(site, '', false), contactSent: false, contactError: false, reviewThanks: false, reviewError: false
         };
-        let html = wordStyle.apply(images.optimizeHtml(await renderToString('public-site', locals)));
+        let html = siteKit.pageLinks(wordStyle.apply(images.optimizeHtml(await renderToString('public-site', locals))), '');
         // page links: "/about" -> "about.html", "/" -> "index.html"
         for (const k of [...keys, ...legalPages.map(x => x.page)]) html = html.split(`href="/${k}"`).join(`href="${k}.html"`);
         // item pages that were not exported (no text yet) fall back to their list page
