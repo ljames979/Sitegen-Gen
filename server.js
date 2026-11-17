@@ -72,7 +72,8 @@ const picBoxes = require('./picboxes');
 const textStyles = require('./textstyles');
 const elStyles = require('./elstyles');
 const watermark = require('./watermark');   // big faint icons behind a block or card (Leo, 2026-11-09)
-const themeTokens = require('./themetokens');   // the site's own named colors, fonts and button styles (Leo, 2026-11-10)
+const themeTokens = require('./themetokens');
+const siteKit = require('./sitekit');   // language switch, header button, block-only pages, app badges (Leo, 2026-11-17)   // the site's own named colors, fonts and button styles (Leo, 2026-11-10)
 const designLab = require('./designlab');
 const brandKit = require('./brandkit');
 const siteScore = require('./score');
@@ -206,6 +207,7 @@ app.locals.twinPhotos = twinPhotos;
 app.locals.ringCard = ringCard;
 app.locals.decoCard = decoCard;
 app.locals.themeTokens = themeTokens;
+app.locals.siteKit = siteKit;
 app.locals.shapeForm = shapeForm;
 app.locals.framedPhoto = framedPhoto;
 app.locals.roundPhoto = roundPhoto;
@@ -585,12 +587,16 @@ function sectionHasContent(site, key) {
     default: return true; // about, services, contact
   }
 }
+// a page built only from its own content blocks (Site kit) is there whenever it has a block on it
+function blockPageHasContent(site, key) {
+  return siteKit.isBlockPage(site, key) && (((site.sections.blocks || {}).items) || []).some(b => (b.page || 'home') === key && !(((site.layout && site.layout.hidden) || []).includes('blk:' + b.id)));
+}
 
 function pageIsAvailable(site, key) {
   if (!PAGE_KEYS.includes(key)) return false;
   const hidden = site.layout ? site.layout.hidden : [];
   if (hidden.includes(key)) return false;
-  return sectionHasContent(site, key);
+  return blockPageHasContent(site, key) || sectionHasContent(site, key);
 }
 
 // Owner-written extra pages (Financing, Service plans, ...): each item with
@@ -1172,7 +1178,7 @@ function parseThemeFromBody(b) {
 // editor, one entry per block; steps are one per line as "Title | text".
 // content blocks a site can have (hidden ones count too); was 20, which silently dropped new blocks (Leo, 2026-11-02)
 const MAX_BLOCKS = require('./blockcatalog').MAX_BLOCKS;
-const BLOCK_TYPES = ['photoText', 'steps', 'features', 'cta', 'chips', 'strip', 'split', 'pricing', 'team', 'stats', 'video', 'tabs', 'accordion', 'wall', 'cascade', 'photoBanner', 'beforeAfter', 'collage', 'trail', 'wave', 'bigwords', 'story', 'path', 'zoomword', 'morph', 'nodes', 'shapes', 'stack', 'herocard', 'aboutphone', 'thirds', 'mosaic', 'crossband', 'advice', 'photoblend', 'patterns', 'overlapcard', 'phototabs', 'reviewcard', 'twinphotos', 'ringcard', 'shapeform', 'framedphoto', 'roundphoto', 'photopairs', 'offsetphoto', 'aboutstory', 'aboutme', 'aboutbig', 'aboutfacts', 'aboutcollage', 'aboutnote', 'aboutpanel', 'socialshapes', 'socialphoto', 'socialcounts', 'socialonphoto', 'socialfeed', 'socialprofile', 'socialstrip', 'numcards', 'tipcards', 'decocard'];
+const BLOCK_TYPES = ['photoText', 'steps', 'features', 'cta', 'chips', 'strip', 'split', 'pricing', 'team', 'stats', 'video', 'tabs', 'accordion', 'wall', 'cascade', 'photoBanner', 'beforeAfter', 'collage', 'trail', 'wave', 'bigwords', 'story', 'path', 'zoomword', 'morph', 'nodes', 'shapes', 'stack', 'herocard', 'aboutphone', 'thirds', 'mosaic', 'crossband', 'advice', 'photoblend', 'patterns', 'overlapcard', 'phototabs', 'reviewcard', 'twinphotos', 'ringcard', 'shapeform', 'framedphoto', 'roundphoto', 'photopairs', 'offsetphoto', 'aboutstory', 'aboutme', 'aboutbig', 'aboutfacts', 'aboutcollage', 'aboutnote', 'aboutpanel', 'socialshapes', 'socialphoto', 'socialcounts', 'socialonphoto', 'socialfeed', 'socialprofile', 'socialstrip', 'numcards', 'tipcards', 'decocard', 'apphero', 'spotcards', 'compare'];
 const BLOCK_PAGES = ['home', 'about', 'services', 'testimonials', 'whyChoose', 'gallery', 'faq', 'blog', 'hours', 'contact'];
 function parseBlocksFromBody(b) {
   const cap = (v, n) => str(v, n);
@@ -1517,6 +1523,8 @@ app.post('/sites/:id/edit', requireAuth, loadOwnedSite, (req, res) => {
   if (b.estyles_json === undefined) sections.texts.elems = elStyles.clean(((req.site.sections || {}).texts || {}).elems);
   // and so are the watermarks behind blocks and cards (Watermark mode)
   if (b.wmarks_json === undefined) sections.texts.wmarks = watermark.clean(((req.site.sections || {}).texts || {}).wmarks);
+  // the Site kit (language switch, header button, block-only pages, app badges): kept when the save doesn't carry it
+  sections.kit = siteKit.parse(b, req.site.sections);
   // and so are your own pictures (+ Add picture)
   if (b.pics_json === undefined) sections.texts.pics = picBoxes.clean(((req.site.sections || {}).texts || {}).pics);
   // photos changed in the photo editor keep their originals and changes (saved by the editor itself)

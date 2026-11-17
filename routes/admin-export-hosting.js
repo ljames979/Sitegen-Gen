@@ -324,6 +324,7 @@ module.exports = function (app, deps) {
         }
         if (html.includes('sg-shader.js')) assets.add('sg-shader.js');
         if (html.includes('sg-fx.js')) assets.add('sg-fx.js');
+        if (html.includes('sg-lang.js')) assets.add('sg-lang.js');
         if (html.includes('sg-site.css')) assets.add('sg-site.css');
         if (html.includes('sg-library.css')) assets.add('sg-library.css').add('sg-lib.js');
         if (html.includes('sg-stylelib.css')) assets.add('sg-stylelib.css');

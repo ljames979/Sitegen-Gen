@@ -586,7 +586,7 @@
        const _h = (v) => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
        const abIcons = () => { if (!ab.links || !ab.links.length) return; %><ul class="sg-so-icons"><% ab.links.forEach(l => { %><li><a class="sg-so-ico sg-so-<%= l.k %>" href="<%= l.url %>" target="_blank" rel="noopener" aria-label="<%= l.name %>"><%- l.icon %></a></li><% }) %></ul><% }; %>
     <section<%- blk.id ? ' data-sg-bid="' + blk.id + '"' : '' %><%- _pv ? ' data-sg-blk="' + blk._i + '"' : '' %> class="blk blk-<%= aboutBlocks.SPECS[at].group %> blk-<%= at %> blk-bg-<%= bg %><%= ec %><%= ab.ownBg ? ' sg-ab-ownbg' : '' %>" style="<%= ab.style %>">
-      <div class="blk-inner sg-ab sg-ab-<%= at %> sg-ab-side-<%= ab.side %><%= ab.shapes === false ? ' sg-ab-flat' : '' %>">
+      <div class="blk-inner sg-ab sg-ab-<%= at %> sg-ab-side-<%= ab.side %><%= ab.shapes === false ? ' sg-ab-flat' : '' %><%= ab.pic === false ? ' sg-ab-nopic' : '' %>">
       <% if (at === 'aboutstory') { %>
         <div class="sg-ab-art">
           <% if (ab.shapes) { %><span class="sg-ab-ring" aria-hidden="true"></span><span class="sg-ab-dot sg-ab-dot-a" aria-hidden="true"></span><span class="sg-ab-dot sg-ab-dot-b" aria-hidden="true"></span><% } %>
@@ -696,6 +696,43 @@
           <% ab.item.forEach(r => { %><div class="sg-tc-card"><% if (r.title) { %><h3 class="sg-tc-t"><%= r.title %></h3><% } %><% if (r.words) { %><p><%= r.words %></p><% } %><% if (r.link) { %><a class="sg-tc-more" href="<%= r.link %>"><%= ab.more || 'More' %></a><% } %></div><% }) %>
         </div><% } %>
         <% if (ab.button) { %><div class="sg-tc-head"><% abWords('b') %></div><% } %>
+      <% } else if (at === 'apphero') { %>
+        <% const ap2 = (ab.second || [])[0]; %>
+        <div class="sg-ap-words" data-reveal>
+          <% if (ab.label) { %><p class="sg-ab-label sg-ap-label"><%= ab.label %></p><% } %>
+          <% if (blk.heading) { %><h1 class="sg-ap-h"><%- ab.headingHtml %></h1><% } %>
+          <% (ab.text || []).forEach(t => { %><p class="sg-ap-p"><%= t %></p><% }) %>
+          <% if (ab.button || (ap2 && ap2.words && ap2.link)) { %><div class="sg-ap-btns">
+            <% if (ab.button) { %><a class="sg-ap-btn" href="<%= ab.button.url %>"<%- /^https?:/i.test(ab.button.url) ? ' target="_blank" rel="noopener"' : '' %>><%= ab.button.text %></a><% } %>
+            <% if (ap2 && ap2.words && ap2.link) { %><a class="sg-ap-btn sg-ap-btn2" href="<%= ap2.link %>"><%= ap2.words %></a><% } %>
+          </div><% } %>
+          <% if (ab.offer) { %><p class="sg-ap-offer"><span aria-hidden="true">★</span> <%= ab.offer %></p><% } %>
+          <% if (ab.note) { %><p class="sg-ab-note sg-ap-note"><%= ab.note %></p><% } %>
+        </div>
+        <% if (ab.pic !== false) { %><div class="sg-ap-art"><span class="sg-ap-shape" aria-hidden="true"></span><% abPic(ab.main, 'sg-ap-pic') %></div><% } %>
+      <% } else if (at === 'spotcards') { %>
+        <% if (ab.label || blk.heading || (ab.text || []).length) { %><div class="sg-sp-head"><% abWords('ht') %></div><% } %>
+        <% if (ab.item.length) { %><ul class="sg-sp-grid" role="list">
+          <% ab.item.forEach(r => { %><li class="sg-sp-card" data-reveal>
+            <% abPic(r, 'sg-sp-pic') %>
+            <div class="sg-sp-body">
+              <% if (r.tag) { %><p class="sg-sp-tag"><%= r.tag %></p><% } %>
+              <% if (r.title) { %><h3 class="sg-sp-t"><% if (r.link) { %><a href="<%= r.link %>"<%- /^https?:/i.test(r.link) ? ' target="_blank" rel="noopener"' : '' %>><%= r.title %></a><% } else { %><%= r.title %><% } %></h3><% } %>
+              <% if (r.words) { %><p class="sg-sp-w"><%= r.words %></p><% } %>
+              <% if (r.link) { %><span class="sg-sp-more" aria-hidden="true"><%= ab.more || 'Order' %> →</span><% } %>
+            </div>
+          </li><% }) %>
+        </ul><% } %>
+        <% if (ab.button) { %><div class="sg-sp-head"><% abWords('b') %></div><% } %>
+      <% } else if (at === 'compare') { %>
+        <% const cc = (ab.cols || [])[0] || {}; %>
+        <% if (ab.label || blk.heading || (ab.text || []).length) { %><div class="sg-cm-head"><% abWords('ht') %></div><% } %>
+        <% if (ab.row.length) { %><div class="sg-cm-wrap" data-reveal><table class="sg-cm-table">
+          <% if (cc.what || cc.them || cc.us) { %><thead><tr><th scope="col"><%= cc.what || '' %></th><th scope="col"><%= cc.them || '' %></th><th scope="col" class="sg-cm-us"><%= cc.us || '' %></th></tr></thead><% } %>
+          <tbody><% ab.row.forEach(r => { %><tr><th scope="row"><%= r.what %></th><td><%= r.them %></td><td class="sg-cm-us"><%= r.us %></td></tr><% }) %></tbody>
+        </table></div><% } %>
+        <% if (ab.note) { %><p class="sg-cm-note"><%= ab.note %></p><% } %>
+        <% if (ab.button) { %><div class="sg-cm-head"><% abWords('b') %></div><% } %>
       <% } %>
       </div>
     </section>
