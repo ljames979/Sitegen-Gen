@@ -6284,7 +6284,7 @@ test('blend into the color already there: a section keeps its own color and a bl
   assert.match(html, /\.blk\.blk-gb-brand-sunset \{ background-image: radial-gradient/);
   assert.doesNotMatch(html, /\.blk\.blk-bg-g-sunset/);
   const editor = await (await c.get(editPath)).text();
-  assert.match(editor, /name="bps_services_gradBlend"><option value="">Replace it with the gallery pick<\/option><option value="1" selected>/);
+  assert.match(editor, /name="bps_services_gradBlend"><option value="">Replace the section color<\/option><option value="1" selected>/);
   assert.match(editor, /name="block_bgmix"[^>]*>[\s\S]*?<option value="none" selected>Blend into the page color<\/option>/);
 });
 
@@ -6339,6 +6339,26 @@ test('tidy look panel: each block colors and placement sit in two folds, with ev
   assert.match(editor, /<script src="\/blocklook.js" defer><\/script>/);
   const js = await c.get('/blocklook.js');
   assert.equal(js.status, 200);
+  // Copy look, and the Cards row hidden on a block with no cards (a set card gradient keeps it showing)
+  assert.match(rows[0], /data-look-copy/);
+  assert.doesNotMatch(rows[0], /data-look-nocards/);
+  assert.match(rows[1], /data-sg-cardbg data-look-grp="cards" hidden data-look-nocards/);
+  assert.equal((rows[1].match(/name="block_cardbg"/g) || []).length, 1);   // still sent, so nothing is lost
+  // one picker: the previews carry the card gradients and the library too
+  const siteId = editPath.match(/\/sites\/(\d+)\//)[1];
+  const prev = await (await c.get(`/sites/${siteId}/bg-previews`)).json();
+  assert.ok(prev.groups.length && prev.cards.length && prev.lib.length >= 5);
+  assert.ok(prev.lib.some((g) => g[1].some((x) => x[0] === 'c-digital-sky')));
+  // the Blocks screen loads the same picker
+  const blocksPage = await (await c.get(`/sites/${siteId}/blocks`)).text();
+  assert.match(blocksPage, /<script src="\/bgpick.js" defer><\/script>/);
+});
+
+test('cards row: block types with no cards are listed, new types still show it', () => {
+  const gradients = require('../gradients');
+  assert.equal(gradients.hasCards('features'), true);
+  assert.equal(gradients.hasCards('photoText'), false);
+  assert.equal(gradients.hasCards('some-new-type'), true);
 });
 
 test('hero card block: big title, picture or reel, words, buttons and the bar; reels upload on their own route', async () => {

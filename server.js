@@ -1703,7 +1703,9 @@ const HISTORY_MSG = { rollback: 'Rolled back. The site now shows that earlier ve
 app.get('/sites/:id/bg-previews', requireAuth, loadOwnedSite, (req, res) => {
   const theme = req.site.theme || {};
   const groups = gradients.menu(theme, true, false).map(([label, list]) => [label, list.map(([id, name, css]) => [id, name, gradients.textures.isTexture(id) ? gradients.textures.image(id, theme) : css])]);
-  res.set('Cache-Control', 'private, max-age=60').json({ groups });
+  // card gradients (no textures) and the 284-gradient library, for the one picker (public/bgpick.js)
+  const cards = gradients.menu(theme, false, false);
+  res.set('Cache-Control', 'private, max-age=60').json({ groups, cards, lib: gradients.libMenu() });
 });
 app.get('/sites/:id/history', requireAuth, loadOwnedSite, (req, res) => {
   const rows = db.prepare('SELECT id, kind, deploy_id, label, created_at FROM publish_history WHERE site_id = ? ORDER BY id DESC').all(req.site.id);

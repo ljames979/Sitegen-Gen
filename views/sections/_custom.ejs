@@ -39,7 +39,7 @@
       <select name="cs_shape" style="width:auto;" title="Photo shape"><% [['', 'Normal photos'], ['arch', 'Arch photos'], ['circle', 'Circle photos'], ['blob', 'Soft blob photos']].forEach(o => { %><option value="<%= o[0] %>" <%= (c.shape || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %></select>
     </div>
     <p class="muted" style="font-size:12px; margin:2px 0 6px;">A layout your photos can't fill (a collage needs 3) falls back to one that fits.</p>
-    <div class="upload-row">
+    <div class="upload-row blk-btnrow">
       <input type="text" name="cs_buttonText" maxlength="40" value="<%= c.buttonText || '' %>" placeholder="Button text (optional)">
       <input type="url" name="cs_buttonUrl" value="<%= c.buttonUrl || '' %>" placeholder="Button link, e.g. /site/name/contact">
     </div>

@@ -305,10 +305,14 @@ const cardClass = (id, gx) => (cleanCardBg(id) ? 'blk-cg-' + id + (cleanStrength
 // what counts as a card inside a block (the built-in blocks' card boxes, and any grid marked data-sg-cards)
 const CARD_SEL = ['.card', '.step-card', '.feat-card', '.team-card', '.t-card', '.wall-card', '.svc-tile', '.price-card', '.review-card', '.acc-item', '.sg-ab-card', '.sg-ab-tile', '.sg-so-card', '.sg-at-card', '.sg-cb-card', '.sg-cl-card', '.sg-fp-card', '.sg-mh-tile', '.sg-nc-card', '.sg-oc-card', '.sg-pt-card', '.sg-rc-card', '.sg-rp-card', '.sg-sf-card', '.sg-tc-card', '.sg-story-step', '.sg-ad-panel', '[data-sg-cards] > *'].join(', ');
 // the extra class a block gets when its texture is drawn in chosen colors ('' when it isn't)
+// Block types with nothing inside that CARD_SEL reaches (checked against views/_blocks.ejs, 2026-11-17): the editor
+// hides their "Cards" row unless a card gradient is already set. A new type shows the row until it is listed here.
+const NO_CARD_TYPES = ['photoText', 'cta', 'chips', 'stats', 'video', 'tabs', 'cascade', 'beforeAfter', 'trail', 'wave', 'bigwords', 'path', 'zoomword', 'morph', 'stack', 'photoblend', 'patterns', 'thirds', 'offsetphoto', 'decocard', 'ringcard', 'twinphotos', 'aboutphone', 'herocard', 'shapes', 'photoBanner', 'strip', 'split'];
+const hasCards = type => !NO_CARD_TYPES.includes(type);
 const inkClass = (id, ink) => (textures.isTexture(id) && textures.inkKey(ink) ? 'blk-gi-' + textures.inkKey(ink) : '');
 // A block's background value: the four plain ones, or g-<gradient id>
 const BLOCK_BGS = ['none', 'tint', 'brand', 'dark'];
 // 'white' (clear white, whatever the page color) is a plain choice of its own; gradients don't blend into it
 const cleanBlockBg = v => (BLOCK_BGS.includes(v) || v === 'white' ? v : /^g-/.test(String(v || '')) && IDS.includes(String(v).slice(2)) ? v : 'none');
 
-module.exports = { LIB, LIB_IDS, isLib, libMenu, cleanStrength, strongStops, strengthClass, cleanCardBg, cardClass, CARD_SEL, STRENGTH_MIN, STRENGTH_MAX, HOME_SECS, cleanHomeBg, inkClass, BLEND_BASES, blendImage, cleanBlockMix, blockMix, blendClass, GRAD_IDS, cleanGradId, textures, cleanMixBg, mixOpts, BLOCK_BGS, cleanBlockBg, PRESETS, BRAND, IDS, STYLES, EDGES, GRAIN, stopsOf, image, textOn, background, cleanId, cleanStyle, cleanAngle, parse, bodyClasses, headCss, SCROLL_JS, menu };
+module.exports = { NO_CARD_TYPES, hasCards, LIB, LIB_IDS, isLib, libMenu, cleanStrength, strongStops, strengthClass, cleanCardBg, cardClass, CARD_SEL, STRENGTH_MIN, STRENGTH_MAX, HOME_SECS, cleanHomeBg, inkClass, BLEND_BASES, blendImage, cleanBlockMix, blockMix, blendClass, GRAD_IDS, cleanGradId, textures, cleanMixBg, mixOpts, BLOCK_BGS, cleanBlockBg, PRESETS, BRAND, IDS, STYLES, EDGES, GRAIN, stopsOf, image, textOn, background, cleanId, cleanStyle, cleanAngle, parse, bodyClasses, headCss, SCROLL_JS, menu };

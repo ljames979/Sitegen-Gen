@@ -50,14 +50,39 @@
     .blk .fx summary::after { content: '\25BE'; font-size: 10px; }
     .blk .fx[open] summary::after { content: '\25B4'; }
     .blk .fx summary b { font-weight: 600; color: #0f766e; }
-    .blk .fx > .own { margin-top: 6px; white-space: nowrap; }
-    .blk .fx > .own select { flex: 1; min-width: 0; }
-    .blk .fx > .xfx { display: grid; gap: 4px; margin-top: 8px; white-space: normal; }
-    .blk .fx > .xfx .xfx-h { font-weight: 600; color: #0f172a; }
-    .blk .fx > .xfx label { display: grid; grid-template-columns: auto 1fr; column-gap: 6px; align-items: start; cursor: pointer; }
-    .blk .fx > .xfx input { margin: 2px 0 0; }
-    .blk .fx > .xfx i { font-style: normal; color: #64748b; }
-    .blk .fx > .xfx small { grid-column: 2; color: #64748b; font-size: 11px; line-height: 1.35; }
+    /* Effects, tidied (2026-11-17): groups with a title, each setting a label over a full-width menu */
+    .blk .fx .fxg { margin-top: 8px; padding: 8px 10px 10px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; display: grid; gap: 8px; }
+    .blk .fx .fxh { font-size: 12px; font-weight: 700; color: #0f172a; }
+    .blk .fx .own { margin: 0; white-space: normal; min-width: 0; grid-column: 1 / -1; }
+    .blk .fx .fxg, .blk .fx .grad { grid-template-columns: minmax(0, 1fr); }
+    .blk .fx .fxg > *, .blk .fx .grad > * { grid-column: 1 / -1; }
+    .blk .fx .own.pin { display: grid; gap: 3px; }
+    .blk .fx .own.pin > span:first-child, .blk .fx .glab { font-size: 11.5px; font-weight: 600; color: #64748b; }
+    .blk .fx .pin select { max-width: none; width: 100%; min-width: 0; padding: 4px 6px; }
+    .blk .fx .film select + select { margin-top: 4px; }
+    .blk .fx .grad { display: grid; gap: 6px; }
+    .blk .fx .gline { display: flex; gap: 6px; align-items: center; min-width: 0; flex-wrap: wrap; }
+    .blk .fx .gline > select { flex: 1 1 120px; min-width: 0; font: inherit; font-size: 12px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; }
+    .blk .fx .gline > .own.pin { flex: 1 1 110px; }
+    .blk .fx .gline > .own.ang { flex: 0 0 74px; }
+    .blk .fx .ang input { width: 100%; font: inherit; font-size: 12px; padding: 3px 6px; border: 1px solid #cbd5e1; border-radius: 6px; }
+    .blk .fx .gline.checks { gap: 10px; } .blk .fx .gline.checks .own { display: inline-flex; gap: 4px; }
+    .blk .fx .gsw { all: unset; box-sizing: border-box; flex: none; position: relative; overflow: hidden; width: 34px; height: 26px; border-radius: 6px; border: 1px solid #cbd5e1; cursor: pointer; background: #fff linear-gradient(135deg, transparent 46%, #cbd5e1 46%, #cbd5e1 54%, transparent 54%); }
+    .blk .fx .gsw > i { position: absolute; left: 0; top: 0; width: 400%; height: 400%; transform: scale(.25); transform-origin: 0 0; }
+    .blk .fx .gsw:hover { outline: 2px solid #2563eb; outline-offset: 1px; }
+    .blk .fx .sg-bgpick-btn { font-size: 11.5px; padding: 3px 8px; border-radius: 6px; flex: none; }
+    .blk .fx .inks input[type=color] { width: 34px; height: 26px; padding: 1px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; }
+    .blk .fx .fxsub { margin-top: 8px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
+    .blk .fx .fxsub > summary { all: unset; display: flex; gap: 6px; align-items: center; padding: 7px 10px; cursor: pointer; font-weight: 700; color: #0f172a; }
+    .blk .fx .fxsub > summary::after { content: '\25BE'; font-size: 10px; margin-left: auto; color: #64748b; }
+    .blk .fx .fxsub[open] > summary::after { content: '\25B4'; }
+    .blk .fx .fxsub > summary b { font-weight: 600; color: #0f766e; }
+    .blk .fx .xfx { display: grid; gap: 6px; padding: 0 10px 10px; }
+    .blk .fx .xfx label { display: grid; grid-template-columns: auto 1fr; column-gap: 6px; align-items: start; cursor: pointer; }
+    .blk .fx .xfx input { margin: 2px 0 0; }
+    .blk .fx .xfx i { font-style: normal; color: #64748b; }
+    .blk .fx .xfx small { grid-column: 2; color: #64748b; font-size: 11px; line-height: 1.35; }
+    .blk .fx .fxcp { margin-top: 8px; flex-wrap: wrap; }
     .blk .sz { flex-wrap: wrap; } .blk .sz b { font-weight: 600; color: #0f172a; }
     .blk .sz input[type=range] { flex: 1; min-width: 90px; accent-color: #2563eb; cursor: ew-resize; }
     .blk .sz output { min-width: 62px; font-variant-numeric: tabular-nums; color: #0f172a; }
@@ -214,17 +239,28 @@
       var p = String(b.scene || '').split(':'), pick = p.length === 3 ? p[0] + ':' + p[1] : '', size = p[2] || 'l';
       var own = /^own-/.test(p[1] || ''), cols = own ? p[1].slice(4).split('-').map(function (c) { return '#' + c; }) : ['#d6ebf8', '#a9d0ea', '#ffffff'];
       var opts = SCENES.slice(); if (own) opts.push([pick, 'My own colors']);
-      return '<label class="own pin" title="A drawn picket fence, hedge, grass or hills along the bottom of the block. Pictures you add sit in front of it.">Scene decor <select data-a="scene">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (pick === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
-        (pick ? '<label class="own pin">Height <select data-a="scene-size">' + SCSIZES.map(function (o) { return '<option value="' + o[0] + '"' + (size === o[0] ? ' selected' : '') + '>' + esc(o[1] + ' (' + o[2] + 'px, ' + o[3] + 'px on phones)') + '</option>'; }).join('') + '</select></label>' +
-          '<span class="own pin" data-sg-cl="off" style="display:flex;align-items:center;gap:6px">Own colors' + ['Fill', 'Shade', 'Highlight'].map(function (t, n) { return '<input type="color" data-a="scene-c" data-sg-cl="off" value="' + cols[n] + '" title="' + t + '" aria-label="Scene decor ' + t.toLowerCase() + '" style="width:34px;height:26px;padding:1px">'; }).join('') + '</span>' : '');
+      return '<label class="own pin" title="A drawn picket fence, hedge, grass or hills along the bottom of the block. Pictures you add sit in front of it."><span>Scene decor</span><select data-a="scene">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (pick === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
+        (pick ? '<label class="own pin"><span>Scene height</span><select data-a="scene-size">' + SCSIZES.map(function (o) { return '<option value="' + o[0] + '"' + (size === o[0] ? ' selected' : '') + '>' + esc(o[1] + ' (' + o[2] + 'px, ' + o[3] + 'px on phones)') + '</option>'; }).join('') + '</select></label>' +
+          '<span class="own pin scc" data-sg-cl="off"><span>Scene colors</span><span class="gline inks">' + ['Fill', 'Shade', 'Highlight'].map(function (t, n) { return '<input type="color" data-a="scene-c" data-sg-cl="off" value="' + cols[n] + '" title="' + t + '" aria-label="Scene decor ' + t.toLowerCase() + '">'; }).join('') + '</span></span>' : '');
     }
+    // Effects, tidied (Leo, 2026-11-17): Colors (gradient, color film, glass), Motion and layout (pin, photo words,
+    // scene decor) and More effects (folded, with a count), then Copy / Paste. Same data-a controls as before.
+    var xfxOpen = {}, BGP = {};
+    // the real drawings of textures for the swatch, once the picker's previews are in (public/bgpick.js)
+    document.addEventListener('DOMContentLoaded', function () {
+      if (window.sgBgPreviews) window.sgBgPreviews().then(function (d) { (d.groups || []).concat(d.lib || []).forEach(function (g) { g[1].forEach(function (x) { BGP[x[0]] = x[2]; }); }); drawList(); }).catch(function () {});
+    });
     function fxBox(b, i) {
       var on = ['pin', 'film', 'imgfx', 'height', 'bg', 'glass', 'scene'].filter(function (k) { return b[k]; }).length + ((b.xfx || []).length);
+      var nx = (b.xfx || []).length;
       return '<details class="fx" data-fx="' + i + '"' + (fxOpen[i] ? ' open' : '') + '><summary>Effects' + (on ? ' <b>' + on + ' on</b>' : '') + '</summary>' +
-        '<label class="own pin">Pin and cards <select data-a="pin">' + PINS.map(function (o) { return '<option value="' + o[0] + '"' + ((b.pin || '') === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' + filmRow(b) +
-        '<label class="own pin">Photo words <select data-a="imgfx">' + IMGS.map(function (o) { return '<option value="' + o[0] + '"' + ((b.imgfx || '') === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
-        '<label class="own pin" title="Its words and cards sit on a pane of glass. Looks best over a photo or gradient background.">Glass panel <select data-a="glass">' + GLASS.map(function (o) { return '<option value="' + o[0] + '"' + ((b.glass || '') === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
-        sceneRow(b) + gradRow(b) + xfxRows(b) +
+        '<div class="fxg"><div class="fxh">🎨 Colors</div>' + gradRow(b) + filmRow(b) +
+        '<label class="own pin" title="Its words and cards sit on a pane of glass. Looks best over a photo or gradient background."><span>Glass panel</span><select data-a="glass">' + GLASS.map(function (o) { return '<option value="' + o[0] + '"' + ((b.glass || '') === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label></div>' +
+        '<div class="fxg"><div class="fxh">📐 Motion and layout</div>' +
+        '<label class="own pin"><span>Pin and cards</span><select data-a="pin">' + PINS.map(function (o) { return '<option value="' + o[0] + '"' + ((b.pin || '') === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
+        '<label class="own pin"><span>Photo words</span><select data-a="imgfx">' + IMGS.map(function (o) { return '<option value="' + o[0] + '"' + ((b.imgfx || '') === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
+        sceneRow(b) + '</div>' +
+        '<details class="fxsub" data-xfx="' + i + '"' + (xfxOpen[i] ? ' open' : '') + '><summary>✨ More effects' + (nx ? ' <b>' + nx + ' on</b>' : '') + '</summary>' + xfxRows(b) + '</details>' +
         '<span class="own fxcp"><button type="button" class="ui-btn sm" data-a="fx-copy" title="Remember these effects, to give them to other blocks (on any site)">Copy effects</button>' +
         (fxClip() ? '<button type="button" class="ui-btn sm" data-a="fx-paste" title="Give this block the effects you copied">Paste</button><button type="button" class="ui-btn sm" data-a="fx-all" title="Give every block on the page the effects you copied (the hero is left out of pins)">Paste to all</button>' : '') + '</span>' +
         '</details>';
@@ -234,24 +270,26 @@
       if (b.k !== 'lib') return '';
       var g = b.bg || {}, css = '';
       var opts = '<option value="">Normal background</option>' + GRADS.map(function (grp) { return '<optgroup label="' + esc(grp[0]) + '">' + grp[1].map(function (x) { if (x[0] === g.g) css = x[2]; return '<option value="' + x[0] + '"' + (x[0] === g.g ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('') + '</optgroup>'; }).join('');
-      return '<div class="own grad"><label class="own pin">Gradient background <select data-a="gbg-g">' + opts + '</select></label>' +
-        '<span class="gsw" aria-hidden="true" style="display:inline-block;width:42px;height:22px;border-radius:6px;vertical-align:middle;border:1px solid #ccd;background:' + (css || 'transparent') + '"></span>' +
-        (g.g ? '<label class="own pin">Style <select data-a="gbg-s"><option value="">Automatic</option>' + GSTYLES.map(function (o) { return '<option value="' + o[0] + '"' + (g.s === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
-          '<label class="own pin">Angle <input type="number" data-a="gbg-a" min="0" max="359" step="5" placeholder="135" style="width:70px" value="' + (g.a != null ? g.a : '') + '"></label>' +
-          '<label class="own"><input type="checkbox" data-a="gbg-m"' + (g.m ? ' checked' : '') + '> Slowly drifting</label> <label class="own"><input type="checkbox" data-a="gbg-n"' + (g.n ? ' checked' : '') + '> Grain</label> <label class="own"><input type="checkbox" data-a="gbg-b"' + (g.b ? ' checked' : '') + '> Blend into the section\'s own color</label>' + inkRow(g) : '') +
+      if (g.g && !css) opts += '<optgroup label="Gradient library" data-glib="1"><option value="' + esc(g.g) + '" selected>' + esc(g.g) + '</option></optgroup>';
+      return '<div class="own grad"><span class="glab">Background</span><span class="gline">' +
+        '<button type="button" class="gsw" data-a="gbg-sw" title="See every background as it really looks, including the 284-gradient library" aria-label="Pick the background from pictures"><i style="background:' + esc(BGP[g.g] || css || 'transparent') + '"></i></button>' +
+        '<select data-a="gbg-g" aria-label="Gradient background">' + opts + '</select></span>' +
+        (g.g ? '<span class="gline"><label class="own pin"><span>Style</span><select data-a="gbg-s"><option value="">Automatic</option>' + GSTYLES.map(function (o) { return '<option value="' + o[0] + '"' + (g.s === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
+          '<label class="own pin ang"><span>Angle</span><input type="number" data-a="gbg-a" min="0" max="359" step="5" placeholder="135" value="' + (g.a != null ? g.a : '') + '"></label></span>' +
+          '<span class="gline checks"><label class="own"><input type="checkbox" data-a="gbg-m"' + (g.m ? ' checked' : '') + '> Drifting</label><label class="own"><input type="checkbox" data-a="gbg-n"' + (g.n ? ' checked' : '') + '> Grain</label><label class="own" title="Blend into the section\'s own color"><input type="checkbox" data-a="gbg-b"' + (g.b ? ' checked' : '') + '> Blend in</label></span>' + inkRow(g) : '') +
         '</div>';
     }
     // a texture's colors: as drawn, brand, one to three colors of the owner's, or a rainbow (gradients' textures.cleanInk)
     function inkRow(g) {
       if (!/^txb?-/.test(g.g || '')) return '';
       var v = g.c || '', cs = v.charAt(0) === '#' ? v.split(',') : [], mode = cs.length ? ['one', 'two', 'three'][cs.length - 1] : v, def = [BRAND, ACCENT, '#ec4899'];
-      return ' <label class="own pin">Texture colors <select data-a="gbg-cm">' + INKS.map(function (o) { return '<option value="' + o[0] + '"' + (mode === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
-        [0, 1, 2].map(function (i) { return '<input type="color" data-a="gbg-cc" aria-label="Texture color ' + (i + 1) + '" value="' + esc(cs[i] || def[i]) + '" style="width:40px;height:26px;padding:1px;vertical-align:middle;' + (i < cs.length ? '' : 'display:none') + '">'; }).join('');
+      return '<label class="own pin"><span>Texture colors</span><select data-a="gbg-cm">' + INKS.map(function (o) { return '<option value="' + o[0] + '"' + (mode === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>' +
+        '<span class="gline inks">' + [0, 1, 2].map(function (i) { return '<input type="color" data-a="gbg-cc" data-sg-cl="off" aria-label="Texture color ' + (i + 1) + '" value="' + esc(cs[i] || def[i]) + '" style="' + (i < cs.length ? '' : 'display:none') + '">'; }).join('') + '</span>';
     }
     // More effects for this block alone; one already on for the whole site (editor, Design) shows ticked and greyed
     function xfxRows(b) {
       var mine = b.xfx || [];
-      return '<div class="own xfx"><span class="xfx-h">More effects</span>' + XFX.filter(function (o) { return o[0] !== 'zoom' || b.f === 'hero'; }).map(function (o) {
+      return '<div class="own xfx">' + XFX.filter(function (o) { return o[0] !== 'zoom' || b.f === 'hero'; }).map(function (o) {
         var site = XFX_SITE.indexOf(o[0]) >= 0;
         return '<label title="' + esc(o[2]) + '"><input type="checkbox" data-a="xfx" value="' + o[0] + '"' + (site || mine.indexOf(o[0]) >= 0 ? ' checked' : '') + (site ? ' disabled' : '') + '> ' + esc(o[1]) + (site ? ' <i>(whole site)</i>' : '') + '<small>' + esc(o[2]) + '</small></label>';
       }).join('') + '</div>';
@@ -265,7 +303,7 @@
     }
     function filmRow(b) {
       var m = /^(brand|#[0-9a-f]{6}):(\d+)$/i.exec(b.film || ''), own = m && m[1] !== 'brand';
-      return '<label class="own pin film">Color film <select data-a="film-s"><option value="">None</option>' + FILMS.map(function (n) { return '<option value="' + n + '"' + (m && m[2] === String(n) ? ' selected' : '') + '>' + n + '% strong</option>'; }).join('') + '</select>' +
+      return '<label class="own pin film"><span>Color film</span><select data-a="film-s"><option value="">None</option>' + FILMS.map(function (n) { return '<option value="' + n + '"' + (m && m[2] === String(n) ? ' selected' : '') + '>' + n + '% strong</option>'; }).join('') + '</select>' +
         (m ? '<select data-a="film-m"><option value="brand">Brand color</option><option value="own"' + (own ? ' selected' : '') + '>My color</option></select>' : '') +
         (own ? '<input type="color" data-a="film-c" value="' + esc(m[1]) + '" aria-label="Film color">' : '') + '</label>';
     }
@@ -435,7 +473,9 @@
     list.addEventListener('pointerdown', function (e) { var z = e.target.closest('.sz'); if (z) z.closest('.blk').draggable = false; });
     document.addEventListener('pointerup', function () { list.querySelectorAll('.blk[draggable="false"]').forEach(function (x) { x.draggable = true; }); });
     // the Effects box stays open while its settings redraw the list
-    list.addEventListener('toggle', function (e) { var d = e.target; if (d.classList && d.classList.contains('fx')) fxOpen[d.dataset.fx] = d.open; }, true);
+    list.addEventListener('toggle', function (e) { var d = e.target; if (d.classList && d.classList.contains('fx')) fxOpen[d.dataset.fx] = d.open; else if (d.classList && d.classList.contains('fxsub')) xfxOpen[d.dataset.xfx] = d.open; }, true);
+    // the gradient swatch opens the picture picker (public/bgpick.js puts its Browse button after the menu)
+    list.addEventListener('click', function (e) { var sw = e.target.closest('[data-a="gbg-sw"]'); if (!sw) return; var b = sw.parentNode.querySelector('.sg-bgpick-btn'); if (b) b.click(); });
     // drag to reorder
     var dragI = -1;
     list.addEventListener('dragstart', function (e) { var li = e.target.closest('.blk'); if (!li) return; if (e.target.closest && e.target.closest('.sz')) { e.preventDefault(); return; } dragI = +li.dataset.i; li.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(dragI)); } catch (x) {} });
@@ -1389,5 +1429,6 @@
 <script src="/colorlabel.js" defer></script>
 <script src="/helpfold.js" defer></script>
 <script src="/inkpick.js"></script>
+<script src="/bgpick.js" defer></script>
 </body>
 </html>
