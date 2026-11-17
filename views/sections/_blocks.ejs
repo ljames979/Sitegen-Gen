@@ -1110,9 +1110,8 @@
       <div class="blk-look-grp" data-look-grp="bg">
         <span class="blk-look-h">Background</span>
         <div class="blk-look-line">
-          <button type="button" class="blk-sw" data-sw="block_bg" title="See every background as it really looks and pick one" aria-label="Pick the background from pictures"></button>
+          <button type="button" class="blk-sw" data-sw="block_bg" title="See every background as it really looks, including the 284-gradient library, and pick one" aria-label="Pick the background from pictures"><i></i></button>
           <%- _lzOne('blockbg', 'block_bg', b.bg || 'none', 'The block\'s background: a plain color band, a gradient, a texture or a pet pattern', _lzLib(String(b.bg || '').slice(2))) %>
-          <button type="button" class="btn btn-secondary btn-sm blk-lib" data-glib="block_bg" data-glib-pre="g-" title="Pick the block's background from the gradient library (284 gradients)">🎨 Library</button>
         </div>
         <div class="blk-look-line" data-look-when="grad">
           <select name="block_bgmix" title="For a gradient or texture: replace the block's color, or blend into a plain color">
@@ -1125,12 +1124,11 @@
         </div>
       </div>
       <% } %>
-      <div class="blk-look-grp" data-sg-cardbg data-look-grp="cards">
+      <div class="blk-look-grp" data-sg-cardbg data-look-grp="cards"<%- gradients.hasCards(b.type) || b.cardbg ? '' : ' hidden data-look-nocards' %>>
         <span class="blk-look-h">Cards</span>
         <div class="blk-look-line">
-          <button type="button" class="blk-sw" data-sw="block_cardbg" data-glib="block_cardbg" data-glib-pre="" title="Pick the cards' background from the gradient library" aria-label="Pick the cards' background"></button>
+          <button type="button" class="blk-sw" data-sw="block_cardbg" title="See every card gradient, including the library, and pick one" aria-label="Pick the cards' background from pictures"><i></i></button>
           <%- _lzOne('cardbg', 'block_cardbg', b.cardbg || '', 'A gradient behind each card inside this block (the words take the color that reads on it)', _lzLib(b.cardbg || '')) %>
-          <button type="button" class="btn btn-secondary btn-sm blk-lib" data-glib="block_cardbg" data-glib-pre="" title="Pick the cards' background from the gradient library">🎨 Library</button>
         </div>
         <div class="blk-look-line" data-look-when="cardgrad">
           <%- include('_gx-pick', { name: 'block_cardgx', value: b.cardgx, what: 'Strength' }) %>
@@ -1150,6 +1148,12 @@
           </select>
           <input type="color" data-film="c" aria-label="Pick the film color" value="<%= _fp.color || site.theme.primaryColor || '#2563eb' %>" <%- _fp.color ? '' : 'hidden' %>>
         </div>
+      </div>
+      <div class="blk-look-copy">
+        <button type="button" class="btn btn-secondary btn-sm" data-look-copy title="Remember this block's background, cards and color film, to give them to other blocks (on any site)">Copy look</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-look-paste hidden title="Give this block the look you copied">Paste</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-look-all hidden title="Give every content block on this site the look you copied">Paste to all</button>
+        <span class="blk-look-msg muted" aria-live="polite"></span>
       </div>
       </div>
     </details>
@@ -1314,7 +1318,7 @@
    gradients.menu(_lzTheme, false, false).forEach(g => g[1].forEach(x => { _blkSw.cards[x[0]] = x[2]; })); %>
 <script type="application/json" id="blkLookData"><%- JSON.stringify(_blkSw).replace(/</g, '\\u003c') %></script>
 <style>
-  .block-row .blk-btnrow > input { flex: 1 1 0; min-width: 0; width: auto; }
+.blk-btnrow > input { flex: 1 1 0; min-width: 0; width: auto; }
   .blk-look { border: 1px solid var(--border, #e2e8f0); border-radius: 10px; background: #f8fafc; margin: 8px 0 0; }
   .blk-look[open] { background: #fff; }
   .blk-look > summary { list-style: none; display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer; font-size: 13.5px; font-weight: 600; user-select: none; }
@@ -1339,7 +1343,20 @@
   .blk-look-line .sg-inkpick { width: 100%; }
   .blk-look-line .sg-inkpick > select { flex: 1 1 180px; width: auto; min-width: 0; margin: 0; padding: 8px 10px; }
   .blk-look-line input[type=color] { width: 44px; height: 34px; padding: 2px; flex: none; }
-  .blk-sw { width: 38px; height: 34px; cursor: pointer; padding: 0; }
+  .blk-sw { width: 38px; height: 34px; cursor: pointer; padding: 0; position: relative; overflow: hidden; }
+  /* a real preview: the texture or pattern drawn at a quarter size, like the picker's cards */
+  .blk-sw > i, .blk-look-sum .chip i > b { position: absolute; left: 0; top: 0; width: 400%; height: 400%; transform: scale(.25); transform-origin: 0 0; pointer-events: none; }
+  .blk-look-sum .chip i { position: relative; overflow: hidden; }
+  .blk-look-copy { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding-top: 8px; border-top: 1px solid #eef2f7; }
+  .blk-look-copy .btn-sm { padding: 6px 10px; font-size: 12.5px; }
+  .blk-look-msg { font-size: 12.5px; }
+  /* compact color labels in the look panel: the code shows, the shades open on hover or while you type */
+  .blk-look .sg-cl { position: relative; margin-left: 2px; }
+  .blk-look .sg-cl-name, .blk-look .sg-cl-drop { display: none; }
+  .blk-look .sg-cl-strip { display: none; position: absolute; top: 100%; left: 0; z-index: 20; margin-top: 0; box-shadow: 0 6px 18px rgba(15,23,42,.18); background: #fff; }
+  .blk-look .sg-cl:hover .sg-cl-strip, .blk-look .sg-cl:focus-within .sg-cl-strip { display: inline-flex; }
+  .blk-look .sg-cl:hover .sg-cl-drop, .blk-look .sg-cl:focus-within .sg-cl-drop { display: inline-flex; }
+  .blk-look-line .sg-inkpick > select.sg-ink-mode { flex-basis: 100%; }
   .blk-sw:hover { outline: 2px solid var(--primary, #2563eb); outline-offset: 1px; }
   .blk-look [hidden] { display: none !important; }
   .blk-look[data-look="place"] .blk-look-sum { display: block; white-space: nowrap; text-overflow: ellipsis; }
