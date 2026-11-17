@@ -11,7 +11,7 @@ if (!window.sgInkPick) {
   };
   // the pet pattern extras show only while the background picked next to them is a pet pattern
   window.sgInkPet = function (box) {
-    var sel = box.parentElement && box.parentElement.closest('div') && box.parentElement.closest('div').querySelector('select.grad-pick, select[name=block_bg]');
+    var host = box.closest('.blk-look-grp') || (box.parentElement && box.parentElement.closest('div')), sel = host && host.querySelector('select.grad-pick, select[name=block_bg]');
     var on = !!(sel && /^(g-)?txp-/.test(sel.value));
     box.querySelectorAll('.sg-pet-only').forEach(function (x) { x.style.display = on ? '' : 'none'; });
   };
@@ -27,7 +27,7 @@ if (!window.sgInkPick) {
   };
   var petAll = function () { document.querySelectorAll('.sg-inkpick').forEach(window.sgInkPet); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', petAll); else petAll();
-  document.addEventListener('change', function (e) { if (e.target.matches && e.target.matches('select.grad-pick, select[name=block_bg]')) { var d = e.target.closest('div'); if (d) d.querySelectorAll('.sg-inkpick').forEach(window.sgInkPet); } });
+  document.addEventListener('change', function (e) { if (e.target.matches && e.target.matches('select.grad-pick, select[name=block_bg]')) { var d = e.target.closest('.blk-look-grp') || e.target.closest('div'); if (d) d.querySelectorAll('.sg-inkpick').forEach(window.sgInkPet); } });
   // capture: the hidden value is set before the editor's own listeners (autosave, preview) read the form
   ['input', 'change'].forEach(function (ev) { document.addEventListener(ev, function (e) { var b = e.target.closest && e.target.closest('.sg-inkpick'); if (b) window.sgInkPick(b); }, true); });
 }

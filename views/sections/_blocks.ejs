@@ -1094,60 +1094,100 @@
       </select>
       <% } %>
     <% } %>
-    <div class="upload-row">
+    <div class="upload-row blk-btnrow">
       <input type="text" name="block_buttonText" maxlength="40" value="<%= b.buttonText || '' %>" placeholder="Button text (optional)">
       <input type="url" name="block_buttonUrl" value="<%= b.buttonUrl || '' %>" placeholder="Button link, e.g. /site/name/contact">
     </div>
-    <% if (b.type === 'patterns') { %><input type="hidden" name="block_edge" value="none"><% } else { %>
-    <div class="upload-row">
-      <select name="block_edge">
-        <% [['none','Straight top edge'],['wave','Wavy top edge'],['scallop','Scalloped top edge']].forEach(o => { %><option value="<%= o[0] %>" <%= (b.edge || 'none') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
-      </select>
-    </div><% } %>
-    <div class="upload-row">
-      <% if (b.type === 'patterns') { %><input type="hidden" name="block_bg" value="none"><input type="hidden" name="block_bgmix" value=""><input type="hidden" name="block_gx" value=""><% } else { %>
-      <%- _lzOne('blockbg', 'block_bg', b.bg || 'none', '', _lzLib(String(b.bg || '').slice(2))) %>
-      <select name="block_bgmix" title="For a gradient or texture: replace the block's color, or blend into a plain color">
-        <% [['', 'Gradient replaces the color'], ['none', 'Blend into the page color'], ['tint', 'Blend into a light tint'], ['brand', 'Blend into the brand color'], ['dark', 'Blend into a dark band']].forEach(o => { %><option value="<%= o[0] %>" <%= (b.bgmix || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
-      </select>
-      <%- include('_ink-pick', { name: 'block_bgink', value: b.bgink || '', theme: typeof site !== 'undefined' ? site.theme : {} }) %>
-      <button type="button" class="btn btn-secondary btn-sm" data-glib="block_bg" data-glib-pre="g-" title="Pick the block's background from the gradient library (284 gradients)">🎨 Gradient library…</button>
-      <%- include('_gx-pick', { name: 'block_gx', value: b.gx, what: 'Background intensity' }) %>
-      <% } %>
-      <%- _lzOne('page', 'block_page', b.page || 'home', 'Which page shows this block') %>
-      <select name="block_place">
-        <% [['bottom','Lower on the page'],['top','Near the top of the page']].forEach(o => { %><option value="<%= o[0] %>" <%= (b.place || 'bottom') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
-      </select>
-    </div>
-    <div class="upload-row" data-sg-cardbg>
-      <%- _lzOne('cardbg', 'block_cardbg', b.cardbg || '', 'A gradient behind each card inside this block (the words take the color that reads on it)', _lzLib(b.cardbg || '')) %>
-      <button type="button" class="btn btn-secondary btn-sm" data-glib="block_cardbg" data-glib-pre="" title="Pick the cards' background from the gradient library">🎨 Gradient library…</button>
-      <%- include('_gx-pick', { name: 'block_cardgx', value: b.cardgx, what: 'Card intensity' }) %>
-    </div>
-    <div class="upload-row">
-      <%- _lzOne('pin', 'block_pin', b.pin || '', 'Pin this block while the page scrolls, or make its cards stack, pile up or fan out') %>
-    </div>
-    <div class="upload-row">
-      <select name="block_imgfx" title="Put the block's words over its photos, with a movement">
-        <% imgFx.OPTIONS.forEach(o => { %><option value="<%= o[0] %>" <%= (b.imgfx || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
-      </select>
-      <select name="block_height" title="Make the block shorter or taller (the space above and below its content)">
-        <% heightFx.OPTIONS.forEach(o => { %><option value="<%= o[0] %>" <%= (b.height || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
-      </select>
-    </div>
+    <%# Tidy look panel (Leo, 2026-11-17: "the gradients, vectors, card background and colors part is wonky and cluttered").
+        Two folds: Colors and background (background, texture colors, cards, color film) and Placement and motion
+        (page, place, top edge, height, pin, photo words). Every field and name is the same as before, only grouped;
+        the summary line shows swatches of what is picked (public/blocklook.js). %>
     <% const _fp = filmFx.parts(b.film); %>
-    <div class="upload-row film-row" title="A see-through layer of color over the whole block">
-      <input type="hidden" name="block_film" value="<%= b.film || '' %>">
-      <select data-film="s" aria-label="Color film">
-        <option value="">No color film</option>
-        <% filmFx.STRENGTHS.forEach(n => { %><option value="<%= n %>" <%= _fp.strength === String(n) ? 'selected' : '' %>>Color film, <%= n %>% strong</option><% }) %>
-      </select>
-      <select data-film="m" aria-label="Film color" <%- _fp.on ? '' : 'hidden' %>>
-        <option value="brand" <%= _fp.color ? '' : 'selected' %>>In the brand color (from the logo)</option>
-        <option value="own" <%= _fp.color ? 'selected' : '' %>>In a color I pick</option>
-      </select>
-      <input type="color" data-film="c" aria-label="Pick the film color" value="<%= _fp.color || site.theme.primaryColor || '#2563eb' %>" <%- _fp.color ? '' : 'hidden' %>>
-    </div>
+    <details class="blk-look" data-look="colors">
+      <summary><span class="blk-look-t">🎨 Colors and background</span><span class="blk-look-sum" aria-hidden="true"></span></summary>
+      <div class="blk-look-body">
+      <% if (b.type === 'patterns') { %><input type="hidden" name="block_bg" value="none"><input type="hidden" name="block_bgmix" value=""><input type="hidden" name="block_gx" value=""><% } else { %>
+      <div class="blk-look-grp" data-look-grp="bg">
+        <span class="blk-look-h">Background</span>
+        <div class="blk-look-line">
+          <button type="button" class="blk-sw" data-sw="block_bg" title="See every background as it really looks and pick one" aria-label="Pick the background from pictures"></button>
+          <%- _lzOne('blockbg', 'block_bg', b.bg || 'none', 'The block\'s background: a plain color band, a gradient, a texture or a pet pattern', _lzLib(String(b.bg || '').slice(2))) %>
+          <button type="button" class="btn btn-secondary btn-sm blk-lib" data-glib="block_bg" data-glib-pre="g-" title="Pick the block's background from the gradient library (284 gradients)">🎨 Library</button>
+        </div>
+        <div class="blk-look-line" data-look-when="grad">
+          <select name="block_bgmix" title="For a gradient or texture: replace the block's color, or blend into a plain color">
+            <% [['', 'Gradient replaces the color'], ['none', 'Blend into the page color'], ['tint', 'Blend into a light tint'], ['brand', 'Blend into the brand color'], ['dark', 'Blend into a dark band']].forEach(o => { %><option value="<%= o[0] %>" <%= (b.bgmix || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+          </select>
+          <%- include('_gx-pick', { name: 'block_gx', value: b.gx, what: 'Strength' }) %>
+        </div>
+        <div class="blk-look-line" data-look-when="ink">
+          <%- include('_ink-pick', { name: 'block_bgink', value: b.bgink || '', theme: typeof site !== 'undefined' ? site.theme : {} }) %>
+        </div>
+      </div>
+      <% } %>
+      <div class="blk-look-grp" data-sg-cardbg data-look-grp="cards">
+        <span class="blk-look-h">Cards</span>
+        <div class="blk-look-line">
+          <button type="button" class="blk-sw" data-sw="block_cardbg" data-glib="block_cardbg" data-glib-pre="" title="Pick the cards' background from the gradient library" aria-label="Pick the cards' background"></button>
+          <%- _lzOne('cardbg', 'block_cardbg', b.cardbg || '', 'A gradient behind each card inside this block (the words take the color that reads on it)', _lzLib(b.cardbg || '')) %>
+          <button type="button" class="btn btn-secondary btn-sm blk-lib" data-glib="block_cardbg" data-glib-pre="" title="Pick the cards' background from the gradient library">🎨 Library</button>
+        </div>
+        <div class="blk-look-line" data-look-when="cardgrad">
+          <%- include('_gx-pick', { name: 'block_cardgx', value: b.cardgx, what: 'Strength' }) %>
+        </div>
+      </div>
+      <div class="blk-look-grp film-row" data-look-grp="film" title="A see-through layer of color over the whole block">
+        <span class="blk-look-h">Color film</span>
+        <div class="blk-look-line">
+          <input type="hidden" name="block_film" value="<%= b.film || '' %>">
+          <select data-film="s" aria-label="Color film">
+            <option value="">None</option>
+            <% filmFx.STRENGTHS.forEach(n => { %><option value="<%= n %>" <%= _fp.strength === String(n) ? 'selected' : '' %>><%= n %>% strong</option><% }) %>
+          </select>
+          <select data-film="m" aria-label="Film color" <%- _fp.on ? '' : 'hidden' %>>
+            <option value="brand" <%= _fp.color ? '' : 'selected' %>>In the brand color</option>
+            <option value="own" <%= _fp.color ? 'selected' : '' %>>In a color I pick</option>
+          </select>
+          <input type="color" data-film="c" aria-label="Pick the film color" value="<%= _fp.color || site.theme.primaryColor || '#2563eb' %>" <%- _fp.color ? '' : 'hidden' %>>
+        </div>
+      </div>
+      </div>
+    </details>
+    <details class="blk-look" data-look="place">
+      <summary><span class="blk-look-t">📐 Placement and motion</span><span class="blk-look-sum" aria-hidden="true"></span></summary>
+      <div class="blk-look-body">
+      <div class="blk-look-grp">
+        <span class="blk-look-h">Where</span>
+        <div class="blk-look-line">
+          <%- _lzOne('page', 'block_page', b.page || 'home', 'Which page shows this block') %>
+          <select name="block_place" title="Where on that page">
+            <% [['bottom','Lower on the page'],['top','Near the top of the page']].forEach(o => { %><option value="<%= o[0] %>" <%= (b.place || 'bottom') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+          </select>
+        </div>
+      </div>
+      <div class="blk-look-grp">
+        <span class="blk-look-h">Shape</span>
+        <div class="blk-look-line">
+          <% if (b.type === 'patterns') { %><input type="hidden" name="block_edge" value="none"><% } else { %>
+          <select name="block_edge" title="The block's top edge">
+            <% [['none','Straight top edge'],['wave','Wavy top edge'],['scallop','Scalloped top edge']].forEach(o => { %><option value="<%= o[0] %>" <%= (b.edge || 'none') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+          </select><% } %>
+          <select name="block_height" title="Make the block shorter or taller (the space above and below its content)">
+            <% heightFx.OPTIONS.forEach(o => { %><option value="<%= o[0] %>" <%= (b.height || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+          </select>
+        </div>
+      </div>
+      <div class="blk-look-grp">
+        <span class="blk-look-h">Motion</span>
+        <div class="blk-look-line blk-look-wide">
+          <%- _lzOne('pin', 'block_pin', b.pin || '', 'Pin this block while the page scrolls, or make its cards stack, pile up or fan out') %>
+          <select name="block_imgfx" title="Put the block's words over its photos, with a movement">
+            <% imgFx.OPTIONS.forEach(o => { %><option value="<%= o[0] %>" <%= (b.imgfx || '') === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+          </select>
+        </div>
+      </div>
+      </div>
+    </details>
   </div>
 <% }; %>
 <p class="muted" style="font-size:13px; margin-top:0;">Pick a design below to add it. Each block then gets its own entry under Page sections, with a small picture of its layout and a colored tag for its group, where you edit it, move it and hide it. On a Blocks home page it is also a block on the Blocks screen. Pick the page it shows on in the last row of each block (home page by default). Blocks are never filled in automatically.</p>
@@ -1267,6 +1307,47 @@
 </div>
 <% Object.entries(_lzAll).forEach(([k, html]) => { %><template id="sg-lazy-<%= k %>"><select><%- html %></select></template>
 <% }) %><script src="/lazyselect.js"></script>
+<%# Tidy look panel: swatch colors for every background and card choice (public/blocklook.js) %>
+<% const _blkSw = { bg: {}, cards: {} }, _blkBrand = _lzTheme.primaryColor || '#2563eb';
+   Object.assign(_blkSw.bg, { none: '', white: '#ffffff', tint: 'color-mix(in srgb, ' + _blkBrand + ' 12%, #fff)', brand: _blkBrand, dark: '#1f2937' });
+   gradients.menu(_lzTheme, true, false).forEach(g => g[1].forEach(x => { _blkSw.bg['g-' + x[0]] = x[2]; }));
+   gradients.menu(_lzTheme, false, false).forEach(g => g[1].forEach(x => { _blkSw.cards[x[0]] = x[2]; })); %>
+<script type="application/json" id="blkLookData"><%- JSON.stringify(_blkSw).replace(/</g, '\\u003c') %></script>
+<style>
+  .block-row .blk-btnrow > input { flex: 1 1 0; min-width: 0; width: auto; }
+  .blk-look { border: 1px solid var(--border, #e2e8f0); border-radius: 10px; background: #f8fafc; margin: 8px 0 0; }
+  .blk-look[open] { background: #fff; }
+  .blk-look > summary { list-style: none; display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer; font-size: 13.5px; font-weight: 600; user-select: none; }
+  .blk-look > summary::-webkit-details-marker { display: none; }
+  .blk-look > summary::before { content: ''; width: 7px; height: 7px; border: solid #64748b; border-width: 0 2px 2px 0; transform: rotate(-45deg); transition: transform .15s; flex: none; margin-right: 2px; }
+  .blk-look[open] > summary::before { transform: rotate(45deg); }
+  .blk-look-t { white-space: nowrap; }
+  .blk-look-sum { display: flex; align-items: center; gap: 6px; min-width: 0; margin-left: auto; font-weight: 400; color: var(--muted, #64748b); font-size: 12.5px; overflow: hidden; }
+  .blk-look-sum .chip { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px; }
+  .blk-look-sum .chip i, .blk-sw { display: inline-block; flex: none; border-radius: 6px; border: 1px solid rgba(15,23,42,.18); background-color: #fff; background-image: linear-gradient(135deg, transparent 46%, #cbd5e1 46%, #cbd5e1 54%, transparent 54%); }
+  .blk-look-sum .chip i { width: 18px; height: 18px; border-radius: 5px; }
+  .blk-look-body { padding: 2px 12px 10px; display: grid; gap: 2px; }
+  .blk-look-grp { display: grid; grid-template-columns: 92px 1fr; gap: 6px 10px; align-items: start; padding: 8px 0; border-top: 1px solid #eef2f7; }
+  .blk-look-grp:first-child { border-top: 0; }
+  .blk-look-h { grid-column: 1; font-size: 12.5px; font-weight: 600; color: #334155; padding-top: 9px; }
+  .blk-look-line { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
+  .blk-look-line > select { flex: 1 1 160px; min-width: 0; width: auto; margin: 0; padding: 8px 10px; }
+  .blk-look-line .btn-sm, .blk-look-line .sg-bgpick-btn { padding: 7px 10px; font-size: 12.5px; white-space: nowrap; flex: none; }
+  .blk-look-line .sg-gx { flex: 1 1 220px; font-size: 13px; margin: 0; }
+  .blk-look-line .sg-gx input[type=range] { flex: 1; width: auto !important; min-width: 80px; }
+  .blk-look-line .sg-gx .btn-sm { padding: 4px 8px; }
+  .blk-look-line .sg-inkpick { width: 100%; }
+  .blk-look-line .sg-inkpick > select { flex: 1 1 180px; width: auto; min-width: 0; margin: 0; padding: 8px 10px; }
+  .blk-look-line input[type=color] { width: 44px; height: 34px; padding: 2px; flex: none; }
+  .blk-sw { width: 38px; height: 34px; cursor: pointer; padding: 0; }
+  .blk-sw:hover { outline: 2px solid var(--primary, #2563eb); outline-offset: 1px; }
+  .blk-look [hidden] { display: none !important; }
+  .blk-look[data-look="place"] .blk-look-sum { display: block; white-space: nowrap; text-overflow: ellipsis; }
+  .blk-look-line[data-look-when="grad"] > select { flex: 1 1 240px; min-width: min(100%, 220px); }
+  .blk-look-line.blk-look-wide > select { flex-basis: 100%; }
+  @media (max-width: 560px) { .blk-look-grp { grid-template-columns: 1fr; } .blk-look-h, .blk-look-line { grid-column: 1; padding-top: 0; } .blk-look-sum .chip span { display: none; } }
+</style>
+<script src="/blocklook.js" defer></script>
 <template id="tpl-block-photoText"><% renderBlock({ type: 'photoText' }); %></template>
 <template id="tpl-block-steps"><% renderBlock({ type: 'steps' }); %></template>
 <template id="tpl-block-features"><% renderBlock({ type: 'features' }); %></template>

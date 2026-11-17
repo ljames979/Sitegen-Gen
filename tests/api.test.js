@@ -5916,7 +5916,7 @@ test('Color film: a content block and a Blocks page block each get their own see
   assert.match(html, /<div class="sg-film" style="--film-c: rgba\(27, 42, 74, 0.3\);">\s*<section(?: data-sg-bid="[^"]+")? class="blk/);
   assert.match(html, /<style data-sg-film>/);
   const ed = await (await c.get(editPath)).text();
-  assert.match(ed, /name="block_film" value="brand:30"/); assert.match(ed, /<option value="30" selected>Color film, 30% strong<\/option>/);
+  assert.match(ed, /name="block_film" value="brand:30"/); assert.match(ed, /<option value="30" selected>30% strong<\/option>/);
   const blocks = [{ k: 'lib', f: 'hero', v: 'overlay' }, { k: 'lib', f: 'about', v: 'split', film: '#FF5500:60' }, { k: 'lib', f: 'contact', v: 'cards', film: 'red:99' }];
   await c.post(`/sites/${siteId}/blocks/save`, JSON.stringify({ blocks }), { headers: { 'Content-Type': 'application/json' } });
   html = await (await c.get(`/sites/${siteId}/preview`)).text();
@@ -6302,7 +6302,7 @@ test('gradient library on blocks and on the cards inside them, each with an inte
   assert.match(html, /\.blk\.blk-cg-c-digital-sky-x140\.blk-cg-c-digital-sky-x140 :is\(\.card, \.step-card/);
   const editor = await (await c.get(editPath)).text();
   // (the menu holds only its choice until opened; public/lazyselect.js keeps a library pick under "Gradient library")
-  assert.match(editor, /name="block_bg" data-sg-lazy="blockbg"><option value="g-c-neon-lagoon" selected>Neon Lagoon<\/option><\/select>/);
+  assert.match(editor, /name="block_bg" data-sg-lazy="blockbg"[^>]*><option value="g-c-neon-lagoon" selected>Neon Lagoon<\/option><\/select>/);
   assert.match(editor, /<template id="sg-lazy-blockbg"><select><option value="none">Plain background<\/option>/);
   assert.match(editor, /name="block_gx" min="10" max="150" step="5" value="60"/);
   assert.match(editor, /name="block_cardbg"[\s\S]*?<option value="c-digital-sky" selected>Digital Sky<\/option>/);
@@ -6310,6 +6310,35 @@ test('gradient library on blocks and on the cards inside them, each with an inte
   assert.match(editor, /id="gradLibData">\[\["Library: reds and pinks"/);
   // the library is sent once for the swatch grid, not repeated in every block's picker
   assert.equal((editor.match(/>Digital Sky</g) || []).length, 1);
+});
+
+test('tidy look panel: each block colors and placement sit in two folds, with every field still sent once', async () => {
+  const c = makeClient();
+  const { editPath } = await basicSite(c, 'tidylook@example.com', 'Tidy Co', {
+    block_type: ['features', 'patterns'], block_heading: ['Cards', 'Pattern'], block_body: ['A | b', ''], block_image: ['', ''], block_side: ['auto', 'auto'], block_buttonText: ['', ''], block_buttonUrl: ['', ''],
+    block_edge: ['wave', 'none'], block_bg: ['g-tx-contour', 'none'], block_bgmix: ['', ''], block_gx: ['70', ''], block_bgink: ['#112233,#445566', ''], block_cardbg: ['sunset', ''], block_cardgx: ['120', ''],
+    block_film: ['brand:30', ''], block_pin: ['hold:50', ''], block_height: ['', ''], block_place: ['top', 'bottom'], block_page: ['about', 'home']
+  });
+  const editor = await (await c.get(editPath)).text();
+  const rows = editor.split('<div class="block-row">').slice(1, 3).map((r) => r.split('<template')[0]);
+  assert.equal(rows.length, 2);
+  rows.forEach((r) => {
+    assert.equal((r.match(/<details class="blk-look" data-look="colors">/g) || []).length, 1);
+    assert.equal((r.match(/<details class="blk-look" data-look="place">/g) || []).length, 1);
+    ['block_bg', 'block_bgmix', 'block_gx', 'block_cardbg', 'block_cardgx', 'block_film', 'block_edge', 'block_page', 'block_place', 'block_pin', 'block_imgfx', 'block_height'].forEach((n) => {
+      assert.equal((r.match(new RegExp('name="' + n + '"', 'g')) || []).length, 1, n);
+    });
+  });
+  assert.match(rows[0], /name="block_bgink" value="#112233,#445566"/);
+  assert.match(rows[0], /<option value="30" selected>30% strong<\/option>/);
+  assert.match(rows[0], /<option value="wave" selected>Wavy top edge<\/option>/);
+  assert.match(rows[0], /<option value="top" selected>Near the top of the page<\/option>/);
+  assert.match(rows[0], /class="blk-sw" data-sw="block_bg"/);
+  assert.match(rows[1], /<input type="hidden" name="block_bg" value="none">/);   // the Gradient pattern block keeps its own colors
+  assert.match(editor, /<script type="application\/json" id="blkLookData">\{"bg":\{"none":""/);
+  assert.match(editor, /<script src="\/blocklook.js" defer><\/script>/);
+  const js = await c.get('/blocklook.js');
+  assert.equal(js.status, 200);
 });
 
 test('hero card block: big title, picture or reel, words, buttons and the bar; reels upload on their own route', async () => {
