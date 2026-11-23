@@ -2014,6 +2014,9 @@ const {
   saveVersion, str
 }));
 
+// Prospect finder: local businesses from OpenStreetMap, their website check, demos and a status each (routes/prospects.js)
+require('./routes/prospects')(app, { db, requireAuth, rateLimit, isTestEnv, str });
+
 // The published site, leads, bookings, reviews, reports, follow-ups, robots.txt and sitemap (routes/site-and-followup.js)
 const {
   redirectFor, sendRedirect

@@ -7,6 +7,8 @@ const brandKit = require('../brandkit');
 const { safeFetch } = require('../scraper');
 const UPLOADS_DIR = require('path').join(ROOT, 'public', 'uploads');
 
+const prospectsLib = require('../prospects');
+
 module.exports = function (app, deps) {
   const {
     aiComplete, applySocialInspiration, atelier, authLimiter, bcrypt, booking, chatedit, colorForCategory,
@@ -96,6 +98,16 @@ module.exports = function (app, deps) {
     res.redirect(`/sites/${info.lastInsertRowid}/edit`);
   });
 
+  // a demo made from the Prospect finder (prospects.js) is linked back to that business
+  function linkProspect(req, siteId) {
+    const pid = parseInt((req.body || {}).prospect_id, 10);
+    if (!pid) return;
+    try {
+      prospectsLib.ensureTable(db);
+      const p = prospectsLib.get(db, req.session.userId, pid);
+      if (p) prospectsLib.update(db, req.session.userId, pid, { site_id: siteId, status: p.status === 'new' ? 'demo' : p.status });
+    } catch (e) { console.error('Linking the demo to the prospect failed:', e.message); }
+  }
   app.post('/sites/import', requireAuth, importLimiter, async (req, res) => {
     const sourceUrl = str(req.body.url, 2000);
     const socialUrl = str(req.body.social_url, 2000);
@@ -130,6 +142,7 @@ module.exports = function (app, deps) {
         scraped.sections.seo.description
       );
       saveVersion(info.lastInsertRowid, scraped.theme, scraped.sections, defaultLayout(), 'Imported');
+      linkProspect(req, info.lastInsertRowid);
       res.redirect(`/sites/${info.lastInsertRowid}/edit?imported=1`);
     } catch (err) {
       renderDashboard(req, res, { importError: err.message || 'Could not import that site.' });
@@ -397,6 +410,7 @@ module.exports = function (app, deps) {
         return res.redirect(`/sites/draft/${token}`);
       }
       const id = insertGeneratedSite(req.session.userId, g, 'Generated');
+      linkProspect(req, id);
       res.redirect(`/sites/${id}/edit?generated=${g.copySource === 'ai' ? 'ai' : '1'}`);
     } catch (err) {
       renderDashboard(req, res, { generateError: 'Could not generate a site. Please try again.' });
