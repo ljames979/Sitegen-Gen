@@ -407,6 +407,7 @@ test('reports: a Netlify copy counts visits and taps back to SiteGen, without co
 test('questionnaire: the client picks one of Leo\'s packages, and Leo can email the link', async () => {
   const c = client();
   await c.post('/signup', { email: 'intaker@example.com', password: 'password1' });
+  await c.post('/intake/autobuild', { on: '0' });
   await c.post('/packages', { tier0_name: 'Starter', tier0_price: '$700', tier0_items: 'A', tier1_items: 'B', tier2_items: 'C' });
   const before = mails().length;
   let r = await c.post('/intake/links', { label: 'Maria Bakery', email: 'maria@bakery.test' });
@@ -432,3 +433,30 @@ test('questionnaire: the client picks one of Leo\'s packages, and Leo can email 
   const ids = [...list2.matchAll(/\/intake\/submissions\/(\d+)/g)].map(x => +x[1]);
   assert.doesNotMatch(await (await c.get(`/intake/submissions/${Math.max(...ids)}`)).text(), /Free Website/);
 });
+
+test('questionnaire: the answers build the draft by themselves and the email carries its link', async () => {
+  const c = client();
+  await c.post('/signup', { email: 'autodraft@example.com', password: 'password1' });
+  assert.match(await (await c.get('/intake')).text(), /Build the draft by itself[\s\S]{0,800}>On</);
+  await c.post('/intake/links', { label: 'Rosa' });
+  const token = /\/start\/([A-Za-z0-9_-]{16,64})/.exec(await (await c.get('/intake')).text())[1];
+  const before = mails().length;
+  const r = await fetch(`${BASE}/start/${token}`, {
+    method: 'POST', redirect: 'manual', headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ biz_name: 'Rosa Nails', biz_type: 'nail salon', city: 'Kissimmee', contact_name: 'Rosa', contact_email: 'rosa@nails.test', phone: '407-555-0111', agree: '1' }).toString()
+  });
+  assert.equal(r.status, 302);
+  let m = null;
+  for (let i = 0; i < 100 && !m; i++) { await new Promise(res => setTimeout(res, 100)); m = mails().slice(before).find(x => /Draft ready: Rosa Nails/.test(x.subject)); }
+  assert.ok(m, 'owner emailed the draft');
+  const siteId = /\/sites\/(\d+)\/edit/.exec(m.text)[1];
+  assert.match(m.text, /not published/);
+  const ed = await c.get(`/sites/${siteId}/edit`);
+  assert.equal(ed.status, 200);
+  const list = await (await c.get('/intake')).text();
+  assert.match(list, new RegExp(`/sites/${siteId}/edit`));
+  // turned off: answers wait for the Build button again
+  await c.post('/intake/autobuild', { on: '0' });
+  assert.match(await (await c.get('/intake')).text(), /Build the draft by itself[\s\S]{0,800}>Off</);
+});
+

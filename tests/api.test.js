@@ -3552,6 +3552,7 @@ test('client questionnaire: link, public form, review, one-click build from the 
   const Database = require('better-sqlite3');
   const owner = makeClient();
   await owner.post('/signup', { email: 'questionnaire-owner@example.com', password: 'password1' });
+  await owner.post('/intake/autobuild', { on: '0' });   // these tests press Build themselves
   const created = await owner.post('/intake/links', { label: 'Maria' });
   assert.match(created.headers.get('location'), /f=created/);
   const raw = new Database(TEST_DB);
@@ -4047,6 +4048,7 @@ test('questionnaire: the owner\'s chosen design option is what gets built', asyn
   const designOptions = require('../design-options');
   const owner = makeClient();
   await owner.post('/signup', { email: 'design-opt-owner@example.com', password: 'password1' });
+  await owner.post('/intake/autobuild', { on: '0' });   // these tests press Build themselves
   await owner.post('/intake/links', { label: 'Opt' });
   const raw = new Database(TEST_DB);
   const link = raw.prepare('SELECT * FROM intake_links ORDER BY id DESC').get();
@@ -4476,6 +4478,7 @@ async function submitIntake(label, fields) {
   const Database = require('better-sqlite3'); const raw = new Database(TEST_DB);
   const owner = makeClient();
   await owner.post('/signup', { email: `${label}@example.com`, password: 'password1' });
+  await owner.post('/intake/autobuild', { on: '0' });   // these tests press Build themselves
   await owner.post('/intake/links', { label });
   const link = raw.prepare('SELECT * FROM intake_links ORDER BY id DESC').get();
   const anon = makeClient();
@@ -5808,7 +5811,7 @@ test('Content blocks in Page sections and on the Blocks screen: fixed ids, own e
   // the add-a-block picker: every design as a card, in its group
   assert.match(editor, /<div class="blkpick-group" data-group="words"[\s\S]*?data-newblock="steps"/);
   // every design is one card, except the Decorative card: one card per card style (6), and its Invitation Reveal card
-  assert.equal((editor.match(/class="blkpick-card" data-newblock=/g) || []).length, 69);
+  assert.equal((editor.match(/class="blkpick-card" data-newblock=/g) || []).length, 72);
   assert.equal((editor.match(/data-newblock="decocard" data-dcstyle="(royal|minimal|deco|stamp|ribbon|glass)" data-find/g) || []).length, 6);
   assert.equal((editor.match(/data-newblock="decocard" data-dcstyle="royal" data-dcreveal="envelope"/g) || []).length, 1);
   const order = `hero,blk:${ids[1]},about,services,testimonials,whyChoose,gallery,faq,blog,extraPages,hours,contact,blk:${ids[0]}`;

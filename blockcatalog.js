@@ -18,6 +18,7 @@ const GROUPS = [
 
 // [type, group, one-line description]; the short name comes from mixpage's BLOCK_KINDS
 const LIST = [
+  ['apphero', 'tops', aboutBlocks.SPECS.apphero.desc],
   ['herocard', 'tops', 'Big title, a picture or video reel, and a bar along the bottom'],
   ['mosaic', 'tops', 'Huge title over six stepped photos that can take turns, optional menu bar'],
   ['photoblend', 'tops', 'Words on one side, a photo that melts into the block on the other'],
@@ -52,6 +53,8 @@ const LIST = [
   ['socialstrip', 'social', aboutBlocks.SPECS.socialstrip.desc],
   ['numcards', 'words', aboutBlocks.SPECS.numcards.desc],
   ['tipcards', 'words', aboutBlocks.SPECS.tipcards.desc],
+  ['spotcards', 'words', aboutBlocks.SPECS.spotcards.desc],
+  ['compare', 'words', aboutBlocks.SPECS.compare.desc],
   ['decocard', 'words', 'Your words framed in a card like a business card or an invitation: royal, minimal, art deco, stamp, ribbon or frosted glass'],
   ['crossband', 'tops', 'A tall photo and a colored card with a checklist, over a color band'],
   ['advice', 'tops', 'A big photo, a heading, and points that each have a small round photo'],
@@ -123,6 +126,9 @@ const PICS = {
   socialstrip: aboutBlocks.SPECS.socialstrip.pic,
   numcards: aboutBlocks.SPECS.numcards.pic,
   tipcards: aboutBlocks.SPECS.tipcards.pic,
+  apphero: aboutBlocks.SPECS.apphero.pic,
+  spotcards: aboutBlocks.SPECS.spotcards.pic,
+  compare: aboutBlocks.SPECS.compare.pic,
   advice: 'p 2 3 26 34; T 32 6 22; o 35 16 3; t 40 15 16; o 35 24 3; t 40 23 14; o 35 32 3; t 40 31 16',
   shapes: 'H 3 9 22; H 3 18 18; H 3 27 24; pill 32 4 10 32; o 50 12 7; o 50 29 7',
   split: 'T 4 10 22; T 4 17 15; t 32 10 24; t 32 15 22; t 32 20 24; t 32 25 17',

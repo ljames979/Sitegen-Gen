@@ -75,6 +75,7 @@
         <span class="q-pill <%= report.warnings ? 'warn' : 'ok' %>"><%= report.warnings %> to look at</span>
         <span class="q-pill ok"><%= report.passed.length %> checks passed</span>
       </div>
+      <% if (report.pagesChecked) { %><p class="muted" style="margin:0 0 10px; font-size:13px;">Read all <%= report.pagesChecked %> page<%= report.pagesChecked === 1 ? '' : 's' %> of the site for leftover placeholders, broken links, contact details that don't match, headings, picture descriptions<%= siteKit.of(site).langs.on ? ' and missing translations' : '' %>.</p><% } %>
       <% if (gate) { %><p style="margin:0 0 12px;"><strong>Publishing paused.</strong> Fix the red items below, or publish anyway if you are sure.</p><% } %>
       <% if (report.ok && !report.warnings) { %><p style="margin:0;">Everything checks out. This site is ready to publish.</p><% } %>
       <div class="q-actions">
@@ -92,10 +93,11 @@
     <% const fixed = {}; %>
     <% report.items.forEach(i => { %>
       <div class="q-item <%= i.severity %>">
-        <span class="q-area"><%= i.area === 'tap' ? 'phone tap targets' : i.area %> · <%= i.severity === 'error' ? 'fix before publishing' : 'worth fixing' %></span>
+        <span class="q-area"><%= i.area === 'tap' ? 'phone tap targets' : i.area === 'pages' ? 'every page' : i.area %> · <%= i.severity === 'error' ? 'fix before publishing' : 'worth fixing' %></span>
         <h3><%= i.title %></h3>
         <p><%= i.detail %></p>
-        <% if (i.fix && !fixed[i.fix.type]) { fixed[i.fix.type] = 1; %>
+        <% if (i.fix && i.fix.type === 'link') { %><a class="btn btn-secondary" href="<%= i.fix.href %>"><%= i.fix.label %></a>
+        <% } else if (i.fix && !fixed[i.fix.type]) { fixed[i.fix.type] = 1; %>
           <form method="POST" action="/sites/<%= site.id %>/quality/fix"><input type="hidden" name="fix" value="<%= i.fix.type %>"><button type="submit" class="btn-secondary"><%= i.fix.label %></button></form>
         <% } else if (i.fix) { %><span class="muted" style="font-size:13px;">Fixed by the button above.</span><% } %>
       </div>

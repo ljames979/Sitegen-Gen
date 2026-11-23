@@ -2,7 +2,10 @@
 // server.js calls this where these routes belong in its route order and hands it the shared helpers they use.
 const ROOT = require('path').join(__dirname, '..');
 const salesFlow = require('../salesflow');
+const siteKit = require('../sitekit');
 const gbpLib = require('../gbp');
+
+const photoFocus = require('../photofocus');
 
 module.exports = function (app, deps) {
   const {
@@ -302,7 +305,7 @@ module.exports = function (app, deps) {
           post: entry.page === 'post' ? entry.item : null, extra: entry.page === 'extra' ? entry.item : null,
           navPages: buildNavPages(site, '', false), contactSent: false, contactError: false, reviewThanks: false, reviewError: false
         };
-        let html = wordStyle.apply(images.optimizeHtml(await renderToString('public-site', locals)));
+        let html = siteKit.pageLinks(wordStyle.apply(images.optimizeHtml(photoFocus.apply(await renderToString('public-site', locals), site))), '');
         // page links: "/about" -> "about.html", "/" -> "index.html"
         for (const k of [...keys, ...legalPages.map(x => x.page)]) html = html.split(`href="/${k}"`).join(`href="${k}.html"`);
         // item pages that were not exported (no text yet) fall back to their list page
@@ -324,6 +327,7 @@ module.exports = function (app, deps) {
         }
         if (html.includes('sg-shader.js')) assets.add('sg-shader.js');
         if (html.includes('sg-fx.js')) assets.add('sg-fx.js');
+        if (html.includes('sg-lang.js')) assets.add('sg-lang.js');
         if (html.includes('sg-site.css')) assets.add('sg-site.css');
         if (html.includes('sg-library.css')) assets.add('sg-library.css').add('sg-lib.js');
         if (html.includes('sg-stylelib.css')) assets.add('sg-stylelib.css');

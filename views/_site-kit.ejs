@@ -1,0 +1,61 @@
+<%# Site kit panel (sitekit.js, public/sitekit-edit.js): the menu bar's own button, the phone menu, pages built only from
+    blocks, app badges, TikTok, and the second language with its word pairs. All kept in the hidden box kit_json. %>
+<% const _sk = siteKit.of(site); const _skPages = { about: 'About', services: 'Services', testimonials: 'Reviews', whyChoose: 'Why choose us', gallery: 'Gallery', faq: 'FAQ', blog: 'News & Tips', hours: 'Hours', contact: 'Contact' }; %>
+<details class="section-block settings-block" data-tab="design" id="siteKitBlock" data-site="<%= site.id %>"<%= _sk.langs.on || _sk.button.text || _sk.blockPages.length ? ' open' : '' %>>
+  <summary>Pages, languages and header button</summary>
+  <input type="hidden" name="kit_json" id="skJson" value="<%= JSON.stringify(_sk) %>">
+  <p class="muted" style="font-size:13px; margin-top:0;">Site-wide pieces for app and marketing sites. Nothing here is filled in for you.</p>
+
+  <h4 class="sk-h">Menu bar button</h4>
+  <p class="hint">Your own button at the right of the menu bar (e.g. Order now, to your app). Leave the words empty for the automatic Call Now / Contact button.</p>
+  <div class="sk-row">
+    <input type="text" id="skBtnText" maxlength="40" placeholder="Button words, e.g. Order now" value="<%= _sk.button.text %>">
+    <input type="url" id="skBtnUrl" maxlength="400" placeholder="Link, e.g. https://... or /contact" value="<%= _sk.button.url %>">
+  </div>
+  <label class="check"><input type="checkbox" id="skBtnNew"<%= _sk.button.newTab ? ' checked' : '' %>> Open the link in a new tab</label>
+  <label class="check"><input type="checkbox" id="skPhoneMenu"<%= _sk.phoneMenu ? ' checked' : '' %>> On phones, fold the page links into a menu button (computers keep them in the bar)</label>
+
+  <h4 class="sk-h">Pages built only from blocks</h4>
+  <p class="hint">Tick a page to show only the content blocks you put on it (block's "Which page"), without that page's built-in section and the "Ready to get started?" band. Its name in the menu is still that section's heading. Hide a page in Page sections to take it off the menu.</p>
+  <div class="sk-pages">
+    <% siteKit.PAGES.forEach(k => { %><label class="check"><input type="checkbox" class="sk-page" value="<%= k %>"<%= _sk.blockPages.includes(k) ? ' checked' : '' %>> <%= _skPages[k] %> page</label><% }) %>
+  </div>
+
+  <h4 class="sk-h">Footer extras</h4>
+  <label class="check"><input type="checkbox" id="skApps"<%= _sk.apps.on ? ' checked' : '' %>> Show App Store and Google Play badges in the footer (without a link a badge says Coming soon)</label>
+  <div class="sk-row">
+    <input type="url" id="skIos" maxlength="400" placeholder="App Store link (https://apps.apple.com/...)" value="<%= _sk.apps.ios %>">
+    <input type="url" id="skAndroid" maxlength="400" placeholder="Google Play link (https://play.google.com/...)" value="<%= _sk.apps.android %>">
+  </div>
+  <label for="skTiktok">TikTok link (shows beside the Facebook and Instagram icons)</label>
+  <input type="url" id="skTiktok" maxlength="400" placeholder="https://www.tiktok.com/@..." value="<%= _sk.tiktok %>">
+
+  <h4 class="sk-h">Second language</h4>
+  <label class="check"><input type="checkbox" id="skLangOn"<%= _sk.langs.on ? ' checked' : '' %>> Show a language switch in the menu bar</label>
+  <div class="sk-row">
+    <select id="skLangCode" aria-label="Second language"><% siteKit.LANGS.forEach(l => { %><option value="<%= l[0] %>"<%= _sk.langs.code === l[0] ? ' selected' : '' %>><%= l[1] %></option><% }) %></select>
+    <input type="text" id="skLangFirst" maxlength="6" aria-label="Switch label for English" placeholder="EN" value="<%= _sk.langs.first %>" style="max-width:80px">
+    <input type="text" id="skLangSecond" maxlength="6" aria-label="Switch label for the second language" placeholder="ES" value="<%= _sk.langs.second %>" style="max-width:80px">
+  </div>
+  <p class="hint">Each pair is the words exactly as they show on your pages, then the same words in the second language. Visitors who pick the second language see your translation wherever the English words match; anything without a translation stays in English. When you change English words on a page, press Find words to add the new ones here.</p>
+  <div class="sk-row">
+    <button type="button" class="btn-secondary" id="skFind">Find words on my pages</button>
+    <input type="search" id="skFilter" placeholder="Search the pairs" aria-label="Search the pairs">
+    <label class="check" style="margin:0"><input type="checkbox" id="skMissing"> Only missing</label>
+  </div>
+  <p class="hint" id="skCount" aria-live="polite"></p>
+  <div id="skWords" class="sk-words"></div>
+  <button type="button" class="btn-secondary" id="skAdd">+ Add a pair</button>
+</details>
+<style>
+  #siteKitBlock .sk-h { margin: 18px 0 6px; font-size: 14px; }
+  #siteKitBlock .sk-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }
+  #siteKitBlock .sk-row > input[type=text], #siteKitBlock .sk-row > input[type=url], #siteKitBlock .sk-row > input[type=search] { flex: 1 1 200px; }
+  #siteKitBlock .sk-pages { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 2px 12px; }
+  #siteKitBlock .sk-words { max-height: 460px; overflow-y: auto; border: 1px solid var(--border, #e2e8f0); border-radius: 8px; margin: 6px 0; }
+  #siteKitBlock .sk-pair { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; padding: 6px; border-bottom: 1px solid var(--border, #e2e8f0); }
+  #siteKitBlock .sk-pair textarea { min-height: 38px; font-size: 13px; resize: vertical; }
+  #siteKitBlock .sk-pair.sk-miss textarea:nth-child(2) { border-color: #f59e0b; }
+  #siteKitBlock .sk-pair button { align-self: start; }
+</style>
+<script src="/sitekit-edit.js" defer></script>

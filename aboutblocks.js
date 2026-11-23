@@ -17,6 +17,7 @@ const contrast = require('./contrast');
 const collageBlock = require('./collageblock');
 const socialBlocks = require('./socialblocks');
 const petListBlocks = require('./petlistblocks');
+const appBlocks = require('./appblocks');   // app hero, photo cards grid, comparison table (Leo, 2026-11-17)
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const PHOTO = /^(https:\/\/|\/uploads\/)[^\s"'<>()|]+$/;
@@ -143,10 +144,10 @@ const SPECS = {
 };
 const ABOUT_TYPES = Object.keys(SPECS);
 ABOUT_TYPES.forEach(t => { SPECS[t].group = 'about'; });
-Object.assign(SPECS, socialBlocks.SPECS, petListBlocks.SPECS);
+Object.assign(SPECS, socialBlocks.SPECS, petListBlocks.SPECS, appBlocks.SPECS);
 const TYPES = Object.keys(SPECS);
-const GROUP_NAMES = { about: 'About us', social: 'Social media', words: 'Words and lists' };
-const LINK_OK = (v) => { const u = String(v || '').trim(); return (/^https:\/\/[^\s"'<>|]+$/.test(u) || /^\/[^\s"'<>|]*$/.test(u) || /^#[\w-]*$/.test(u)) && u.length <= 300 ? u : ''; };
+const GROUP_NAMES = { about: 'About us', social: 'Social media', words: 'Words and lists', tops: 'Page tops' };
+const LINK_OK = (v) => { const u = String(v || '').trim(); return (/^https:\/\/[^\s"'<>|]+$/.test(u) || /^~?\/[^\s"'<>|]*$/.test(u) || /^#[\w-]*$/.test(u)) && u.length <= 300 ? u : ''; };
 
 function parse(type, v) {
   const spec = SPECS[type], out = {};

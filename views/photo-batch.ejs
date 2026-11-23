@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Batch photo tools — <%= site.name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .pb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
+    .pb-ph { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #f1f5f9; aspect-ratio: 4 / 3; }
+    .pb-ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .pb-dot { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: #f43f5e; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+    .pb-tag { position: absolute; left: 6px; bottom: 6px; background: rgba(15,23,42,.75); color: #fff; font-size: 11px; padding: 2px 7px; border-radius: 999px; }
+    .pb-bar { height: 10px; border-radius: 999px; background: #e2e8f0; overflow: hidden; margin: 8px 0 4px; }
+    .pb-bar span { display: block; height: 100%; background: var(--primary, #4f46e5); transition: width .3s; }
+    .pb-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .pb-row form { margin: 0; }
+    .pb-row button[disabled] { opacity: .5; cursor: not-allowed; }
+    .pb-on { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+    .pb-on.yes { background: #d1fae5; color: #065f46; } .pb-on.no { background: #f1f5f9; color: #475569; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="row">
+      <a href="/sites/<%= site.id %>/edit" class="muted">&larr; <%= site.name %></a>
+      <strong>Batch photo tools</strong>
+    </div>
+  </nav>
+  <div class="container" style="max-width:1000px;">
+    <% if (!ready) { %>
+      <div class="card" style="border-color:#fcd34d; background:#fffbeb;">
+        <strong>The cut-out tool is not set up on this computer yet.</strong>
+        <p class="muted" style="margin:6px 0 0;">Both tools use it. It needs <%= missing.join(' and ') %>: run "npm install" in the SiteGen folder, then restart SiteGen.</p>
+      </div>
+    <% } %>
+
+    <div class="card" id="job" <%- job ? '' : 'hidden' %>>
+      <strong id="jobTitle"><%= job ? (job.kind === 'smartcrop' ? 'Smart crop all' : 'Cut out all') : '' %></strong>
+      <div class="pb-bar"><span id="jobBar" style="width:<%= job && job.total ? Math.round(job.done / job.total * 100) : 0 %>%"></span></div>
+      <span class="muted" id="jobText"></span>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;">Smart crop all photos</h2>
+      <p class="muted">SiteGen finds the pet, person or thing in every photo on this site and keeps it in view wherever a block crops the photo, on phones and computers alike. The photos themselves are not changed, only where each one is centred. The current version is saved to Version history first.</p>
+      <div class="pb-row">
+        <span class="pb-on <%= focus.on ? 'yes' : 'no' %>">Smart crop is <%= focus.on ? 'on' : 'off' %></span>
+        <span class="muted"><%= photos.length %> photo<%= photos.length === 1 ? '' : 's' %> on this site · <%= found %> with a subject found</span>
+        <span style="flex:1"></span>
+        <form method="POST" action="/sites/<%= site.id %>/photos/batch/smartcrop"><button type="submit" class="btn" <%= ready && photos.length ? '' : 'disabled' %>><%= found ? 'Smart crop all again' : 'Smart crop all photos' %></button></form>
+        <% if (found) { %><form method="POST" action="/sites/<%= site.id %>/photos/batch/<%= focus.on ? 'focus-off' : 'focus-on' %>"><button type="submit" class="btn-secondary"><%= focus.on ? 'Switch off' : 'Switch on' %></button></form><% } %>
+      </div>
+      <% if (photos.length) { %>
+        <div class="pb-grid">
+          <% photos.forEach(u => { const p = focus.map[u]; %>
+            <div class="pb-ph">
+              <img src="<%= u %>" alt="" loading="lazy" <% if (p) { %>style="object-position:<%= p[0] %>% <%= p[1] %>%"<% } %>>
+              <% if (p) { %><span class="pb-dot" style="left:<%= p[0] %>%; top:<%= p[1] %>%" title="Kept in view"></span><% } %>
+              <span class="pb-tag"><%= p ? 'Subject found' : (focus.at ? 'No clear subject, centred' : 'Not checked yet') %></span>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p class="muted">This site has no photos yet.</p>
+      <% } %>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;">Cut out all waiting pets</h2>
+      <p class="muted">Every "Pets cut out" photo block whose photos are not cut out yet gets its cut-outs in one go, the same as pressing Cut out on each photo. The current version is saved to Version history first.</p>
+      <% const waitN = [...new Set(waiting.flatMap(w => w.photos))].length; %>
+      <div class="pb-row">
+        <span class="muted"><%= waitN ? `${waitN} photo${waitN === 1 ? '' : 's'} waiting in ${waiting.length} block${waiting.length === 1 ? '' : 's'}` : 'Nothing is waiting: every "Pets cut out" block is done (or the site has none).' %></span>
+        <span style="flex:1"></span>
+        <form method="POST" action="/sites/<%= site.id %>/photos/batch/cutall"><button type="submit" class="btn" <%= ready && waitN ? '' : 'disabled' %>>Cut out all</button></form>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var box = document.getElementById('job'), bar = document.getElementById('jobBar'), txt = document.getElementById('jobText'), title = document.getElementById('jobTitle');
+      function show(j) {
+        if (!j) return;
+        box.hidden = false;
+        title.textContent = j.kind === 'smartcrop' ? 'Smart crop all' : 'Cut out all';
+        bar.style.width = (j.total ? Math.round(j.done / j.total * 100) : 0) + '%';
+        txt.textContent = j.running
+          ? 'Working on photo ' + Math.min(j.done + 1, j.total || 1) + ' of ' + (j.total || '…') + '. You can leave this page; it carries on.'
+          : 'Done: ' + (j.done - j.failed) + ' of ' + j.total + ' photo' + (j.total === 1 ? '' : 's') + (j.failed ? '. ' + j.failed + ' could not be read (' + (j.note || 'error') + ').' : '.');
+      }
+      var first = <%- JSON.stringify(job).replace(/</g, '\\u003c') %>;
+      show(first);
+      if (!first || !first.running) return;
+      var t = setInterval(function () {
+        fetch('/sites/<%= site.id %>/photos/batch/status', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
+          show(d.job);
+          if (!d.job || !d.job.running) { clearInterval(t); setTimeout(function () { location.reload(); }, 900); }
+        }).catch(function () {});
+      }, 1200);
+    })();
+  </script>
+</body>
+</html>

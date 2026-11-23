@@ -73,6 +73,7 @@ const textStyles = require('./textstyles');
 const elStyles = require('./elstyles');
 const watermark = require('./watermark');   // big faint icons behind a block or card (Leo, 2026-11-09)
 const themeTokens = require('./themetokens');   // the site's own named colors, fonts and button styles (Leo, 2026-11-10)
+const siteKit = require('./sitekit');   // language switch, header button, block-only pages, app badges (Leo, 2026-11-17)
 const designLab = require('./designlab');
 const brandKit = require('./brandkit');
 const siteScore = require('./score');
@@ -93,6 +94,7 @@ const payments = require('./payments');
 const images = require('./images');
 const { optimizeUpload } = images;
 const cutout = require('./cutout');
+const photoFocus = require('./photofocus');
 const photoedit = require('./photoedit');
 const { hasAiProvider, generateCopy, generateGroundedCopy, complete: aiComplete } = require('./ai');
 const chatedit = require('./chatedit');
@@ -100,6 +102,7 @@ const accents = require('./accents');
 const industryDesign = require('./industry-design');
 const designOptionsLib = require('./design-options');
 const quality = require('./quality');
+const siteCheck = require('./sitecheck');
 const designBrief = require('./design-brief');
 const membersLib = require('./members');
 const { ZipArchive } = require('archiver');
@@ -206,6 +209,7 @@ app.locals.twinPhotos = twinPhotos;
 app.locals.ringCard = ringCard;
 app.locals.decoCard = decoCard;
 app.locals.themeTokens = themeTokens;
+app.locals.siteKit = siteKit;
 app.locals.shapeForm = shapeForm;
 app.locals.framedPhoto = framedPhoto;
 app.locals.roundPhoto = roundPhoto;
@@ -585,12 +589,16 @@ function sectionHasContent(site, key) {
     default: return true; // about, services, contact
   }
 }
+// a page built only from its own content blocks (Site kit) is there whenever it has a block on it
+function blockPageHasContent(site, key) {
+  return siteKit.isBlockPage(site, key) && (((site.sections.blocks || {}).items) || []).some(b => (b.page || 'home') === key && !(((site.layout && site.layout.hidden) || []).includes('blk:' + b.id)));
+}
 
 function pageIsAvailable(site, key) {
   if (!PAGE_KEYS.includes(key)) return false;
   const hidden = site.layout ? site.layout.hidden : [];
   if (hidden.includes(key)) return false;
-  return sectionHasContent(site, key);
+  return blockPageHasContent(site, key) || sectionHasContent(site, key);
 }
 
 // Owner-written extra pages (Financing, Service plans, ...): each item with
@@ -689,7 +697,7 @@ function renderSitePage(req, res, next, { site: siteIn, page, basePath, preview,
       if (next) return next(err);
       return res.status(500).send('Something went wrong rendering this page.');
     }
-    html = wordStyle.apply(images.optimizeHtml(html, { onVariants: () => cache.clear() }));
+    html = siteKit.pageLinks(wordStyle.apply(images.optimizeHtml(photoFocus.apply(html, site), { onVariants: () => cache.clear() })), basePath);
     if (!skipCache) cache.set(cacheKey, html);
     res.send(html);
   });
@@ -1172,7 +1180,7 @@ function parseThemeFromBody(b) {
 // editor, one entry per block; steps are one per line as "Title | text".
 // content blocks a site can have (hidden ones count too); was 20, which silently dropped new blocks (Leo, 2026-11-02)
 const MAX_BLOCKS = require('./blockcatalog').MAX_BLOCKS;
-const BLOCK_TYPES = ['photoText', 'steps', 'features', 'cta', 'chips', 'strip', 'split', 'pricing', 'team', 'stats', 'video', 'tabs', 'accordion', 'wall', 'cascade', 'photoBanner', 'beforeAfter', 'collage', 'trail', 'wave', 'bigwords', 'story', 'path', 'zoomword', 'morph', 'nodes', 'shapes', 'stack', 'herocard', 'aboutphone', 'thirds', 'mosaic', 'crossband', 'advice', 'photoblend', 'patterns', 'overlapcard', 'phototabs', 'reviewcard', 'twinphotos', 'ringcard', 'shapeform', 'framedphoto', 'roundphoto', 'photopairs', 'offsetphoto', 'aboutstory', 'aboutme', 'aboutbig', 'aboutfacts', 'aboutcollage', 'aboutnote', 'aboutpanel', 'socialshapes', 'socialphoto', 'socialcounts', 'socialonphoto', 'socialfeed', 'socialprofile', 'socialstrip', 'numcards', 'tipcards', 'decocard'];
+const BLOCK_TYPES = ['photoText', 'steps', 'features', 'cta', 'chips', 'strip', 'split', 'pricing', 'team', 'stats', 'video', 'tabs', 'accordion', 'wall', 'cascade', 'photoBanner', 'beforeAfter', 'collage', 'trail', 'wave', 'bigwords', 'story', 'path', 'zoomword', 'morph', 'nodes', 'shapes', 'stack', 'herocard', 'aboutphone', 'thirds', 'mosaic', 'crossband', 'advice', 'photoblend', 'patterns', 'overlapcard', 'phototabs', 'reviewcard', 'twinphotos', 'ringcard', 'shapeform', 'framedphoto', 'roundphoto', 'photopairs', 'offsetphoto', 'aboutstory', 'aboutme', 'aboutbig', 'aboutfacts', 'aboutcollage', 'aboutnote', 'aboutpanel', 'socialshapes', 'socialphoto', 'socialcounts', 'socialonphoto', 'socialfeed', 'socialprofile', 'socialstrip', 'numcards', 'tipcards', 'decocard', 'apphero', 'spotcards', 'compare'];
 const BLOCK_PAGES = ['home', 'about', 'services', 'testimonials', 'whyChoose', 'gallery', 'faq', 'blog', 'hours', 'contact'];
 function parseBlocksFromBody(b) {
   const cap = (v, n) => str(v, n);
@@ -1517,10 +1525,14 @@ app.post('/sites/:id/edit', requireAuth, loadOwnedSite, (req, res) => {
   if (b.estyles_json === undefined) sections.texts.elems = elStyles.clean(((req.site.sections || {}).texts || {}).elems);
   // and so are the watermarks behind blocks and cards (Watermark mode)
   if (b.wmarks_json === undefined) sections.texts.wmarks = watermark.clean(((req.site.sections || {}).texts || {}).wmarks);
+  // the Site kit (language switch, header button, block-only pages, app badges): kept when the save doesn't carry it
+  sections.kit = siteKit.parse(b, req.site.sections);
   // and so are your own pictures (+ Add picture)
   if (b.pics_json === undefined) sections.texts.pics = picBoxes.clean(((req.site.sections || {}).texts || {}).pics);
   // photos changed in the photo editor keep their originals and changes (saved by the editor itself)
   if ((req.site.sections || {}).photoEdits) sections.photoEdits = photoedit.cleanEdits(req.site.sections.photoEdits);
+  // and so is the smart crop of the photos (Photos page, photofocus.js)
+  if ((req.site.sections || {}).photoFocus) sections.photoFocus = photoFocus.clean(req.site.sections.photoFocus);
   const theme = parseThemeFromBody(b);
   // theme tokens (named colors, fonts, buttons): kept when the save doesn't carry them; while they are on they set the
   // brand colors, fonts and button shape the rest of SiteGen reads
@@ -1625,6 +1637,68 @@ app.post('/sites/:id/cutout', requireAuth, loadOwnedSite, cutoutLimiter, express
   try { res.json({ ok: true, ...(await cutout.cutout(String((req.body || {}).url || '').trim())) }); }
   catch (e) { res.status(400).json({ ok: false, error: e.message || 'Could not cut out that photo.' }); }
 });
+// Batch photo tools (photofocus.js): Smart crop all and Cut out all, one site at a time, run in the background with a
+// progress bar on the Photos page. Results are saved as each photo finishes, so stopping SiteGen loses nothing done.
+const photoJobs = new Map();   // site id -> { kind, total, done, failed, running, note }
+app.get('/sites/:id/photos/batch', requireAuth, loadOwnedSite, (req, res) => {
+  const f = photoFocus.clean(req.site.sections.photoFocus);
+  const photos = photoFocus.photoUrls(req.site);
+  res.render('photo-batch', { site: req.site, photos, focus: f, found: photos.filter(u => f.map[u]).length, waiting: photoFocus.waitingCutouts(req.site), ready: cutout.ready(), missing: cutout.missing(), job: photoJobs.get(req.site.id) || null });
+});
+app.get('/sites/:id/photos/batch/status', requireAuth, loadOwnedSite, (req, res) => res.json({ ok: true, job: photoJobs.get(req.site.id) || null }));
+function savePhotoSections(siteId, change) {
+  const row = getSite(siteId); if (!row) return;
+  const sections = change(row.sections);
+  db.prepare("UPDATE sites SET sections = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(sections), siteId);
+  invalidateSiteCache(row);
+}
+app.post('/sites/:id/photos/batch/:kind', requireAuth, loadOwnedSite, async (req, res) => {
+  const site = req.site, kind = req.params.kind;
+  const back = () => res.redirect(`/sites/${site.id}/photos/batch`);
+  if (kind === 'focus-off' || kind === 'focus-on') {
+    savePhotoSections(site.id, (sec) => ({ ...sec, photoFocus: { ...photoFocus.clean(sec.photoFocus), on: kind === 'focus-on' } }));
+    return back();
+  }
+  if (!['smartcrop', 'cutall'].includes(kind) || !cutout.ready()) return back();
+  const cur = photoJobs.get(site.id);
+  if (cur && cur.running) return back();
+  saveVersion(site.id, site.theme, site.sections, site.layout, kind === 'smartcrop' ? 'Before Smart crop all' : 'Before Cut out all');
+  const job = { kind, total: 0, done: 0, failed: 0, running: true, note: '' };
+  photoJobs.set(site.id, job);
+  back();
+  try {
+    if (kind === 'smartcrop') {
+      const list = photoFocus.photoUrls(site);
+      job.total = list.length;
+      for (const u of list) {
+        try {
+          const p = await photoFocus.focusFor(u);
+          savePhotoSections(site.id, (sec) => {
+            const f = photoFocus.clean(sec.photoFocus);
+            f.on = true; f.at = new Date().toISOString();
+            if (p) f.map[u] = p; else delete f.map[u];
+            const next = { ...sec, photoFocus: f };
+            // the top banner's own centre point, when it was never moved by hand
+            if (p && sec.hero && sec.hero.imageUrl === u && (sec.hero.focalX == null || +sec.hero.focalX === 50) && (sec.hero.focalY == null || +sec.hero.focalY === 50)) next.hero = { ...sec.hero, focalX: p[0], focalY: p[1] };
+            return next;
+          });
+        } catch (e) { job.failed++; job.note = e.message; }
+        job.done++;
+      }
+    } else {
+      const list = [...new Set(photoFocus.waitingCutouts(site).flatMap(w => w.photos))];
+      job.total = list.length;
+      for (const u of list) {
+        try {
+          const r = await cutout.cutout(u);
+          savePhotoSections(site.id, (sec) => photoFocus.addCutouts(sec, { [u]: r.url }));
+        } catch (e) { job.failed++; job.note = e.message; }
+        job.done++;
+      }
+    }
+  } finally { job.running = false; }
+});
+
 // Photo editor (photoedit.js): Smart Select. prepare = the model looks at the photo once; mask = one click's outline;
 // subject = the main pet; image = the editor's working copy (same address as the site, so the editor can read pixels)
 const photoEditLimiter = rateLimit({ windowMs: 60 * 1000, limit: 600, standardHeaders: true, legacyHeaders: false });
@@ -1749,10 +1823,55 @@ function renderHomeHtml(req, res, site) {
     } catch { clearTimeout(timer); resolve(''); }
   });
 }
+// Every page a visitor can open, as { label, page, item, path } (path under the site's address; '' is home).
+// Like the static export's list (routes/admin-export-hosting.js writeExportZip), but with every service and area page,
+// as the live server draws one for each (the export leaves out those with no text and links to the list instead).
+function sitePageList(site) {
+  const keys = PAGE_KEYS.filter(k => pageIsAvailable(site, k));
+  const trustData = site.sections.trust || {};
+  const out = [{ label: 'Home', page: 'home', item: '', path: '' }];
+  for (const k of keys) out.push({ label: (site.sections[k] && site.sections[k].heading) || PAGE_LABELS[k] || k, page: k, item: '', path: `/${k}` });
+  if (legal.enabled(site)) for (const k of legal.PAGES) out.push({ label: k === 'privacy' ? 'Privacy' : k === 'terms' ? 'Terms' : k, page: k, item: '', path: `/${k}` });
+  if (keys.includes('services')) for (const sv of servicesWithSlugs(site.sections.services.items)) out.push({ label: sv.title || sv.name || sv.slug, page: 'service', item: sv.slug, path: `/services/${sv.slug}` });
+  for (const ar of areasWithSlugs(trustData.serviceAreas, trustData.areaText)) out.push({ label: ar.name || ar.slug, page: 'area', item: ar.slug, path: `/areas/${ar.slug}` });
+  if (keys.includes('blog')) for (const po of servicesWithSlugs(site.sections.blog.items)) out.push({ label: po.title || po.slug, page: 'post', item: po.slug, path: `/blog/${po.slug}` });
+  for (const ex of extraPageList(site)) out.push({ label: ex.title, page: 'extra', item: ex.slug, path: `/p/${ex.slug}` });
+  if (site.sections.booking && site.sections.booking.enabled) out.push({ label: 'Booking', page: 'book', item: '', path: '/book' });
+  if (calc.isUsable(site.sections.calculator)) out.push({ label: 'Estimate', page: 'estimate', item: '', path: '/estimate' });
+  return out.slice(0, 80);
+}
+function renderPageHtml(req, res, site, page, item) {
+  return new Promise((resolve) => {
+    const cap = Object.create(res);
+    const timer = setTimeout(() => resolve(''), 8000);
+    cap.send = (html) => { clearTimeout(timer); resolve(String(html)); return cap; };
+    cap.status = () => cap;
+    try {
+      renderSitePage(req, cap, (err) => { clearTimeout(timer); resolve(''); void err; }, { site, page, itemSlug: item || undefined, basePath: `/sites/${site.id}/preview`, preview: true, hideMotionBar: true, contactSent: false, contactError: false, cacheKey: null });
+    } catch { clearTimeout(timer); resolve(''); }
+  });
+}
+// whole-site check (sitecheck.js): every page drawn as the preview draws it
+async function runSiteCheck(req, res, site) {
+  const pages = [];
+  for (const p of sitePageList(site)) pages.push({ label: p.label, path: p.path, html: await renderPageHtml(req, res, site, p.page, p.item) });
+  return siteCheck.check(site, pages, { basePath: `/sites/${site.id}/preview` });
+}
 async function runQuality(req, res, withScore) {
   const html = await renderHomeHtml(req, res, req.site);
   let sharpLib = null; try { sharpLib = require('sharp'); } catch { /* optional */ }
   const report = await quality.audit(req.site, { html, uploadsDir: UPLOADS_DIR, sharp: sharpLib });
+  try {
+    const sc = await runSiteCheck(req, res, req.site);
+    for (const i of sc.items) if (!report.items.some(x => x.id === i.id)) report.items.push(i);
+    for (const t of sc.passed) if (!report.passed.includes(t)) report.passed.push(t);
+    report.pagesChecked = sc.pages;
+    const rank = { error: 0, warn: 1 };
+    report.items.sort((a, b) => rank[a.severity] - rank[b.severity]);
+    report.errors = report.items.filter(i => i.severity === 'error').length;
+    report.warnings = report.items.length - report.errors;
+    report.ok = report.errors === 0;
+  } catch (e) { console.error('Whole-site check failed:', e.message); }
   if (withScore) report.score = siteScore.score(req.site, html, report, { uploadsDir: UPLOADS_DIR });
   return report;
 }
@@ -1959,6 +2078,9 @@ const {
   leadsLib, loadOwnedSite, mailer, netlify, payments, publishToNetlify, rateLimit, reports, requireAuth, runQuality,
   saveVersion, str
 }));
+
+// Prospect finder: local businesses from OpenStreetMap, their website check, demos and a status each (routes/prospects.js)
+require('./routes/prospects')(app, { db, requireAuth, rateLimit, isTestEnv, str });
 
 // The published site, leads, bookings, reviews, reports, follow-ups, robots.txt and sitemap (routes/site-and-followup.js)
 const {
