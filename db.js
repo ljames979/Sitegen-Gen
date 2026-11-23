@@ -303,6 +303,7 @@ ensureColumn('intake_submissions', 'pdf_file', "TEXT NOT NULL DEFAULT ''");
 ensureColumn('contact_submissions', 'notes', "TEXT DEFAULT ''");
 ensureColumn('contact_submissions', 'service', "TEXT DEFAULT ''");
 ensureColumn('contact_submissions', 'answers', "TEXT DEFAULT ''");
+ensureColumn('users', 'intake_autobuild', 'INTEGER NOT NULL DEFAULT 1');   // questionnaire answers build a draft by themselves
 ensureColumn('contact_submissions', 'follow_up_at', "TEXT DEFAULT ''");
 ensureColumn('contact_submissions', 'reminded_on', "TEXT DEFAULT ''");
 ensureColumn('contact_submissions', 'optout_token', "TEXT DEFAULT ''");

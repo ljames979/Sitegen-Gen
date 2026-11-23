@@ -36,6 +36,17 @@
       </form>
     </div>
 
+    <% if (flash === 'autoon' || flash === 'autooff') { %><div class="flashbar"><%= flash === 'autoon' ? 'Drafts will now build by themselves when a client sends their answers.' : 'Drafts will no longer build by themselves. Press Build the website on each set of answers.' %></div><% } %>
+    <div class="card" style="margin-bottom:20px;">
+      <h3>Build the draft by itself</h3>
+      <p class="muted" style="margin-top:-8px;">When this is on and a client sends their answers, SiteGen builds the draft website straight away (the same way the Build button does, with the blocks that suit their kind of business) and emails you its link. The draft is not published and the client can't see it until you press Show the client.</p>
+      <form method="POST" action="/intake/autobuild" class="row" style="align-items:center;">
+        <input type="hidden" name="on" value="<%= autobuild ? '0' : '1' %>">
+        <span class="pill <%= autobuild ? 'built' : 'closed' %>"><%= autobuild ? 'On' : 'Off' %></span>
+        <button type="submit" class="btn-secondary"><%= autobuild ? 'Turn off' : 'Turn on' %></button>
+      </form>
+    </div>
+
     <div class="card" style="margin-bottom:20px;">
       <h3>Questionnaire as a PDF</h3>
       <p class="muted" style="margin-top:-8px;">For clients who prefer a document: send them the fillable PDF. They can fill it in on a computer (Adobe Reader, Mac Preview or a web browser) or print it and write by hand. When it comes back, upload it here and the answers appear below for you to review, the same as the online form.<%= hasAi() ? ' Scans, handwritten copies and other questionnaire PDFs are read by the AI.' : '' %></p>
@@ -69,7 +80,8 @@
     <% subs.forEach(s => { %>
       <div class="card lk">
         <a href="/intake/submissions/<%= s.id %>"><strong><%= s.d.bizName || 'Untitled' %></strong></a>
-        <span class="pill <%= s.status %>"><%= s.status === 'built' ? 'site built' : 'new' %></span>
+        <span class="pill <%= s.status %>"><%= s.status === 'built' ? (s.source === 'auto' ? 'draft built by itself' : 'site built') : 'new' %></span>
+        <% if (s.status === 'built' && s.site_id) { %><a href="/sites/<%= s.site_id %>/edit" style="font-size:13px; margin-left:6px;">Open the draft</a><% } %>
         <div class="muted" style="font-size:13px;"><%= s.d.bizType %><%= s.d.contactName ? ' · from ' + s.d.contactName : '' %> · <%= s.created_at %><%= s.label ? ' · ' + s.label : '' %></div>
       </div>
     <% }) %>
