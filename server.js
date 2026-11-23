@@ -101,6 +101,7 @@ const accents = require('./accents');
 const industryDesign = require('./industry-design');
 const designOptionsLib = require('./design-options');
 const quality = require('./quality');
+const siteCheck = require('./sitecheck');
 const designBrief = require('./design-brief');
 const membersLib = require('./members');
 const { ZipArchive } = require('archiver');
@@ -1757,10 +1758,55 @@ function renderHomeHtml(req, res, site) {
     } catch { clearTimeout(timer); resolve(''); }
   });
 }
+// Every page a visitor can open, as { label, page, item, path } (path under the site's address; '' is home).
+// Like the static export's list (routes/admin-export-hosting.js writeExportZip), but with every service and area page,
+// as the live server draws one for each (the export leaves out those with no text and links to the list instead).
+function sitePageList(site) {
+  const keys = PAGE_KEYS.filter(k => pageIsAvailable(site, k));
+  const trustData = site.sections.trust || {};
+  const out = [{ label: 'Home', page: 'home', item: '', path: '' }];
+  for (const k of keys) out.push({ label: (site.sections[k] && site.sections[k].heading) || PAGE_LABELS[k] || k, page: k, item: '', path: `/${k}` });
+  if (legal.enabled(site)) for (const k of legal.PAGES) out.push({ label: k === 'privacy' ? 'Privacy' : k === 'terms' ? 'Terms' : k, page: k, item: '', path: `/${k}` });
+  if (keys.includes('services')) for (const sv of servicesWithSlugs(site.sections.services.items)) out.push({ label: sv.title || sv.name || sv.slug, page: 'service', item: sv.slug, path: `/services/${sv.slug}` });
+  for (const ar of areasWithSlugs(trustData.serviceAreas, trustData.areaText)) out.push({ label: ar.name || ar.slug, page: 'area', item: ar.slug, path: `/areas/${ar.slug}` });
+  if (keys.includes('blog')) for (const po of servicesWithSlugs(site.sections.blog.items)) out.push({ label: po.title || po.slug, page: 'post', item: po.slug, path: `/blog/${po.slug}` });
+  for (const ex of extraPageList(site)) out.push({ label: ex.title, page: 'extra', item: ex.slug, path: `/p/${ex.slug}` });
+  if (site.sections.booking && site.sections.booking.enabled) out.push({ label: 'Booking', page: 'book', item: '', path: '/book' });
+  if (calc.isUsable(site.sections.calculator)) out.push({ label: 'Estimate', page: 'estimate', item: '', path: '/estimate' });
+  return out.slice(0, 80);
+}
+function renderPageHtml(req, res, site, page, item) {
+  return new Promise((resolve) => {
+    const cap = Object.create(res);
+    const timer = setTimeout(() => resolve(''), 8000);
+    cap.send = (html) => { clearTimeout(timer); resolve(String(html)); return cap; };
+    cap.status = () => cap;
+    try {
+      renderSitePage(req, cap, (err) => { clearTimeout(timer); resolve(''); void err; }, { site, page, itemSlug: item || undefined, basePath: `/sites/${site.id}/preview`, preview: true, hideMotionBar: true, contactSent: false, contactError: false, cacheKey: null });
+    } catch { clearTimeout(timer); resolve(''); }
+  });
+}
+// whole-site check (sitecheck.js): every page drawn as the preview draws it
+async function runSiteCheck(req, res, site) {
+  const pages = [];
+  for (const p of sitePageList(site)) pages.push({ label: p.label, path: p.path, html: await renderPageHtml(req, res, site, p.page, p.item) });
+  return siteCheck.check(site, pages, { basePath: `/sites/${site.id}/preview` });
+}
 async function runQuality(req, res, withScore) {
   const html = await renderHomeHtml(req, res, req.site);
   let sharpLib = null; try { sharpLib = require('sharp'); } catch { /* optional */ }
   const report = await quality.audit(req.site, { html, uploadsDir: UPLOADS_DIR, sharp: sharpLib });
+  try {
+    const sc = await runSiteCheck(req, res, req.site);
+    for (const i of sc.items) if (!report.items.some(x => x.id === i.id)) report.items.push(i);
+    for (const t of sc.passed) if (!report.passed.includes(t)) report.passed.push(t);
+    report.pagesChecked = sc.pages;
+    const rank = { error: 0, warn: 1 };
+    report.items.sort((a, b) => rank[a.severity] - rank[b.severity]);
+    report.errors = report.items.filter(i => i.severity === 'error').length;
+    report.warnings = report.items.length - report.errors;
+    report.ok = report.errors === 0;
+  } catch (e) { console.error('Whole-site check failed:', e.message); }
   if (withScore) report.score = siteScore.score(req.site, html, report, { uploadsDir: UPLOADS_DIR });
   return report;
 }
