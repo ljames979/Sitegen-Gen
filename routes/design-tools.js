@@ -1,5 +1,7 @@
 // Design tools: compare, Design lab, Style Library, Signature, Blocks screen, Brand kit, devices and share links
 // server.js calls this where these routes belong in its route order and hands it the shared helpers they use.
+const suggestFix = require('../suggestfix');
+
 module.exports = function (app, deps) {
   const {
     BLK_ID, BLK_KEY, ITEM_ROUTES, LIB_HERO_DESIGNS, UPLOADS_DIR, areasWithSlugs, atelier, brandKit,
@@ -498,7 +500,31 @@ module.exports = function (app, deps) {
     const fresh = new Set(rows.filter(r => !r.seen).map(r => r.id));
     db.prepare('UPDATE share_feedback SET seen = 1 WHERE site_id = ? AND seen = 0').run(req.site.id);
     const share = shareRow(req.site.id);
-    res.render('feedback', { site: req.site, mailOn: mailer.isConfigured(), notes: rows.map(r => ({ ...fbRow(r), fresh: fresh.has(r.id) })), shareLink: share ? shareUrl(req, share.token) : '' });
+    // wording changes SiteGen can make with one click (suggestfix.js): the swap it read from the note and where those words are
+    const notes = rows.map(r => {
+      const sw = r.done ? null : suggestFix.parse(r.message);
+      const hits = sw ? suggestFix.locate(req.site.sections, sw.from) : [];
+      return { ...fbRow(r), fresh: fresh.has(r.id), swap: sw, places: [...new Set(hits.map(h => h.place))] };
+    });
+    const flash = { applied: /^\d+$/.test(String(req.query.applied || '')) ? +req.query.applied : -1, nf: /^\d+$/.test(String(req.query.nf || '')) ? +req.query.nf : 0 };
+    res.render('feedback', { site: req.site, mailOn: mailer.isConfigured(), notes, flash, shareLink: share ? shareUrl(req, share.token) : '' });
+  });
+  // Accept: swap the words on the whole site, save the earlier version first, tick the note
+  app.post('/sites/:id/feedback/:fid/accept', requireAuth, loadOwnedSite, (req, res) => {
+    const note = db.prepare('SELECT * FROM share_feedback WHERE id = ? AND site_id = ?').get(req.params.fid, req.site.id);
+    if (!note) return res.redirect(`/sites/${req.site.id}/feedback`);
+    const parsed = suggestFix.parse(note.message) || { from: '', to: '' };
+    const b = req.body || {};
+    const from = b.from !== undefined ? String(b.from).slice(0, 300) : parsed.from;
+    const to = b.to !== undefined ? String(b.to).replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, 300) : parsed.to;
+    if (from.trim().length < 2) return res.redirect(`/sites/${req.site.id}/feedback?nf=${note.id}#note-${note.id}`);
+    const r = suggestFix.apply(req.site.sections, from, to);
+    if (!r.count) return res.redirect(`/sites/${req.site.id}/feedback?nf=${note.id}#note-${note.id}`);
+    saveVersion(req.site.id, req.site.theme, req.site.sections, req.site.layout, `Before the client's change: "${from.slice(0, 40)}"`);
+    db.prepare("UPDATE sites SET sections = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(r.sections), req.site.id);
+    db.prepare('UPDATE share_feedback SET done = 1 WHERE id = ?').run(note.id);
+    invalidateSiteCache(req.site);
+    res.redirect(`/sites/${req.site.id}/feedback?applied=${r.count}#note-${note.id}`);
   });
   app.post('/sites/:id/feedback/:fid/done', requireAuth, loadOwnedSite, (req, res) => {
     const done = req.body.done === '0' ? 0 : 1;
