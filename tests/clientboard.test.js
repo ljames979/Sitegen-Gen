@@ -42,3 +42,46 @@ test('board: sites, waiting questionnaires and hidden sites', () => {
   b = clientBoard.board(db, 9, { showHidden: true });
   assert.deepStrictEqual(at('draft'), ['Draft Co']);
 });
+
+test('sitewatch: finds a down site, broken pictures and links, and an overdue hosting', async () => {
+  const siteWatch = require('../sitewatch');
+  const pages = {
+    'https://good.test/': { status: 200, body: '<nav></nav><img src="/a.jpg"><img src="/gone.jpg"><a href="/about">About</a><a href="/old">Old</a><a href="https://other.test/x">x</a>' },
+    'https://good.test/a.jpg': { status: 200 }, 'https://good.test/gone.jpg': { status: 404 },
+    'https://good.test/about': { status: 200 }, 'https://good.test/old': { status: 404 },
+    'http://nocert.test/': { status: 200, body: 'ok' }
+  };
+  const fetchFn = async (u) => { const p = pages[u]; if (!p) throw new Error('no answer'); return { status: p.status, text: async () => p.body || '' }; };
+  const ok = await siteWatch.checkSite({ netlify_url: 'https://good.test', billing_status: 'past_due' }, { fetchFn });
+  const kinds = ok.problems.map(p => p.kind);
+  assert.deepStrictEqual(kinds.sort(), ['hosting', 'pages', 'photos']);
+  assert.match(ok.problems.find(p => p.kind === 'photos').text, /gone\.jpg/);
+  assert.match(ok.problems.find(p => p.kind === 'pages').text, /\/old/);
+  const cert = await siteWatch.checkSite({ netlify_domain: 'nocert.test', netlify_ssl: 1 }, { fetchFn });
+  assert.deepStrictEqual(cert.problems.map(p => p.kind), ['https']);
+  const down = await siteWatch.checkSite({ custom_domain: 'down.test', published: 1 }, { fetchFn });
+  assert.deepStrictEqual(down.problems.map(p => p.kind), ['down']);
+  assert.strictEqual((await siteWatch.checkSite({ published: 1 }, { fetchFn })).url, '');
+});
+
+test('sitewatch: runAll saves results and emails the owner once', async () => {
+  const siteWatch = require('../sitewatch');
+  const db = new Database(':memory:');
+  db.exec(`CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT);
+    CREATE TABLE sites (id INTEGER PRIMARY KEY, user_id INT, name TEXT, slug TEXT, published INT DEFAULT 0, custom_domain TEXT, netlify_url TEXT DEFAULT '', netlify_domain TEXT DEFAULT '', netlify_ssl INT DEFAULT 0, billing_status TEXT DEFAULT 'none');`);
+  db.prepare("INSERT INTO users VALUES (1, 'leo@x.test')").run();
+  db.prepare("INSERT INTO sites (id, user_id, name, netlify_url) VALUES (1, 1, 'Up', 'https://up.test'), (2, 1, 'Down', 'https://down.test')").run();
+  db.prepare("INSERT INTO sites (id, user_id, name) VALUES (3, 1, 'Not online')").run();
+  const fetchFn = async (u) => { if (u.startsWith('https://up.test')) return { status: 200, text: async () => '<nav></nav>' }; throw new Error('refused'); };
+  const sent = [];
+  const mailer = { isConfigured: () => true, sendReport: async (m) => { sent.push(m); } };
+  assert.strictEqual(siteWatch.due(db), true);
+  const r = await siteWatch.runAll(db, { fetchFn, mailer });
+  assert.deepStrictEqual(r, { checked: 2, withProblems: 1, emailed: 1 });
+  assert.match(sent[0].text, /Down \(https:\/\/down\.test\/\)/);
+  assert.doesNotMatch(sent[0].text, /Up \(/);
+  assert.strictEqual(siteWatch.due(db), false);
+  const res = siteWatch.results(db, 1);
+  assert.strictEqual(res.length, 2);
+  assert.strictEqual(res[0].name, 'Down');
+});

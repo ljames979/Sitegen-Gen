@@ -70,7 +70,7 @@ function setHidden(db, userId, siteId, hide) {
 }
 
 // every client of one owner, sorted into STAGES (newest change first in each)
-function board(db, userId, { showHidden = false } = {}) {
+function board(db, userId, { showHidden = false, watch = [] } = {}) {
   const rows = db.prepare(`
     SELECT s.id, s.name, s.published, s.netlify_url, s.updated_at, s.billing_required, s.billing_status,
       ss.package, ss.approved_at, ss.deposit_cents, ss.pay_status, ss.launch_state, ss.launched_at,
@@ -84,7 +84,16 @@ function board(db, userId, { showHidden = false } = {}) {
     WHERE s.user_id = ?
     ORDER BY s.updated_at DESC, s.id DESC`).all(userId);
   const hidden = new Set(prefs(db, userId).hidden);
-  const cards = rows.map(card).map(c => ({ ...c, hidden: hidden.has(c.id) })).filter(c => showHidden || !c.hidden);
+  const watchBy = new Map(watch.map(w => [w.site_id, w]));
+  const cards = rows.map(card).map(c => {
+    const w = watchBy.get(c.id);
+    // the daily live check (sitewatch.js): its problems lead the card, as they matter most
+    if (w && w.problems && w.problems.length) {
+      c.notes.unshift(...w.problems.filter(p => p.kind !== 'hosting' || !c.notes.some(n => /Hosting payment overdue/.test(n.text))).map(p => ({ tone: 'bad', text: p.text })));
+      if (c.stage === 'live') c.next = { label: 'Open Launch', href: `/sites/${c.id}/launch` };
+    } else if (w && c.stage === 'live') c.notes.push({ tone: 'good', text: `Checked ${String(w.checked_at).slice(0, 10)}: all fine` });
+    return { ...c, hidden: hidden.has(c.id) };
+  }).filter(c => showHidden || !c.hidden);
   const hiddenCount = rows.filter(r => hidden.has(r.id)).length;
   const subs = db.prepare("SELECT id, data, created_at, package FROM intake_submissions WHERE user_id = ? AND (site_id IS NULL OR site_id NOT IN (SELECT id FROM sites)) ORDER BY id DESC LIMIT 60").all(userId);
   for (const s of subs) {

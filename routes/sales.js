@@ -7,6 +7,8 @@ const salesLib = require('../packages');
 const gbp = require('../gbp');
 
 const clientBoard = require('../clientboard');
+const siteWatch = require('../sitewatch');
+const { safeFetch } = require('../scraper');
 
 module.exports = function (app, deps) {
   const {
@@ -154,7 +156,16 @@ module.exports = function (app, deps) {
   }
   // ======================= All clients board (clientboard.js) =======================
   app.get('/board', requireAuth, (req, res) => {
-    res.render('board', { b: clientBoard.board(db, req.session.userId, { showHidden: req.query.all === '1' }) });
+    const watch = siteWatch.results(db, req.session.userId);
+    res.render('board', { b: clientBoard.board(db, req.session.userId, { showHidden: req.query.all === '1', watch }), watch, checked: /^\d+$/.test(String(req.query.checked || '')) ? +req.query.checked : -1 });
+  });
+  // daily check of live sites (sitewatch.js): "Check now" on the board checks this owner's sites without emailing
+  const watchFetch = async (url) => (await safeFetch(url, { timeoutMs: 15000 })).response;
+  const watchHost = () => sales.statsBase() || '';
+  app.post('/board/check', requireAuth, async (req, res) => {
+    let r = { checked: 0 };
+    try { r = await siteWatch.runAll(db, { fetchFn: watchFetch, mailer, userId: req.session.userId, email: false }); } catch (e) { console.error('Live site check failed:', e.message); }
+    res.redirect('/board?checked=' + r.checked);
   });
   // keep a site off the board (Leo's own sites, demos, tests) or put it back
   app.post('/board/hide', requireAuth, (req, res) => {
@@ -394,6 +405,10 @@ module.exports = function (app, deps) {
     setInterval(() => runLaunchRetries().catch(e => console.error('Launch retries failed:', e.message)), sales.LAUNCH_RETRY_MS).unref();
     setInterval(() => runFormSync().catch(e => console.error('Netlify form sync failed:', e.message)), 10 * 60 * 1000).unref();
     setTimeout(() => runFormSync().catch(() => {}), 2 * 60 * 1000).unref();
+    // the live site check: about once a day (10 minutes after SiteGen starts, then whenever a day has passed)
+    const watchTick = () => { if (siteWatch.due(db)) siteWatch.runAll(db, { fetchFn: watchFetch, mailer, host: watchHost() }).catch(e => console.error('Live site check failed:', e.message)); };
+    setTimeout(watchTick, 10 * 60 * 1000).unref();
+    setInterval(watchTick, 60 * 60 * 1000).unref();
   }
   if (isTestEnv && process.env.NODE_ENV === 'test') {
     app.post('/__test/sales-jobs', async (req, res) => {
