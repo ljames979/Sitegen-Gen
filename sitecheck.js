@@ -110,7 +110,7 @@ function check(site, pages, opts = {}) {
   if (ph.length) add({ id: 'pages-placeholder', area: 'pages', severity: 'error', title: 'Placeholder text is still on the site', detail: `${list(ph.map(p => `${p.text} on ${p.page}`), 6)}. Swap each one for the client's real details, or take it out, before the site goes live.` });
   else pass('No [placeholders] left on any page');
   if (lorem.length) add({ id: 'pages-lorem', area: 'pages', severity: 'error', title: 'Sample "Lorem ipsum" words on the site', detail: `Found on ${list(lorem)}. Replace them with the client's own words.` });
-  if (fakePhone.length || fakeEmail.length) add({ id: 'pages-sample-contact', area: 'pages', severity: 'error', title: 'A sample phone number or email address is on the site', detail: `${fakePhone.length ? `A 555 phone number on ${list(fakePhone)}. ` : ''}${fakeEmail.length ? `An example email address on ${list(fakeEmail)}. ` : ''}Use the client's real details.` });
+  if (fakePhone.length || fakeEmail.length) add({ id: 'pages-sample-contact', area: 'pages', severity: fakeEmail.length ? 'error' : 'warn', title: 'A sample phone number or email address is on the site', detail: `${fakePhone.length ? `A 555 phone number on ${list(fakePhone)}. ` : ''}${fakeEmail.length ? `An example email address on ${list(fakeEmail)}. ` : ''}Use the client's real details.` });
   if (!lorem.length && !fakePhone.length && !fakeEmail.length) pass('No sample words, 555 numbers or example emails');
 
   if (badLinks.length) add({ id: 'pages-links', area: 'pages', severity: 'error', title: 'Links to pages that do not exist', detail: `${list(badLinks, 5)}. Visitors who click them get a "page not found". Point them at a page the site has, or turn that page on.` });

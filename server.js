@@ -94,6 +94,7 @@ const payments = require('./payments');
 const images = require('./images');
 const { optimizeUpload } = images;
 const cutout = require('./cutout');
+const photoFocus = require('./photofocus');
 const photoedit = require('./photoedit');
 const { hasAiProvider, generateCopy, generateGroundedCopy, complete: aiComplete } = require('./ai');
 const chatedit = require('./chatedit');
@@ -696,7 +697,7 @@ function renderSitePage(req, res, next, { site: siteIn, page, basePath, preview,
       if (next) return next(err);
       return res.status(500).send('Something went wrong rendering this page.');
     }
-    html = siteKit.pageLinks(wordStyle.apply(images.optimizeHtml(html, { onVariants: () => cache.clear() })), basePath);
+    html = siteKit.pageLinks(wordStyle.apply(images.optimizeHtml(photoFocus.apply(html, site), { onVariants: () => cache.clear() })), basePath);
     if (!skipCache) cache.set(cacheKey, html);
     res.send(html);
   });
@@ -1530,6 +1531,8 @@ app.post('/sites/:id/edit', requireAuth, loadOwnedSite, (req, res) => {
   if (b.pics_json === undefined) sections.texts.pics = picBoxes.clean(((req.site.sections || {}).texts || {}).pics);
   // photos changed in the photo editor keep their originals and changes (saved by the editor itself)
   if ((req.site.sections || {}).photoEdits) sections.photoEdits = photoedit.cleanEdits(req.site.sections.photoEdits);
+  // and so is the smart crop of the photos (Photos page, photofocus.js)
+  if ((req.site.sections || {}).photoFocus) sections.photoFocus = photoFocus.clean(req.site.sections.photoFocus);
   const theme = parseThemeFromBody(b);
   // theme tokens (named colors, fonts, buttons): kept when the save doesn't carry them; while they are on they set the
   // brand colors, fonts and button shape the rest of SiteGen reads
@@ -1634,6 +1637,68 @@ app.post('/sites/:id/cutout', requireAuth, loadOwnedSite, cutoutLimiter, express
   try { res.json({ ok: true, ...(await cutout.cutout(String((req.body || {}).url || '').trim())) }); }
   catch (e) { res.status(400).json({ ok: false, error: e.message || 'Could not cut out that photo.' }); }
 });
+// Batch photo tools (photofocus.js): Smart crop all and Cut out all, one site at a time, run in the background with a
+// progress bar on the Photos page. Results are saved as each photo finishes, so stopping SiteGen loses nothing done.
+const photoJobs = new Map();   // site id -> { kind, total, done, failed, running, note }
+app.get('/sites/:id/photos/batch', requireAuth, loadOwnedSite, (req, res) => {
+  const f = photoFocus.clean(req.site.sections.photoFocus);
+  const photos = photoFocus.photoUrls(req.site);
+  res.render('photo-batch', { site: req.site, photos, focus: f, found: photos.filter(u => f.map[u]).length, waiting: photoFocus.waitingCutouts(req.site), ready: cutout.ready(), missing: cutout.missing(), job: photoJobs.get(req.site.id) || null });
+});
+app.get('/sites/:id/photos/batch/status', requireAuth, loadOwnedSite, (req, res) => res.json({ ok: true, job: photoJobs.get(req.site.id) || null }));
+function savePhotoSections(siteId, change) {
+  const row = getSite(siteId); if (!row) return;
+  const sections = change(row.sections);
+  db.prepare("UPDATE sites SET sections = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(sections), siteId);
+  invalidateSiteCache(row);
+}
+app.post('/sites/:id/photos/batch/:kind', requireAuth, loadOwnedSite, async (req, res) => {
+  const site = req.site, kind = req.params.kind;
+  const back = () => res.redirect(`/sites/${site.id}/photos/batch`);
+  if (kind === 'focus-off' || kind === 'focus-on') {
+    savePhotoSections(site.id, (sec) => ({ ...sec, photoFocus: { ...photoFocus.clean(sec.photoFocus), on: kind === 'focus-on' } }));
+    return back();
+  }
+  if (!['smartcrop', 'cutall'].includes(kind) || !cutout.ready()) return back();
+  const cur = photoJobs.get(site.id);
+  if (cur && cur.running) return back();
+  saveVersion(site.id, site.theme, site.sections, site.layout, kind === 'smartcrop' ? 'Before Smart crop all' : 'Before Cut out all');
+  const job = { kind, total: 0, done: 0, failed: 0, running: true, note: '' };
+  photoJobs.set(site.id, job);
+  back();
+  try {
+    if (kind === 'smartcrop') {
+      const list = photoFocus.photoUrls(site);
+      job.total = list.length;
+      for (const u of list) {
+        try {
+          const p = await photoFocus.focusFor(u);
+          savePhotoSections(site.id, (sec) => {
+            const f = photoFocus.clean(sec.photoFocus);
+            f.on = true; f.at = new Date().toISOString();
+            if (p) f.map[u] = p; else delete f.map[u];
+            const next = { ...sec, photoFocus: f };
+            // the top banner's own centre point, when it was never moved by hand
+            if (p && sec.hero && sec.hero.imageUrl === u && (sec.hero.focalX == null || +sec.hero.focalX === 50) && (sec.hero.focalY == null || +sec.hero.focalY === 50)) next.hero = { ...sec.hero, focalX: p[0], focalY: p[1] };
+            return next;
+          });
+        } catch (e) { job.failed++; job.note = e.message; }
+        job.done++;
+      }
+    } else {
+      const list = [...new Set(photoFocus.waitingCutouts(site).flatMap(w => w.photos))];
+      job.total = list.length;
+      for (const u of list) {
+        try {
+          const r = await cutout.cutout(u);
+          savePhotoSections(site.id, (sec) => photoFocus.addCutouts(sec, { [u]: r.url }));
+        } catch (e) { job.failed++; job.note = e.message; }
+        job.done++;
+      }
+    }
+  } finally { job.running = false; }
+});
+
 // Photo editor (photoedit.js): Smart Select. prepare = the model looks at the photo once; mask = one click's outline;
 // subject = the main pet; image = the editor's working copy (same address as the site, so the editor can read pixels)
 const photoEditLimiter = rateLimit({ windowMs: 60 * 1000, limit: 600, standardHeaders: true, legacyHeaders: false });
