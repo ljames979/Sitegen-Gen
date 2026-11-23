@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>All clients — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    .bd-top { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 0 0 14px; }
+    .bd-cols { display: grid; grid-template-columns: repeat(5, minmax(220px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 8px; align-items: start; }
+    @media (max-width: 900px) { .bd-cols { grid-template-columns: 1fr; } }
+    .bd-col { background: #f1f5f9; border-radius: 12px; padding: 10px; min-width: 0; }
+    .bd-col h2 { font-size: 14px; margin: 2px 4px 2px; display: flex; justify-content: space-between; }
+    .bd-col h2 span { color: var(--muted); font-weight: 600; }
+    .bd-col .hint { font-size: 12px; color: var(--muted); margin: 0 4px 10px; }
+    .bd-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+    .bd-card strong a { color: inherit; text-decoration: none; } .bd-card strong a:hover { text-decoration: underline; }
+    .bd-note { display: block; font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+    .bd-note.good { color: #065f46; } .bd-note.warn { color: #92400e; } .bd-note.bad { color: #991b1b; font-weight: 600; }
+    .bd-card .btn-secondary, .bd-card .btn { display: inline-block; margin-top: 8px; padding: 5px 10px; font-size: 13px; }
+    .bd-empty { font-size: 13px; color: var(--muted); margin: 4px; }
+    .bd-find { margin: 0; max-width: 260px; }
+    .bd-hide { display: inline; margin-left: 6px; } .bd-hide button { all: unset; cursor: pointer; font-size: 12px; color: var(--muted); text-decoration: underline; }
+    .bd-card.is-hidden { opacity: .6; }
+  </style>
+</head>
+<body>
+  <nav><div class="row"><a href="/dashboard" class="muted">&larr; Dashboard</a><strong>All clients</strong><span style="flex:1"></span><a href="/intake">Client questionnaires</a></div></nav>
+  <div class="container" style="max-width:1400px;">
+    <div class="bd-top">
+      <span class="muted"><%= b.total %> client<%= b.total === 1 ? '' : 's' %><%= b.todo ? ` · ${b.todo} need${b.todo === 1 ? 's' : ''} you now (in red)` : '' %>. Each card shows where that client is and the next step.</span>
+      <input type="search" class="bd-find" id="bdFind" placeholder="Find a client" aria-label="Find a client">
+      <% if (b.hiddenCount) { %><a href="/board<%= b.showHidden ? '' : '?all=1' %>" style="font-size:13px;"><%= b.showHidden ? 'Hide the sites kept off the board' : `Show ${b.hiddenCount} site${b.hiddenCount === 1 ? '' : 's'} kept off the board` %></a><% } %>
+    </div>
+    <div class="bd-cols">
+      <% b.cols.forEach(col => { %>
+      <section class="bd-col" aria-label="<%= col.label %>">
+        <h2><%= col.label %> <span><%= col.cards.length %></span></h2>
+        <p class="hint"><%= col.hint %></p>
+        <% if (!col.cards.length) { %><p class="bd-empty">Nobody here.</p><% } %>
+        <% col.cards.forEach(c => { %>
+        <div class="bd-card<%= c.hidden ? ' is-hidden' : '' %>" data-name="<%= String(c.name).toLowerCase() %>">
+          <strong><% if (c.kind === 'site') { %><a href="/sites/<%= c.id %>/edit"><%= c.name %></a><% } else { %><a href="/intake/submissions/<%= c.id %>"><%= c.name %></a><% } %></strong>
+          <% c.notes.forEach(nt => { %><span class="bd-note <%= nt.tone %>"><%= nt.text %></span><% }) %>
+          <% if (c.from) { %><span class="bd-note">From the questionnaire</span><% } %>
+          <% if (c.next) { %><a class="<%= c.notes.some(x => x.tone === 'bad') ? 'btn' : 'btn-secondary' %>" href="<%= c.next.href %>"><%= c.next.label %></a><% } %>
+          <% if (c.kind === 'site') { %><form method="POST" action="/board/hide" class="bd-hide"><input type="hidden" name="site" value="<%= c.id %>"><input type="hidden" name="hide" value="<%= c.hidden ? '0' : '1' %>"><input type="hidden" name="all" value="<%= b.showHidden ? '1' : '0' %>"><button type="submit" title="<%= c.hidden ? 'Put it back on the board' : 'For your own sites, demos and tests' %>"><%= c.hidden ? 'Put back on the board' : 'Not a client' %></button></form><% } %>
+        </div>
+        <% }) %>
+      </section>
+      <% }) %>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var f = document.getElementById('bdFind');
+      f.addEventListener('input', function () {
+        var q = f.value.trim().toLowerCase();
+        document.querySelectorAll('.bd-card').forEach(function (c) { c.hidden = !!q && c.getAttribute('data-name').indexOf(q) < 0; });
+      });
+    })();
+  </script>
+</body>
+</html>

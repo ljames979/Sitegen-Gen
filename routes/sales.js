@@ -6,6 +6,8 @@ const sales = require('../salesflow');
 const salesLib = require('../packages');
 const gbp = require('../gbp');
 
+const clientBoard = require('../clientboard');
+
 module.exports = function (app, deps) {
   const {
     PORT, billing, clientLimiter, db, findTemplate, getSite, hydrateSite, invalidateSiteCache, isTestEnv, isValidEmail,
@@ -150,6 +152,17 @@ module.exports = function (app, deps) {
       gate: parseInt(req.query.gate, 10) || 0, reportTick: req.query.gate ? req.query.report === '1' : !site.sections.meta.reportEmail
     };
   }
+  // ======================= All clients board (clientboard.js) =======================
+  app.get('/board', requireAuth, (req, res) => {
+    res.render('board', { b: clientBoard.board(db, req.session.userId, { showHidden: req.query.all === '1' }) });
+  });
+  // keep a site off the board (Leo's own sites, demos, tests) or put it back
+  app.post('/board/hide', requireAuth, (req, res) => {
+    const site = db.prepare('SELECT id FROM sites WHERE id = ? AND user_id = ?').get(req.body.site, req.session.userId);
+    if (site) clientBoard.setHidden(db, req.session.userId, site.id, req.body.hide === '1');
+    res.redirect('/board' + (req.body.all === '1' ? '?all=1' : ''));
+  });
+
   app.get('/sites/:id/launch', requireAuth, loadOwnedSite, async (req, res) => {
     let quality = null;
     try { const q = await runQuality(req, res); quality = { ok: q.ok, red: q.errors || 0 }; } catch (e) { console.error('Quality check failed:', e.message); }
