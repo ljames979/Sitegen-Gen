@@ -1491,7 +1491,7 @@ app.get('/sites/:id/edit', requireAuth, loadOwnedSite, (req, res) => {
     library: libraryRows(req.session.userId),
     saved: req.query.saved === '1',
     imported: req.query.imported === '1',
-    refreshed: req.query.refreshed === '1',
+    refreshed: req.query.refreshed === '1' ? true : req.query.refreshed === 'failed' ? 'failed' : false,
     generated: req.query.generated === '1' || req.query.generated === 'ai',
     generatedByAi: req.query.generated === 'ai',
     fromIntake: req.query.fromintake === '1',
@@ -1973,28 +1973,7 @@ app.post('/sites/:id/publish', requireAuth, loadOwnedSite, async (req, res) => {
   res.redirect(`/sites/${req.site.id}/edit`);
 });
 
-app.post('/sites/:id/refresh', requireAuth, loadOwnedSite, importLimiter, async (req, res) => {
-  if (!req.site.source_url) {
-    return res.redirect(`/sites/${req.site.id}/edit`);
-  }
-  try {
-    saveVersion(req.site.id, req.site.theme, req.site.sections, req.site.layout, 'Before refresh');
-    const scraped = await scrapeUrl(req.site.source_url);
-    db.prepare(
-      `UPDATE sites SET theme = ?, sections = ?, seo_title = ?, seo_description = ?, updated_at = datetime('now') WHERE id = ?`
-    ).run(
-      JSON.stringify(scraped.theme),
-      JSON.stringify(scraped.sections),
-      scraped.sections.seo.title,
-      scraped.sections.seo.description,
-      req.site.id
-    );
-    invalidateSiteCache(req.site);
-    res.redirect(`/sites/${req.site.id}/edit?refreshed=1`);
-  } catch (err) {
-    res.redirect(`/sites/${req.site.id}/edit`);
-  }
-});
+// "Refresh from source" lives in routes/account.js next to the importer (it keeps the design and updates only the words and photos).
 
 app.post('/sites/:id/versions/:versionId/restore', requireAuth, loadOwnedSite, (req, res) => {
   const version = db.prepare('SELECT * FROM site_versions WHERE id = ? AND site_id = ?').get(req.params.versionId, req.site.id);

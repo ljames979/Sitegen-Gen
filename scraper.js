@@ -439,6 +439,8 @@ async function scrapeUrl(rawUrl) {
 
 module.exports = {
   scrapeUrl,
+  parseFromHtml,
+  renderWithPlaywright,
   assertPublicHost,
   safeFetch,
   absolutize,
