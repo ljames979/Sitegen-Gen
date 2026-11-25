@@ -65,8 +65,11 @@ before(async () => {
 
   let oldHeadline = 'Old Biz - Original Headline';
   oldSiteServer = await startOldSiteServer(() => `<!DOCTYPE html><html><head><title>Old Biz</title>
-    <meta name="description" content="An old business site."></head><body>
+    <meta name="description" content="An old business site.">
+    <style>.site-header{background:#7a2e8e} .btn{background:#7a2e8e;color:#fff} h1{font-family:'Playfair Display',serif}</style></head><body>
+    <nav><a href="/about">About</a></nav>
     <h1>${oldHeadline}</h1>
+    <p>Family owned since 2004 and still answering the phone ourselves.</p>
     <p>This paragraph is long enough to be picked up as the about-section body text for the import test.</p>
     <h2>Cleaning</h2><p>We clean things.</p>
     <address>1 Test Ave, Testville</address>
@@ -1396,6 +1399,52 @@ test('refresh-from-source pulls updated content and keeps history', async () => 
 
   const html = await (await c.get(editPath)).text();
   assert.match(html, /Headline After Update/);
+});
+
+test('modernize keeps the old site\'s own look and details, and lists what is missing', async () => {
+  const c = makeClient();
+  await c.post('/signup', { email: 'modern-keep@example.com', password: 'password1' });
+  const res = await c.post('/sites/import', { url: `http://localhost:${OLD_SITE_PORT}/` });
+  const editPath = res.headers.get('location');
+  const siteId = editPath.match(/\/sites\/(\d+)\//)[1];
+  const html = await (await c.get(editPath)).text();
+  assert.match(html, /What we took from the old site/);
+  assert.match(html, /Opening hours were not found/);
+  assert.match(html, /Family owned · Since 2004/);
+  const Database = require('better-sqlite3');
+  const raw = new Database(TEST_DB);
+  const row = raw.prepare('SELECT theme, sections, layout FROM sites WHERE id = ?').get(siteId);
+  const theme = JSON.parse(row.theme), sections = JSON.parse(row.sections), layout = JSON.parse(row.layout);
+  assert.equal(theme.primaryColor, '#7a2e8e', 'their own brand color, not the default blue');
+  assert.equal(theme.headingFont, 'Playfair Display', 'their heading font');
+  assert.deepEqual(sections.hours.items, [], 'no made-up 9 to 5 hours');
+  assert.deepEqual(sections.testimonials.items, [], 'no made-up reviews');
+  assert.ok(layout.hidden.includes('faq'), 'no FAQ found: hidden, not a placeholder question');
+  assert.ok(sections.services.items.some(i => i.title === 'Cleaning'));
+  assert.deepEqual(sections.trust.badges, ['Family owned', 'Since 2004']);
+  const rep = sections.meta.import;
+  assert.ok(rep.style && rep.style.alternatives.length === 3, 'the closest look and three others');
+  assert.deepEqual(rep.pages.map(p => p.kind), ['home', 'about']);
+
+  // another of the suggested looks, from the report
+  const alt = rep.style.alternatives[0].id;
+  assert.equal((await c.post(`/sites/${siteId}/import-style`, { style: alt })).status, 302);
+  assert.equal(JSON.parse(raw.prepare('SELECT theme FROM sites WHERE id = ?').get(siteId).theme).style, alt);
+  await c.post(`/sites/${siteId}/import-style`, { style: 'not-a-style' });
+  assert.equal(JSON.parse(raw.prepare('SELECT theme FROM sites WHERE id = ?').get(siteId).theme).style, alt, 'only the suggested looks');
+
+  // refresh keeps the design: the look, the colors and the layout stay; the words update
+  const t2 = JSON.parse(raw.prepare('SELECT theme FROM sites WHERE id = ?').get(siteId).theme);
+  t2.primaryColor = '#123456';
+  raw.prepare('UPDATE sites SET theme = ? WHERE id = ?').run(JSON.stringify(t2), siteId);
+  global.__setOldHeadline('Old Biz - Fresh Words');
+  assert.equal((await c.post(`/sites/${siteId}/refresh`)).status, 302);
+  const after = raw.prepare('SELECT theme, sections FROM sites WHERE id = ?').get(siteId);
+  assert.equal(JSON.parse(after.theme).primaryColor, '#123456');
+  assert.equal(JSON.parse(after.theme).style, alt);
+  assert.equal(JSON.parse(after.sections).hero.headline, 'Old Biz - Fresh Words');
+  global.__setOldHeadline('Old Biz - Original Headline');
+  raw.close();
 });
 
 test('import rejects a URL pointing at a private/internal address', async () => {

@@ -163,8 +163,9 @@
     <div class="card" style="margin-bottom: 24px;">
       <h3>Modernize an existing website</h3>
       <p class="muted" style="margin-top:-8px;">
-        Paste the link to an old, live website. We'll pull its headline, text, images,
-        and contact info and drop them into a fresh, modern design you can edit and republish.
+        Paste the link to an old, live website. We'll read it (the home page and its About, Services, Reviews,
+        Gallery, Contact and FAQ pages) and keep what makes the business itself: its own words, services, reviews,
+        hours, photos, colors, fonts and logo, in a fresh design closest to its look. Nothing is made up; a list shows what still needs the client.
       </p>
       <% if (importError) { %><div class="error"><%= importError %></div><% } %>
       <form method="POST" action="/sites/import" id="importForm">

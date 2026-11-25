@@ -276,8 +276,8 @@
     <% const startTab = bookingFlash ? 'features' : (newClientLink || clientLinkFlash || newInvite || clientUserFlash) ? 'settings' : (typeof indFlash !== 'undefined' && indFlash) ? 'design' : 'content'; %>
     <div class="editor-panel" id="editorPanel" data-tab="<%= startTab %>">
       <% if (saved) { %><div class="flash">Saved.</div><% } %>
-      <% if (imported) { %><div class="flash">Imported from your old site and switched to a modern theme — review and edit anything below, then publish.</div><% } %>
-      <% if (refreshed) { %><div class="flash">Refreshed content from the source URL. Your previous version was saved to history in case you want it back.</div><% } %>
+      <% if (imported) { %><div class="flash">Imported from the old site with its own words, photos, colors and fonts, in the look closest to it. Check the list below, then publish.</div><%- include('_import-report', { site }) %><% } %>
+      <% if (refreshed === 'failed') { %><div class="flash" style="background:#fef2f2; color:#991b1b;">Couldn't read the old site just now, so nothing was changed. Try again in a moment.</div><% } else if (refreshed) { %><div class="flash">Refreshed the words, hours, contact details and new photos from the old site. The design was kept. Your previous version was saved to history in case you want it back.</div><%- include('_import-report', { site }) %><% } %>
       <% if (fromIntake) { %><div class="flash">Built from your client's questionnaire answers. Their own words were used for the services, story and FAQ. Review the "Check these" list on their answers page before publishing.</div><% } %>
       <% if (generated && generatedByAi) { %><div class="flash">Generated a starting point and wrote the text with AI from the details you gave. Read it through and fix anything that isn't accurate for this business before publishing.</div><% } else if (generated) { %><div class="flash">Generated a starting point for your site from the built-in templates — the text is generic starter copy, so review it (especially any claims like "licensed", "24/7" or "same-day") before publishing.</div><% } %>
       <% if (rewrite === 'done') { %><div class="flash">Rewrote the text with AI. Your previous version was saved to history in case you want it back.</div><% } %>
@@ -1022,8 +1022,9 @@
         <% if (site.source_url) { %>
           <details class="section-block settings-block" data-tab="settings">
             <summary>Imported from <%= site.source_url %></summary>
-            <p class="muted" style="font-size:13px;">Pull fresh content from the original URL. Your current content is saved to history first, so you can undo this.</p>
-            <button type="submit" form="refreshForm" class="btn-secondary" onclick="return confirm('Refresh content from the original site? Your current edits will be saved to history first.');">Refresh from source</button>
+            <% if (!imported && !refreshed) { %><%- include('_import-report', { site }) %><% } %>
+            <p class="muted" style="font-size:13px;">Pull fresh words, hours, contact details and new photos from the original site. The design (look, colors, fonts, blocks and layout) stays as it is. Your current content is saved to history first, so you can undo this.</p>
+            <button type="submit" form="refreshForm" class="btn-secondary" onclick="return confirm('Refresh the words and photos from the original site? The design stays. Your current edits will be saved to history first.');">Refresh from source</button>
           </details>
         <% } %>
 
@@ -1043,6 +1044,7 @@
       </form>
       <%# These forms live OUTSIDE the editor form (HTML does not allow nested forms; a nested one cuts the editor form short and drops fields) %>
       <% if (site.source_url) { %><form id="refreshForm" method="POST" action="/sites/<%= site.id %>/refresh" style="display:none;"></form><% } %>
+      <% if (site.sections.meta && site.sections.meta.import) { %><form id="impStyleForm" method="POST" action="/sites/<%= site.id %>/import-style" style="display:none;"></form><% } %>
       <form id="indForm" method="POST" action="/sites/<%= site.id %>/apply-industry" style="display:none;"></form>
       <form id="bookingPresetForm" method="POST" action="/sites/<%= site.id %>/booking/preset" style="display:none;"></form>
       <% versions.forEach(v => { %><form id="restore-<%= v.id %>" method="POST" action="/sites/<%= site.id %>/versions/<%= v.id %>/restore" style="display:none;"></form><% }) %>

@@ -8,6 +8,10 @@ const { safeFetch } = require('../scraper');
 const UPLOADS_DIR = require('path').join(ROOT, 'public', 'uploads');
 
 const prospectsLib = require('../prospects');
+const modernize = require('../modernize');
+const grounding = require('../grounding');
+const fontsLib = require('../fonts');
+const { generateGroundedCopy } = require('../ai');
 
 module.exports = function (app, deps) {
   const {
@@ -108,6 +112,157 @@ module.exports = function (app, deps) {
       if (p) prospectsLib.update(db, req.session.userId, pid, { site_id: siteId, status: p.status === 'new' ? 'demo' : p.status });
     } catch (e) { console.error('Linking the demo to the prospect failed:', e.message); }
   }
+  // ---- Modernize an existing website (modernize.js reads the old site; see there for what it finds) ----
+  // The old site's own words, as "facts" for the facts-only AI wording (grounding.js), so nothing new is claimed.
+  function importFacts(m, typeLabel) {
+    return {
+      name: m.name, type: typeLabel || '', city: '', years: '', areas: [], badges: m.badges,
+      services: m.services.map(x => ({ name: x.title, desc: x.description, price: '' })),
+      diffs: m.phrases, faq: m.faq.map(x => ({ q: x.question, a: x.answer })),
+      about: [m.story, m.h1, m.metaDescription].filter(Boolean).join('\n\n'), tagline: m.tagline, tone: '',
+      address: m.address, phone: m.phone, email: m.email, hours: m.hours.map(h => `${h.day} ${h.time}`).join(' ')
+    };
+  }
+  const usableHeadline = (h, name) => !!h && h.length >= 6 && h.toLowerCase() !== String(name || '').toLowerCase() && !/^(welcome|home|hello|hi there|welcome to our (web)?site)\b/i.test(h);
+  const KEEP_VOICE = 'This business already has a website. Keep its own voice: reuse its tagline, the names of people and places, years, and its own distinctive phrases word for word where they fit. Tidy the wording; do not make it more generic.';
+
+  // The words of an imported site, from the old site (and AI tidying that may only use those words). Used by the
+  // import and by "Refresh from source". Returns what to put in the sections; nothing here touches the design.
+  async function importedContent(m, industry, style) {
+    const label = industry && industry.id !== 'generic' ? industry.label : '';
+    const facts = importFacts(m, label);
+    let ai = null;
+    if (hasAiProvider()) {
+      ai = await generateGroundedCopy({ ...facts, design: [KEEP_VOICE, designBrief.copyBrief(label, style)].filter(Boolean).join('\n') });
+      if (ai) {
+        const probs = grounding.checkCopy(ai, facts);
+        if (probs.length) {
+          const retry = await generateGroundedCopy({ ...facts, design: KEEP_VOICE }, { feedback: [...new Set(probs.map(p => p.reason))].slice(0, 6).join('; ') });
+          if (retry) ai = retry;
+        }
+      }
+    }
+    const aiSvc = (title) => ai && (ai.services || []).find(x => x.title.toLowerCase() === title.toLowerCase());
+    const c = {
+      ai: !!ai, facts,
+      hero: {
+        headline: (ai && ai.hero.headline) || (usableHeadline(m.h1, m.name) ? m.h1 : '') || m.name,
+        subheadline: m.tagline || (ai && ai.hero.subheadline) || m.metaDescription.slice(0, 160),
+        ctaText: (ai && ai.hero.ctaText) || (m.phone ? 'Call us today' : 'Get in touch')
+      },
+      about: (ai && ai.about) || m.story,
+      services: m.services.map(x => { const a = aiSvc(x.title); return { title: x.title, description: x.description || (a && a.description) || '', detail: (a && a.detail) || '' }; }),
+      reviews: m.reviews.map(r => ({ quote: r.quote, author: r.author })),
+      faq: m.faq,
+      hours: m.hours,
+      whyChoose: m.phrases.slice(0, 6).map(x => (x.length <= 80 ? { icon: 'check', title: x, text: '' } : { icon: 'check', title: x.split(/[.,;:]/)[0].slice(0, 80), text: x.slice(0, 160) })),
+      badges: m.badges,
+      seo: {
+        title: (ai && ai.seoTitle) || `${m.name}${label ? ' | ' + label : ''}`.slice(0, 70),
+        description: ((ai && ai.seoDescription) || m.tagline || m.metaDescription || m.story).slice(0, 160)
+      }
+    };
+    return c;
+  }
+  // puts the words into a sections object; keepMissing (refresh) leaves a part alone when the old site no longer has it
+  function applyImportedContent(sections, m, c, { keepMissing = false } = {}) {
+    const set = (has, fn) => { if (has || !keepMissing) fn(); };
+    sections.hero = { ...sections.hero, headline: c.hero.headline.slice(0, 100), subheadline: c.hero.subheadline.slice(0, 160), ctaText: sections.hero.ctaText && keepMissing ? sections.hero.ctaText : c.hero.ctaText };
+    set(!!c.about, () => { sections.about = { ...sections.about, body: (c.about || m.metaDescription || '').slice(0, 2000) }; });
+    set(c.services.length, () => { if (c.services.length) sections.services = { ...sections.services, items: c.services }; });
+    set(c.reviews.length, () => { sections.testimonials = { ...sections.testimonials, items: c.reviews }; });
+    set(c.faq.length, () => { sections.faq = { ...sections.faq, items: c.faq }; });
+    set(c.hours.length, () => { sections.hours = { ...sections.hours, items: c.hours }; });
+    set(c.whyChoose.length, () => { sections.whyChoose = { ...sections.whyChoose, items: c.whyChoose }; });
+    sections.trust = sections.trust || { badges: [], stats: [] };
+    set(c.badges.length, () => { sections.trust = { ...sections.trust, badges: c.badges }; });
+    sections.contact = { ...sections.contact };
+    if (m.phone || !keepMissing) sections.contact.phone = m.phone || '';
+    if (m.email || !keepMissing) sections.contact.email = m.email || '';
+    if (m.address || !keepMissing) sections.contact.address = m.address || '';
+    const social = { ...(sections.contact.social || {}) };
+    for (const [k, v] of Object.entries(m.social || {})) if (isSafeUrl(v) && (!social[k] || !keepMissing)) social[k] = v;
+    sections.contact.social = social;
+    sections.seo = { ...sections.seo, title: c.seo.title, description: c.seo.description };
+  }
+
+  // The design of an imported site: their colors, fonts and logo, the closest look, their own photos, and the
+  // content blocks and Blocks home page that suit the industry (the same smarts as Generate).
+  async function buildModernized(sourceUrl, socialUrl) {
+    const m = await modernize.crawl(sourceUrl);
+    const typeText = [m.title, m.metaDescription, m.h1, m.tagline].filter(Boolean).join(' ').slice(0, 300);
+    const more = [m.services.map(x => x.title).join(', '), m.story.slice(0, 400)].join(' ');
+    const industry = await detectIndustry(typeText, m.name, more);
+    const base = await baseSiteFromTemplate(industry.id !== 'generic' ? industry.label : typeText.slice(0, 100), m.name, more, industry);
+    const { theme, sections } = base;
+    sections.meta.businessType = industry.id !== 'generic' ? industry.label : '';
+
+    // the closest look to the old site
+    const tplLook = industry.tpl && (industry.tpl.look || templateLooks[industry.tpl.id]);
+    const style = modernize.personality({ brand: m.brand, photos: m.photos.length, text: m.allText, industryStyle: tplLook && tplLook.style });
+    Object.assign(theme, styleSwap(style.id, false));
+    theme.homeLayout = 'full';   // the full home page (services, reviews and so on); the Blocks home page below replaces it when there are blocks
+
+    // their words
+    const c = await importedContent(m, industry, style.id);
+    sections.blocks = { ...(sections.blocks || {}), items: [] };   // the template's starter blocks are generic: the industry blocks below use their words
+    applyImportedContent(sections, m, c);   // with no services found, the template's typical ones stay (the report says so)
+    grounding.scrubSections(sections, c.facts);   // anything (template or AI) the old site does not back up is replaced
+
+    // their brand
+    if (m.logo && isSafeUrl(m.logo)) theme.logoUrl = m.logo;
+    const own = m.brand.colors.map(x => x.hex);
+    if (m.themeColor && isValidHexColor(m.themeColor) && !own.includes(m.themeColor)) own.unshift(m.themeColor);
+    let colorFrom = 'none';
+    if (own.length) {
+      theme.primaryColor = own[0];
+      const second = own.slice(1).find(h => modernize.hsl(h) && Math.abs(modernize.hsl(h).h - modernize.hsl(own[0]).h) > 25);
+      theme.accentColor = second || darkenHex(own[0]);
+      colorFrom = m.brand.colors.length ? 'site' : 'meta';
+    }
+    const known = (n) => n && (fontsLib.FONTS.some(f => f.name.toLowerCase() === n.toLowerCase()));
+    const bf = m.brand.fonts;
+    const headingFont = bf.heading && (bf.headingGoogle || known(bf.heading)) ? fontsLib.cleanFontName(bf.heading) : '';
+    const bodyFont = bf.body && (bf.bodyGoogle || known(bf.body)) ? fontsLib.cleanFontName(bf.body) : '';
+    if (headingFont) theme.headingFont = headingFont;
+    if (bodyFont && bodyFont !== headingFont) theme.bodyFont = bodyFont;
+
+    // their photos first; stock pictures only fill the gaps when the old site had fewer than 3
+    const real = m.photos.map(p => p.url).filter(isSafeUrl);
+    let stock = 0;
+    if (real.length >= 3) {
+      sections.hero.imageUrl = real[0];
+      sections.about.imageUrl = real[1];
+      sections.gallery = { ...sections.gallery, images: real.slice(1, 15), alts: m.photos.slice(1, 15).map(p => p.alt || '') };
+    } else {
+      const stockImgs = (sections.gallery.images || []).filter(u => !real.includes(u));
+      if (real[0]) sections.hero.imageUrl = real[0]; else if (sections.hero.imageUrl) stock++;
+      if (real[1]) sections.about.imageUrl = real[1]; else if (sections.about.imageUrl) stock++;
+      sections.gallery = { ...sections.gallery, images: real.concat(stockImgs).slice(0, 8), alts: [] };
+      stock = Math.min(8, stock + Math.max(0, sections.gallery.images.length - real.length));
+    }
+
+    if (socialUrl) {
+      try { applySocialInspiration(theme, sections, await scrapeSocialInspiration(socialUrl)); } catch { /* optional */ }
+    }
+
+    // the same smart extras as Generate: industry blocks, a Blocks home page, and (with no colors of their own) the logo's palette
+    const g = { name: m.name, theme, sections };
+    const logoBuf = theme.logoUrl ? await readGenLogo(null, theme.logoUrl) : null;
+    if (!own.length && logoBuf) colorFrom = 'logo';
+    try { await autoDesign(g, { industry, logoBuf, blocks: true, keepColors: own.length > 0 }); } catch (e) { console.error('Import blocks failed:', e.message); }
+    theme.motionStyle = app.locals.motionLib.suggest({ templateId: industry.id, style: theme.style, advice: industry.id !== 'generic' ? industryDesign.industryDesign(industry.id) : null });
+
+    sections.meta.import = modernize.report(m, {
+      industry, style, stock, ai: c.ai, colorFrom,
+      colors: [theme.primaryColor, theme.accentColor],
+      fontsUsed: headingFont || bodyFont ? { heading: headingFont, body: bodyFont } : null
+    });
+    const layout = defaultLayout();
+    if (!sections.faq.items.length && !layout.hidden.includes('faq')) layout.hidden.push('faq');
+    return { name: m.name, theme, sections, layout, sourceUrl: m.sourceUrl };
+  }
+
   app.post('/sites/import', requireAuth, importLimiter, async (req, res) => {
     const sourceUrl = str(req.body.url, 2000);
     const socialUrl = str(req.body.social_url, 2000);
@@ -116,37 +271,70 @@ module.exports = function (app, deps) {
     }
 
     try {
-      const scraped = await scrapeUrl(sourceUrl);
-
-      if (socialUrl) {
-        // Best-effort only — a bad/blocked social link should never stop the
-        // import itself, so any failure here is silently swallowed.
-        try {
-          const social = await scrapeSocialInspiration(socialUrl);
-          applySocialInspiration(scraped.theme, scraped.sections, social);
-        } catch { /* ignore — social inspiration is optional */ }
-      }
-
-      const slug = uniqueSlug(scraped.name);
+      const g = await buildModernized(sourceUrl, socialUrl);
+      const slug = uniqueSlug(g.name);
       const info = db.prepare(
         'INSERT INTO sites (user_id, slug, name, theme, sections, layout, source_url, seo_title, seo_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
       ).run(
-        req.session.userId,
-        slug,
-        scraped.name,
-        JSON.stringify(scraped.theme),
-        JSON.stringify(scraped.sections),
-        JSON.stringify(defaultLayout()),
-        scraped.sourceUrl,
-        scraped.sections.seo.title,
-        scraped.sections.seo.description
+        req.session.userId, slug, g.name, JSON.stringify(g.theme), JSON.stringify(g.sections), JSON.stringify(g.layout),
+        g.sourceUrl, g.sections.seo.title, g.sections.seo.description
       );
-      saveVersion(info.lastInsertRowid, scraped.theme, scraped.sections, defaultLayout(), 'Imported');
+      saveVersion(info.lastInsertRowid, g.theme, g.sections, g.layout, 'Imported');
       linkProspect(req, info.lastInsertRowid);
       res.redirect(`/sites/${info.lastInsertRowid}/edit?imported=1`);
     } catch (err) {
+      if (!/URL|address|webpage|status|redirect|reach|resolve/i.test(err.message || '')) console.error('Import failed:', err);
       renderDashboard(req, res, { importError: err.message || 'Could not import that site.' });
     }
+  });
+
+  // "Refresh from source": new words, hours, contact details and photos from the old site. The design (look, colors,
+  // fonts, blocks, home page, layout) and anything the old site no longer has stay as they are.
+  app.post('/sites/:id/refresh', requireAuth, loadOwnedSite, importLimiter, async (req, res) => {
+    const site = req.site;
+    if (!site.source_url) return res.redirect(`/sites/${site.id}/edit`);
+    try {
+      const m = await modernize.crawl(site.source_url);
+      const prev = (site.sections.meta && site.sections.meta.import) || {};
+      const industry = prev.industry && prev.industry.id ? (autosite.detect({ type: prev.industry.label }) || null) : await detectIndustry([m.title, m.metaDescription, m.h1].join(' '), m.name, '');
+      const c = await importedContent(m, industry, site.theme.style);
+      saveVersion(site.id, site.theme, site.sections, site.layout, 'Before refresh');
+      const sections = JSON.parse(JSON.stringify(site.sections));
+      applyImportedContent(sections, m, c, { keepMissing: true });
+      grounding.scrubSections(sections, c.facts);
+      // new photos join the gallery; the hero and About photos the owner picked stay
+      const real = m.photos.map(p => p.url).filter(isSafeUrl);
+      const have = new Set((sections.gallery.images || []).map(modernize.photoKey));
+      sections.gallery = { ...sections.gallery, images: (sections.gallery.images || []).concat(real.filter(u => !have.has(modernize.photoKey(u)))).slice(0, 24) };
+      if (!sections.hero.imageUrl && real[0]) sections.hero.imageUrl = real[0];
+      sections.meta = { ...(sections.meta || {}), import: { ...modernize.report(m, { industry, style: prev.style, stock: 0, ai: c.ai, colorFrom: prev.brand && prev.brand.from, colors: [site.theme.primaryColor, site.theme.accentColor], fontsUsed: prev.brand && prev.brand.fonts }), refreshed: true } };
+      db.prepare(`UPDATE sites SET sections = ?, seo_title = ?, seo_description = ?, updated_at = datetime('now') WHERE id = ?`)
+        .run(JSON.stringify(sections), sections.seo.title, sections.seo.description, site.id);
+      invalidateSiteCache(site);
+      res.redirect(`/sites/${site.id}/edit?refreshed=1`);
+    } catch (err) {
+      console.error('Refresh from source failed:', err.message);
+      res.redirect(`/sites/${site.id}/edit?refreshed=failed`);
+    }
+  });
+
+  // One of the looks the import suggested (sections.meta.import.style), applied from the import report
+  app.post('/sites/:id/import-style', requireAuth, loadOwnedSite, (req, res) => {
+    const site = req.site;
+    const rep = site.sections.meta && site.sections.meta.import;
+    const st = rep && rep.style;
+    const want = str(req.body.style, 30);
+    const ok = st && (st.id === want || (st.alternatives || []).some(a => a.id === want)) && extraThemes.ALL_STYLES.includes(want);
+    if (!ok) return res.redirect(`/sites/${site.id}/edit`);
+    saveVersion(site.id, site.theme, site.sections, site.layout, 'Before changing the look');
+    const theme = { ...site.theme, style: want };
+    delete theme.homeFull;
+    if (!(theme.homeLayout === 'mix' && (theme.mix || []).length)) theme.homeLayout = '';
+    const sections = JSON.parse(JSON.stringify(site.sections));
+    sections.meta.import.style = { ...st, chosen: want };
+    db.prepare(`UPDATE sites SET theme = ?, sections = ?, updated_at = datetime('now') WHERE id = ?`).run(JSON.stringify(theme), JSON.stringify(sections), site.id);
+    invalidateSiteCache(site);
+    res.redirect(`/sites/${site.id}/edit?saved=1`);
   });
 
   // Drops AI-written copy into a sections object (hero text, about, services,
@@ -262,8 +450,8 @@ module.exports = function (app, deps) {
     return brandKit.readLogo(url, { uploadsDir: UPLOADS_DIR, safeFetch });
   }
 
-  async function baseSiteFromTemplate(businessType, businessName, more) {
-      const industry = await detectIndustry(businessType, businessName, more);
+  async function baseSiteFromTemplate(businessType, businessName, more, known) {
+      const industry = known || await detectIndustry(businessType, businessName, more);
       const tpl = industry.tpl;
       const filled = fillTemplate(tpl, businessName, businessType);
       const { hero, gallery } = await fetchPhotoSet(tpl.photoQueries, { galleryCount: 6 });

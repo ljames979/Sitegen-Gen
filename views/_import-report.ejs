@@ -1,0 +1,54 @@
+<%# What "Modernize an existing website" found on the old site and what is still a placeholder (modernize.js report,
+    saved in sections.meta.import). Buttons use form="impStyleForm" (that form sits outside the editor form). %>
+<% const rep = site.sections.meta && site.sections.meta.import; if (rep) { const f = rep.found || {}; const st = rep.style; %>
+<div class="imp-report">
+  <style>
+    .imp-report{border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin:10px 0;background:#fff;font-size:13px;line-height:1.45}
+    .imp-report h4{margin:0 0 6px;font-size:14px}
+    .imp-report ul{margin:4px 0 8px;padding-left:18px}
+    .imp-report li{margin:2px 0}
+    .imp-report .imp-ok{color:#166534}
+    .imp-report .imp-miss li{color:#92400e}
+    .imp-report .imp-sw{display:inline-block;width:16px;height:16px;border-radius:4px;border:1px solid rgba(0,0,0,.15);vertical-align:-3px;margin-right:4px}
+    .imp-report .imp-looks{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+    .imp-report .imp-look{border:1px solid #e5e7eb;border-radius:8px;padding:6px 8px;flex:1 1 180px}
+    .imp-report .imp-look small{display:block;color:#6b7280}
+    .imp-report .imp-look button,.imp-report .imp-look a{font-size:12px;padding:3px 8px;margin-top:4px}
+  </style>
+  <h4>What we took from the old site</h4>
+  <p class="muted" style="margin:0 0 4px;">Read <%= (rep.pages || []).length %> page<%= (rep.pages || []).length === 1 ? '' : 's' %>: <%= (rep.pages || []).map(p => p.kind).join(', ') %><%= rep.ai ? '. The wording was tidied with AI using only what the old site says.' : '.' %></p>
+  <ul class="imp-ok">
+    <% if (f.services) { %><li>✓ <%= f.services %> service<%= f.services === 1 ? '' : 's' %>, in their own names</li><% } %>
+    <% if (f.photos) { %><li>✓ <%= f.photos %> photo<%= f.photos === 1 ? '' : 's' %> of their own</li><% } %>
+    <% if (f.reviews) { %><li>✓ <%= f.reviews %> real review<%= f.reviews === 1 ? '' : 's' %></li><% } %>
+    <% if (f.hours) { %><li>✓ Opening hours</li><% } %>
+    <% if (f.faq) { %><li>✓ <%= f.faq %> FAQ answer<%= f.faq === 1 ? '' : 's' %></li><% } %>
+    <% const contactBits = [f.phone && 'phone', f.email && 'email', f.address && 'address'].filter(Boolean); if (contactBits.length) { %><li>✓ Contact: <%= contactBits.join(', ') %></li><% } %>
+    <% if (f.logo) { %><li>✓ Their logo</li><% } %>
+    <% if (f.social) { %><li>✓ <%= f.social %> social link<%= f.social === 1 ? '' : 's' %></li><% } %>
+    <% if ((f.badges || []).length) { %><li>✓ What sets them apart: <%= f.badges.join(' · ') %></li><% } %>
+    <% if (rep.brand && (rep.brand.colors || []).length) { %><li>✓ Colors <%= rep.brand.from === 'site' ? 'from their site' : rep.brand.from === 'logo' ? 'from their logo' : rep.brand.from === 'meta' ? 'from their site' : 'picked to suit the business' %>: <% rep.brand.colors.forEach(c => { %><span class="imp-sw" style="background:<%= c %>" title="<%= c %>"></span><% }) %></li><% } %>
+    <% if (rep.brand && rep.brand.fonts) { %><li>✓ Their fonts: <%= [rep.brand.fonts.heading, rep.brand.fonts.body].filter(Boolean).join(' and ') %></li><% } %>
+    <% if (rep.industry && rep.industry.id !== 'generic') { %><li>✓ Business type: <%= rep.industry.label %> (blocks chosen to suit it)</li><% } %>
+  </ul>
+  <% if ((rep.missing || []).length) { %>
+    <h4>Still needs the client</h4>
+    <ul class="imp-miss"><% rep.missing.forEach(x => { %><li><%= x %></li><% }) %></ul>
+  <% } %>
+  <% if (st) { const now = site.theme.style; %>
+    <h4>Look</h4>
+    <div class="imp-looks">
+      <% [st].concat(st.alternatives || []).forEach((l, i) => { %>
+        <div class="imp-look">
+          <strong><%= l.name %></strong><%= l.id === now ? ' (in use)' : '' %><%= i === 0 ? ' · closest to the old site' : '' %>
+          <% if ((l.why || []).length) { %><small><%= l.why.join('; ') %></small><% } %>
+          <% if (l.id !== now) { %>
+            <a class="btn-secondary" href="/sites/<%= site.id %>/preview?style=<%= l.id %>" target="_blank" rel="noopener">Preview</a>
+            <button type="submit" class="btn-secondary" form="impStyleForm" name="style" value="<%= l.id %>">Use this look</button>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+<% } %>
