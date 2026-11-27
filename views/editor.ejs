@@ -943,12 +943,10 @@
 
         <details class="section-block settings-block" data-tab="features" id="improveBlock">
           <summary>✨ Improve with AI</summary>
-          <%- include('_improve', { site, aiOn: aiConfigured }) %>
-        </details>
-
-        <details class="section-block settings-block" data-tab="features" id="aiEditBlock">
-          <summary>Ask AI to change something</summary>
+          <h4 class="imp-h" id="aiEditBlock">Tell the AI what to change</h4>
           <%- include('_aiedit', { aiBase: '/sites/' + site.id, aiOn: aiConfigured, aiTheme: true }) %>
+          <h4 class="imp-h" style="margin-top:22px;padding-top:16px;border-top:1px solid #e2e8f0;">Or let the AI review the whole site</h4>
+          <%- include('_improve', { site, aiOn: aiConfigured }) %>
         </details>
 
         <details class="section-block settings-block" data-tab="features">

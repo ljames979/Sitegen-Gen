@@ -1,33 +1,62 @@
-<%# Chat-to-edit box. Needs: aiBase (URL prefix for /ai-edit), aiOn (AI configured), aiTheme (true if style changes are allowed) %>
-<div class="aiedit" id="aiEdit" data-base="<%= aiBase %>">
+<%# "Tell the AI what to change" box. Needs: aiBase (URL prefix for /ai-edit), aiOn (AI configured), aiTheme (true if style changes are allowed, i.e. the owner) %>
+<div class="aiedit" id="aiEdit" data-base="<%= aiBase %>" data-undo="<%= aiTheme ? '1' : '' %>">
   <% if (!aiOn) { %>
     <p class="muted" style="font-size:13px;">Not set up yet. Add <code>ANTHROPIC_API_KEY</code> to the server's <code>.env</code> file to turn this on.</p>
   <% } else { %>
-    <p class="muted" style="font-size:13px;margin-top:0;">Tell me what to change, in your own words<%= aiTheme ? ' — wording, services, FAQs, colors or style' : ' — wording, services or FAQs' %>. You will see exactly what would change and decide before anything is saved.</p>
-    <textarea id="aiEditText" rows="2" maxlength="600" placeholder="<%= aiTheme ? 'e.g. Make the headline friendlier, add a service called Gutter Cleaning, and change the main color to dark green' : 'e.g. Make the headline friendlier and add a question about parking' %>"></textarea>
-    <button type="button" class="btn-secondary" id="aiEditAsk" style="margin-top:8px;">Suggest changes</button>
+    <p class="muted" style="font-size:13px;margin-top:0;">Say what you want in your own words<%= aiTheme ? ': wording, services, FAQs, a special offer, colors or style' : ': wording, services, FAQs or a special offer' %>. You see every change first, untick any you don't want, and nothing is saved until you press Apply.</p>
+    <div class="aie-chips" role="group" aria-label="Ideas">
+      <button type="button" data-say="Make the wording warmer and friendlier.">Make it warmer</button>
+      <button type="button" data-say="Make the wording more professional and polished.">More professional</button>
+      <button type="button" data-say="Make the wording shorter and clearer.">Shorter and clearer</button>
+      <button type="button" data-say="Add a special offer at the top of the site: " data-more="1">Add a special offer</button>
+      <button type="button" data-say="Add a question to the FAQ: " data-more="1">Add a question</button>
+    </div>
+    <textarea id="aiEditText" rows="2" maxlength="600" placeholder="<%= aiTheme ? 'e.g. Make it warmer, add a winter special (15% off gutter cleaning until February), and change the main color to dark green' : 'e.g. Make the headline friendlier and add a question about parking' %>"></textarea>
+    <button type="button" class="btn" id="aiEditAsk" style="margin-top:8px;">Show me the changes</button>
+    <p class="muted" style="font-size:12px;margin:6px 0 0;">It only uses what the site already says and what you write here. Anything new (a license, "24/7", a number, a town) is held back and shown to you instead.</p>
     <div id="aiEditOut" aria-live="polite" style="margin-top:12px;"></div>
   <% } %>
 </div>
 <style>
   .aiedit textarea { width: 100%; }
-  .ai-change { border: 1px solid var(--border, #e2e8f0); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 14px; background: #fff; }
-  .ai-change b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #64748b; margin-bottom: 4px; }
-  .ai-change .was { color: #991b1b; text-decoration: line-through; }
-  .ai-change .now { color: #065f46; }
+  .imp-h { margin: 4px 0 8px; font-size: 15px; }
+  .aie-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+  .aie-chips button { font: inherit; font-size: 13px; padding: 5px 11px; border-radius: 999px; border: 1px solid #cbd5e1; background: #f8fafc; color: #0f172a; cursor: pointer; }
+  .aie-chips button:hover { background: #eef2ff; border-color: #a5b4fc; }
+  .ai-change { display: grid; grid-template-columns: auto 1fr; gap: 10px; border: 1px solid var(--border, #e2e8f0); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 14px; background: #fff; cursor: pointer; font-weight: 400; }
+  .ai-change input { margin-top: 3px; width: auto; }
+  .ai-change b { display: block; font-size: 12px; color: #334155; margin-bottom: 4px; }
+  .ai-change .was { color: #991b1b; text-decoration: line-through; white-space: pre-line; }
+  .ai-change .now { color: #065f46; white-space: pre-line; margin-top: 2px; }
+  .ai-change:has(input:not(:checked)) { opacity: .55; }
   .ai-reply { background: #f1f5f9; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; font-size: 14px; }
+  .ai-held { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-size: 13px; }
+  .ai-held ul { margin: 6px 0 0; padding-left: 18px; } .ai-held li { margin: 4px 0; }
 </style>
 <script>
 (function () {
   const root = document.getElementById('aiEdit'); const ask = document.getElementById('aiEditAsk');
-  if (!root || !ask) return;
+  if (!root) return;
   const base = root.dataset.base, out = document.getElementById('aiEditOut'), text = document.getElementById('aiEditText');
   const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
   const post = async (path, body) => {
     const r = await fetch(base + path, { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json' }, body: JSON.stringify(body) });
     try { return await r.json(); } catch (_) { return { ok: false, error: 'Something went wrong. Please try again.' }; }
   };
-  ask.addEventListener('click', async () => {
+  root.querySelectorAll('.aie-chips button').forEach(b => b.addEventListener('click', () => {
+    const say = b.dataset.say;
+    text.value = text.value.trim() ? text.value.trim().replace(/[.]?$/, '. ') + say : say;
+    text.focus(); text.setSelectionRange(text.value.length, text.value.length);
+  }));
+  const showHeld = (held) => {
+    if (!held || !held.length) return;
+    const box = el('div', 'ai-held'); box.append(el('b', '', `Held back (${held.length}): these would say something the site doesn't`));
+    const ul = el('ul');
+    held.forEach(h => { const li = el('li'); li.append(el('span', '', `${h.label}: "${h.after}"`), el('div', 'muted', 'Why: ' + (h.reasons || []).join('; '))); ul.append(li); });
+    box.append(ul, el('div', 'muted', 'If it is true, add it to the site first (or say it in your request), then ask again.'));
+    out.append(box);
+  };
+  if (ask) ask.addEventListener('click', async () => {
     const instruction = text.value.trim();
     if (!instruction) { text.focus(); return; }
     ask.disabled = true; ask.textContent = 'Thinking…'; out.replaceChildren();
@@ -36,28 +65,48 @@
       const d = await post('/ai-edit', { instruction });
       if (!d.ok) { out.append(el('div', 'ai-reply', d.error || 'That did not work.')); return; }
       if (d.reply) out.append(el('div', 'ai-reply', d.reply));
-      if (!d.changes.length) return;
+      if (!d.changes.length) { showHeld(d.held); return; }
+      const boxes = [];
       d.changes.forEach(c => {
-        const box = el('div', 'ai-change'); box.append(el('b', '', c.label));
-        if (c.before) box.append(el('div', 'was', c.before));
-        if (c.after) box.append(el('div', 'now', c.after));
-        out.append(box);
+        const box = el('label', 'ai-change'); const cb = el('input'); cb.type = 'checkbox'; cb.checked = true; cb.value = c.i; boxes.push(cb);
+        const body = el('div'); body.append(el('b', '', c.label));
+        if (c.before) body.append(el('div', 'was', c.before));
+        if (c.after) body.append(el('div', 'now', c.after));
+        box.append(cb, body); out.append(box);
       });
-      const row = el('div'); row.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
-      const yes = el('button', 'btn', 'Apply ' + d.changes.length + ' change' + (d.changes.length === 1 ? '' : 's'));
-      const no = el('button', 'btn-secondary', 'Not now');
+      showHeld(d.held);
+      const row = el('div'); row.style.cssText = 'display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;';
+      const yes = el('button', 'btn', ''); const no = el('button', 'btn-secondary', 'Not now');
       yes.type = 'button'; no.type = 'button';
+      const count = () => { const n = boxes.filter(b => b.checked).length; yes.textContent = n ? `Apply ${n} change${n === 1 ? '' : 's'}` : 'Tick a change to apply'; yes.disabled = !n; };
+      boxes.forEach(b => b.addEventListener('change', count)); count();
       no.addEventListener('click', () => out.replaceChildren());
       yes.addEventListener('click', async () => {
         yes.disabled = true; yes.textContent = 'Applying…';
-        const a = await post('/ai-edit/apply', { token: d.token });
-        if (a.ok) { sessionStorage.setItem('aiEditDone', '1'); location.reload(); }
+        const a = await post('/ai-edit/apply', { token: d.token, pick: boxes.filter(b => b.checked).map(b => Number(b.value)) });
+        if (a.ok) { try { sessionStorage.setItem('aiEditDone', JSON.stringify({ n: a.applied, v: a.versionId || null })); } catch (_) {} location.reload(); }
         else { out.replaceChildren(el('div', 'ai-reply', a.error || 'Could not apply that.')); }
       });
       row.append(yes, no); out.append(row);
-      out.append(el('p', 'muted', 'Applying saves a copy of the current site to history first, so you can go back.'));
-    } finally { ask.disabled = false; ask.textContent = 'Suggest changes'; }
+      out.append(el('p', 'muted', 'Applying saves the site as it is now to history first, so you can undo it in one click.'));
+    } finally { ask.disabled = false; ask.textContent = 'Show me the changes'; }
   });
-  try { if (sessionStorage.getItem('aiEditDone')) { sessionStorage.removeItem('aiEditDone'); out.append(el('div', 'ai-reply', 'Done — the changes are on your site. They are also in your version history.')); const d = root.closest('details'); if (d) d.open = true; } } catch (_) {}
+  // after applying: say so, and offer the one-click undo (owner only; it restores the version saved just before)
+  let done = null;
+  try { const raw = sessionStorage.getItem('aiEditDone'); if (raw) { sessionStorage.removeItem('aiEditDone'); done = raw === '1' ? { n: 0 } : JSON.parse(raw); } } catch (_) {}
+  if (done) {
+    const msg = el('div', 'ai-reply', `Done: ${done.n ? done.n + ' change' + (done.n === 1 ? ' is' : 's are') : 'the changes are'} on your site. The site as it was is saved in your version history.`);
+    if (done.v && root.dataset.undo) {
+      const b = el('button', 'btn-secondary', 'Undo these changes'); b.type = 'button'; b.style.cssText = 'display:block;margin-top:8px;';
+      b.addEventListener('click', async () => {
+        b.disabled = true; b.textContent = 'Undoing…';
+        await fetch(`${base}/versions/${done.v}/restore`, { method: 'POST' }).catch(() => {});
+        location.href = `${base}/edit?saved=1#features`;
+      });
+      msg.append(b);
+    }
+    out.append(msg);
+    const det = root.closest('details'); if (det) { det.open = true; setTimeout(() => root.scrollIntoView({ block: 'start' }), 50); }
+  }
 })();
 </script>

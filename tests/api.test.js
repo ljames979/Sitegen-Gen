@@ -100,6 +100,10 @@ before(async () => {
           { op: 'set', path: 'contact.email', value: 'evil@x.test' },
           { op: 'set', path: 'theme.accentColor', value: 'red; background:url(x)' },
           { op: 'set', path: '__proto__.polluted', value: 'yes' } ] });
+        if (ask.includes('ZZ-EDIT-HONEST')) return say({ reply: 'Warmer, with your winter special.', ops: [
+          { op: 'set', path: 'hero.headline', value: 'Licensed roofers on call 24/7' },
+          { op: 'set', path: 'announcement.text', value: 'Winter special: 15% off gutter cleaning' },
+          { op: 'set', path: 'hero.subheadline', value: 'Friendly help with your roof.' } ] });
         if (ask.includes('ZZ-EDIT-NOIR')) return say({ reply: 'Switched to a dark look.', ops: [{ op: 'set', path: 'theme.style', value: 'noir' }] });
         if (ask.includes('ZZ-EDIT-NONE')) return say({ reply: 'I cannot change your phone number here.', ops: [{ op: 'set', path: 'contact.phone', value: '555' }] });
         return say('sorry, no json here');
@@ -3792,6 +3796,68 @@ test('preview before creating: nothing saved until Create, looks switch, private
   raw.close();
 });
 
+test('3 versions to compare: warm, professional and bold drafts side by side; picking one keeps only it', async () => {
+  const Database = require('better-sqlite3');
+  const raw = new Database(TEST_DB);
+  const c = makeClient();
+  await c.post('/signup', { email: 'three-owner@example.com', password: 'password1' });
+  const sitesBefore = raw.prepare('SELECT COUNT(*) n FROM sites').get().n;
+  const asked = aiRequests.length;
+  const r = await c.post('/sites/generate', { business_type: 'roofing company', business_name: 'Three Roofs', city: 'Kissimmee, FL', specialties: 'ZZ-AI-TEST storm repairs', preview: '1', three: '1' });
+  const loc = r.headers.get('location');
+  assert.match(loc, /^\/sites\/drafts\/[\w-]+$/);
+  assert.equal(raw.prepare('SELECT COUNT(*) n FROM sites').get().n, sitesBefore, 'nothing saved yet');
+  const grp = loc.split('/').pop();
+  const rows = raw.prepare('SELECT token, variant, theme, copy_source FROM site_drafts WHERE grp = ? ORDER BY id').all(grp);
+  assert.deepEqual(rows.map(x => x.variant), ['warm', 'professional', 'bold']);
+  assert.deepEqual(rows.map(x => JSON.parse(x.theme).style), ['warm', 'classic', 'bold']);
+  assert.ok(rows.every(x => x.copy_source === 'ai'));
+  // each version's tone reached the AI
+  const prompts = aiRequests.slice(asked).map(x => (x.body.messages && x.body.messages[0] && x.body.messages[0].content) || '').filter(p => typeof p === 'string');
+  for (const word of ['Warm, friendly', 'Professional, clear', 'Bold, direct']) assert.ok(prompts.some(p => p.includes('Tone of voice for this version: ' + word)), word);
+  const page = await (await c.get(loc)).text();
+  assert.match(page, /Warm/); assert.match(page, /Professional/); assert.match(page, /Bold/);
+  assert.equal((page.match(/Use this one/g) || []).length, 3);
+  for (const x of rows) assert.ok(page.includes(`/sites/draft/${x.token}/frame`));
+  assert.match(await (await c.get(`/sites/draft/${rows[2].token}/frame`)).text(), /<body class="style-bold/);
+  assert.match(await (await c.get(`/sites/draft/${rows[0].token}`)).text(), /All 3 versions/);
+  // private to the owner
+  const other = makeClient(); await other.post('/signup', { email: 'three-other@example.com', password: 'password1' });
+  assert.equal((await other.get(loc)).status, 404);
+  await other.post(loc + '/discard', {});
+  assert.equal(raw.prepare('SELECT COUNT(*) n FROM site_drafts WHERE grp = ?').get(grp).n, 3, 'another account cannot discard them');
+  // pick the professional one: it becomes the site, the other two go
+  const made = await c.post(`/sites/draft/${rows[1].token}/create`, {});
+  assert.match(made.headers.get('location'), /\/sites\/\d+\/edit\?generated=ai/);
+  const site = raw.prepare('SELECT * FROM sites ORDER BY id DESC LIMIT 1').get();
+  assert.equal(JSON.parse(site.theme).style, 'classic'); assert.equal(site.name, 'Three Roofs');
+  assert.equal(raw.prepare('SELECT COUNT(*) n FROM site_drafts WHERE grp = ?').get(grp).n, 0);
+  assert.equal((await c.get(loc)).status, 404);
+  // discard all
+  const r2 = await c.post('/sites/generate', { business_type: 'bakery', three: '1', preview: '1' });
+  const loc2 = r2.headers.get('location'); assert.match(loc2, /^\/sites\/drafts\//);
+  await c.post(loc2 + '/discard', {});
+  assert.equal((await c.get(loc2)).status, 404);
+  assert.equal(raw.prepare('SELECT COUNT(*) n FROM sites').get().n, sitesBefore + 1);
+  assert.match(await (await c.get('/dashboard')).text(), /Make 3 versions to compare/);
+  raw.close();
+});
+
+test('automatic reduce-motion: every published page carries the still-page rules and pauses looping background videos', async () => {
+  const c = makeClient();
+  const { siteId, slug } = await basicSite(c, 'reduce-motion@example.com', 'Still Co', {});
+  const html = await (await fetch(`${BASE}/site/${slug}`)).text();
+  assert.match(html, /<style id="sg-rm">@media \(prefers-reduced-motion: reduce\)\{\*,\*::before,\*::after\{animation-duration:\.01ms!important;animation-iteration-count:1!important/);
+  assert.match(html, /looping, muted background videos stay paused/);
+  assert.match(await (await c.get(`/sites/${siteId}/preview`)).text(), /id="sg-rm"/);
+  // Calm motion on: every visitor gets the same still page (CSS-only animations included)
+  const Database = require('better-sqlite3'); const raw = new Database(TEST_DB);
+  const th = JSON.parse(raw.prepare('SELECT theme FROM sites WHERE id = ?').get(siteId).theme); th.calmMotion = true;
+  raw.prepare('UPDATE sites SET theme = ? WHERE id = ?').run(JSON.stringify(th), siteId); raw.close();
+  await c.post(`/sites/${siteId}/publish`, {});
+  assert.match(await (await c.get(`/sites/${siteId}/preview`)).text(), /html\.sg-calm \*,html\.sg-calm \*::before,html\.sg-calm \*::after\{animation-duration:\.01ms!important/);
+});
+
 test('publish to Netlify: deploys the hosted copy, keeps the contact form, custom domain and HTTPS, private to the owner', async () => {
   const c = makeClient();
   const order = 'hero,about,services,testimonials,whyChoose,gallery,faq,blog,extraPages,hours,contact';
@@ -4049,7 +4115,7 @@ test('chat-to-edit: proposes, previews, applies only allowed changes, saves hist
   const base = `/sites/${siteId}`;
   const r1 = await (await ask(c, base, 'ZZ-EDIT-OK make it friendlier')).json();
   assert.equal(r1.ok, true);
-  assert.deepEqual(r1.changes.map(x => x.label).sort(), ['Add service', 'Main color', 'hero headline']);
+  assert.deepEqual(r1.changes.map(x => x.label).sort(), ['Add service', 'Headline at the top', 'Main color']);
   assert.equal(r1.skipped, 3, 'contact, bad colour and __proto__ were refused');
   const siteNow = () => raw.prepare('SELECT theme, sections FROM sites WHERE id = ?').get(siteId);
   assert.notEqual(JSON.parse(siteNow().sections).hero.headline, 'A friendlier headline', 'nothing saved before approval');
@@ -4059,7 +4125,7 @@ test('chat-to-edit: proposes, previews, applies only allowed changes, saves hist
   assert.equal((await ask(other, base, 'ZZ-EDIT-OK')).status, 404);
   const v0 = raw.prepare('SELECT COUNT(*) n FROM site_versions WHERE site_id = ?').get(siteId).n;
   const ap = await (await c.post(base + '/ai-edit/apply', { token: r1.token })).json();
-  assert.equal(ap.ok, true); assert.equal(ap.applied, 3);
+  assert.equal(ap.ok, true); assert.equal(ap.applied, 3); assert.ok(ap.versionId, 'undo points at the version saved first');
   const row = siteNow(); const sec = JSON.parse(row.sections);
   assert.equal(sec.hero.headline, 'A friendlier headline');
   assert.equal(JSON.parse(row.theme).primaryColor, '#116644');
@@ -4084,11 +4150,28 @@ test('chat-to-edit: proposes, previews, applies only allowed changes, saves hist
   assert.equal(cli.ok, true);
   assert.ok(!cli.changes.some(x => /Style/.test(x.label)), 'clients cannot change colours or style');
   assert.ok(cli.changes.some(x => x.label === 'Add service'));
-  assert.match(await (await fetch(`${BASE}/client/${token}`)).text(), /Ask AI to change something/);
+  assert.match(await (await fetch(`${BASE}/client/${token}`)).text(), /Tell the AI what to change/);
   assert.equal((await fetch(`${BASE}/client/${'x'.repeat(32)}/ai-edit`, { method: 'POST' })).status, 404);
   // a client's proposal cannot be applied through the owner route
   assert.equal((await (await c.post(base + '/ai-edit/apply', { token: cli.token })).json()).ok, false);
-  assert.match(await (await c.get(`${base}/edit`)).text(), /Ask AI to change something/);
+  assert.match(await (await c.get(`${base}/edit`)).text(), /Tell the AI what to change/);
+  // honesty check + ticks: a new claim is held back; only the ticked changes are applied; undo restores the site
+  const r4 = await (await ask(c, base, 'ZZ-EDIT-HONEST make it warmer and add a winter special, 15% off gutter cleaning')).json();
+  assert.equal(r4.ok, true);
+  assert.deepEqual(r4.held.map(h => h.after), ['Licensed roofers on call 24/7']);
+  assert.ok(!r4.changes.some(x => /Licensed/.test(x.after)));
+  const offer = r4.changes.find(x => x.label === 'Announcement bar at the top');
+  assert.ok(offer, 'the special offer is offered');
+  const beforeHonest = JSON.parse(siteNow().sections);
+  const ap4 = await (await c.post(base + '/ai-edit/apply', { token: r4.token, pick: [offer.i, 0] })).json();
+  assert.equal(ap4.ok, true); assert.equal(ap4.applied, 1, 'the held-back change cannot be forced in by its number');
+  const s4 = JSON.parse(siteNow().sections);
+  assert.equal(s4.announcement.enabled, true); assert.match(s4.announcement.text, /15% off/);
+  assert.equal(s4.hero.subheadline, beforeHonest.hero.subheadline, 'unticked change left alone');
+  assert.notEqual(s4.hero.headline, 'Licensed roofers on call 24/7');
+  assert.match(await (await fetch(`${BASE}/site/${slug}`)).text(), /Winter special: 15% off gutter cleaning/);
+  await c.post(`${base}/versions/${ap4.versionId}/restore`, {});
+  assert.equal(JSON.parse(siteNow().sections).announcement.enabled, false, 'undo puts it back');
   raw.close();
 });
 

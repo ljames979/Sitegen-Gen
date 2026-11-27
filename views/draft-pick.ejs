@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>3 versions — <%= name %> — SiteGen</title>
+  <%- include('partials-head') %>
+  <style>
+    body { background: #eef1f5; }
+    .bar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
+    .bar h1 { font-size: 16px; margin: 0; } .bar .sp { flex: 1; } .bar form { margin: 0; }
+    .seg button { padding: 6px 12px; font-size: 13px; } .seg button.on { background: #0f172a; color: #fff; }
+    .intro { margin: 14px 16px 0; font-size: 14px; color: #475569; }
+    .pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 16px; }
+    @media (max-width: 980px) { .pick { grid-template-columns: 1fr; } }
+    .ver { background: #fff; border-radius: 14px; box-shadow: 0 8px 30px rgba(15,23,42,.10); display: flex; flex-direction: column; overflow: hidden; }
+    .ver header { padding: 12px 14px 8px; }
+    .ver h2 { margin: 0; font-size: 17px; } .ver p { margin: 4px 0 0; font-size: 13px; color: #64748b; }
+    .ver .hl { color: #0f172a; font-style: italic; }
+    .shot { position: relative; height: 560px; overflow: hidden; background: #f8fafc; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+    .shot iframe { position: absolute; top: 0; left: 0; border: 0; background: #fff; transform-origin: 0 0; }
+    .phone .shot iframe { left: 50%; }
+    .ver footer { display: flex; gap: 8px; padding: 12px 14px; align-items: center; flex-wrap: wrap; }
+    .ver footer form { margin: 0; }
+    .warn { font-size: 12.5px; color: #92400e; background: #fffbeb; border-radius: 8px; padding: 6px 10px; margin: 8px 0 0; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <a href="/" class="muted">&larr; Your sites</a>
+    <h1><%= name %>: 3 versions</h1>
+    <span class="muted" style="font-size:13px;">Preview only: nothing is saved until you pick one</span>
+    <span class="sp"></span>
+    <span class="seg"><button type="button" class="btn-secondary on" data-w="desktop">Desktop</button> <button type="button" class="btn-secondary" data-w="phone">Phone</button></span>
+    <form method="POST" action="/sites/drafts/<%= grp %>/discard"><button type="submit" class="btn-secondary">Discard all</button></form>
+  </div>
+  <p class="intro">Same business and the same facts, written and styled three ways. Scroll inside each one to see the whole page. "Look closer" opens it full size, where you can also try other looks and colors.</p>
+  <div class="pick" id="pick">
+    <% versions.forEach(function (x) { %>
+      <section class="ver" aria-label="<%= x.v.label %> version">
+        <header>
+          <h2><%= x.v.label %></h2>
+          <p><%= x.v.blurb %></p>
+          <% if (x.headline) { %><p class="hl">“<%= x.headline %>”</p><% } %>
+          <% if (!x.ai) { %><p class="warn">The AI didn't write this one's words (built-in starter text), so only the look differs.</p><% } %>
+          <% if (x.confirm) { %><p class="warn"><%= x.confirm %> <%= x.confirm === 1 ? 'sentence needs' : 'sentences need' %> checking with the client (marked [Confirm with client]).</p><% } %>
+        </header>
+        <div class="shot"><iframe src="/sites/draft/<%= x.token %>/frame" title="<%= x.v.label %> version of <%= name %>" loading="lazy"></iframe></div>
+        <footer>
+          <form method="POST" action="/sites/draft/<%= x.token %>/create"><button type="submit">Use this one</button></form>
+          <a class="btn-secondary" href="/sites/draft/<%= x.token %>" style="text-decoration:none;display:inline-block;padding:10px 16px;border-radius:8px;">Look closer</a>
+        </footer>
+      </section>
+    <% }) %>
+  </div>
+  <script>
+    (function () {
+      var pick = document.getElementById('pick'), mode = 'desktop';
+      function fit() {
+        var W = mode === 'phone' ? 390 : 1280;
+        pick.classList.toggle('phone', mode === 'phone');
+        pick.querySelectorAll('.shot').forEach(function (s) {
+          var f = s.querySelector('iframe'), k = Math.min(1, s.clientWidth / W);
+          f.style.width = W + 'px'; f.style.height = Math.ceil(s.clientHeight / k) + 'px';
+          f.style.transform = (mode === 'phone' ? 'translateX(-50%) ' : '') + 'scale(' + k + ')';
+          if (mode === 'phone') f.style.transformOrigin = '50% 0'; else f.style.transformOrigin = '0 0';
+        });
+      }
+      document.querySelectorAll('.seg button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          mode = b.dataset.w;
+          document.querySelectorAll('.seg button').forEach(function (x) { x.classList.toggle('on', x === b); });
+          fit();
+        });
+      });
+      window.addEventListener('resize', fit); fit();
+      // the small previews don't need the motion preview bar
+      pick.querySelectorAll('iframe').forEach(function (f) {
+        f.addEventListener('load', function () { try { var s = f.contentDocument.createElement('style'); s.textContent = '.sg-motion-bar{display:none!important}'; f.contentDocument.head.appendChild(s); } catch (e) {} });
+      });
+    })();
+  </script>
+</body>
+</html>

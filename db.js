@@ -322,6 +322,8 @@ ensureColumn('sites', 'netlify_deployed_at', "TEXT DEFAULT ''");
 ensureColumn('sites', 'netlify_ssl', 'INTEGER DEFAULT 0');
 ensureColumn('sites', 'seo_title', "TEXT DEFAULT ''");
 ensureColumn('sites', 'seo_description', "TEXT DEFAULT ''");
+ensureColumn('site_drafts', 'grp', "TEXT NOT NULL DEFAULT ''");      // the "3 versions to compare" a draft belongs to
+ensureColumn('site_drafts', 'variant', "TEXT NOT NULL DEFAULT ''");  // warm / professional / bold (aibuild.VARIANTS)
 
 // reusable brand kits (logo, colors, fonts, button shape, browser icon), owned by the SiteGen user
 db.exec(`

@@ -564,7 +564,8 @@ module.exports = function (app, deps) {
   }
 
   // Builds a generated site in memory (nothing saved). Used by both "generate" and "preview first".
-  async function buildGeneratedSite(body, logoFile) {
+  // variant (optional, aibuild.VARIANTS): one of the "3 versions to compare": its tone goes to the AI and its look is used
+  async function buildGeneratedSite(body, logoFile, variant = null) {
     // the paste-anything box: fill the blanks of the form from it, unless the page already did ("Fill in the form")
     const notes = str(body.paste, 12000);
     if (notes && body.paste_read !== '1') {
@@ -600,7 +601,8 @@ module.exports = function (app, deps) {
       specialties,
       services: listed.map(l => l.name + (l.price ? ` (price given by owner: ${l.price})` : '') + (l.desc ? ` — ${l.desc}` : '')),
       notes,
-      design: designBrief.copyBrief(businessType, theme.style)
+      design: designBrief.copyBrief(businessType, variant ? variant.style : theme.style) + (variant ? `\nTone of voice for this version: ${variant.tone}` : ''),
+      tone: variant ? variant.tone : ''
     };
     const aiCopy = await checkedCopy(details, facts);
     if (aiCopy) {
@@ -620,6 +622,11 @@ module.exports = function (app, deps) {
     const logoBuf = await readGenLogo(logoFile, '');
     if (logoFile && logoBuf) theme.logoUrl = '/uploads/' + path.basename(logoFile.path);
     if (logoBuf || body.auto_blocks === '1') await autoDesign(g, { industry, logoBuf, blocks: body.auto_blocks === '1', keepColors: body.use_brand_color === '1' && isValidHexColor(body.brand_color) });
+    if (variant) { // the version's own look, switched the same way as the look buttons on the preview page
+      theme.style = variant.style; delete theme.homeFull;
+      if (!(theme.homeLayout === 'mix' && (theme.mix || []).length)) theme.homeLayout = '';
+      sections.meta = { ...(sections.meta || {}), variant: variant.id };
+    }
     // the added blocks and section headings get words written for this business too (one more AI call)
     if (aiCopy) {
       try {
@@ -660,6 +667,20 @@ module.exports = function (app, deps) {
       return renderDashboard(req, res, { generateError: pasted ? 'We couldn\'t tell the type of business from the pasted text. Please type it in (e.g. "plumbing company").' : 'Please describe the type of business (e.g. "plumbing company").' });
     }
     try {
+      if (req.body.three === '1') { // three versions side by side (warm, professional, bold); nothing is saved until one is picked
+        const built = await Promise.all(aibuild.VARIANTS.map(v => buildGeneratedSite({ ...req.body }, req.file, v).then(g => ({ g, v }), () => null)));
+        const got = built.filter(Boolean);
+        if (!got.length) throw new Error('no version could be built');
+        db.prepare("DELETE FROM site_drafts WHERE created_at < datetime('now', '-7 days')").run();
+        const n = db.prepare('SELECT COUNT(*) AS n FROM site_drafts WHERE user_id = ?').get(req.session.userId).n;
+        if (n + got.length > 20) db.prepare('DELETE FROM site_drafts WHERE id IN (SELECT id FROM site_drafts WHERE user_id = ? ORDER BY id LIMIT ?)').run(req.session.userId, n + got.length - 20);
+        const grp = nanoid(16);
+        for (const { g, v } of got) {
+          db.prepare('INSERT INTO site_drafts (user_id, token, name, theme, sections, copy_source, grp, variant) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+            .run(req.session.userId, nanoid(20), g.name, JSON.stringify(g.theme), JSON.stringify(g.sections), g.copySource, grp, v.id);
+        }
+        return res.redirect(`/sites/drafts/${grp}`);
+      }
       const g = await buildGeneratedSite(req.body, req.file);
       if (req.body.preview === '1') { // look first, save only if the owner likes it
         db.prepare("DELETE FROM site_drafts WHERE created_at < datetime('now', '-7 days')").run();
@@ -739,11 +760,27 @@ module.exports = function (app, deps) {
     }
     res.redirect(`/sites/draft/${req.params.token}`);
   });
+  // the three versions side by side: pick one, look closer at one, or throw them all away
+  const loadDraftGroup = (req) => (/^[A-Za-z0-9_-]{10,64}$/.test(req.params.grp) ? db.prepare('SELECT * FROM site_drafts WHERE grp = ? AND user_id = ? ORDER BY id').all(req.params.grp, req.session.userId) : []);
+  app.get('/sites/drafts/:grp', requireAuth, (req, res) => {
+    const rows = loadDraftGroup(req);
+    if (!rows.length) return res.status(404).render('not-found');
+    const versions = rows.map(r => {
+      const sec = JSON.parse(r.sections || '{}'), v = aibuild.variantById(r.variant) || { id: r.variant, label: 'Version', blurb: '' };
+      return { token: r.token, v, ai: r.copy_source === 'ai', headline: (sec.hero && sec.hero.headline) || '', confirm: ((sec.meta && sec.meta.confirm) || []).length };
+    });
+    res.render('draft-pick', { name: rows[0].name, grp: req.params.grp, versions });
+  });
+  app.post('/sites/drafts/:grp/discard', requireAuth, (req, res) => {
+    if (/^[A-Za-z0-9_-]{10,64}$/.test(req.params.grp)) db.prepare("DELETE FROM site_drafts WHERE grp = ? AND user_id = ? AND grp != ''").run(req.params.grp, req.session.userId);
+    res.redirect('/');
+  });
   app.post('/sites/draft/:token/create', requireAuth, loadDraft, (req, res) => {
     const d = req.draft;
     const g = { name: d.name, theme: JSON.parse(d.theme), sections: mergeSectionsWithDefaults(JSON.parse(d.sections)), copySource: d.copy_source };
     const id = insertGeneratedSite(req.session.userId, g, 'Generated');
     db.prepare('DELETE FROM site_drafts WHERE id = ?').run(d.id);
+    if (d.grp) db.prepare("DELETE FROM site_drafts WHERE grp = ? AND user_id = ? AND grp != ''").run(d.grp, req.session.userId);   // the versions not picked go too
     res.redirect(`/sites/${id}/edit?generated=${d.copy_source === 'ai' ? 'ai' : '1'}`);
   });
   app.post('/sites/draft/:token/discard', requireAuth, loadDraft, (req, res) => {
@@ -800,12 +837,15 @@ module.exports = function (app, deps) {
       const parsed = chatedit.parseReply(text);
       if (!parsed) return res.json({ ok: false, error: 'The AI didn\'t give a usable answer. Nothing was changed — try again or word it differently.' });
       const result = chatedit.applyOps(site, parsed.ops, { scope, styles: extraThemes.ALL_STYLES });
-      if (!result.changes.length) return res.json({ ok: true, reply: parsed.reply || 'I couldn\'t find anything to change for that request.', changes: [], token: '' });
+      // the honesty check: wording that states something the site and the request don't is held back, with the reason
+      const { ok: offered, held } = chatedit.honesty(site, result.changes, instruction);
+      const heldOut = held.map(h => ({ label: h.label, after: h.after, reasons: h.reasons }));
+      if (!offered.length) return res.json({ ok: true, reply: parsed.reply || 'I couldn\'t find anything to change for that request.', changes: [], held: heldOut, token: '' });
       for (const [k, v] of editProposals) if (v.exp < Date.now()) editProposals.delete(k);
       const token = crypto.randomBytes(16).toString('hex');
-      editProposals.set(token, { siteId: site.id, scope, ops: parsed.ops, instruction, exp: Date.now() + 15 * 60 * 1000 });
+      editProposals.set(token, { siteId: site.id, scope, ops: parsed.ops, allowed: offered.map(c => c.i), instruction, exp: Date.now() + 15 * 60 * 1000 });
       const heads = scope === 'client' ? [] : designBrief.warnings(site, parsed.ops);
-      res.json({ ok: true, reply: [parsed.reply, ...heads.map(h => 'Heads up: ' + h)].filter(Boolean).join(' '), notes: heads, changes: result.changes, token, skipped: result.rejected });
+      res.json({ ok: true, reply: [parsed.reply, ...heads.map(h => 'Heads up: ' + h)].filter(Boolean).join(' '), notes: heads, changes: offered, held: heldOut, token, skipped: result.rejected });
     };
   }
   function editApplyHandler(scope) {
@@ -813,14 +853,20 @@ module.exports = function (app, deps) {
       const site = req.site;
       const p = editProposals.get(str((req.body || {}).token, 64));
       if (!p || p.exp < Date.now() || p.siteId !== site.id || p.scope !== scope) return res.status(400).json({ ok: false, error: 'That suggestion expired. Ask again.' });
+      // only the changes that passed the honesty check, and of those only the ones ticked (all when none are sent)
+      const allowed = new Set(p.allowed || []);
+      const picks = req.body.pick == null ? null : new Set([].concat(req.body.pick).slice(0, 50).map(Number).filter(Number.isInteger));
+      if (picks && !picks.size) return res.json({ ok: false, error: 'Tick at least one change first.' });
+      const ops = (p.ops || []).slice(0, chatedit.MAX_OPS).filter((o, i) => allowed.has(i) && (!picks || picks.has(i)));
       editProposals.delete(str(req.body.token, 64));
-      const result = chatedit.applyOps(site, p.ops, { scope, styles: extraThemes.ALL_STYLES });
+      const result = chatedit.applyOps(site, ops, { scope, styles: extraThemes.ALL_STYLES });
       if (!result.changes.length) return res.json({ ok: false, error: 'Nothing to apply.' });
       saveVersion(site.id, site.theme, site.sections, site.layout, ('Before AI edit: ' + p.instruction).slice(0, 60));
+      const v = db.prepare('SELECT id FROM site_versions WHERE site_id = ? ORDER BY id DESC LIMIT 1').get(site.id);
       db.prepare(`UPDATE sites SET theme = ?, sections = ?, seo_title = ?, seo_description = ?, updated_at = datetime('now') WHERE id = ?`)
         .run(JSON.stringify(result.theme), JSON.stringify(result.sections), result.sections.seo.title, result.sections.seo.description, site.id);
       invalidateSiteCache(site);
-      res.json({ ok: true, applied: result.changes.length });
+      res.json({ ok: true, applied: result.changes.length, versionId: scope === 'client' ? null : (v ? v.id : null) });
     };
   }
   app.post('/sites/:id/ai-edit', requireAuth, loadOwnedSite, generateLimiter, editProposeHandler('owner'));

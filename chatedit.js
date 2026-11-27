@@ -17,6 +17,7 @@ const TEXT_RULES = [
   [/^about\.body$/, 2000],
   [/^services\.items\.\d+\.title$/, 80], [/^services\.items\.\d+\.description$/, 400], [/^services\.items\.\d+\.detail$/, 1500],
   [/^faq\.items\.\d+\.question$/, 200], [/^faq\.items\.\d+\.answer$/, 600],
+  [/^whyChoose\.items\.\d+\.title$/, 80], [/^whyChoose\.items\.\d+\.text$/, 240],
   [/^announcement\.text$/, 160], [/^announcement\.linkText$/, 40],
   [/^seo\.title$/, 70], [/^seo\.description$/, 170]
 ];
@@ -38,6 +39,8 @@ function snapshot(site, scope) {
     announcement: { text: s.announcement ? s.announcement.text : '' },
     seo: { title: s.seo.title, description: s.seo.description }
   };
+  const why = ((s.whyChoose && s.whyChoose.items) || []);
+  if (why.length) o.whyChoose = { heading: s.whyChoose.heading, items: why.map(i => ({ title: (i && i.title) || '', text: (i && i.text) || '' })) };
   if (scope !== 'client') {
     o.theme = { primaryColor: site.theme.primaryColor, accentColor: site.theme.accentColor, buttonShape: site.theme.buttonShape || '', corners: site.theme.corners || '', spacing: site.theme.spacing || '', headingScale: site.theme.headingScale || '', headingCase: site.theme.headingCase || '', bands: !!site.theme.bands, style: site.theme.style };
   }
@@ -50,7 +53,8 @@ Hard rules:
 - Use ONLY facts already on the site or stated in the request. Never invent licenses, awards, years in business, prices, discounts, guarantees, reviews, names or statistics.
 - You can only edit the fields shown in the current-content JSON (and add or remove services and FAQ items). You cannot change contact details, hours, prices, photos, payments, or anything not listed. If asked for something else, say so briefly in "reply" and return no operations.
 - Plain, warm, confident language. No exclamation marks, no hype.
-- Keep edits small and exactly what was asked. Do not rewrite things that were not mentioned.
+- Keep edits small and exactly what was asked. Do not rewrite things that were not mentioned. A request about the tone of the whole site ("make it warmer", "more professional") may rewrite the headline, the line under it, the About text and the service descriptions, but nothing else.
+- A special offer, a seasonal message or news goes in announcement.text (a thin bar at the top of every page), using only the details the owner gave. Setting it to "" removes the bar.
 - Output a single JSON object and nothing else:
   {"reply": "one or two plain sentences telling the owner what you changed or why you could not",
    "ops": [ {"op":"set","path":"hero.headline","value":"..."},
@@ -73,6 +77,35 @@ function parseReply(text) {
   } catch (_) { return null; }
 }
 
+// plain names for what changes, e.g. services.items.2.description -> "Service 3: description"
+const NAMES = { about: 'About', services: 'Services', whyChoose: 'Why choose us', testimonials: 'Reviews', gallery: 'Gallery', faq: 'FAQ', hours: 'Hours', contact: 'Contact', blog: 'Blog' };
+const FIXED = { 'hero.headline': 'Headline at the top', 'hero.subheadline': 'Line under the headline', 'hero.ctaText': 'Main button', 'hero.trustText': 'Small line under the button',
+  'about.body': 'About text', 'seo.title': 'Google: page title', 'seo.description': 'Google: search description', 'announcement.linkText': 'Announcement bar: link words' };
+function friendlyLabel(path) {
+  if (FIXED[path]) return FIXED[path];
+  let m = path.match(/^(\w+)\.(heading|eyebrow)$/);
+  if (m) return `${NAMES[m[1]] || m[1]}: ${m[2] === 'heading' ? 'section heading' : 'small line above the heading'}`;
+  m = path.match(/^(services|faq|whyChoose)\.items\.(\d+)\.(\w+)$/);
+  if (m) return `${{ services: 'Service', faq: 'Question', whyChoose: 'Why choose us, point' }[m[1]]} ${+m[2] + 1}: ${({ title: m[1] === 'services' ? 'name' : 'title', question: 'the question', answer: 'the answer', description: 'description', detail: 'more detail', text: 'text' })[m[3]] || m[3]}`;
+  return path.replace(/\./g, ' ');
+}
+
+// Honesty check (the same one Generate a site and Improve with AI use): new wording may only state what the site
+// already says or what the owner wrote in the request. Anything else (a license, "24/7", a number, a town...) is
+// held back and shown with the reason instead of being offered. Returns { ok: [changes], held: [changes + reasons] }.
+function honesty(site, changes, instruction) {
+  const grounding = require('./grounding');
+  const f = require('./improve').siteFacts(site);
+  f.extra = `${f.extra || ''}\n${clip(instruction, 600)}`.slice(0, 14000);
+  const corpus = grounding.corpusOf(f);
+  const ok = [], held = [];
+  for (const c of changes || []) {
+    const reasons = c.text && c.after ? grounding.factProblems(c.after, f, corpus) : [];
+    if (reasons.length) held.push({ ...c, reasons }); else ok.push(c);
+  }
+  return { ok, held };
+}
+
 function getAt(obj, parts) { let c = obj; for (const p of parts) { if (c == null) return undefined; c = c[p]; } return c; }
 
 // Apply operations to copies of sections/theme. Returns the new objects, a list of human-readable
@@ -81,9 +114,11 @@ function applyOps(site, ops, { scope = 'owner', styles = [] } = {}) {
   const sections = JSON.parse(JSON.stringify(site.sections));
   const theme = JSON.parse(JSON.stringify(site.theme));
   const changes = []; let rejected = 0;
-  const label = (path) => path.replace(/\.items\.(\d+)\./, (_, n) => ` #${+n + 1} `).replace(/\./g, ' ');
+  const label = friendlyLabel;
 
-  for (const op of (ops || []).slice(0, MAX_OPS)) {
+  const list = (ops || []).slice(0, MAX_OPS);
+  for (let i = 0; i < list.length; i++) {
+    const op = list[i];
     if (!op || typeof op !== 'object') { rejected++; continue; }
     const path = clip(op.path, 80);
 
@@ -97,7 +132,7 @@ function applyOps(site, ops, { scope = 'owner', styles = [] } = {}) {
       else { rejected++; continue; }
       if (String(before == null ? '' : before) === String(v)) continue;
       theme[key] = v;
-      changes.push({ label: ({ primaryColor: 'Main color', accentColor: 'Accent color', buttonShape: 'Button shape', corners: 'Corners', spacing: 'Spacing', headingScale: 'Heading size', headingCase: 'Heading case', bands: 'Alternating bands', style: 'Look' })[key] || key, before: String(before == null ? '' : before), after: String(v) });
+      changes.push({ i, label: ({ primaryColor: 'Main color', accentColor: 'Accent color', buttonShape: 'Button shape', corners: 'Corners', spacing: 'Spacing', headingScale: 'Heading size', headingCase: 'Heading case', bands: 'Alternating bands', style: 'Look' })[key] || key, before: String(before == null ? '' : before), after: String(v) });
       continue;
     }
 
@@ -113,7 +148,8 @@ function applyOps(site, ops, { scope = 'owner', styles = [] } = {}) {
       const before = String(parent[parts[parts.length - 1]] || '');
       if (before === v) continue;
       parent[parts[parts.length - 1]] = v;
-      changes.push({ label: label(path), before, after: v });
+      if (path === 'announcement.text') { parent.enabled = !!v; changes.push({ i, label: 'Announcement bar at the top', before, after: v || '(bar removed)', text: true }); continue; }
+      changes.push({ i, label: label(path), before, after: v, text: true });
       continue;
     }
 
@@ -126,12 +162,12 @@ function applyOps(site, ops, { scope = 'owner', styles = [] } = {}) {
         for (const f of spec.fields) item[f] = clip(op.value[f], f === 'title' || f === 'question' ? 120 : 600);
         if (!item[spec.fields[0]]) { rejected++; continue; }
         list.push(item);
-        changes.push({ label: (path.startsWith('faq') ? 'Add question' : 'Add service'), before: '', after: spec.fields.map(f => item[f]).filter(Boolean).join(' — ') });
+        changes.push({ i, label: (path.startsWith('faq') ? 'Add question' : 'Add service'), before: '', after: spec.fields.map(f => item[f]).filter(Boolean).join(' — '), text: true });
       } else {
         const i = Number(op.index);
         if (!Number.isInteger(i) || i < 0 || i >= list.length || list.length <= 1) { rejected++; continue; }
         const [gone] = list.splice(i, 1);
-        changes.push({ label: (path.startsWith('faq') ? 'Remove question' : 'Remove service'), before: gone[spec.fields[0]] || '', after: '' });
+        changes.push({ i, label: (path.startsWith('faq') ? 'Remove question' : 'Remove service'), before: gone[spec.fields[0]] || '', after: '' });
       }
       continue;
     }
@@ -140,4 +176,4 @@ function applyOps(site, ops, { scope = 'owner', styles = [] } = {}) {
   return { sections, theme, changes, rejected };
 }
 
-module.exports = { SYSTEM, buildPrompt, parseReply, applyOps, snapshot, MAX_OPS, STYLE_ENUMS };
+module.exports = { SYSTEM, buildPrompt, parseReply, applyOps, snapshot, honesty, friendlyLabel, MAX_OPS, STYLE_ENUMS };
