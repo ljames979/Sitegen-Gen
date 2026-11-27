@@ -124,6 +124,18 @@ before(async () => {
         Object.keys(ids).forEach((id, i) => { out[id] = id === 's.about.heading' ? 'Meet the crew behind Block Roofing' : i === 1 ? 'We answer the phone 24/7.' : `ZZ fresh words ${i}`; });
         return res.end(JSON.stringify({ content: [{ type: 'text', text: JSON.stringify(out) }] }));
       }
+      if (/reviewing a finished small business website/.test(parsed.system || '')) { // Improve with AI (improve.js)
+        const prompt = parsed.messages[0].content;
+        res.setHeader('content-type', 'application/json');
+        if (!prompt.includes('ZZ-IMPROVE')) return res.end(JSON.stringify({ content: [{ type: 'text', text: 'no json' }] }));
+        const reply = { summary: 'Clearer headline and Google text.', changes: [
+          { id: 'hero.headline', value: 'Roof repairs done right in Orlando', why: 'Says what you get.' },
+          { id: 'about.body', value: 'Licensed, award-winning roofers on call 24/7.', why: 'x' },
+          { id: 'seo.title', value: 'Roof Repair in Orlando | Improve Co', why: 'Google.' },
+          { id: 'contact.phone', value: '555-0000', why: 'nope' }
+        ], look: [{ key: 'bands', value: true, why: 'Separates sections.' }], tips: ['Add a photo of a finished roof.'] };
+        return res.end(JSON.stringify({ content: [{ type: 'text', text: JSON.stringify(reply) }] }));
+      }
       if (/website assistant/.test(parsed.system || '')) {
         const last = parsed.messages[parsed.messages.length - 1].content;
         res.setHeader('content-type', 'application/json');
@@ -3974,6 +3986,58 @@ test('customer payments: key stored encrypted, service pay button, booking depos
   await save({ pay_enabled: '1', stripe_key_remove: '1' });
   assert.doesNotMatch(await (await fetch(`${BASE}/site/${slug}/services/full-groom`)).text(), /class="buy-form"/);
   assert.equal(raw.prepare('SELECT stripe_key_enc k FROM sites WHERE id = ?').get(siteId).k, '');
+  raw.close();
+});
+
+test('Improve with AI: suggests, holds back invented claims, applies only ticked ones, undo and copy keep the original', async () => {
+  const Database = require('better-sqlite3'); const raw = new Database(TEST_DB);
+  const c = makeClient();
+  const { siteId, slug } = await basicSite(c, 'improve-owner@example.com', 'Improve Co', {});
+  const base = `/sites/${siteId}`;
+  const ed = await (await c.get(base + '/edit')).text();
+  assert.match(ed, /id="improveBox"/);
+  assert.match(await (await c.get('/dashboard')).text(), /edit\?improve=1#features/);
+  const r = await (await c.post(base + '/improve', { note: 'ZZ-IMPROVE', focus: ['words', 'seo'] })).json();
+  assert.equal(r.ok, true); assert.equal(r.how, 'ai'); assert.ok(r.token);
+  const lab = (re) => r.suggestions.find(s => re.test(s.label));
+  assert.equal(lab(/headline/).after, 'Roof repairs done right in Orlando');
+  assert.equal(lab(/page title/).after, 'Roof Repair in Orlando | Improve Co');
+  assert.ok(lab(/Alternating/), 'look suggestion offered');
+  assert.ok(!r.suggestions.some(s => /555-0000/.test(s.after)), 'contact details are never offered');
+  assert.ok(r.held.some(h => /24\/7|award|licen/i.test(h.reasons.join(' '))), 'invented claims held back');
+  assert.ok(r.suggestions.every(s => !('op' in s)));
+  const row = () => raw.prepare('SELECT theme, sections, layout FROM sites WHERE id = ?').get(siteId);
+  assert.equal(JSON.parse(row().sections).hero.headline, 'Hello', 'nothing saved before applying');
+  // another account cannot use it
+  const other = makeClient(); await other.post('/signup', { email: 'improve-other@example.com', password: 'password1' });
+  assert.equal((await other.post(base + '/improve', { note: 'ZZ-IMPROVE' })).status, 404);
+  assert.equal((await other.post(base + '/improve/apply', { token: r.token, ids: [lab(/headline/).sid] })).status, 404);
+  // apply only the headline and the Google title
+  const ap = await (await c.post(base + '/improve/apply', { token: r.token, ids: [lab(/headline/).sid, lab(/page title/).sid] })).json();
+  assert.equal(ap.ok, true); assert.equal(ap.applied, 2); assert.ok(ap.versionId);
+  const sec = JSON.parse(row().sections);
+  assert.equal(sec.hero.headline, 'Roof repairs done right in Orlando');
+  assert.equal(sec.seo.title, 'Roof Repair in Orlando | Improve Co');
+  assert.equal(JSON.parse(row().theme).bands || false, false, 'unticked look change not applied');
+  assert.match(raw.prepare('SELECT label FROM site_versions WHERE id = ?').get(ap.versionId).label, /Before Improve with AI/);
+  assert.match(await (await fetch(`${BASE}/site/${slug}`)).text(), /Roof repairs done right in Orlando/);
+  assert.equal((await (await c.post(base + '/improve/apply', { token: r.token, ids: [lab(/headline/).sid] })).json()).ok, false, 'used once');
+  // one-click undo puts the original back
+  await c.post(`${base}/versions/${ap.versionId}/restore`, {});
+  assert.equal(JSON.parse(row().sections).hero.headline, 'Hello');
+  // apply to a copy: the original stays exactly as it is
+  const before = row();
+  const r2 = await (await c.post(base + '/improve', { note: 'ZZ-IMPROVE' })).json();
+  const cp = await (await c.post(base + '/improve/apply', { token: r2.token, ids: r2.suggestions.map(s => s.sid), copy: true })).json();
+  assert.equal(cp.ok, true); assert.equal(cp.copy, true); assert.notEqual(String(cp.siteId), String(siteId));
+  assert.deepEqual(row(), before, 'original untouched');
+  const copyRow = raw.prepare('SELECT name, sections, theme, user_id, published FROM sites WHERE id = ?').get(cp.siteId);
+  assert.equal(copyRow.name, 'Improve Co (improved)'); assert.equal(copyRow.published, 0);
+  assert.equal(JSON.parse(copyRow.sections).hero.headline, 'Roof repairs done right in Orlando');
+  assert.equal(JSON.parse(copyRow.theme).bands, true);
+  // the AI failing still gives the quick checks, with a plain note
+  const r3 = await (await c.post(base + '/improve', { note: 'nothing' })).json();
+  assert.equal(r3.ok, true); assert.equal(r3.how, 'failed'); assert.match(r3.message, /quick checks/);
   raw.close();
 });
 

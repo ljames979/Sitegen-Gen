@@ -1,0 +1,132 @@
+<%# ✨ Improve with AI. Needs: site, aiOn (AI configured) %>
+<div class="improve" id="improveBox" data-base="/sites/<%= site.id %>">
+  <p class="muted" style="font-size:13px;margin-top:0;">The AI reads the whole site and suggests better wording, clearer buttons, better Google text and a few look tweaks. You tick the ones you want. Nothing changes until you press Apply, and the site as it is now is saved to history first, so you can undo it in one click.<% if (!aiOn) { %> <b>AI isn't set up</b> (add <code>ANTHROPIC_API_KEY</code> to <code>.env</code>), so only the quick checks will run.<% } %></p>
+  <p class="muted" style="font-size:12px;">It never writes reviews and never adds licenses, years, numbers, prices or places the site doesn't already say. Anything like that is held back and shown to you.</p>
+  <fieldset class="imp-focus">
+    <legend>Focus on (optional)</legend>
+    <label><input type="checkbox" data-imp-focus value="words"> Wording</label>
+    <label><input type="checkbox" data-imp-focus value="action"> Calls to action</label>
+    <label><input type="checkbox" data-imp-focus value="seo"> Google (SEO)</label>
+    <label><input type="checkbox" data-imp-focus value="look"> Look</label>
+  </fieldset>
+  <textarea id="impNote" rows="2" maxlength="400" placeholder="Anything to tell the AI? e.g. Sound more upscale. Push people to book online."></textarea>
+  <button type="button" class="btn" id="impGo" style="margin-top:8px;">✨ Improve with AI</button>
+  <div id="impOut" aria-live="polite" style="margin-top:12px;"></div>
+</div>
+<style>
+  .improve textarea { width: 100%; }
+  .imp-focus { border: 0; padding: 0; margin: 0 0 8px; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; }
+  .imp-focus legend { font-size: 12px; color: #64748b; margin-bottom: 4px; padding: 0; }
+  .imp-focus label { display: inline-flex; align-items: center; gap: 5px; font-weight: 400; margin: 0; }
+  .imp-group { margin: 14px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: #475569; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+  .imp-group button { all: unset; cursor: pointer; font-size: 12px; text-transform: none; letter-spacing: 0; color: #2563eb; font-weight: 500; }
+  .imp-item { display: grid; grid-template-columns: auto 1fr; gap: 10px; border: 1px solid var(--border, #e2e8f0); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 14px; background: #fff; cursor: pointer; }
+  .imp-item input { margin-top: 3px; }
+  .imp-item b { display: block; font-size: 12px; color: #334155; margin-bottom: 4px; }
+  .imp-item .was { color: #991b1b; text-decoration: line-through; white-space: pre-line; }
+  .imp-item .now { color: #065f46; white-space: pre-line; margin-top: 2px; }
+  .imp-item .why { color: #64748b; font-size: 12px; margin-top: 6px; }
+  .imp-item:has(input:not(:checked)) { opacity: .55; }
+  .imp-note { background: #f1f5f9; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; font-size: 14px; }
+  .imp-held { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 10px 12px; margin-top: 12px; font-size: 13px; }
+  .imp-held li, .imp-tips li { margin: 4px 0; }
+  .imp-bar { position: sticky; bottom: 0; background: #fff; padding: 10px 0; display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid #e2e8f0; margin-top: 10px; }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('improveBox'), go = document.getElementById('impGo');
+  if (!root || !go) return;
+  const base = root.dataset.base, out = document.getElementById('impOut');
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+  const post = async (path, body) => {
+    const r = await fetch(base + path, { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json' }, body: JSON.stringify(body) });
+    try { return await r.json(); } catch (_) { return { ok: false, error: 'Something went wrong. Please try again.' }; }
+  };
+  const save = async () => { if (window.aiEditHooks && window.aiEditHooks.before) await window.aiEditHooks.before(); };
+  const OFF_BY_DEFAULT = ['layout', 'look'];   // these change how the page looks, so Leo opts in
+
+  go.addEventListener('click', async () => {
+    const focus = [...root.querySelectorAll('input[data-imp-focus]:checked')].map(i => i.value);
+    go.disabled = true; go.textContent = 'Reading the site…'; out.replaceChildren();
+    try {
+      await save();
+      const d = await post('/improve', { focus, note: document.getElementById('impNote').value.trim() });
+      if (!d.ok) { out.append(el('div', 'imp-note', d.error || 'That did not work.')); return; }
+      if (d.message) out.append(el('div', 'imp-note', d.message));
+      if (d.summary) out.append(el('div', 'imp-note', d.summary));
+      if (!d.suggestions.length) out.append(el('div', 'imp-note', 'No changes to suggest. The site already reads well.'));
+      const boxes = [];
+      let area = '';
+      d.suggestions.forEach(s => {
+        if (s.area !== area) {
+          area = s.area;
+          const g = el('div', 'imp-group'); g.append(el('span', '', d.areas[area] || area));
+          const tog = el('button', '', 'Tick / untick all'); tog.type = 'button';
+          const mine = area;
+          tog.addEventListener('click', () => { const bs = boxes.filter(b => b.dataset.area === mine); const on = !bs.every(b => b.checked); bs.forEach(b => { b.checked = on; }); count(); });
+          g.append(tog); out.append(g);
+        }
+        const row = el('label', 'imp-item');
+        const cb = el('input'); cb.type = 'checkbox'; cb.value = s.sid; cb.dataset.area = s.area; cb.checked = !OFF_BY_DEFAULT.includes(s.area);
+        cb.addEventListener('change', count); boxes.push(cb);
+        const body = el('div'); body.append(el('b', '', s.label));
+        if (s.before) body.append(el('div', 'was', s.before));
+        body.append(el('div', 'now', s.after));
+        if (s.why) body.append(el('div', 'why', s.why));
+        row.append(cb, body); out.append(row);
+      });
+      if (d.held && d.held.length) {
+        const h = el('div', 'imp-held'); h.append(el('b', '', 'Held back (the AI wrote something the site doesn\'t back up)'));
+        const ul = el('ul'); d.held.forEach(x => { const li = el('li'); li.append(el('span', '', `${x.label}: "${x.after}" `), el('span', 'muted', `(${x.reasons.join('; ')})`)); ul.append(li); });
+        h.append(ul, el('div', 'muted', 'If any of it is true, add it to the site yourself (for example in Trust & credentials) and run Improve again.')); out.append(h);
+      }
+      if (d.tips && d.tips.length) {
+        const t = el('div', 'imp-note imp-tips'); t.append(el('b', '', 'Things only you or the client can add'));
+        const ul = el('ul'); d.tips.forEach(x => ul.append(el('li', '', x))); t.append(ul); out.append(t);
+      }
+      if (!d.token) return;
+      const bar = el('div', 'imp-bar');
+      const yes = el('button', 'btn', ''); yes.type = 'button';
+      const copy = el('button', 'btn-secondary', 'Apply to a copy instead'); copy.type = 'button';
+      copy.title = 'Makes a new site with these changes. This one stays exactly as it is.';
+      const no = el('button', 'btn-secondary', 'Close'); no.type = 'button';
+      function count() { const n = boxes.filter(b => b.checked).length; yes.textContent = `Apply ${n} change${n === 1 ? '' : 's'}`; yes.disabled = copy.disabled = !n; }
+      count();
+      no.addEventListener('click', () => out.replaceChildren());
+      const apply = async (toCopy) => {
+        yes.disabled = copy.disabled = true; (toCopy ? copy : yes).textContent = 'Applying…';
+        await save();
+        const a = await post('/improve/apply', { token: d.token, ids: boxes.filter(b => b.checked).map(b => b.value), copy: toCopy });
+        if (!a.ok) { out.replaceChildren(el('div', 'imp-note', a.error || 'Could not apply that.')); return; }
+        try { sessionStorage.setItem('sgImproveDone', JSON.stringify({ n: a.applied, stale: a.stale, copy: a.copy, v: a.versionId || null })); } catch (_) {}
+        location.href = `/sites/${a.siteId}/edit?improved=1#features`;
+      };
+      yes.addEventListener('click', () => apply(false));
+      copy.addEventListener('click', () => apply(true));
+      bar.append(yes, copy, no); out.append(bar);
+    } finally { go.disabled = false; go.textContent = '✨ Improve with AI'; }
+  });
+
+  // after applying: say what happened and offer the one-click undo
+  let done = null;
+  try { done = JSON.parse(sessionStorage.getItem('sgImproveDone') || 'null'); sessionStorage.removeItem('sgImproveDone'); } catch (_) {}
+  const det = root.closest('details');
+  if (done) {
+    const msg = el('div', 'imp-note', done.copy
+      ? `This is a new copy with ${done.n} improvement${done.n === 1 ? '' : 's'}. The original site was not changed.`
+      : `Done: ${done.n} improvement${done.n === 1 ? '' : 's'} applied. The site as it was is saved in your version history.`);
+    if (done.stale) msg.append(el('div', 'muted', `${done.stale} suggestion${done.stale === 1 ? ' was' : 's were'} skipped because that part changed in the meantime.`));
+    if (done.v) {
+      const b = el('button', 'btn-secondary', 'Undo these changes'); b.type = 'button'; b.style.marginTop = '8px';
+      b.addEventListener('click', async () => {
+        b.disabled = true; b.textContent = 'Undoing…';
+        await fetch(`${base}/versions/${done.v}/restore`, { method: 'POST' }).catch(() => {});
+        location.href = `${base}/edit?saved=1#features`;
+      });
+      msg.append(b);
+    }
+    out.append(msg);
+  }
+  if ((done || /[?&]improve=1\b/.test(location.search)) && det) { det.open = true; setTimeout(() => det.scrollIntoView({ block: 'start' }), 50); }
+})();
+</script>
