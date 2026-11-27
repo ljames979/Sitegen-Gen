@@ -104,6 +104,26 @@ before(async () => {
         if (ask.includes('ZZ-EDIT-NONE')) return say({ reply: 'I cannot change your phone number here.', ops: [{ op: 'set', path: 'contact.phone', value: '555' }] });
         return say('sorry, no json here');
       }
+      if (/You read pasted notes/.test(parsed.system || '')) { // the paste-anything box (aibuild.readPaste)
+        const prompt = parsed.messages[0].content;
+        res.setHeader('content-type', 'application/json');
+        if (!prompt.includes('ZZ-PASTE')) return res.end(JSON.stringify({ content: [{ type: 'text', text: 'no json' }] }));
+        const reply = { name: 'Paste Paws Grooming', type: 'mobile dog grooming', phone: '(407) 555-0177', email: 'fake@nowhere.test', city: 'Kissimmee, FL',
+          weekdayHours: '8:00 AM - 5:00 PM', years: '30', badges: ['Fear Free certified'], areas: ['Kissimmee', 'Paris'],
+          services: [{ name: 'Full groom', price: '$85' }, { name: 'Teeth whitening', price: '$20' }],
+          apart: 'Gentle with nervous dogs. Award winning since day one.',
+          reviews: [{ quote: 'They were so gentle with our old beagle, thank you!', author: 'Rosa P.' }, { quote: 'Best groomer in the whole state, five stars', author: 'Tim' }] };
+        return res.end(JSON.stringify({ content: [{ type: 'text', text: JSON.stringify(reply) }] }));
+      }
+      if (/You finish the wording/.test(parsed.system || '')) { // words for the added blocks (aibuild.rewriteBlocks)
+        const prompt = parsed.messages[0].content;
+        res.setHeader('content-type', 'application/json');
+        if (!prompt.includes('ZZ-BLOCKS')) { res.statusCode = 500; return res.end('{}'); }
+        const ids = JSON.parse(prompt.slice(prompt.indexOf('together):') + 10, prompt.indexOf('Return one JSON')).trim());
+        const out = {};
+        Object.keys(ids).forEach((id, i) => { out[id] = id === 's.about.heading' ? 'Meet the crew behind Block Roofing' : i === 1 ? 'We answer the phone 24/7.' : `ZZ fresh words ${i}`; });
+        return res.end(JSON.stringify({ content: [{ type: 'text', text: JSON.stringify(out) }] }));
+      }
       if (/website assistant/.test(parsed.system || '')) {
         const last = parsed.messages[parsed.messages.length - 1].content;
         res.setHeader('content-type', 'application/json');
@@ -128,7 +148,7 @@ before(async () => {
         res.setHeader('content-type', 'application/json');
         return res.end(JSON.stringify({ content: [{ type: 'text', text: JSON.stringify(reply) }] }));
       }
-      if (!prompt.includes('ZZ-AI-TEST')) { res.statusCode = 500; return res.end('{}'); }
+      if (!prompt.includes('ZZ-AI-TEST') && !prompt.includes('ZZ-BLOCKS')) { res.statusCode = 500; return res.end('{}'); }
       const reply = {
         hero: { headline: 'Roofs that last, in Kissimmee', subheadline: 'Repairs and replacements explained plainly.', ctaText: 'Request a Quote' },
         about: 'We repair and replace roofs for homes across Osceola County.\n\nTell us what you are seeing and we will take it from there.',
@@ -917,7 +937,8 @@ test('AI writes the copy from the owner\'s real details; failures fall back to t
   const siteId = editPath.match(/\/sites\/(\d+)\//)[1];
 
   // what was sent: real facts in, "never invent" rules in the system prompt, key in the header
-  assert.equal(aiRequests.length, 1);
+  // the copy call, then (since the reply names "Osceola County", which wasn't given) one retry, then the block words
+  assert.ok(aiRequests.length >= 1);
   const sent = aiRequests[0];
   assert.equal(sent.headers['x-api-key'], 'test-anthropic-key');
   assert.match(sent.body.system, /Never invent/);
@@ -956,6 +977,7 @@ test('AI writes the copy from the owner\'s real details; failures fall back to t
   await c.post(editPath, {
     name: 'Test Roofing', hero_headline: 'My own headline', about_heading: 'About', about_body: 'My own about.',
     services_heading: 'Services', contact_heading: 'Contact', contact_phone: '555-0111', contact_acceptSubmissions: '1',
+    contact_address: '5 Shingle Ln, Kissimmee, FL',   // the rewrite's honesty check needs the town to be one they gave
     meta_businessType: 'roofing company', trust_badges: 'Licensed & Insured',
     layout_order: 'hero,about,services,testimonials,whyChoose,gallery,faq,hours,contact'
   });
@@ -7032,4 +7054,80 @@ test('decorative card block: saved from the editor, drawn on the page in its sty
   assert.match(editor, /<input type="checkbox" class="dc-show" data-slot="div1">/, 'a hidden slot is unticked');
   assert.match(editor, /class="dc-col dc-border" data-key="border" data-sg-cl="full" value="#b8923a"/);
   assert.match(editor, /data-dcpreset="#b76e79"/);
+});
+
+
+test('Generate a site: claims the details do not back up are marked [Confirm with client] and listed on the preview', async () => {
+  const c = makeClient();
+  await c.post('/signup', { email: 'honest-gen@example.com', password: 'password1' });
+  // no AI copy for this one (the fake answers 500): the built-in plumbing text promises 24/7 and "licensed and insured"
+  const gen = await c.post('/sites/generate', { business_type: 'plumbing company', business_name: 'Honest Plumbing', auto_blocks: '1', preview: '1' });
+  assert.equal(gen.status, 302);
+  const loc = gen.headers.get('location');
+  assert.match(loc, /\/sites\/draft\//);
+  const page = await (await c.get(loc)).text();
+  assert.match(page, /something the client hasn&#39;t told you yet|something the client hasn't told you yet/);
+  assert.match(page, /24\/7/);
+  const frame = await (await c.get(loc + '/frame')).text();
+  assert.match(frame, /\[Confirm with client\] Yes, all of our technicians are fully licensed and insured/);
+  assert.doesNotMatch(frame, /(?<!\[Confirm with client\] )Yes, all of our technicians are fully licensed/);
+
+  // the owner says they are licensed and insured: no mark on that line
+  const gen2 = await c.post('/sites/generate', { business_type: 'plumbing company', business_name: 'Licensed Plumbing', badges: 'Licensed & Insured', preview: '1' });
+  const page2 = await (await c.get(gen2.headers.get('location'))).text();
+  assert.match(page2, /24\/7/);                                         // still listed: they never said 24/7
+  assert.doesNotMatch(page2, /<li>[^<]*<span[^>]*>[^<]*<\/span> Yes, all of our technicians are fully licensed/);
+});
+
+test('Generate a site: the paste-anything box fills only details found in the text', async () => {
+  const c = makeClient();
+  await c.post('/signup', { email: 'paste-gen@example.com', password: 'password1' });
+  const paste = 'ZZ-PASTE Paste Paws Grooming, mobile dog grooming in Kissimmee. Call (407) 555-0177. Since 2016. Full groom $85. Mon-Fri 8-5. ' +
+    '"They were so gentle with our old beagle, thank you!" - Rosa P.';
+  const r = await c.post('/sites/generate/read-paste', { paste });
+  const j = await r.json();
+  assert.equal(j.ok, true);
+  assert.equal(j.how, 'ai');
+  assert.equal(j.fields.phone, '(407) 555-0177');
+  assert.equal(j.fields.business_name, 'Paste Paws Grooming');
+  assert.equal(j.fields.email, undefined);                    // not in the text
+  assert.equal(j.fields.years_in_business, undefined);        // "30" is not in the text
+  assert.equal(j.fields.badges, undefined);                   // "Fear Free certified" is not in the text
+  assert.equal(j.fields.service_areas, 'Kissimmee');           // Paris dropped
+  assert.equal(j.fields.services_list, 'Full groom | $85');     // the invented service dropped
+  assert.equal(j.fields.specialties, 'Gentle with nervous dogs.');
+  assert.match(j.fields.reviews_list, /old beagle, thank you! — Rosa P\./);
+  assert.doesNotMatch(j.fields.reviews_list, /Best groomer/);  // a review not in the text
+
+  // without pressing the button: the paste alone is enough to generate (the type comes from it), typed fields win
+  const gen = await c.post('/sites/generate', { paste, phone: '407-555-0100', preview: '1' });
+  assert.equal(gen.status, 302);
+  const loc = gen.headers.get('location');
+  const frame = await (await c.get(loc + '/frame')).text();
+  assert.match(frame, /Paste Paws Grooming/);
+  assert.match(frame, /407-555-0100/);
+  assert.doesNotMatch(frame, /555-0177/);
+  assert.match(frame, /old beagle/);
+  assert.match(frame, /Full groom/);
+  assert.match(frame, /\$85/);
+
+  // with no type and nothing readable in the paste: a clear message
+  const bad = await c.post('/sites/generate', { paste: 'hello there' });
+  assert.match(await bad.text(), /couldn.*t tell the type of business/);
+});
+
+test('Generate a site: AI writes the words of the added blocks and section headings; claims in them are marked', async () => {
+  const c = makeClient();
+  await c.post('/signup', { email: 'blocks-gen@example.com', password: 'password1' });
+  aiRequests.length = 0;
+  const gen = await c.post('/sites/generate', { business_type: 'roofing company', business_name: 'Block Roofing', specialties: 'ZZ-BLOCKS tile roofs', city: 'Kissimmee, FL', auto_blocks: '1', preview: '1' });
+  const loc = gen.headers.get('location');
+  assert.ok(aiRequests.some(q => /You finish the wording/.test(q.body.system || '')));
+  const sent = aiRequests.find(q => /You finish the wording/.test(q.body.system || ''));
+  assert.doesNotMatch(sent.body.messages[0].content, /https?:\/\/|#[0-9a-f]{6}\b/i);   // photo links and colors are never sent
+  const frame = await (await c.get(loc + '/frame')).text();
+  assert.match(frame, /Meet the crew behind Block Roofing/);
+  assert.match(frame, /ZZ fresh words/);
+  assert.doesNotMatch(frame, /We answer the phone 24\/7/);   // an AI piece with a claim they never made is not used
+  assert.doesNotMatch(frame, /sg-hl">Confirm with client/);  // headings never carry the note (brackets mean highlight)
 });

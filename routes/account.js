@@ -12,6 +12,7 @@ const modernize = require('../modernize');
 const grounding = require('../grounding');
 const fontsLib = require('../fonts');
 const { generateGroundedCopy } = require('../ai');
+const aibuild = require('../aibuild');
 
 module.exports = function (app, deps) {
   const {
@@ -519,23 +520,75 @@ module.exports = function (app, deps) {
       return { tpl, filled, theme, sections, hero, gallery, industry };
   }
 
+  // The honest-wording check for the quick generator (grounding.js): the facts are the form fields and anything pasted.
+  function quickFactsOf(name, type, sections, extra) {
+    const t = sections.trust || {}, c = sections.contact || {};
+    const yrs = (t.stats || []).find(x => x && /year/i.test(x.label || ''));
+    return grounding.quickFacts({
+      name, type, city: (sections.meta && sections.meta.city) || '', address: c.address || '', phone: c.phone || '', email: c.email || '',
+      areas: t.serviceAreas || [], badges: t.badges || [], years: yrs ? yrs.value : '',
+      services: (extra && extra.services) || [], specialties: (extra && extra.specialties) || '',
+      hours: ((sections.hours && sections.hours.items) || []).map(h => h && h.time).join(' '), extra: (extra && extra.notes) || ''
+    });
+  }
+  // marks only the words just replaced (headline, About, services, FAQ, search text), never the owner's own edits elsewhere
+  function markMain(sections, name, type, withFaq) {
+    const part = { hero: sections.hero, about: sections.about, services: sections.services, seo: sections.seo };
+    if (withFaq) part.faq = sections.faq;
+    return grounding.markSections(part, quickFactsOf(name, type, sections));
+  }
+  // AI copy for the quick generator: written, checked for claims the details don't back up, and written once more
+  // with the problems named if it had any. Whatever still slips through is marked by grounding.markSections later.
+  async function checkedCopy(details, facts, instruction = '') {
+    let copy = await generateCopy(details, instruction);
+    if (!copy) return null;
+    const probs = grounding.checkCopy(copy, facts, { guessed: true });
+    if (probs.length) {
+      const retry = await generateCopy({ ...details, feedback: [...new Set(probs.map(p => p.reason))].slice(0, 6).join('; ') }, instruction);
+      if (retry && grounding.checkCopy(retry, facts, { guessed: true }).length < probs.length) copy = retry;
+    }
+    return copy;
+  }
+  // services the owner listed (with prices): AI wording keeps their names and order; the price leads the description
+  function applyListedServices(sections, listed) {
+    if (!listed.length) return;
+    const had = (sections.services && sections.services.items) || [];
+    const norm = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    sections.services.items = listed.map(l => {
+      const old = had.find(x => x && norm(x.title) === norm(l.name)) || had.find(x => x && (norm(x.title).includes(norm(l.name)) || norm(l.name).includes(norm(x.title)))) || {};
+      let desc = old.description || l.desc || '';
+      if (l.price && !desc.includes(l.price)) desc = desc ? `${l.price} · ${desc}` : l.price;
+      return { ...old, title: l.name, description: desc.slice(0, 300), detail: old.detail || '' };
+    });
+  }
+
   // Builds a generated site in memory (nothing saved). Used by both "generate" and "preview first".
   async function buildGeneratedSite(body, logoFile) {
+    // the paste-anything box: fill the blanks of the form from it, unless the page already did ("Fill in the form")
+    const notes = str(body.paste, 12000);
+    if (notes && body.paste_read !== '1') {
+      try { aibuild.fillBlanks(body, (await aibuild.readPaste(notes, { complete: hasAiProvider() ? aiComplete : null })).fields); } catch { /* the typed details still work */ }
+    }
     const businessType = str(body.business_type, 100);
     const businessName = str(body.business_name, 80);
     const socialUrl = str(body.social_url, 2000);
-    const { tpl, filled, theme, sections, industry } = await baseSiteFromTemplate(businessType, businessName, str(body.specialties, 600));
+    const specialties = str(body.specialties, 1500);
+    const listed = aibuild.parseServices(body.services_list);
+    const reviews = aibuild.parseReviews(body.reviews_list);
+    const { tpl, filled, theme, sections, industry } = await baseSiteFromTemplate(businessType, businessName, specialties.slice(0, 600));
     if (body.home_blueprint === '1') { // the owner chose section designs while setting up: use the industry blueprint
       theme.homeLayout = 'blueprint';
       for (const f of Object.keys(sectionLibraryRegistry.FAMILIES)) { const v = body['bpv_' + f]; if (v && sectionLibraryRegistry.isVariant(f, v)) (theme.bpVariants = theme.bpVariants || {})[f] = v; }
     }
     applyIntake(body, theme, sections);
+    if (reviews.length) sections.testimonials = { ...sections.testimonials, items: reviews };   // real reviews only: typed or found word for word in the paste
     if (sections.meta.city) {
       sections.seo.title = `${filled.name} | ${tpl.label} in ${sections.meta.city}`.slice(0, 70);
     }
+    const facts = quickFactsOf(filled.name, businessType, sections, { services: listed, specialties, notes });
     // Optional AI-written copy; falls back to the built-in template text.
     let copySource = 'template';
-    const aiCopy = await generateCopy({
+    const details = {
       name: filled.name,
       type: businessType,
       address: sections.contact.address,
@@ -543,13 +596,17 @@ module.exports = function (app, deps) {
       serviceAreas: sections.trust.serviceAreas,
       years: sections.trust.stats[0] ? sections.trust.stats[0].value : '',
       badges: sections.trust.badges,
-      specialties: str(body.specialties, 600),
+      specialties,
+      services: listed.map(l => l.name + (l.price ? ` (price given by owner: ${l.price})` : '') + (l.desc ? ` — ${l.desc}` : '')),
+      notes,
       design: designBrief.copyBrief(businessType, theme.style)
-    });
+    };
+    const aiCopy = await checkedCopy(details, facts);
     if (aiCopy) {
       copySource = 'ai';
       applyCopy(sections, aiCopy);
     }
+    applyListedServices(sections, listed);
     tidyHero(sections, filled.name, sections.about && sections.about.body);
     if (socialUrl) {
       // Same best-effort contract as the importer: never let a bad/blocked social link stop generation.
@@ -562,6 +619,16 @@ module.exports = function (app, deps) {
     const logoBuf = await readGenLogo(logoFile, '');
     if (logoFile && logoBuf) theme.logoUrl = '/uploads/' + path.basename(logoFile.path);
     if (logoBuf || body.auto_blocks === '1') await autoDesign(g, { industry, logoBuf, blocks: body.auto_blocks === '1', keepColors: body.use_brand_color === '1' && isValidHexColor(body.brand_color) });
+    // the added blocks and section headings get words written for this business too (one more AI call)
+    if (aiCopy) {
+      try {
+        const n = await aibuild.rewriteBlocks(sections, { ...details, areas: facts.areas, badges: facts.badges, years: facts.years }, { complete: aiComplete, facts });
+        if (n) sections.meta = { ...(sections.meta || {}), blockWords: n };
+      } catch { /* the blocks keep the page's own words */ }
+    }
+    // anything still claiming what the details don't back up is marked [Confirm with client] (launch is blocked until it's gone)
+    const confirm = grounding.markSections(sections, facts);
+    sections.meta = { ...(sections.meta || {}), confirm };
     return g;
   }
 
@@ -582,9 +649,14 @@ module.exports = function (app, deps) {
     next();
   });
   app.post('/sites/generate', requireAuth, generateLimiter, genLogo, async (req, res) => {
+    const pasted = str(req.body.paste, 12000);
+    if (pasted && req.body.paste_read !== '1') { // the paste can supply the type of business too
+      try { aibuild.fillBlanks(req.body, (await aibuild.readPaste(pasted, { complete: hasAiProvider() ? aiComplete : null })).fields); } catch { /* typed details only */ }
+      req.body.paste_read = '1';
+    }
     const businessType = str(req.body.business_type, 100);
     if (!businessType) {
-      return renderDashboard(req, res, { generateError: 'Please describe the type of business (e.g. "plumbing company").' });
+      return renderDashboard(req, res, { generateError: pasted ? 'We couldn\'t tell the type of business from the pasted text. Please type it in (e.g. "plumbing company").' : 'Please describe the type of business (e.g. "plumbing company").' });
     }
     try {
       const g = await buildGeneratedSite(req.body, req.file);
@@ -605,6 +677,16 @@ module.exports = function (app, deps) {
     }
   });
 
+  // "Fill in the form from this": reads the paste-anything box and returns only the details found in it (aibuild.js)
+  app.post('/sites/generate/read-paste', requireAuth, generateLimiter, async (req, res) => {
+    const text = str((req.body || {}).paste, 12000);
+    if (!text) return res.status(400).json({ ok: false, error: 'Paste something about the business first.' });
+    try {
+      const got = await aibuild.readPaste(text, { complete: hasAiProvider() ? aiComplete : null });
+      res.json({ ok: true, fields: got.fields, how: got.how });
+    } catch { res.json({ ok: false, error: 'Could not read that. You can still fill in the form by hand.' }); }
+  });
+
   // ---- preview before creating ----
   function loadDraft(req, res, next) {
     const row = /^[A-Za-z0-9_-]{10,64}$/.test(req.params.token) ? db.prepare('SELECT * FROM site_drafts WHERE token = ? AND user_id = ?').get(req.params.token, req.session.userId) : null;
@@ -615,7 +697,7 @@ module.exports = function (app, deps) {
   }
   const DRAFT_LOOKS = intake.MOODS.filter(m => m[0]);
   app.get('/sites/draft/:token', requireAuth, loadDraft, (req, res) => {
-    res.render('draft-preview', { d: req.draft, token: req.params.token, looks: DRAFT_LOOKS, current: req.draftSite.theme.style, ai: req.draft.copy_source === 'ai', auto: (req.draftSite.sections.meta || {}).auto || null, colorsNow: { primary: req.draftSite.theme.primaryColor, accent: req.draftSite.theme.accentColor } });
+    res.render('draft-preview', { d: req.draft, token: req.params.token, looks: DRAFT_LOOKS, current: req.draftSite.theme.style, ai: req.draft.copy_source === 'ai', auto: (req.draftSite.sections.meta || {}).auto || null, confirm: (req.draftSite.sections.meta || {}).confirm || [], colorsNow: { primary: req.draftSite.theme.primaryColor, accent: req.draftSite.theme.accentColor } });
   });
   app.post('/sites/draft/:token/look', requireAuth, loadDraft, (req, res) => {
     const look = DRAFT_LOOKS.find(m => m[0] === req.body.look);
@@ -695,6 +777,7 @@ module.exports = function (app, deps) {
     saveVersion(site.id, site.theme, site.sections, site.layout, 'Before AI rewrite');
     const sections = JSON.parse(JSON.stringify(site.sections));
     applyCopy(sections, copy);
+    markMain(sections, site.name, (site.sections.meta && site.sections.meta.businessType) || '', copy.faq.length > 0);
     db.prepare(
       `UPDATE sites SET sections = ?, seo_title = ?, seo_description = ?, updated_at = datetime('now') WHERE id = ?`
     ).run(JSON.stringify(sections), sections.seo.title, sections.seo.description, site.id);
@@ -793,7 +876,7 @@ module.exports = function (app, deps) {
       }
       done.push(ai ? 'wording (AI)' : 'wording');
     }
-    if (what !== 'photos') tidyHero(sections, site.name, sections.about && sections.about.body);
+    if (what !== 'photos') { tidyHero(sections, site.name, sections.about && sections.about.body); markMain(sections, site.name, typed || tpl.label, true); }
     if (!done.length) return back('nophotos');
     sections.meta = Object.assign({}, sections.meta, { businessType: typed || sections.meta.businessType || tpl.label.toLowerCase() });
     saveVersion(site.id, site.theme, site.sections, site.layout, 'Before industry fill-in');

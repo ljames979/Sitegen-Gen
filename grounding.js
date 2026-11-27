@@ -36,7 +36,7 @@ function buildFacts(d) {
 
 function corpusOf(f) {
   const parts = [f.name, f.type, f.city, f.areas.join(' '), f.badges.join(' '), f.about, f.tagline, f.address, f.hours,
-    f.diffs.join(' '), f.services.map(s => `${s.name} ${s.desc} ${s.price}`).join(' '), f.faq.map(x => `${x.q} ${x.a}`).join(' ')];
+    f.diffs.join(' '), f.services.map(s => `${s.name} ${s.desc} ${s.price}`).join(' '), f.faq.map(x => `${x.q} ${x.a}`).join(' '), f.extra || ''];
   if (f.years) parts.push(`${f.years} years`);
   return norm(parts.join(' \n '));
 }
@@ -88,19 +88,21 @@ const matchesService = (title, f) => {
 };
 
 // check a whole AI draft; returns [{field, reason}]
-function checkCopy(copy, f) {
+// guessed: the quick "Generate a site" form, where the services and FAQ are meant to be the usual ones for the trade,
+// so only claims, numbers and places are checked, not whether the client listed each service or question
+function checkCopy(copy, f, { guessed = false } = {}) {
   const corpus = corpusOf(f), probs = [];
   const add = (field, text) => checkText(text, f, corpus).forEach(r => probs.push({ field, reason: r }));
   if (!copy) return probs;
   if (copy.hero) { add('hero headline', copy.hero.headline); add('hero subheadline', copy.hero.subheadline); add('button text', copy.hero.ctaText); }
   add('about', copy.about); add('seo title', copy.seoTitle); add('seo description', copy.seoDescription);
   (copy.services || []).forEach((s, i) => {
-    if (f.services.length && !matchesService(s.title, f)) probs.push({ field: `service ${i + 1}`, reason: `a service the client did not list ("${s.title}")` });
+    if (!guessed && f.services.length && !matchesService(s.title, f)) probs.push({ field: `service ${i + 1}`, reason: `a service the client did not list ("${s.title}")` });
     add(`service ${i + 1}`, `${s.title}. ${s.description}`); add(`service ${i + 1} detail`, s.detail);
   });
-  if (!f.services.length && (copy.services || []).length) probs.push({ field: 'services', reason: 'services were written but the client listed none' });
+  if (!guessed && !f.services.length && (copy.services || []).length) probs.push({ field: 'services', reason: 'services were written but the client listed none' });
   const fq = copy.faq || [];
-  if (fq.length > f.faq.length) probs.push({ field: 'faq', reason: 'questions the client did not provide' });
+  if (!guessed && fq.length > f.faq.length) probs.push({ field: 'faq', reason: 'questions the client did not provide' });
   fq.forEach((x, i) => { add(`faq ${i + 1}`, `${x.question} ${x.answer}`); });
   return probs;
 }
@@ -152,4 +154,85 @@ function scrubSections(sections, f) {
   return { notes, hideFaq };
 }
 
-module.exports = { TONES, TONE_IDS, toneText, buildFacts, corpusOf, checkText, checkCopy, scrubSections, neutralAbout, matchesService };
+// ---- Quick generator (dashboard "Generate a site") ----
+// Its facts are the few form fields (and anything pasted into the "paste anything" box). Its wording is partly guessed
+// (the usual services for the trade, built-in starter text when AI is off), so instead of deleting what is not backed
+// up, each such sentence is marked "[Confirm with client]" in place. Leo sees it in the preview, and the whole-site
+// check (sitecheck.js) blocks going live while a [placeholder] like that is still on the page.
+const CONFIRM = '[Confirm with client]';
+function quickFacts(d) {
+  d = d || {};
+  const list = (v) => (Array.isArray(v) ? v : String(v || '').split(/[,\n;]/)).map(x => String(x).trim()).filter(Boolean);
+  return {
+    name: d.name || '', type: d.type || '', city: d.city || '', years: d.years ? String(d.years) : '',
+    areas: list(d.areas), badges: list(d.badges),
+    services: (d.services || []).map(s => (typeof s === 'string' ? { name: s, desc: '', price: '' } : { name: s.name || '', desc: s.desc || '', price: s.price || '' })),
+    diffs: [], faq: [], about: d.specialties || '', tagline: '', tone: d.tone || '',
+    address: d.address || '', phone: d.phone || '', email: d.email || '', hours: d.hours || '',
+    extra: String(d.extra || '').slice(0, 12000)
+  };
+}
+// claims, numbers and places only: filler wording is a matter of taste, not truth
+const factProblems = (t, f, corpus) => checkText(t, f, corpus).filter(r => !/^filler/.test(r));
+// marks every unsupported sentence of one text; returns { text, marked: [sentences] }
+function markText(text, f, corpus) {
+  const t = String(text || '');
+  if (!t.trim() || t.includes(CONFIRM)) return { text: t, marked: [] };
+  const marked = [];
+  const out = t.split(/\n/).map(line => line.split(/(?<=[.!?])\s+/).map(sen => {
+    if (!sen.trim() || !factProblems(sen, f, corpus).length) return sen;
+    marked.push(sen.trim()); return `${CONFIRM} ${sen}`;
+  }).join(' ')).join('\n');
+  return { text: out, marked };
+}
+// block bodies are "key: value" lines; only the words in them are checked (not photo links, colors or the owner's facts)
+const BODY_SKIP = /^(color|bg|accent|panel|button|round|photo|handle|fact|ink|img|image|url|link|icon|size|style|pat|patc|patop|ledge|reveal)$/i;
+const isWordPart = (p) => p.trim() && !/^(?:https?:|\/)/i.test(p.trim()) && !/^(?:#[0-9a-f]{3,8}|rgba?\(.*\))$/i.test(p.trim());
+function markBody(body, f, corpus) {
+  const marked = [];
+  const lines = String(body || '').split('\n').map(line => {
+    const m = line.match(/^([a-z]+):\s?(.*)$/i);
+    if (!m) { const r = markText(line, f, corpus); marked.push(...r.marked); return r.text; }
+    if (BODY_SKIP.test(m[1])) return line;
+    const parts = m[2].split(' | ').map(p => { if (!isWordPart(p)) return p; const r = markText(p, f, corpus); marked.push(...r.marked); return r.text; });
+    return `${m[1]}: ${parts.join(' | ')}`;
+  });
+  return { text: lines.join('\n'), marked };
+}
+// marks a whole freshly generated site in place; returns [{ where, text }] for the preview's "check with the client" list
+function markSections(sections, f) {
+  const corpus = corpusOf(f), list = [];
+  const s = sections;
+  const doText = (obj, key, where) => {
+    if (!obj || typeof obj[key] !== 'string') return;
+    const r = markText(obj[key], f, corpus); obj[key] = r.text; r.marked.forEach(t => list.push({ where, text: t }));
+  };
+  // headings can't carry the note: [square brackets] in a heading mean "highlight these words". A heading that claims
+  // something is swapped for the business name instead, and listed.
+  const doHeading = (obj, key, where) => {
+    if (!obj || typeof obj[key] !== 'string' || !factProblems(obj[key], f, corpus).length) return;
+    list.push({ where: `${where} (heading swapped for the business name)`, text: obj[key] }); obj[key] = f.name || '';
+  };
+  if (s.hero) {
+    doHeading(s.hero, 'headline', 'Top of the page'); doText(s.hero, 'subheadline', 'Top of the page');
+    if (factProblems(s.hero.ctaText, f, corpus).length) s.hero.ctaText = SAFE_CTA;   // a button can't carry a note
+  }
+  if (s.about) doText(s.about, 'body', 'About');
+  ((s.services && s.services.items) || []).forEach((x, i) => { doText(x, 'description', `Service: ${x.title || i + 1}`); doText(x, 'detail', `Service: ${x.title || i + 1}`); });
+  ((s.faq && s.faq.items) || []).forEach(x => doText(x, 'answer', `FAQ: ${x.question || ''}`.slice(0, 80)));
+  ((s.whyChoose && s.whyChoose.items) || []).forEach(x => { doText(x, 'title', 'Why choose us'); doText(x, 'text', 'Why choose us'); });
+  for (const k of ['about', 'services', 'faq', 'testimonials', 'whyChoose']) if (s[k]) doHeading(s[k], 'heading', k === 'whyChoose' ? 'Why choose us' : k[0].toUpperCase() + k.slice(1));
+  ((s.blocks && s.blocks.items) || []).forEach(b => {
+    if (!b) return;
+    const where = `Block: ${b.heading || b.type || ''}`.slice(0, 80);
+    doHeading(b, 'heading', 'Block');
+    if (typeof b.body === 'string') { const r = markBody(b.body, f, corpus); b.body = r.text; r.marked.forEach(t => list.push({ where, text: t })); }
+  });
+  if (s.seo) { // never shown with a note: swapped for a plain one instead
+    if (factProblems(s.seo.title, f, corpus).length) s.seo.title = `${f.name} | ${f.type}${f.city ? ' in ' + f.city : ''}`.slice(0, 70);
+    if (factProblems(s.seo.description, f, corpus).length) s.seo.description = neutralAbout(f).slice(0, 160);
+  }
+  return list.slice(0, 40);
+}
+
+module.exports = { CONFIRM, quickFacts, factProblems, markText, markBody, markSections, TONES, TONE_IDS, toneText, buildFacts, corpusOf, checkText, checkCopy, scrubSections, neutralAbout, matchesService };
