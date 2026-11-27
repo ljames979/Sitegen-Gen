@@ -27,8 +27,15 @@
       <% if (generateError) { %><div class="error"><%= generateError %></div><% } %>
       <form method="POST" action="/sites/generate" id="generateForm" enctype="multipart/form-data">
         <input type="hidden" name="preview" value="1">
+        <input type="hidden" name="paste_read" id="pasteReadFlag" value="0">
+        <label for="genPaste" style="font-weight:600; margin:0 0 4px; display:block;">Paste anything about the business (optional)</label>
+        <textarea name="paste" id="genPaste" rows="4" maxlength="12000" placeholder="Their Google listing, Facebook About, a text from the client, your own notes… We pick out the name, phone, hours, services and prices, towns served and real reviews. Only what is written here is used." style="width:100%;"></textarea>
+        <div class="row" style="margin:6px 0 10px; align-items:center; gap:10px; flex-wrap:wrap;">
+          <button type="button" class="btn-secondary" id="pasteReadBtn">Fill in the form from this</button>
+          <span id="pasteReadNote" class="muted" style="font-size:13px;" role="status"></span>
+        </div>
         <div class="row">
-          <input type="text" name="business_type" placeholder="e.g. plumbing company, hair salon, law firm" required style="flex:1;">
+          <input type="text" name="business_type" id="genType" placeholder="e.g. plumbing company, hair salon, law firm" required style="flex:1;">
           <input type="text" name="business_name" placeholder="Business name (optional)" style="flex:1;">
         </div>
         <div class="row" style="margin-top:8px; align-items:center; flex-wrap:wrap; gap:8px;">
@@ -53,7 +60,7 @@
             <% }) %>
           </div>
         </details>
-        <details style="margin-top:10px;">
+        <details style="margin-top:10px;" id="genDetails">
           <summary style="cursor:pointer; font-weight:600;">Client details (optional) — fills in the site for you</summary>
           <div class="row" style="margin-top:8px;">
             <input type="text" name="phone" placeholder="Phone" maxlength="40" style="flex:1;">
@@ -76,7 +83,13 @@
             <input type="text" name="service_areas" placeholder="Towns they serve, comma-separated (e.g. Kissimmee, St. Cloud, Celebration)" style="flex:1;">
           </div>
           <div class="row" style="margin-top:8px;">
-            <textarea name="specialties" rows="2" placeholder="Anything that sets them apart or should be mentioned (specialties, family-owned, brands they work with…). Used only for the AI-written text." style="flex:1;"></textarea>
+            <textarea name="specialties" rows="2" maxlength="1500" placeholder="Anything that sets them apart or should be mentioned (specialties, family-owned, brands they work with…). Used only for the AI-written text." style="flex:1;"></textarea>
+          </div>
+          <div class="row" style="margin-top:8px;">
+            <textarea name="services_list" rows="3" placeholder="Their services, one per line, with a price if they want it shown: Full groom | $85" style="flex:1;"></textarea>
+          </div>
+          <div class="row" style="margin-top:8px;">
+            <textarea name="reviews_list" rows="2" placeholder="Real reviews only, one per line: Great job with our poodle — Maria G." style="flex:1;"></textarea>
           </div>
           <div class="row" style="margin-top:8px;">
             <input type="url" name="facebook" placeholder="Facebook page URL" style="flex:1;">
@@ -107,7 +120,7 @@
         </style>
         <div style="width:min(620px,100%);">
           <h2 style="margin:0 0 6px;">Building the website…</h2>
-          <p class="muted" style="margin:0 0 18px;">Writing the text, picking photos and choosing a look. This takes a few seconds.</p>
+          <p class="muted" style="margin:0 0 18px;">Reading the details, writing the text, picking photos and choosing a look. This can take up to a minute.</p>
           <div style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:18px; box-shadow:0 8px 30px rgba(15,23,42,.08);">
             <div class="sk" style="height:14px; width:30%;"></div>
             <div class="sk" style="height:150px; margin-top:14px;"></div>
@@ -141,6 +154,38 @@
               URL.revokeObjectURL(url);
             };
             img.src = url;
+          });
+        })();
+        (function () { // the paste-anything box: fill the empty fields from it (what is already typed stays)
+          var form = document.getElementById('generateForm'), box = document.getElementById('genPaste'), btn = document.getElementById('pasteReadBtn'),
+            note = document.getElementById('pasteReadNote'), flag = document.getElementById('pasteReadFlag'), type = document.getElementById('genType');
+          if (!box || !btn) return;
+          var NAMES = { business_name: 'name', business_type: 'type of business', phone: 'phone', email: 'email', address: 'address', city: 'city',
+            weekday_hours: 'hours', saturday_hours: 'Saturday hours', sunday_hours: 'Sunday hours', years_in_business: 'years in business',
+            badges: 'credentials', service_areas: 'towns served', services_list: 'services', specialties: 'what sets them apart',
+            reviews_list: 'reviews', facebook: 'Facebook', instagram: 'Instagram' };
+          function sync() { flag.value = '0'; type.required = !box.value.trim(); }   // with a paste, the type can come from it
+          box.addEventListener('input', sync); sync();
+          btn.addEventListener('click', function () {
+            if (!box.value.trim()) { note.textContent = 'Paste something first.'; return; }
+            btn.disabled = true; note.textContent = 'Reading…';
+            fetch('/sites/generate/read-paste', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ paste: box.value }) })
+              .then(function (r) { return r.json(); })
+              .then(function (j) {
+                if (!j.ok) { note.textContent = j.error || 'Could not read that.'; return; }
+                var got = [], skipped = [];
+                Object.keys(j.fields || {}).forEach(function (k) {
+                  var el = form.elements[k]; if (!el || !j.fields[k]) return;
+                  if (String(el.value || '').trim()) { skipped.push(NAMES[k] || k); return; }
+                  el.value = j.fields[k]; got.push(NAMES[k] || k);
+                });
+                flag.value = '1';
+                if (got.some(function (n) { return n !== 'name' && n !== 'type of business'; })) document.getElementById('genDetails').open = true;
+                note.textContent = got.length ? 'Filled in: ' + got.join(', ') + '. Check them under Client details.' + (j.how === 'basic' ? ' (Without AI only the phone, email and social links can be read.)' : '') : 'Nothing new found in that text.';
+                if (skipped.length) note.textContent += ' Kept what you typed for: ' + skipped.join(', ') + '.';
+              })
+              .catch(function () { note.textContent = 'Could not read that. You can still fill in the form by hand.'; })
+              .then(function () { btn.disabled = false; });
           });
         })();
         document.getElementById('generateForm').addEventListener('submit', function () {

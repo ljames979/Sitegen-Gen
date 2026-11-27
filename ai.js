@@ -32,11 +32,12 @@ function buildPrompt(d, instruction) {
     d.years && `Years in business (stated by the owner): ${d.years}`,
     d.badges && d.badges.length && `Credentials the owner states they hold: ${d.badges.join(', ')}`,
     d.specialties && `Owner's notes on specialties / what makes them different: ${d.specialties}`,
-    d.services && d.services.length && `Services currently listed: ${d.services.join('; ')}`
+    d.services && d.services.length && `Services currently listed: ${d.services.join('; ')}`,
+    d.notes && `Notes pasted by the owner (a listing, a message or their own notes; facts in them may be used, nothing beyond them):\n---\n${String(d.notes).slice(0, 6000)}\n---`
   ].filter(Boolean).join('\n');
 
   return `${facts}
-${d.design ? `\n${d.design}\n` : ''}${instruction ? `\nExtra direction from the owner: ${instruction}\n` : ''}
+${d.design ? `\n${d.design}\n` : ''}${instruction ? `\nExtra direction from the owner: ${instruction}\n` : ''}${d.feedback ? `\nYour previous draft was rejected because it contained: ${d.feedback}. Rewrite without any of that.\n` : ''}
 Return JSON with exactly this shape:
 {
   "hero": { "headline": "<=60 chars, a clear benefit-led line, not just the business name", "subheadline": "<=150 chars", "ctaText": "<=28 chars, e.g. Request a Quote" },
@@ -46,7 +47,7 @@ Return JSON with exactly this shape:
   "seoTitle": "<=60 chars, include the city when one is given",
   "seoDescription": "<=155 chars"
 }
-Write 4 to 6 services typical for this kind of business (or keep to the listed ones if services were provided) and 4 to 5 FAQ items.`;
+Write 4 to 6 services typical for this kind of business (or, if services were listed, exactly those, with the same names and in the same order) and 4 to 5 FAQ items.`;
 }
 
 // ---- Facts-only copy (client questionnaires) ----
