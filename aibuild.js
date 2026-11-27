@@ -212,6 +212,7 @@ function buildBlocksPrompt(facts, sections, slots) {
     facts.years && `Years in business (stated by the owner): ${facts.years}`,
     facts.badges && facts.badges.length && `Credentials the owner states they hold: ${facts.badges.join(', ')}`,
     facts.specialties && `Owner's notes: ${facts.specialties}`,
+    facts.tone && `Tone of voice: ${facts.tone}`,
     facts.notes && `Notes pasted by the owner (facts you may use):\n${String(facts.notes).slice(0, 6000)}`,
     `Headline on the page: ${flat(s.hero && s.hero.headline, 120)}`,
     `About text on the page: ${flat(s.about && s.about.body, 900)}`,
@@ -270,4 +271,16 @@ async function rewriteBlocks(sections, info, { complete, facts = null } = {}) {
   return applyBlockWords(sections, slots, reply, facts);
 }
 
-module.exports = { SYSTEM_READ, SYSTEM_BLOCKS, buildReadPrompt, localRead, checkRead, readPaste, fillBlanks, parseServices, parseReviews, blockSlots, buildBlocksPrompt, applyBlockWords, rewriteBlocks };
+// "Make 3 versions to compare" (Generate a site): the same business, facts and honesty check, three ways of saying it
+// and three looks. style is one of the look ids (intake.MOODS); tone goes to the AI with the details.
+const VARIANTS = [
+  { id: 'warm', label: 'Warm', blurb: 'Friendly, caring words and a soft, rounded look.', style: 'warm',
+    tone: 'Warm, friendly and reassuring, like a helpful neighbor. Speak to the customer\'s worry first, then the help. Short sentences.' },
+  { id: 'professional', label: 'Professional', blurb: 'Clear, polished words and a classic, trustworthy look.', style: 'classic',
+    tone: 'Professional, clear and confident. Measured and precise, no slang.' },
+  { id: 'bold', label: 'Bold', blurb: 'Short, punchy words and a big, high-contrast look.', style: 'bold',
+    tone: 'Bold, direct and confident. Short, punchy headlines that lead with the result. Still plain and honest: no hype and no exclamation marks.' }
+];
+const variantById = (id) => VARIANTS.find(v => v.id === id) || null;
+
+module.exports = { VARIANTS, variantById, SYSTEM_READ, SYSTEM_BLOCKS, buildReadPrompt, localRead, checkRead, readPaste, fillBlanks, parseServices, parseReviews, blockSlots, buildBlocksPrompt, applyBlockWords, rewriteBlocks };

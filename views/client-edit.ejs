@@ -29,7 +29,7 @@
     <% if (saved) { %><div class="saved">Saved. Your website has been updated.</div><% } %>
 
     <div class="block card" style="padding:16px;">
-      <h3 style="margin-top:0;">Ask AI to change something</h3>
+      <h3 style="margin-top:0;">Tell the AI what to change</h3>
       <%- include('_aiedit', { aiBase: base, aiOn: hasAi(), aiTheme: false }) %>
     </div>
     <form method="POST" action="<%= base %>" id="clientForm">

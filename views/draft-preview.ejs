@@ -30,7 +30,7 @@
 </head>
 <body>
   <div class="bar">
-    <a href="/" class="muted">&larr; Your sites</a>
+    <% if (d.grp) { %><a href="/sites/drafts/<%= d.grp %>" class="muted">&larr; All 3 versions</a><% } else { %><a href="/" class="muted">&larr; Your sites</a><% } %>
     <h1><%= d.name %></h1>
     <span class="muted" style="font-size:13px;">Preview only: nothing is saved yet</span>
     <span class="sp"></span>
