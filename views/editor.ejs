@@ -941,6 +941,11 @@
           <%- include('sections/_local', { site }) %>
         </details>
 
+        <details class="section-block settings-block" data-tab="features" id="improveBlock">
+          <summary>✨ Improve with AI</summary>
+          <%- include('_improve', { site, aiOn: aiConfigured }) %>
+        </details>
+
         <details class="section-block settings-block" data-tab="features" id="aiEditBlock">
           <summary>Ask AI to change something</summary>
           <%- include('_aiedit', { aiBase: '/sites/' + site.id, aiOn: aiConfigured, aiTheme: true }) %>

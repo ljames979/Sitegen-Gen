@@ -249,6 +249,7 @@
         </div>
         <div class="row">
           <a href="/sites/<%= site.id %>/edit" class="btn">Edit</a>
+          <a href="/sites/<%= site.id %>/edit?improve=1#features" class="btn-secondary btn" title="Let the AI suggest better wording, buttons and Google text. You pick what to keep.">✨ Improve</a>
           <% if (site.published) { %>
             <a href="/site/<%= site.slug %>" class="btn-secondary btn" target="_blank">View</a>
           <% } %>

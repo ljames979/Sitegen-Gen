@@ -13,6 +13,7 @@ const grounding = require('../grounding');
 const fontsLib = require('../fonts');
 const { generateGroundedCopy } = require('../ai');
 const aibuild = require('../aibuild');
+const improve = require('../improve');
 
 module.exports = function (app, deps) {
   const {
@@ -824,6 +825,53 @@ module.exports = function (app, deps) {
   }
   app.post('/sites/:id/ai-edit', requireAuth, loadOwnedSite, generateLimiter, editProposeHandler('owner'));
   app.post('/sites/:id/ai-edit/apply', requireAuth, loadOwnedSite, editApplyHandler('owner'));
+
+  // ---- ✨ Improve with AI: review a finished site, tick the suggestions you want, apply (or apply to a copy) ----
+  // Suggestions live in memory for 30 minutes. The site as it was is saved to history first, so one click undoes it.
+  const improveProposals = new Map();
+  app.post('/sites/:id/improve', requireAuth, loadOwnedSite, generateLimiter, async (req, res) => {
+    const site = req.site, b = req.body || {};
+    const focus = (Array.isArray(b.focus) ? b.focus : [b.focus]).map(x => str(x, 10)).filter(x => improve.AREAS[x]);
+    const aiOn = hasAiProvider();
+    const meta = site.sections.meta || {};
+    const r = await improve.review(site, {
+      complete: aiOn ? aiComplete : null, focus, note: str(b.note, 400),
+      brief: designBrief.copyBrief(meta.businessType || '', site.theme.style) || ''
+    });
+    for (const [k, v] of improveProposals) if (v.exp < Date.now()) improveProposals.delete(k);
+    const token = r.suggestions.length ? crypto.randomBytes(16).toString('hex') : '';
+    if (token) improveProposals.set(token, { siteId: site.id, suggestions: r.suggestions, exp: Date.now() + 30 * 60 * 1000 });
+    const message = !aiOn ? 'AI isn\'t set up (no ANTHROPIC_API_KEY in .env), so these are only the quick checks.'
+      : r.how === 'failed' ? 'The AI didn\'t answer properly this time, so these are only the quick checks. Try again in a minute.' : '';
+    res.json({ ok: true, how: r.how, message, summary: r.summary, suggestions: r.suggestions.map(({ op, ...x }) => x), held: r.held, tips: r.tips, areas: improve.AREAS, token });
+  });
+  app.post('/sites/:id/improve/apply', requireAuth, loadOwnedSite, (req, res) => {
+    const site = req.site, b = req.body || {};
+    const tok = str(b.token, 64), p = improveProposals.get(tok);
+    if (!p || p.exp < Date.now() || p.siteId !== site.id) return res.status(400).json({ ok: false, error: 'Those suggestions expired. Run Improve with AI again.' });
+    const ids = (Array.isArray(b.ids) ? b.ids : []).map(x => str(x, 8)).slice(0, 200);
+    if (!ids.length) return res.json({ ok: false, error: 'Tick at least one suggestion first.' });
+    const r = improve.applySuggestions(site, p.suggestions, ids);
+    if (!r.applied) return res.json({ ok: false, error: r.stale ? 'Those parts of the site changed since the suggestions were made. Run Improve with AI again.' : 'Nothing to apply.' });
+    improveProposals.delete(tok);
+    const seo = r.sections.seo || {};
+    if (b.copy === true || b.copy === '1' || b.copy === 'true') { // the original stays exactly as it was
+      const name = `${site.name} (improved)`.slice(0, 80);
+      const info = db.prepare('INSERT INTO sites (user_id, slug, name, theme, sections, layout, seo_title, seo_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(req.session.userId, uniqueSlug(name), name, JSON.stringify(site.theme), JSON.stringify(site.sections), JSON.stringify(site.layout), site.seo_title || '', site.seo_description || '');
+      const id = info.lastInsertRowid;
+      saveVersion(id, site.theme, site.sections, site.layout, 'Before Improve with AI');
+      db.prepare(`UPDATE sites SET theme = ?, sections = ?, layout = ?, seo_title = ?, seo_description = ?, updated_at = datetime('now') WHERE id = ?`)
+        .run(JSON.stringify(r.theme), JSON.stringify(r.sections), JSON.stringify(r.layout), seo.title || '', seo.description || '', id);
+      return res.json({ ok: true, applied: r.applied, stale: r.stale, copy: true, siteId: Number(id) });
+    }
+    saveVersion(site.id, site.theme, site.sections, site.layout, 'Before Improve with AI');
+    const v = db.prepare('SELECT id FROM site_versions WHERE site_id = ? ORDER BY id DESC LIMIT 1').get(site.id);
+    db.prepare(`UPDATE sites SET theme = ?, sections = ?, layout = ?, seo_title = ?, seo_description = ?, updated_at = datetime('now') WHERE id = ?`)
+      .run(JSON.stringify(r.theme), JSON.stringify(r.sections), JSON.stringify(r.layout), seo.title || '', seo.description || '', site.id);
+    invalidateSiteCache(site);
+    res.json({ ok: true, applied: r.applied, stale: r.stale, copy: false, siteId: site.id, versionId: v ? v.id : null });
+  });
 
   // "Fill in for this business": swap the wording and/or photos for ones that suit the business type.
   // Colors, style, contact details, hours, reviews and everything else are left alone. The old version is kept in history.

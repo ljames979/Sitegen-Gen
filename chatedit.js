@@ -140,4 +140,4 @@ function applyOps(site, ops, { scope = 'owner', styles = [] } = {}) {
   return { sections, theme, changes, rejected };
 }
 
-module.exports = { SYSTEM, buildPrompt, parseReply, applyOps, snapshot, MAX_OPS };
+module.exports = { SYSTEM, buildPrompt, parseReply, applyOps, snapshot, MAX_OPS, STYLE_ENUMS };
