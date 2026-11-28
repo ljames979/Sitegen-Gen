@@ -14,7 +14,7 @@ const PORT = 3992, BASE = `http://localhost:${PORT}`;
 
 test('tap targets are at least 44px on every style', { skip: !chromium && 'playwright not installed', timeout: 180000 }, async (t) => {
   const db = path.join(os.tmpdir(), `tap-${process.pid}.db`);
-  const srv = spawn('node', ['server.js'], { cwd: path.join(__dirname, '..'), env: { ...process.env, PORT, DB_PATH: db, SESSION_SECRET: 'x'.repeat(40), NODE_ENV: 'test' }, stdio: 'ignore' });
+  const srv = spawn('node', ['server.js'], { cwd: path.join(__dirname, '..'), env: { ...process.env, PORT, DB_PATH: db, SESSION_SECRET: 'x'.repeat(40), NODE_ENV: 'test', FAL_KEY: '' }, stdio: 'ignore' });
   let browser;
   try {
     for (let i = 0; i < 40; i++) { try { await fetch(BASE + '/login'); break; } catch { await new Promise(r => setTimeout(r, 250)); } }

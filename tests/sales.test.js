@@ -114,7 +114,7 @@ before(async () => {
   serverProc = spawn(process.execPath, ['server.js'], {
     cwd: path.join(__dirname, '..'),
     env: {
-      ...process.env, PORT: String(PORT), DB_PATH: TEST_DB, MAIL_CAPTURE_FILE: MAIL_FILE, NODE_ENV: 'test',
+      ...process.env, PORT: String(PORT), DB_PATH: TEST_DB, MAIL_CAPTURE_FILE: MAIL_FILE, NODE_ENV: 'test', FAL_KEY: '',
       SESSION_SECRET: 'sales-suite-secret', STRIPE_SECRET_KEY: 'sk_test_salessuite', STRIPE_API_BASE: `http://localhost:${STRIPE_PORT}`,
       NETLIFY_AUTH_TOKEN: 'nfp_test', NETLIFY_API_URL: `http://localhost:${NETLIFY_PORT}/api/v1`, PUBLIC_URL: `http://localhost:${PORT}`,
       ANTHROPIC_API_KEY: '', PEXELS_API_KEY: '', UNSPLASH_ACCESS_KEY: '', STRIPE_PRICE_ID: '', STRIPE_WEBHOOK_SECRET: ''
