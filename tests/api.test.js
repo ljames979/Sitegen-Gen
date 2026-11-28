@@ -287,6 +287,7 @@ before(async () => {
       NETLIFY_AUTH_TOKEN: 'nfp_test_token', NETLIFY_API_URL: `http://localhost:${NETLIFY_PORT}/api/v1`,
       SESSION_SECRET: 'test-secret-for-suite-only-not-for-real-use',
       ALLOW_PRIVATE_IMPORT_HOSTS: 'true',
+      FAL_KEY: '',   // never make real AI photos from the tests
       NODE_ENV: 'test'
     },
     stdio: 'pipe'

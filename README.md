@@ -270,6 +270,20 @@ they just won't have a hero image or gallery photos until you add your own.
 Pexels' free tier is generous (200 requests/hour, 20,000/month) and doesn't
 require attribution, though crediting photographers is appreciated.
 
+**Photos made to order with AI (optional).** Instead of searching stock photos, "Generate a site" and "Fill in
+for this business" can have a photo made for this exact business: a wide hero with room for the headline, an
+"about" photo of people at work, and gallery photos of the work itself. The model is FLUX.2 [pro] on fal.ai, pay per
+photo (about 3 to 5 cents each, so roughly 25 cents for a site, or about 45 cents when Claude picks, see below).
+
+1. Sign up at https://fal.ai, add a few dollars of credit under Billing, and create an API key under Keys
+2. Paste it into `.env` as `FAL_KEY=your-key-here`, then restart the server
+
+With `ANTHROPIC_API_KEY` also set, Claude writes a specific brief for each photo, has 2 versions made of each, keeps
+the better one (no garbled lettering or warped hands) and writes its alt text. Without it, built-in briefs are used
+and 1 version is made. Photos are saved with your uploads (as WebP when `sharp` is installed). If fal fails or runs
+out of credit, the site falls back to Pexels photos as before. `AI_PHOTO_GALLERY` (default 4) sets how many photos
+come after the hero, and `PHOTO_SOURCE=stock` turns AI photos off without removing the key.
+
 **Sharper stock photos.** Pexels' "large" size is only 940px wide, so full-width photos used to look soft. The
 published page now asks Pexels (and Unsplash) for the right size per use: photos in the page get 640 to 2400px
 copies so each screen downloads a sharp one, and full-width hero and section backgrounds get a 2400px copy.

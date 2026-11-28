@@ -14,6 +14,7 @@ const fontsLib = require('../fonts');
 const { generateGroundedCopy } = require('../ai');
 const aibuild = require('../aibuild');
 const improve = require('../improve');
+const aiPhotos = require('../aiphotos');
 
 module.exports = function (app, deps) {
   const {
@@ -80,7 +81,7 @@ module.exports = function (app, deps) {
       generateError: null,
       hasAiProvider: hasAiProvider(),
       isAdmin: isAdmin(req.session.userId),
-      hasPhotoProvider: hasPhotoProvider(),
+      hasPhotoProvider: hasPhotoProvider() || aiPhotos.hasAiPhotos(),
       ...extra
     });
   }
@@ -452,12 +453,31 @@ module.exports = function (app, deps) {
     return brandKit.readLogo(url, { uploadsDir: UPLOADS_DIR, safeFetch });
   }
 
+  // A new site's photos: made to order by AI when FAL_KEY is set (aiphotos.js), otherwise searched on Pexels.
+  // An AI run that makes nothing falls back to the stock search, so a site never ends up with fewer photos than before.
+  const aiPhotoRuns = new Map();
+  async function sitePhotoSet(tpl, { businessType, name, colors } = {}) {
+    if (aiPhotos.hasAiPhotos()) {
+      // "three versions" builds the same business three times at once: they share one set of photos (paid for once)
+      const key = [tpl.id, businessType, name].join('|');
+      for (const [k, v] of aiPhotoRuns) if (Date.now() - v.at > 60000) aiPhotoRuns.delete(k);
+      if (!aiPhotoRuns.has(key)) {
+        aiPhotoRuns.set(key, { at: Date.now(), run: aiPhotos.makePhotoSet({ businessType: businessType || tpl.label, name, queries: tpl.photoQueries || [], colors, galleryCount: 6, uploadsDir: UPLOADS_DIR })
+          .catch(err => { console.error('AI photos failed:', err.message); return null; }) });
+      }
+      const set = await aiPhotoRuns.get(key).run;
+      if (set) return set;
+    }
+    return hasPhotoProvider() ? fetchPhotoSet(tpl.photoQueries, { galleryCount: 6 }) : { hero: null, gallery: [] };
+  }
+  const photoAlts = (gallery) => (gallery.some(g => g && g.alt) ? gallery.map(g => (g && g.alt) || '') : []);
+
   async function baseSiteFromTemplate(businessType, businessName, more, known) {
       const industry = known || await detectIndustry(businessType, businessName, more);
       const tpl = industry.tpl;
       const filled = fillTemplate(tpl, businessName, businessType);
-      const { hero, gallery } = await fetchPhotoSet(tpl.photoQueries, { galleryCount: 6 });
       const colors = colorForCategory(tpl.id);
+      const { hero, gallery } = await sitePhotoSet(tpl, { businessType, name: businessName, colors: { primary: colors.primaryColor, accent: colors.accentColor } });
 
       const theme = {
         primaryColor: colors.primaryColor,
@@ -507,7 +527,7 @@ module.exports = function (app, deps) {
             imageUrl: wantsPhoto ? (b.imageUrl || (gallery[g++] ? gallery[g - 1].url : '')) : '' };
         }) };
       }
-      sections.gallery = { heading: 'Gallery', images: gallery.map(g => g.url) };
+      sections.gallery = { heading: 'Gallery', images: gallery.map(g => g.url), alts: photoAlts(gallery) };
       // the booking page starts switched off, set up for this kind of business
       sections.booking = booking.applyPreset(sections.booking, booking.TEMPLATE_KIND[tpl.id] || 'generic', filled.services);
       sections.seo = {
@@ -936,12 +956,12 @@ module.exports = function (app, deps) {
     const done = [];
     if (what !== 'wording') {
       let set = null;
-      try { set = hasPhotoProvider() ? await fetchPhotoSet(tpl.photoQueries, { galleryCount: 6 }) : null; } catch { set = null; }
+      try { set = (hasPhotoProvider() || aiPhotos.hasAiPhotos()) ? await sitePhotoSet(tpl, { businessType: typed, name: site.name, colors: { primary: site.theme.primaryColor, accent: site.theme.accentColor } }) : null; } catch { set = null; }
       if (set && (set.hero || (set.gallery && set.gallery.length))) {
         const gallery = set.gallery || [];
         if (set.hero) sections.hero.imageUrl = set.hero.url;
         if (gallery[0]) sections.about.imageUrl = gallery[0].url;
-        if (gallery.length) sections.gallery = Object.assign({ heading: 'Gallery' }, sections.gallery, { images: gallery.map(g => g.url), alts: [] });
+        if (gallery.length) sections.gallery = Object.assign({ heading: 'Gallery' }, sections.gallery, { images: gallery.map(g => g.url), alts: photoAlts(gallery) });
         let g = 1;
         if (sections.blocks && Array.isArray(sections.blocks.items)) sections.blocks.items.forEach(b => {
           if ((b.type === 'photoText' || b.type === 'cta') && gallery[g]) b.imageUrl = gallery[g++].url;
